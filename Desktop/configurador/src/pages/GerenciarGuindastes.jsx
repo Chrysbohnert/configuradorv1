@@ -96,7 +96,12 @@ const GerenciarGuindastes = () => {
     try {
       const guindasteData = {
         ...formData,
-        preco: parseFloat(formData.preco),
+        preco: parseFloat(
+          String(formData.preco)
+            .replace('R$', '')
+            .replace(/\./g, '')
+            .replace(',', '.')
+        ),
         ativo: true
       };
 

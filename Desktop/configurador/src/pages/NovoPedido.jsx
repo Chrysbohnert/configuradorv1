@@ -120,8 +120,7 @@ const NovoPedido = () => {
                          guindaste.modelo.toLowerCase().includes(searchTerm.toLowerCase());
     let matchesCategory = true;
     if (selectedCategory !== 'todos') {
-      // Supondo que o campo categoria do guindaste seja 'interno' ou 'externo'
-      matchesCategory = guindaste.categoria === selectedCategory;
+      matchesCategory = guindaste.tipo === selectedCategory;
     }
     return matchesSearch && matchesCategory;
   });
