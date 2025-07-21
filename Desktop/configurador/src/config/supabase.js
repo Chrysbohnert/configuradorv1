@@ -83,7 +83,7 @@ class DatabaseService {
       .from('guindastes')
       .update(guindasteData)
       .eq('id', id)
-      .select()
+      .select('*')
       .single();
     
     if (error) throw error;
