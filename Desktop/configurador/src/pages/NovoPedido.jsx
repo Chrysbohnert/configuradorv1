@@ -31,11 +31,13 @@ const NovoPedido = () => {
       setUser(JSON.parse(userData));
     } else {
       navigate('/');
-      return;
     }
-    
-    loadData();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    loadData();
+  }, [user, navigate]);
 
   const loadData = async () => {
     try {

@@ -30,13 +30,8 @@ const GerenciarGuindastes = () => {
     descricao: '',
     imagem_url: ''
   });
-  const [opcionalFormData, setOpcionalFormData] = useState({
-    nome: '',
-    preco: '',
-    descricao: '',
-    categoria: 'acessorio',
-    imagem_url: ''
-  });
+  // Substituir o estado do opcionalFormData por um array de opcionais
+  const [opcionaisForm, setOpcionaisForm] = useState([{ nome: '', preco: '' }]);
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [selectedOpcionais, setSelectedOpcionais] = useState([]);
@@ -82,8 +77,19 @@ const GerenciarGuindastes = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleOpcionalInputChange = (field, value) => {
-    setOpcionalFormData(prev => ({ ...prev, [field]: value }));
+  // Função para adicionar novo campo de opcional
+  const handleAddOpcionalField = () => {
+    setOpcionaisForm(prev => [...prev, { nome: '', preco: '' }]);
+  };
+
+  // Função para remover campo de opcional
+  const handleRemoveOpcionalField = (index) => {
+    setOpcionaisForm(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Função para atualizar campo
+  const handleOpcionalFieldChange = (index, field, value) => {
+    setOpcionaisForm(prev => prev.map((opc, i) => i === index ? { ...opc, [field]: value } : opc));
   };
 
   const handleImageUpload = (imageUrl) => {
@@ -131,33 +137,22 @@ const GerenciarGuindastes = () => {
     }
   };
 
+  // Novo handleOpcionalSubmit para cadastrar todos de uma vez
   const handleOpcionalSubmit = async (e) => {
     e.preventDefault();
-    
     try {
-      const opcionalData = {
-        ...opcionalFormData,
-        preco: parseFloat(opcionalFormData.preco),
-        ativo: true
-      };
-
-      if (editingOpcional) {
-        // Atualizar opcional existente
-        await db.updateOpcional(editingOpcional.id, opcionalData);
-        console.log('✅ Opcional atualizado com sucesso!');
-      } else {
-        // Criar novo opcional
-        await db.createOpcional(opcionalData);
-        console.log('✅ Opcional criado com sucesso!');
+      const opcionaisValidos = opcionaisForm.filter(opc => opc.nome && opc.preco);
+      if (opcionaisValidos.length === 0) {
+        alert('Preencha pelo menos um opcional com nome e valor.');
+        return;
       }
-      
-      // Recarregar dados
+      await Promise.all(opcionaisValidos.map(opc => db.createOpcional({ nome: opc.nome, preco: parseFloat(opc.preco), ativo: true })));
       await loadData();
       handleCloseOpcionalModal();
-      
+      setOpcionaisForm([{ nome: '', preco: '' }]);
     } catch (error) {
-      console.error('Erro ao salvar opcional:', error);
-      alert('Erro ao salvar opcional. Tente novamente.');
+      console.error('Erro ao salvar opcionais:', error);
+      alert('Erro ao salvar opcionais. Tente novamente.');
     }
   };
 
@@ -734,74 +729,37 @@ const GerenciarGuindastes = () => {
             </div>
             
             <form onSubmit={handleOpcionalSubmit} className="modal-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="opcional-nome">Nome *</label>
-                  <input
-                    id="opcional-nome"
-                    type="text"
-                    value={opcionalFormData.nome}
-                    onChange={(e) => handleOpcionalInputChange('nome', e.target.value)}
-                    required
-                  />
+              {opcionaisForm.map((opc, idx) => (
+                <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
+                  <div className="form-group" style={{ flex: 2 }}>
+                    <label>O que é o opcional?</label>
+                    <input
+                      type="text"
+                      value={opc.nome}
+                      onChange={e => handleOpcionalFieldChange(idx, 'nome', e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="form-group" style={{ flex: 1 }}>
+                    <label>Valor</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={opc.preco}
+                      onChange={e => handleOpcionalFieldChange(idx, 'preco', e.target.value)}
+                      required
+                    />
+                  </div>
+                  {opcionaisForm.length > 1 && (
+                    <button type="button" onClick={() => handleRemoveOpcionalField(idx)} style={{ marginTop: 24 }}>🗑️</button>
+                  )}
                 </div>
-                
-                <div className="form-group">
-                  <label htmlFor="opcional-preco">Preço (R$) *</label>
-                  <input
-                    id="opcional-preco"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={opcionalFormData.preco}
-                    onChange={(e) => handleOpcionalInputChange('preco', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="opcional-categoria">Categoria *</label>
-                <select
-                  id="opcional-categoria"
-                  value={opcionalFormData.categoria}
-                  onChange={(e) => handleOpcionalInputChange('categoria', e.target.value)}
-                  required
-                >
-                  <option value="acessorio">Acessório</option>
-                  <option value="iluminacao">Iluminação</option>
-                  <option value="controle">Controle</option>
-                  <option value="seguranca">Segurança</option>
-                </select>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="opcional-descricao">Descrição</label>
-                <textarea
-                  id="opcional-descricao"
-                  value={opcionalFormData.descricao}
-                  onChange={(e) => handleOpcionalInputChange('descricao', e.target.value)}
-                  rows="3"
-                  placeholder="Descrição do opcional..."
-                />
-              </div>
-
-              {/* Upload de Imagem para Opcional */}
-              <div className="form-group">
-                <ImageUpload
-                  onImageUpload={handleOpcionalImageUpload}
-                  currentImageUrl={opcionalFormData.imagem_url}
-                  label="Foto do Opcional"
-                />
-              </div>
-              
+              ))}
+              <button type="button" onClick={handleAddOpcionalField} style={{ margin: '8px 0' }}>+ Adicionar mais</button>
               <div className="modal-actions">
-                <button type="button" onClick={handleCloseOpcionalModal} className="cancel-btn">
-                  Cancelar
-                </button>
-                <button type="submit" className="save-btn">
-                  {editingOpcional ? 'Salvar Alterações' : 'Cadastrar Opcional'}
-                </button>
+                <button type="button" onClick={handleCloseOpcionalModal} className="cancel-btn">Cancelar</button>
+                <button type="submit" className="save-btn">Salvar Opcionais</button>
               </div>
             </form>
           </div>
