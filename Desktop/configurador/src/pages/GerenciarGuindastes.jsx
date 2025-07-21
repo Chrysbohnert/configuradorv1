@@ -134,9 +134,16 @@ const GerenciarGuindastes = () => {
         descricao: item.descricao || '',
         imagem_url: item.imagem_url || ''
       });
-      // Buscar opcionais vinculados
-      const opcionaisVinculados = await db.getOpcionaisDoGuindaste(item.id);
-      setOpcionaisGuindasteForm(opcionaisVinculados.length > 0 ? opcionaisVinculados.map(o => ({ nome: o.nome, preco: o.preco })) : [{ nome: '', preco: '' }]);
+      try {
+        const opcionaisVinculados = await db.getOpcionaisDoGuindaste(item.id);
+        if (Array.isArray(opcionaisVinculados) && opcionaisVinculados.length > 0) {
+          setOpcionaisGuindasteForm(opcionaisVinculados.map(o => ({ nome: o.nome || '', preco: o.preco || '' })));
+        } else {
+          setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
+        }
+      } catch (err) {
+        setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
+      }
       setShowModal(true);
     } else {
       setEditingOpcional(item);
