@@ -101,7 +101,7 @@ const GerenciarGuindastes = () => {
       };
 
       if (editingGuindaste) {
-        // Atualizar guindaste existente
+      
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
         console.log('✅ Guindaste atualizado com sucesso!');
       } else {
@@ -592,8 +592,8 @@ const GerenciarGuindastes = () => {
                     onChange={(e) => handleInputChange('tipo', e.target.value)}
                     required
                   >
-                    <option value="interno">Interno</option>
-                    <option value="externo">Externo</option>
+                    <option value="interno">interno</option>
+                    <option value="externo">externo</option>
                   </select>
                 </div>
                 
