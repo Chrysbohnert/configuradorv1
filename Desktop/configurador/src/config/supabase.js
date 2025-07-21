@@ -250,6 +250,40 @@ class DatabaseService {
     if (error) throw error;
     return data || [];
   }
+
+  // ===== PREÇOS POR REGIÃO =====
+  async getPrecoGuindastePorRegiao(guindasteId, regiao) {
+    const { data, error } = await supabase
+      .from('precos_guindaste_regiao')
+      .select('preco')
+      .eq('guindaste_id', guindasteId)
+      .eq('regiao', regiao)
+      .single();
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
+    return data ? data.preco : null;
+  }
+
+  // ===== GUINDASTE-OPCIONAIS (RELACIONAMENTO) =====
+  async getOpcionaisDoGuindaste(guindasteId) {
+    const { data, error } = await supabase
+      .from('guindaste_opcionais')
+      .select('opcional_id, opcionais(*)')
+      .eq('guindaste_id', guindasteId);
+    if (error) throw error;
+    // Retorna apenas os dados dos opcionais
+    return data ? data.map(item => item.opcionais) : [];
+  }
+
+  async vincularOpcionaisAoGuindaste(guindasteId, opcionaisIds) {
+    // Remove todos os vínculos antigos
+    await supabase.from('guindaste_opcionais').delete().eq('guindaste_id', guindasteId);
+    // Adiciona os novos vínculos
+    if (opcionaisIds.length > 0) {
+      const inserts = opcionaisIds.map(opcional_id => ({ guindaste_id: guindasteId, opcional_id }));
+      const { error } = await supabase.from('guindaste_opcionais').insert(inserts);
+      if (error) throw error;
+    }
+  }
 }
 
 // Instância única do serviço

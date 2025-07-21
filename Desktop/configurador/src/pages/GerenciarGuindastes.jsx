@@ -39,6 +39,7 @@ const GerenciarGuindastes = () => {
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
+  const [selectedOpcionais, setSelectedOpcionais] = useState([]);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -111,10 +112,12 @@ const GerenciarGuindastes = () => {
       if (editingGuindaste) {
       
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        await db.vincularOpcionaisAoGuindaste(editingGuindaste.id, selectedOpcionais);
         console.log('✅ Guindaste atualizado com sucesso!');
       } else {
         // Criar novo guindaste
-        await db.createGuindaste(guindasteData);
+        const novo = await db.createGuindaste(guindasteData);
+        await db.vincularOpcionaisAoGuindaste(novo.id, selectedOpcionais);
         console.log('✅ Guindaste criado com sucesso!');
       }
       
@@ -158,7 +161,7 @@ const GerenciarGuindastes = () => {
     }
   };
 
-  const handleEdit = (item, type) => {
+  const handleEdit = async (item, type) => {
     if (type === 'guindaste') {
       setEditingGuindaste(item);
       setFormData({
@@ -172,6 +175,9 @@ const GerenciarGuindastes = () => {
         descricao: item.descricao || '',
         imagem_url: item.imagem_url || ''
       });
+      // Buscar opcionais vinculados
+      const opcionaisVinculados = await db.getOpcionaisDoGuindaste(item.id);
+      setSelectedOpcionais(opcionaisVinculados.map(o => o.id));
       setShowModal(true);
     } else {
       setEditingOpcional(item);
@@ -248,6 +254,7 @@ const GerenciarGuindastes = () => {
         descricao: '',
         imagem_url: ''
       });
+      setSelectedOpcionais([]);
       setShowModal(true);
     } else {
       setEditingOpcional(null);
@@ -683,6 +690,23 @@ const GerenciarGuindastes = () => {
                 />
               </div>
               
+              <div className="form-group">
+                <label>Opcionais do Guindaste</label>
+                <select
+                  multiple
+                  value={selectedOpcionais}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                    setSelectedOpcionais(options);
+                  }}
+                  style={{ minHeight: 80 }}
+                >
+                  {opcionais.map(opc => (
+                    <option key={opc.id} value={opc.id}>{opc.nome}</option>
+                  ))}
+                </select>
+              </div>
+
               <div className="modal-actions">
                 <button type="button" onClick={handleCloseModal} className="cancel-btn">
                   Cancelar

@@ -197,69 +197,23 @@ const GerenciarVendedores = () => {
 
         <div className="vendedores-grid">
           {vendedores.map((vendedor) => (
-            <div key={vendedor.id} className="vendedor-card">
-              <div className="vendedor-flex-row">
-                {/* Coluna 1: Avatar, nome, email, ações */}
-                <div className="vendedor-col vendedor-col-main">
-                  <div className="vendedor-header">
-                    <div className="vendedor-avatar">
-                      {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </div>
-                    <div className="vendedor-info">
-                      <h3>{vendedor.nome}</h3>
-                      <p>{vendedor.email}</p>
-                    </div>
-                    <div className="vendedor-actions">
-                      <button 
-                        onClick={() => handleEdit(vendedor)}
-                        className="action-btn edit-btn"
-                        title="Editar"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(vendedor.id)}
-                        className="action-btn delete-btn"
-                        title="Remover"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+            <div key={vendedor.id} className="vendedor-card alinhado">
+              <div className="vendedor-card-content">
+                <div className="vendedor-avatar">
+                  {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </div>
-                {/* Coluna 2: Dados pessoais */}
-                <div className="vendedor-col vendedor-col-dados">
-                  <div className="vendedor-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Telefone:</span>
-                      <span className="detail-value">{vendedor.telefone}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">CPF:</span>
-                      <span className="detail-value">{vendedor.cpf}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Comissão:</span>
-                      <span className="detail-value">{vendedor.comissao}%</span>
-                    </div>
-                  </div>
+                <div className="vendedor-info-main">
+                  <h3>{vendedor.nome}</h3>
+                  <p>{vendedor.email}</p>
                 </div>
-                {/* Coluna 3: Vendas e valor total */}
-                <div className="vendedor-col vendedor-col-stats">
-                  <div className="vendedor-stats">
-                    <div className="stat-item">
-                      <div className="stat-value">{vendedor.vendas || 0}</div>
-                      <div className="stat-label">Vendas</div>
-                    </div>
-                    <div className="stat-item">
-                      <div className="stat-value">R$ {(vendedor.valorTotal || 0).toLocaleString()}</div>
-                      <div className="stat-label">Valor Total</div>
-                    </div>
-                  </div>
+                <div className="vendedor-info-dados">
+                  <div><span>Telefone:</span> {vendedor.telefone}</div>
+                  <div><span>CPF:</span> {vendedor.cpf}</div>
+                  <div><span>Comissão:</span> {vendedor.comissao}%</div>
+                </div>
+                <div className="vendedor-info-vendas">
+                  <div><span>Vendas:</span> {vendedor.vendas}</div>
+                  <div><span>Valor Total:</span> R$ {vendedor.valorTotal?.toLocaleString('pt-BR') || 0}</div>
                 </div>
               </div>
             </div>

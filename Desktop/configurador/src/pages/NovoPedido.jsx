@@ -22,6 +22,8 @@ const NovoPedido = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
   const [opcionais, setOpcionais] = useState([]);
+  const [opcionaisGuindaste, setOpcionaisGuindaste] = useState([]);
+  const [guindasteSelecionado, setGuindasteSelecionado] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -45,7 +47,17 @@ const NovoPedido = () => {
         db.getOpcionais()
       ]);
       
-      setGuindastes(guindastesData);
+      // Buscar preço por região para cada guindaste, se usuário for vendedor
+      let guindastesComPreco = guindastesData;
+      if (user && user.regiao) {
+        guindastesComPreco = await Promise.all(
+          guindastesData.map(async (g) => {
+            const precoRegiao = await db.getPrecoGuindastePorRegiao(g.id, user.regiao);
+            return { ...g, preco: precoRegiao !== null ? precoRegiao : g.preco };
+          })
+        );
+      }
+      setGuindastes(guindastesComPreco);
       setOpcionais(opcionaisData);
       
     } catch (error) {
@@ -125,7 +137,14 @@ const NovoPedido = () => {
     return matchesSearch && matchesCategory;
   });
 
-  const filteredOpcionais = opcionais.filter(opcional =>
+  // Função para buscar opcionais do guindaste selecionado
+  const handleSelecionarGuindaste = async (guindaste) => {
+    setGuindasteSelecionado(guindaste);
+    const opcionais = await db.getOpcionaisDoGuindaste(guindaste.id);
+    setOpcionaisGuindaste(opcionais);
+  };
+
+  const filteredOpcionais = opcionaisGuindaste.filter(opcional =>
     opcional.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -174,7 +193,7 @@ const NovoPedido = () => {
                   key={guindaste.id}
                   guindaste={guindaste}
                   isInCart={isInCart(guindaste, 'guindaste')}
-                  onAddToCart={() => adicionarAoCarrinho(guindaste, 'guindaste')}
+                  onAddToCart={async () => { await handleSelecionarGuindaste(guindaste); adicionarAoCarrinho(guindaste, 'guindaste'); }}
                   onRemoveFromCart={() => removerDoCarrinho({...guindaste, tipo: 'guindaste'})}
                 />
               ))}

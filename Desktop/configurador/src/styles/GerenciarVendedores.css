@@ -496,3 +496,69 @@
     flex: unset;
   }
 } 
+
+.vendedor-card.alinhado {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 24px;
+  margin-bottom: 24px;
+  min-width: 320px;
+  max-width: 420px;
+  width: 100%;
+}
+.vendedor-card-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+}
+.vendedor-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #222c3c;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: bold;
+}
+.vendedor-info-main {
+  flex: 2;
+  min-width: 120px;
+}
+.vendedor-info-dados {
+  flex: 1.5;
+  min-width: 120px;
+  font-size: 0.98rem;
+  color: #444;
+}
+.vendedor-info-vendas {
+  flex: 1.2;
+  min-width: 100px;
+  font-size: 0.98rem;
+  color: #444;
+}
+.vendedor-info-dados span, .vendedor-info-vendas span {
+  font-weight: 600;
+  color: #222c3c;
+  margin-right: 4px;
+}
+@media (max-width: 900px) {
+  .vendedor-card-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .vendedor-card.alinhado {
+    min-width: 0;
+    max-width: 100%;
+    padding: 16px;
+  }
+} 
