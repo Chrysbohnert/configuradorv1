@@ -28,7 +28,6 @@ function App() {
           <Route path="/admin" element={<DashboardAdmin />} />
           <Route path="/gerenciar-vendedores" element={<GerenciarVendedores />} />
           <Route path="/gerenciar-guindastes" element={<GerenciarGuindastes />} />
-          <Route path="/relatorios" element={<div>Relatórios - Em desenvolvimento</div>} />
           
           {/* Rota de Suporte */}
           <Route path="/suporte" element={<Support />} />

@@ -15,9 +15,7 @@ const GerenciarGuindastes = () => {
   const [guindastes, setGuindastes] = useState([]);
   const [opcionais, setOpcionais] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showOpcionalModal, setShowOpcionalModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
-  const [editingOpcional, setEditingOpcional] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
   const [formData, setFormData] = useState({
     nome: '',
@@ -79,40 +77,36 @@ const GerenciarGuindastes = () => {
 
   // Função para adicionar novo campo de opcional
   const handleAddOpcionalField = () => {
-    setOpcionaisForm(prev => [...prev, { nome: '', preco: '' }]);
+    setOpcionaisGuindasteForm(prev => [...prev, { nome: '', preco: '' }]);
   };
 
   // Função para remover campo de opcional
   const handleRemoveOpcionalField = (index) => {
-    setOpcionaisForm(prev => prev.filter((_, i) => i !== index));
+    setOpcionaisGuindasteForm(prev => prev.filter((_, i) => i !== index));
   };
 
   // Função para atualizar campo
   const handleOpcionalFieldChange = (index, field, value) => {
-    setOpcionaisForm(prev => prev.map((opc, i) => i === index ? { ...opc, [field]: value } : opc));
+    setOpcionaisGuindasteForm(prev => prev.map((opc, i) => i === index ? { ...opc, [field]: value } : opc));
   };
 
   const handleImageUpload = (imageUrl) => {
     setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
   };
 
-  const handleOpcionalImageUpload = (imageUrl) => {
-    setOpcionalFormData(prev => ({ ...prev, imagem_url: imageUrl }));
-  };
-
   // Novo handleOpcionalSubmit para cadastrar todos de uma vez
   const handleOpcionalSubmit = async (e) => {
     e.preventDefault();
     try {
-      const opcionaisValidos = opcionaisForm.filter(opc => opc.nome && opc.preco);
+      const opcionaisValidos = opcionaisGuindasteForm.filter(opc => opc.nome && opc.preco);
       if (opcionaisValidos.length === 0) {
         alert('Preencha pelo menos um opcional com nome e valor.');
         return;
       }
       await Promise.all(opcionaisValidos.map(opc => db.createOpcional({ nome: opc.nome, preco: parseFloat(opc.preco), ativo: true })));
       await loadData();
-      handleCloseOpcionalModal();
-      setOpcionaisForm([{ nome: '', preco: '' }]);
+      handleCloseModal();
+      setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
     } catch (error) {
       console.error('Erro ao salvar opcionais:', error);
       alert('Erro ao salvar opcionais. Tente novamente.');
@@ -145,16 +139,6 @@ const GerenciarGuindastes = () => {
         setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
       }
       setShowModal(true);
-    } else {
-      setEditingOpcional(item);
-      setOpcionalFormData({
-        nome: item.nome,
-        preco: item.preco.toString(),
-        descricao: item.descricao || '',
-        categoria: item.categoria,
-        imagem_url: item.imagem_url || ''
-      });
-      setShowOpcionalModal(true);
     }
   };
 
@@ -194,18 +178,6 @@ const GerenciarGuindastes = () => {
     });
   };
 
-  const handleCloseOpcionalModal = () => {
-    setShowOpcionalModal(false);
-    setEditingOpcional(null);
-    setOpcionalFormData({
-      nome: '',
-      preco: '',
-      descricao: '',
-      categoria: 'acessorio',
-      imagem_url: ''
-    });
-  };
-
   // Ao adicionar novo guindaste, limpar opcionais
   const handleAddNew = (type) => {
     if (type === 'guindaste') {
@@ -223,16 +195,6 @@ const GerenciarGuindastes = () => {
       });
       setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
       setShowModal(true);
-    } else {
-      setEditingOpcional(null);
-      setOpcionalFormData({
-        nome: '',
-        preco: '',
-        descricao: '',
-        categoria: 'acessorio',
-        imagem_url: ''
-      });
-      setShowOpcionalModal(true);
     }
   };
 
@@ -547,172 +509,8 @@ const GerenciarGuindastes = () => {
               </button>
             </div>
             
-            <form onSubmit={handleSubmit} className="modal-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="nome">Nome *</label>
-                  <input
-                    id="nome"
-                    type="text"
-                    value={formData.nome}
-                    onChange={(e) => handleInputChange('nome', e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="modelo">Modelo *</label>
-                  <input
-                    id="modelo"
-                    type="text"
-                    value={formData.modelo}
-                    onChange={(e) => handleInputChange('modelo', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="tipo">Tipo *</label>
-                  <select
-                    id="tipo"
-                    value={formData.tipo}
-                    onChange={(e) => handleInputChange('tipo', e.target.value)}
-                    required
-                  >
-                    <option value="interno">interno</option>
-                    <option value="externo">externo</option>
-                  </select>
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="preco">Preço (R$) *</label>
-                  <input
-                    id="preco"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.preco}
-                    onChange={(e) => handleInputChange('preco', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="capacidade">Capacidade *</label>
-                  <input
-                    id="capacidade"
-                    type="text"
-                    value={formData.capacidade}
-                    onChange={(e) => handleInputChange('capacidade', e.target.value)}
-                    placeholder="Ex: 3 toneladas"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label htmlFor="alcance">Alcance Horizontal *</label>
-                  <input
-                    id="alcance"
-                    type="text"
-                    value={formData.alcance}
-                    onChange={(e) => handleInputChange('alcance', e.target.value)}
-                    placeholder="Ex: 6 metros"
-                    required
-                  />
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="altura">Alcance Vertical</label>
-                <input
-                  id="altura"
-                  type="text"
-                  value={formData.altura}
-                  onChange={(e) => handleInputChange('altura', e.target.value)}
-                  placeholder="Ex: 8 metros"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="descricao">Descrição</label>
-                <textarea
-                  id="descricao"
-                  value={formData.descricao}
-                  onChange={(e) => handleInputChange('descricao', e.target.value)}
-                  rows="3"
-                  placeholder="Descrição detalhada do guindaste..."
-                />
-              </div>
-
-              {/* Upload de Imagem */}
-              <div className="form-group">
-                <ImageUpload
-                  onImageUpload={handleImageUpload}
-                  currentImageUrl={formData.imagem_url}
-                  label="Foto do Guindaste"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Opcionais do Guindaste</label>
-                {opcionaisGuindasteForm.map((opc, idx) => (
-                  <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="text"
-                      placeholder="Nome do opcional"
-                      value={opc.nome}
-                      onChange={e => handleOpcionalGuindasteChange(idx, 'nome', e.target.value)}
-                      style={{ flex: 2, marginRight: 8 }}
-                    />
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="Valor"
-                      value={opc.preco}
-                      onChange={e => handleOpcionalGuindasteChange(idx, 'preco', e.target.value)}
-                      style={{ flex: 1, marginRight: 8 }}
-                    />
-                    {opcionaisGuindasteForm.length > 1 && (
-                      <button type="button" onClick={() => handleRemoveOpcionalGuindaste(idx)} style={{ marginTop: 0 }}>🗑️</button>
-                    )}
-                  </div>
-                ))}
-                <button type="button" onClick={handleAddOpcionalGuindaste} style={{ margin: '8px 0' }}>+ Adicionar Opcional</button>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" onClick={handleCloseModal} className="cancel-btn">
-                  Cancelar
-                </button>
-                <button type="submit" className="save-btn">
-                  {editingGuindaste ? 'Salvar Alterações' : 'Cadastrar Guindaste'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal de Cadastro/Edição de Opcional */}
-      {showOpcionalModal && (
-        <div className="modal-overlay" onClick={handleCloseOpcionalModal}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{editingOpcional ? 'Editar Opcional' : 'Novo Opcional'}</h2>
-              <button onClick={handleCloseOpcionalModal} className="close-btn">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
-                </svg>
-              </button>
-            </div>
-            
             <form onSubmit={handleOpcionalSubmit} className="modal-form">
-              {opcionaisForm.map((opc, idx) => (
+              {opcionaisGuindasteForm.map((opc, idx) => (
                 <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
                   <div className="form-group" style={{ flex: 2 }}>
                     <label>O que é o opcional?</label>
@@ -734,14 +532,14 @@ const GerenciarGuindastes = () => {
                       required
                     />
                   </div>
-                  {opcionaisForm.length > 1 && (
+                  {opcionaisGuindasteForm.length > 1 && (
                     <button type="button" onClick={() => handleRemoveOpcionalField(idx)} style={{ marginTop: 24 }}>🗑️</button>
                   )}
                 </div>
               ))}
               <button type="button" onClick={handleAddOpcionalField} style={{ margin: '8px 0' }}>+ Adicionar mais</button>
               <div className="modal-actions">
-                <button type="button" onClick={handleCloseOpcionalModal} className="cancel-btn">Cancelar</button>
+                <button type="button" onClick={handleCloseModal} className="cancel-btn">Cancelar</button>
                 <button type="submit" className="save-btn">Salvar Opcionais</button>
               </div>
             </form>
