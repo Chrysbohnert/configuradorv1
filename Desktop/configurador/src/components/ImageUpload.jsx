@@ -35,6 +35,16 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         .upload(filePath, file);
 
       if (uploadError) {
+        console.error('Erro detalhado do Supabase:', uploadError);
+        if (uploadError.message) {
+          console.error('Mensagem do erro:', uploadError.message);
+        }
+        if (uploadError.statusCode) {
+          console.error('Status code:', uploadError.statusCode);
+        }
+        if (uploadError.error) {
+          console.error('Erro:', uploadError.error);
+        }
         throw uploadError;
       }
 

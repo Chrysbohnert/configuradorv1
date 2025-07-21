@@ -376,7 +376,8 @@ const GerenciarGuindastes = () => {
                         className="action-btn edit-btn"
                         title="Editar"
                       >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
+                        {/* Ícone de lápis */}
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
                         </svg>
                       </button>
@@ -385,8 +386,9 @@ const GerenciarGuindastes = () => {
                         className="action-btn delete-btn"
                         title="Remover"
                       >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                        {/* Ícone de X */}
+                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                          <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/>
                         </svg>
                       </button>
                     </div>

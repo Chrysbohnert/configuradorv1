@@ -64,12 +64,11 @@ const NovoPedido = () => {
     { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
   ];
 
-  // Categorias de guindastes
+  // Categorias de guindastes simplificadas
   const categories = [
-    { id: 'todos', name: 'Todos', icon: '🏗️' },
-    { id: 'hidraulico', name: 'Hidráulico', icon: '🔧' },
-    { id: 'telescopico', name: 'Telescópico', icon: '📏' },
-    { id: 'torre', name: 'Torre', icon: '🗼' }
+    { id: 'todos', name: 'Todos' },
+    { id: 'interno', name: 'Internos' },
+    { id: 'externo', name: 'Externos' }
   ];
 
   // Funções do Carrinho
@@ -119,7 +118,11 @@ const NovoPedido = () => {
   const filteredGuindastes = guindastes.filter(guindaste => {
     const matchesSearch = guindaste.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          guindaste.modelo.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'todos' || guindaste.categoria === selectedCategory;
+    let matchesCategory = true;
+    if (selectedCategory !== 'todos') {
+      // Supondo que o campo categoria do guindaste seja 'interno' ou 'externo'
+      matchesCategory = guindaste.categoria === selectedCategory;
+    }
     return matchesSearch && matchesCategory;
   });
 
@@ -159,7 +162,6 @@ const NovoPedido = () => {
                     className={`category-btn ${selectedCategory === category.id ? 'active' : ''}`}
                     onClick={() => setSelectedCategory(category.id)}
                   >
-                    <span>{category.icon}</span>
                     {category.name}
                   </button>
                 ))}
@@ -181,7 +183,7 @@ const NovoPedido = () => {
 
             {filteredGuindastes.length === 0 && (
               <div className="empty-state">
-                <div className="empty-icon">🏗️</div>
+                <div className="empty-icon"></div>
                 <h3>Nenhum guindaste encontrado</h3>
                 <p>Tente ajustar os filtros ou buscar por outro termo</p>
               </div>
@@ -440,9 +442,19 @@ const NovoPedido = () => {
 
 // Componente Card do Guindaste
 const GuindasteCard = ({ guindaste, isInCart, onAddToCart, onRemoveFromCart }) => {
+  const defaultImage = '/header-bg.jpg';
   return (
     <div className={`guindaste-card ${isInCart ? 'selected' : ''}`}>
       <div className="card-header">
+        <div className="guindaste-image" style={{ width: '100%', height: '120px', marginBottom: 8 }}>
+          <img
+            src={guindaste.imagem_url || defaultImage}
+            alt={guindaste.nome}
+            className="guindaste-thumbnail"
+            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
+            onError={e => { e.target.src = defaultImage; }}
+          />
+        </div>
         <div className="guindaste-icon">🏗️</div>
         <div className="guindaste-info">
           <h3>{guindaste.nome}</h3>

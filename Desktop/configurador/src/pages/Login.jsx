@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -26,7 +26,6 @@ const Login = () => {
 
     try {
       const { email, senha } = formData;
-      
       // Validação simples
       if (!email || !senha) {
         setError('Por favor, preencha todos os campos');
@@ -34,24 +33,34 @@ const Login = () => {
         return;
       }
 
-      // Buscar usuário no banco de dados
-      const users = await db.getUsers();
-      const user = users.find(u => u.email === email && u.senha === senha);
+      // Login pelo Supabase Auth
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password: senha,
+      });
 
+      if (error) {
+        setError('Email ou senha incorretos');
+        setIsLoading(false);
+        return;
+      }
+
+      // Buscar dados extras do usuário na tabela, se quiser
+      // (opcional) Buscar usuário na tabela pelo email para pegar tipo, nome, etc
+      const users = await db.getUsers();
+      const user = users.find(u => u.email === email);
       if (user) {
-        // Remover senha do objeto antes de salvar no localStorage
         const { senha: _, ...userWithoutPassword } = user;
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        
         if (user.tipo === 'admin') {
           navigate('/dashboard-admin');
         } else {
           navigate('/dashboard');
         }
       } else {
-        setError('Email ou senha incorretos');
+        // Se não achar na tabela, só navega para dashboard
+        navigate('/dashboard');
       }
-      
     } catch (error) {
       console.error('Erro no login:', error);
       setError('Erro ao fazer login. Verifique a conexão com o banco.');

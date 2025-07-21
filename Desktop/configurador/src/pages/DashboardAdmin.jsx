@@ -46,14 +46,25 @@ const DashboardAdmin = () => {
       
       // Calcular estatísticas
       const valorTotal = pedidos.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
-      
-      // Criar top vendedores (simulado por enquanto)
-      const topVendedoresData = vendedores.slice(0, 4).map(vendedor => ({
-        nome: vendedor.nome,
-        vendas: Math.floor(Math.random() * 15) + 1, // Simulado
-        valor: Math.floor(Math.random() * 500000) + 100000, // Simulado
-        avatar: vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()
-      }));
+
+      // Calcular vendas e valor total por vendedor
+      const vendedoresComVendas = vendedores.map(vendedor => {
+        // Filtrar pedidos deste vendedor
+        const pedidosDoVendedor = pedidos.filter(p => p.vendedor && p.vendedor.id === vendedor.id);
+        const vendas = pedidosDoVendedor.length;
+        const valor = pedidosDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
+        return {
+          nome: vendedor.nome,
+          vendas,
+          valor,
+          avatar: vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()
+        };
+      });
+
+      // Ordenar por valor (ou vendas) e pegar os top 4
+      const topVendedoresData = vendedoresComVendas
+        .sort((a, b) => b.valor - a.valor)
+        .slice(0, 4);
 
       setStats({
         totalVendedores: vendedores.length,

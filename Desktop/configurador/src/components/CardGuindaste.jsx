@@ -39,6 +39,35 @@ const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) =
 
       {/* Informações do Guindaste */}
       <div className="space-y-3">
+        {/* Botões de editar/remover, se existirem as props */}
+        {(guindaste.onEdit || guindaste.onDelete) && (
+          <div className="flex gap-2 mb-2">
+            {guindaste.onEdit && (
+              <button
+                className="action-btn edit-btn"
+                title="Editar"
+                onClick={e => { e.stopPropagation(); guindaste.onEdit(guindaste); }}
+              >
+                {/* Ícone de lápis */}
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                </svg>
+              </button>
+            )}
+            {guindaste.onDelete && (
+              <button
+                className="action-btn delete-btn"
+                title="Remover"
+                onClick={e => { e.stopPropagation(); guindaste.onDelete(guindaste); }}
+              >
+                {/* Ícone de X */}
+                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                  <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/>
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
         {/* Nome e Modelo */}
         <div>
           <h3 className="font-semibold text-empresa-cinza text-lg leading-tight">

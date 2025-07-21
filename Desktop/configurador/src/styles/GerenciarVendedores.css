@@ -454,3 +454,45 @@
     flex-direction: column;
   }
 } 
+
+/* Novo: Layout em colunas para o cartão de vendedor */
+.vendedor-flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 32px;
+}
+
+.vendedor-col {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.vendedor-col-main {
+  min-width: 220px;
+  flex: 2;
+}
+
+.vendedor-col-dados {
+  min-width: 180px;
+  flex: 1.2;
+  justify-content: center;
+}
+
+.vendedor-col-stats {
+  min-width: 120px;
+  flex: 1;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .vendedor-flex-row {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .vendedor-col-main, .vendedor-col-dados, .vendedor-col-stats {
+    min-width: 0;
+    flex: unset;
+  }
+} 
