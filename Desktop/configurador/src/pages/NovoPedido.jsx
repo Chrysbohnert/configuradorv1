@@ -752,7 +752,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, onRemoverItem, onLi
           <button 
             onClick={() => {
               const message = encodeURIComponent(`Olá! Gostaria de discutir a proposta de guindaste. Total: ${formatCurrency(carrinho.reduce((total, item) => total + item.preco, 0))}`);
-              window.open(`https://wa.me/55981721286?text=${message}`, '_blank');
+              window.open(`https://wa.me/${clienteData.telefone}{?text=${message}`, '_blank');
             }}
             style={{
               background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',

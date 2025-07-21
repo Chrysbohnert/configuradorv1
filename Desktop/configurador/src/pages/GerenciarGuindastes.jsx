@@ -13,7 +13,6 @@ const GerenciarGuindastes = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
-  const [opcionais, setOpcionais] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
@@ -59,10 +58,6 @@ const GerenciarGuindastes = () => {
       const guindastesData = await db.getGuindastes();
       setGuindastes(guindastesData);
       
-      // Carregar opcionais do Supabase
-      const opcionaisData = await db.getOpcionais();
-      setOpcionais(opcionaisData);
-      
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
@@ -95,23 +90,9 @@ const GerenciarGuindastes = () => {
   };
 
   // Novo handleOpcionalSubmit para cadastrar todos de uma vez
-  const handleOpcionalSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const opcionaisValidos = opcionaisGuindasteForm.filter(opc => opc.nome && opc.preco);
-      if (opcionaisValidos.length === 0) {
-        alert('Preencha pelo menos um opcional com nome e valor.');
-        return;
-      }
-      await Promise.all(opcionaisValidos.map(opc => db.createOpcional({ nome: opc.nome, preco: parseFloat(opc.preco), ativo: true })));
-      await loadData();
-      handleCloseModal();
-      setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
-    } catch (error) {
-      console.error('Erro ao salvar opcionais:', error);
-      alert('Erro ao salvar opcionais. Tente novamente.');
-    }
-  };
+  // Remover handleOpcionalSubmit completamente
+  // No modal, trocar <form onSubmit={handleOpcionalSubmit}> por <form onSubmit={handleSubmit}>
+  // O botão de submit deve ser 'Cadastrar Guindaste' ou 'Salvar Alterações'
 
   // Ao editar guindaste, buscar opcionais vinculados e preencher campos
   const handleEdit = async (item, type) => {
@@ -227,6 +208,34 @@ const GerenciarGuindastes = () => {
     }
   };
 
+  // Adicionar/garantir a função handleSubmit:
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const guindasteData = {
+        ...formData,
+        preco: parseFloat(
+          String(formData.preco)
+            .replace('R$', '')
+            .replace(/\./g, '')
+            .replace(',', '.')
+        ),
+        ativo: true,
+        opcionais: opcionaisGuindasteForm.filter(opc => opc.nome && opc.preco)
+      };
+      if (editingGuindaste) {
+        await db.updateGuindaste(editingGuindaste.id, guindasteData);
+      } else {
+        await db.createGuindaste(guindasteData);
+      }
+      await loadData();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Erro ao salvar guindaste:', error);
+      alert('Erro ao salvar guindaste. Tente novamente.');
+    }
+  };
+
   if (isLoading) {
     return <GuindasteLoading text="Carregando guindastes..." />;
   }
@@ -265,15 +274,6 @@ const GerenciarGuindastes = () => {
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
               </svg>
               Guindastes
-            </button>
-            <button 
-              className={`tab ${activeTab === 'opcionais' ? 'active' : ''}`}
-              onClick={() => setActiveTab('opcionais')}
-            >
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-              </svg>
-              Opcionais
             </button>
           </div>
         </div>
@@ -398,102 +398,6 @@ const GerenciarGuindastes = () => {
             )}
           </div>
         )}
-
-        {activeTab === 'opcionais' && (
-          <div className="tab-content">
-            <div className="content-header">
-              <h2>Opcionais Disponíveis</h2>
-              <button onClick={() => handleAddNew('opcional')} className="add-btn">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>
-                Novo Opcional
-              </button>
-            </div>
-
-            <div className="opcionais-grid">
-              {opcionais.map((opcional) => (
-                <div key={opcional.id} className="opcional-card">
-                  <div className="opcional-header">
-                    <div className="opcional-image">
-                      {opcional.imagem_url ? (
-                        <img 
-                          src={opcional.imagem_url} 
-                          alt={opcional.nome}
-                          className="opcional-thumbnail"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
-                      <div className="opcional-icon" style={{ display: opcional.imagem_url ? 'none' : 'flex' }}>
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="opcional-info">
-                      <h3>{opcional.nome}</h3>
-                      <p>{opcional.categoria.charAt(0).toUpperCase() + opcional.categoria.slice(1)}</p>
-                    </div>
-                    <div className="opcional-actions">
-                      <button 
-                        onClick={() => handleEdit(opcional, 'opcional')}
-                        className="action-btn edit-btn"
-                        title="Editar"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                        </svg>
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(opcional.id, 'opcional')}
-                        className="action-btn delete-btn"
-                        title="Remover"
-                      >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div className="opcional-details">
-                    <div className="detail-row">
-                      <span className="detail-label">Preço:</span>
-                      <span className="detail-value price">{formatCurrency(opcional.preco)}</span>
-                    </div>
-                  </div>
-                  
-                  {opcional.descricao && (
-                    <div className="opcional-description">
-                      <p>{opcional.descricao}</p>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {opcionais.length === 0 && (
-              <div className="empty-state">
-                <div className="empty-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                  </svg>
-                </div>
-                <h3>Nenhum opcional cadastrado</h3>
-                <p>Comece adicionando o primeiro opcional</p>
-                <button onClick={() => handleAddNew('opcional')} className="add-btn">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                  </svg>
-                  Adicionar Primeiro Opcional
-                </button>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Modal de Cadastro/Edição de Guindaste */}
@@ -509,7 +413,84 @@ const GerenciarGuindastes = () => {
               </button>
             </div>
             
-            <form onSubmit={handleOpcionalSubmit} className="modal-form">
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label>Nome do Guindaste</label>
+                <input
+                  type="text"
+                  value={formData.nome}
+                  onChange={e => handleInputChange('nome', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Modelo</label>
+                <input
+                  type="text"
+                  value={formData.modelo}
+                  onChange={e => handleInputChange('modelo', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Tipo</label>
+                <select
+                  value={formData.tipo}
+                  onChange={e => handleInputChange('tipo', e.target.value)}
+                  required
+                >
+                  <option value="hidraulico">Hidráulico</option>
+                  <option value="telescopico">Telescópico</option>
+                  <option value="torre">Torre</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Capacidade (ex: 1000kg)</label>
+                <input
+                  type="text"
+                  value={formData.capacidade}
+                  onChange={e => handleInputChange('capacidade', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Alcance (ex: 50m)</label>
+                <input
+                  type="text"
+                  value={formData.alcance}
+                  onChange={e => handleInputChange('alcance', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Altura (ex: 20m)</label>
+                <input
+                  type="text"
+                  value={formData.altura}
+                  onChange={e => handleInputChange('altura', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Preço (ex: R$ 1000,00)</label>
+                <input
+                  type="text"
+                  value={formData.preco}
+                  onChange={e => handleInputChange('preco', e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group">
+                <label>Descrição</label>
+                <textarea
+                  value={formData.descricao}
+                  onChange={e => handleInputChange('descricao', e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label>Imagem do Guindaste</label>
+                <ImageUpload onImageUpload={handleImageUpload} />
+              </div>
+
               {opcionaisGuindasteForm.map((opc, idx) => (
                 <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
                   <div className="form-group" style={{ flex: 2 }}>
@@ -540,7 +521,7 @@ const GerenciarGuindastes = () => {
               <button type="button" onClick={handleAddOpcionalField} style={{ margin: '8px 0' }}>+ Adicionar mais</button>
               <div className="modal-actions">
                 <button type="button" onClick={handleCloseModal} className="cancel-btn">Cancelar</button>
-                <button type="submit" className="save-btn">Salvar Opcionais</button>
+                <button type="submit" className="save-btn">Salvar Guindaste</button>
               </div>
             </form>
           </div>

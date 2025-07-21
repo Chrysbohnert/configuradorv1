@@ -89,42 +89,9 @@ const DashboardAdmin = () => {
     navigate('/');
   };
 
-  const handleGerarRelatorio = async () => {
-    // Buscar todos os vendedores e pedidos
-    const [users, pedidos] = await Promise.all([
-      db.getUsers(),
-      db.getPedidos()
-    ]);
-    const vendedores = users.filter(u => u.tipo === 'vendedor');
-    // Montar dados do relatório
-    const vendasPorVendedor = vendedores.map(vendedor => {
-      const pedidosDoVendedor = pedidos.filter(p => p.vendedor && p.vendedor.id === vendedor.id);
-      const vendas = pedidosDoVendedor.length;
-      const valor = pedidosDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
-      return {
-        nome: vendedor.nome,
-        email: vendedor.email,
-        vendas,
-        valor
-      };
-    });
-    // Dados para o PDF
-    const reportData = {
-      periodo: 'Completo',
-      totalVendas: vendasPorVendedor.reduce((s, v) => s + v.vendas, 0),
-      valorTotal: vendasPorVendedor.reduce((s, v) => s + v.valor, 0),
-      vendedores: vendasPorVendedor
-    };
-    // Gerar PDF
-    const doc = await generateReportPDF({
-      periodo: reportData.periodo,
-      vendedor: 'Todos',
-      totalVendas: reportData.totalVendas,
-      valorTotal: reportData.valorTotal,
-      vendas: reportData.vendedores.map(v => ({ cliente: v.nome, modelo: v.email, valor: v.valor, status: `${v.vendas} vendas` }))
-    });
-    doc.save('relatorio_vendedores.pdf');
-  };
+  // Remover o botão 'Gerar Relatório PDF' do topo
+  // Remover o card/ação de 'Relatórios' da seção de gerenciamento
+  // Remover qualquer função relacionada à geração de relatório PDF
 
 
   if (isLoading) {
@@ -154,12 +121,6 @@ const DashboardAdmin = () => {
           </div>
           
           <div className="user-actions">
-            <button onClick={handleGerarRelatorio} className="pdf-generator-btn" style={{marginRight: 12}}>
-              <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px', marginRight: 4 }}>
-                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-              </svg>
-              Gerar Relatório PDF
-            </button>
             <button onClick={handleLogout} className="logout-btn">
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
@@ -274,18 +235,6 @@ const DashboardAdmin = () => {
                 <div className="action-content">
                   <h3>Gerenciar Guindastes</h3>
                   <p>Cadastrar, editar e configurar guindastes</p>
-                </div>
-              </div>
-
-              <div className="action-card" onClick={() => navigate('/relatorios')}>
-                <div className="action-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                  </svg>
-                </div>
-                <div className="action-content">
-                  <h3>Relatórios</h3>
-                  <p>Gerar relatórios de vendas e performance</p>
                 </div>
               </div>
 
