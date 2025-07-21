@@ -1,0 +1,367 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import UnifiedHeader from '../components/UnifiedHeader';
+import GuindasteLoading from '../components/GuindasteLoading';
+import { db } from '../config/supabase';
+import '../styles/GerenciarVendedores.css';
+
+const GerenciarVendedores = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [vendedores, setVendedores] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [editingVendedor, setEditingVendedor] = useState(null);
+  const [formData, setFormData] = useState({
+    nome: '',
+    email: '',
+    telefone: '',
+    cpf: '',
+    comissao: '',
+    tipo: 'vendedor',
+    senha: 'vendedor123' // Senha padrão
+  });
+
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      const userObj = JSON.parse(userData);
+      if (userObj.tipo !== 'admin') {
+        navigate('/dashboard');
+        return;
+      }
+      setUser(userObj);
+    } else {
+      navigate('/');
+      return;
+    }
+
+    loadVendedores();
+  }, [navigate]);
+
+  const loadVendedores = async () => {
+    try {
+      setIsLoading(true);
+      const vendedoresData = await db.getUsers();
+      // Filtrar apenas vendedores (não admins)
+      const vendedoresOnly = vendedoresData.filter(v => v.tipo === 'vendedor');
+      setVendedores(vendedoresOnly);
+    } catch (error) {
+      console.error('Erro ao carregar vendedores:', error);
+      alert('Erro ao carregar vendedores. Verifique a conexão com o banco.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    try {
+      const vendedorData = {
+        ...formData,
+        comissao: parseFloat(formData.comissao),
+        tipo: 'vendedor'
+      };
+
+      if (editingVendedor) {
+        // Editar vendedor existente
+        await db.updateUser(editingVendedor.id, vendedorData);
+        console.log('✅ Vendedor atualizado com sucesso!');
+      } else {
+        // Adicionar novo vendedor
+        await db.createUser(vendedorData);
+        console.log('✅ Vendedor criado com sucesso!');
+      }
+      
+      // Recarregar dados
+      await loadVendedores();
+      handleCloseModal();
+      
+    } catch (error) {
+      console.error('Erro ao salvar vendedor:', error);
+      alert('Erro ao salvar vendedor. Tente novamente.');
+    }
+  };
+
+  const handleEdit = (vendedor) => {
+    setEditingVendedor(vendedor);
+    setFormData({
+      nome: vendedor.nome,
+      email: vendedor.email,
+      telefone: vendedor.telefone,
+      cpf: vendedor.cpf,
+      comissao: vendedor.comissao.toString(),
+      tipo: 'vendedor',
+      senha: vendedor.senha || 'vendedor123'
+    });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Tem certeza que deseja remover este vendedor?')) {
+      try {
+        await db.deleteUser(id);
+        console.log('✅ Vendedor removido com sucesso!');
+        await loadVendedores();
+      } catch (error) {
+        console.error('Erro ao remover vendedor:', error);
+        alert('Erro ao remover vendedor. Tente novamente.');
+      }
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingVendedor(null);
+    setFormData({
+      nome: '',
+      email: '',
+      telefone: '',
+      cpf: '',
+      comissao: '',
+      tipo: 'vendedor',
+      senha: 'vendedor123'
+    });
+  };
+
+  const handleAddNew = () => {
+    setEditingVendedor(null);
+    setFormData({
+      nome: '',
+      email: '',
+      telefone: '',
+      cpf: '',
+      comissao: '',
+      tipo: 'vendedor',
+      senha: 'vendedor123'
+    });
+    setShowModal(true);
+  };
+
+  if (isLoading) {
+    return <GuindasteLoading text="Carregando vendedores..." />;
+  }
+
+  if (!user) {
+    return <GuindasteLoading text="Verificando usuário..." />;
+  }
+
+  return (
+    <div className="gerenciar-vendedores-container">
+      <UnifiedHeader 
+        showBackButton={true}
+        onBackClick={() => navigate('/dashboard-admin')}
+        showSupportButton={true}
+        showUserInfo={true}
+        user={user}
+        title="Gerenciar Vendedores"
+        subtitle="Cadastro e Gestão de Vendedores"
+      />
+
+      <div className="gerenciar-vendedores-content">
+        <div className="page-header">
+          <div className="header-info">
+            <h1>Vendedores</h1>
+            <p>Gerencie a equipe de vendas</p>
+          </div>
+          
+          <div className="header-actions">
+            <button onClick={handleAddNew} className="add-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Novo Vendedor
+            </button>
+          </div>
+        </div>
+
+        <div className="vendedores-grid">
+          {vendedores.map((vendedor) => (
+            <div key={vendedor.id} className="vendedor-card">
+              <div className="vendedor-header">
+                <div className="vendedor-avatar">
+                  {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+                </div>
+                <div className="vendedor-info">
+                  <h3>{vendedor.nome}</h3>
+                  <p>{vendedor.email}</p>
+                </div>
+                <div className="vendedor-actions">
+                  <button 
+                    onClick={() => handleEdit(vendedor)}
+                    className="action-btn edit-btn"
+                    title="Editar"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                  </button>
+                  <button 
+                    onClick={() => handleDelete(vendedor.id)}
+                    className="action-btn delete-btn"
+                    title="Remover"
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              <div className="vendedor-details">
+                <div className="detail-row">
+                  <span className="detail-label">Telefone:</span>
+                  <span className="detail-value">{vendedor.telefone}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">CPF:</span>
+                  <span className="detail-value">{vendedor.cpf}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">Comissão:</span>
+                  <span className="detail-value">{vendedor.comissao}%</span>
+                </div>
+              </div>
+              
+              <div className="vendedor-stats">
+                <div className="stat-item">
+                  <div className="stat-value">{vendedor.vendas || 0}</div>
+                  <div className="stat-label">Vendas</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-value">R$ {(vendedor.valorTotal || 0).toLocaleString()}</div>
+                  <div className="stat-label">Valor Total</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {vendedores.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+            <h3>Nenhum vendedor cadastrado</h3>
+            <p>Comece adicionando o primeiro vendedor</p>
+            <button onClick={handleAddNew} className="add-btn">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+              </svg>
+              Adicionar Primeiro Vendedor
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Cadastro/Edição */}
+      {showModal && (
+        <div className="modal-overlay" onClick={handleCloseModal}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingVendedor ? 'Editar Vendedor' : 'Novo Vendedor'}</h2>
+              <button onClick={handleCloseModal} className="close-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="modal-form">
+              <div className="form-group">
+                <label htmlFor="nome">Nome Completo *</label>
+                <input
+                  id="nome"
+                  type="text"
+                  value={formData.nome}
+                  onChange={(e) => handleInputChange('nome', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="email">Email *</label>
+                <input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="telefone">Telefone *</label>
+                <input
+                  id="telefone"
+                  type="tel"
+                  value={formData.telefone}
+                  onChange={(e) => handleInputChange('telefone', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="cpf">CPF *</label>
+                <input
+                  id="cpf"
+                  type="text"
+                  value={formData.cpf}
+                  onChange={(e) => handleInputChange('cpf', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="comissao">Comissão (%) *</label>
+                <input
+                  id="comissao"
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={formData.comissao}
+                  onChange={(e) => handleInputChange('comissao', e.target.value)}
+                  required
+                />
+              </div>
+              
+              <div className="form-group">
+                <label htmlFor="senha">Senha *</label>
+                <input
+                  id="senha"
+                  type="text"
+                  value={formData.senha}
+                  onChange={(e) => handleInputChange('senha', e.target.value)}
+                  required
+                  placeholder="Senha padrão: vendedor123"
+                />
+                <small className="form-help">
+                  Senha padrão para primeiro acesso. O vendedor poderá alterar após o primeiro login.
+                </small>
+              </div>
+              
+              <div className="modal-actions">
+                <button type="button" onClick={handleCloseModal} className="cancel-btn">
+                  Cancelar
+                </button>
+                <button type="submit" className="save-btn">
+                  {editingVendedor ? 'Salvar Alterações' : 'Cadastrar Vendedor'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default GerenciarVendedores; 
