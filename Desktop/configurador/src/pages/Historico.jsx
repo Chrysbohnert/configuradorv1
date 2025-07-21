@@ -5,6 +5,7 @@ import GuindasteLoading from '../components/GuindasteLoading';
 import PDFGenerator from '../components/PDFGenerator';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/Historico.css';
+import { db } from '../config/supabase';
 
 const Historico = () => {
   const navigate = useNavigate();
@@ -21,39 +22,19 @@ const Historico = () => {
       return;
     }
 
-    // Simular carregamento de pedidos
-    setTimeout(() => {
-      setPedidos([
-        {
-          id: 1,
-          cliente: 'João Silva',
-          modelo: 'GH-5000',
-          preco: 85000,
-          status: 'Finalizado',
-          data: '2024-06-15',
-          vendedor: 'João Silva'
-        },
-        {
-          id: 2,
-          cliente: 'Maria Santos',
-          modelo: 'GT-15000',
-          preco: 120000,
-          status: 'Em Andamento',
-          data: '2024-06-13',
-          vendedor: 'João Silva'
-        },
-        {
-          id: 3,
-          cliente: 'Pedro Costa',
-          modelo: 'GH-8000',
-          preco: 95000,
-          status: 'Finalizado',
-          data: '2024-06-14',
-          vendedor: 'João Silva'
-        }
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    // Buscar pedidos reais do banco
+    const fetchPedidos = async () => {
+      try {
+        const pedidosData = await db.getPedidos();
+        setPedidos(pedidosData);
+      } catch (error) {
+        console.error('Erro ao buscar pedidos:', error);
+        setPedidos([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPedidos();
   }, [navigate]);
 
   const handlePDFGenerated = (fileName) => {

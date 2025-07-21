@@ -445,7 +445,7 @@ const GuindasteCard = ({ guindaste, isInCart, onAddToCart, onRemoveFromCart }) =
   return (
     <div className={`guindaste-card ${isInCart ? 'selected' : ''}`}>
       <div className="card-header">
-        <div className="guindaste-image" style={{ width: '100%', height: '120px', marginBottom: 8 }}>
+        <div className="guindaste-image" style={{ width: '40%', height: '170px', marginBottom: 8 }}>
           <img
             src={guindaste.imagem_url || defaultImage}
             alt={guindaste.nome}
@@ -454,7 +454,7 @@ const GuindasteCard = ({ guindaste, isInCart, onAddToCart, onRemoveFromCart }) =
             onError={e => { e.target.src = defaultImage; }}
           />
         </div>
-        <div className="guindaste-icon">🏗️</div>
+        <div className="guindaste-icon"></div>
         <div className="guindaste-info">
           <h3>{guindaste.nome}</h3>
           <p className="modelo">{guindaste.modelo}</p>
