@@ -6,6 +6,7 @@ import ImageUpload from '../components/ImageUpload';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/GerenciarGuindastes.css';
+import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
@@ -36,6 +37,8 @@ const GerenciarGuindastes = () => {
     categoria: 'acessorio',
     imagem_url: ''
   });
+  const [showPrecosModal, setShowPrecosModal] = useState(false);
+  const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -395,6 +398,13 @@ const GerenciarGuindastes = () => {
                         <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
                           <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/>
                         </svg>
+                      </button>
+                      <button
+                        className="action-btn"
+                        title="Preços por Região"
+                        onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                      >
+                        💲
                       </button>
                     </div>
                   </div>
@@ -773,6 +783,12 @@ const GerenciarGuindastes = () => {
           </div>
         </div>
       )}
+
+      <PrecosPorRegiaoModal
+        guindasteId={guindasteIdPrecos}
+        open={showPrecosModal}
+        onClose={() => setShowPrecosModal(false)}
+      />
     </div>
   );
 };
