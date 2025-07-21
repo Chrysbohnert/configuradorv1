@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { db } from '../config/supabase';
 
 // Tipos de ações
 const AUTH_ACTIONS = {
   LOGIN: 'LOGIN',
   LOGOUT: 'LOGOUT',
   UPDATE_USER: 'UPDATE_USER',
-  SET_LOADING: 'SET_LOADING'
+  SET_LOADING: 'SET_LOADING',
+  SET_ERROR: 'SET_ERROR'
 };
 
 // Estado inicial
@@ -27,7 +29,6 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case AUTH_ACTIONS.LOGOUT:
       return {
         ...state,
@@ -36,19 +37,22 @@ const authReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case AUTH_ACTIONS.UPDATE_USER:
       return {
         ...state,
         user: { ...state.user, ...action.payload }
       };
-    
     case AUTH_ACTIONS.SET_LOADING:
       return {
         ...state,
         isLoading: action.payload
       };
-    
+    case AUTH_ACTIONS.SET_ERROR:
+      return {
+        ...state,
+        error: action.payload,
+        isLoading: false
+      };
     default:
       return state;
   }
@@ -87,63 +91,27 @@ export const AuthProvider = ({ children }) => {
         dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: false });
       }
     };
-
     checkAuth();
   }, []);
 
-  // Função de login
+  // Função de login usando Supabase
   const login = async (credentials) => {
     dispatch({ type: AUTH_ACTIONS.SET_LOADING, payload: true });
-    
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock de usuários (substituir por API real)
-      const mockUsers = [
-        {
-          id: 1,
-          nome: 'João Silva',
-          email: 'joao@empresa.com',
-          tipo: 'vendedor',
-          avatar: 'JS'
-        },
-        {
-          id: 2,
-          nome: 'Maria Santos',
-          email: 'maria@empresa.com',
-          tipo: 'vendedor',
-          avatar: 'MS'
-        },
-        {
-          id: 3,
-          nome: 'Admin',
-          email: 'admin@empresa.com',
-          tipo: 'admin',
-          avatar: 'A'
-        }
-      ];
-
-      const user = mockUsers.find(u => 
-        u.email === credentials.email && 
-        credentials.password === '123456'
-      );
-
+      const { email, senha } = credentials;
+      // Buscar usuário no banco de dados Supabase
+      const users = await db.getUsers();
+      const user = users.find(u => u.email === email && u.senha === senha);
       if (!user) {
+        dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: 'Credenciais inválidas' });
         throw new Error('Credenciais inválidas');
       }
-
       // Salvar no localStorage
       localStorage.setItem('user', JSON.stringify(user));
-      
       dispatch({ type: AUTH_ACTIONS.LOGIN, payload: user });
-      
       return { success: true, user };
     } catch (error) {
-      dispatch({ 
-        type: AUTH_ACTIONS.SET_LOADING, 
-        payload: false 
-      });
+      dispatch({ type: AUTH_ACTIONS.SET_ERROR, payload: error.message || 'Erro ao fazer login' });
       throw error;
     }
   };

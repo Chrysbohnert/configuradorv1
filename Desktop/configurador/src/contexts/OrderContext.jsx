@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import { db } from '../config/supabase';
 import { useAuth } from './AuthContext';
 
 // Tipos de ações
@@ -30,7 +31,6 @@ const orderReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case ORDER_ACTIONS.ADD_ORDER:
       return {
         ...state,
@@ -38,7 +38,6 @@ const orderReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case ORDER_ACTIONS.UPDATE_ORDER:
       return {
         ...state,
@@ -48,7 +47,6 @@ const orderReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case ORDER_ACTIONS.DELETE_ORDER:
       return {
         ...state,
@@ -56,26 +54,22 @@ const orderReducer = (state, action) => {
         isLoading: false,
         error: null
       };
-    
     case ORDER_ACTIONS.SET_LOADING:
       return {
         ...state,
         isLoading: action.payload
       };
-    
     case ORDER_ACTIONS.SET_ERROR:
       return {
         ...state,
         error: action.payload,
         isLoading: false
       };
-    
     case ORDER_ACTIONS.CLEAR_ERROR:
       return {
         ...state,
         error: null
       };
-    
     default:
       return state;
   }
@@ -98,60 +92,37 @@ export const OrderProvider = ({ children }) => {
   const [state, dispatch] = useReducer(orderReducer, initialState);
   const { user } = useAuth();
 
-  // Carregar pedidos do localStorage
+  // Carregar pedidos do Supabase ao autenticar
   useEffect(() => {
     if (user) {
       loadOrders();
     }
+    // eslint-disable-next-line
   }, [user]);
 
-  // Função para carregar pedidos
-  const loadOrders = () => {
+  // Função para carregar pedidos do Supabase
+  const loadOrders = async () => {
+    dispatch({ type: ORDER_ACTIONS.SET_LOADING, payload: true });
     try {
-      const storedOrders = localStorage.getItem(`orders_${user.id}`);
-      if (storedOrders) {
-        const orders = JSON.parse(storedOrders);
-        dispatch({ type: ORDER_ACTIONS.SET_ORDERS, payload: orders });
-      }
+      const pedidos = await db.getPedidos();
+      // Filtrar pedidos do usuário, se necessário
+      const userPedidos = user && user.tipo === 'vendedor'
+        ? pedidos.filter(p => p.vendedor_id === user.id)
+        : pedidos;
+      dispatch({ type: ORDER_ACTIONS.SET_ORDERS, payload: userPedidos });
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error);
       dispatch({ type: ORDER_ACTIONS.SET_ERROR, payload: 'Erro ao carregar pedidos' });
     }
   };
 
-  // Função para salvar pedidos no localStorage
-  const saveOrders = (orders) => {
-    try {
-      localStorage.setItem(`orders_${user.id}`, JSON.stringify(orders));
-    } catch (error) {
-      console.error('Erro ao salvar pedidos:', error);
-    }
-  };
-
-  // Função para criar novo pedido
+  // Função para criar novo pedido no Supabase
   const createOrder = async (orderData) => {
     dispatch({ type: ORDER_ACTIONS.SET_LOADING, payload: true });
-    
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const newOrder = {
-        id: `#${Date.now().toString().slice(-6)}`,
-        ...orderData,
-        vendedor: user.nome,
-        vendedorId: user.id,
-        status: 'Pendente',
-        dataCriacao: new Date().toISOString(),
-        dataAtualizacao: new Date().toISOString()
-      };
-
+      const newOrder = await db.createPedido(orderData);
       dispatch({ type: ORDER_ACTIONS.ADD_ORDER, payload: newOrder });
-      
-      // Salvar no localStorage
-      const updatedOrders = [...state.orders, newOrder];
-      saveOrders(updatedOrders);
-      
+      await loadOrders(); // Atualiza lista
       return { success: true, order: newOrder };
     } catch (error) {
       dispatch({ type: ORDER_ACTIONS.SET_ERROR, payload: 'Erro ao criar pedido' });
@@ -159,28 +130,13 @@ export const OrderProvider = ({ children }) => {
     }
   };
 
-  // Função para atualizar pedido
+  // Função para atualizar pedido no Supabase
   const updateOrder = async (orderId, updates) => {
     dispatch({ type: ORDER_ACTIONS.SET_LOADING, payload: true });
-    
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedOrder = {
-        ...state.orders.find(order => order.id === orderId),
-        ...updates,
-        dataAtualizacao: new Date().toISOString()
-      };
-
+      const updatedOrder = await db.updatePedido(orderId, updates);
       dispatch({ type: ORDER_ACTIONS.UPDATE_ORDER, payload: updatedOrder });
-      
-      // Salvar no localStorage
-      const updatedOrders = state.orders.map(order => 
-        order.id === orderId ? updatedOrder : order
-      );
-      saveOrders(updatedOrders);
-      
+      await loadOrders();
       return { success: true, order: updatedOrder };
     } catch (error) {
       dispatch({ type: ORDER_ACTIONS.SET_ERROR, payload: 'Erro ao atualizar pedido' });
@@ -188,20 +144,13 @@ export const OrderProvider = ({ children }) => {
     }
   };
 
-  // Função para deletar pedido
+  // Função para deletar pedido no Supabase
   const deleteOrder = async (orderId) => {
     dispatch({ type: ORDER_ACTIONS.SET_LOADING, payload: true });
-    
     try {
-      // Simular chamada de API
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await db.deletePedido(orderId);
       dispatch({ type: ORDER_ACTIONS.DELETE_ORDER, payload: orderId });
-      
-      // Salvar no localStorage
-      const updatedOrders = state.orders.filter(order => order.id !== orderId);
-      saveOrders(updatedOrders);
-      
+      await loadOrders();
       return { success: true };
     } catch (error) {
       dispatch({ type: ORDER_ACTIONS.SET_ERROR, payload: 'Erro ao deletar pedido' });
@@ -217,32 +166,27 @@ export const OrderProvider = ({ children }) => {
   // Função para filtrar pedidos
   const filterOrders = (filters = {}) => {
     let filteredOrders = [...state.orders];
-
     if (filters.status) {
       filteredOrders = filteredOrders.filter(order => order.status === filters.status);
     }
-
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
       filteredOrders = filteredOrders.filter(order => 
-        order.cliente.toLowerCase().includes(searchTerm) ||
-        order.modelo.toLowerCase().includes(searchTerm) ||
-        order.id.toLowerCase().includes(searchTerm)
+        (order.cliente?.nome || '').toLowerCase().includes(searchTerm) ||
+        (order.modelo || '').toLowerCase().includes(searchTerm) ||
+        (order.id || '').toLowerCase().includes(searchTerm)
       );
     }
-
     if (filters.dateFrom) {
       filteredOrders = filteredOrders.filter(order => 
         new Date(order.dataCriacao) >= new Date(filters.dateFrom)
       );
     }
-
     if (filters.dateTo) {
       filteredOrders = filteredOrders.filter(order => 
         new Date(order.dataCriacao) <= new Date(filters.dateTo)
       );
     }
-
     return filteredOrders;
   };
 
@@ -252,8 +196,7 @@ export const OrderProvider = ({ children }) => {
     const aprovados = state.orders.filter(order => order.status === 'Aprovado').length;
     const pendentes = state.orders.filter(order => order.status === 'Pendente').length;
     const cancelados = state.orders.filter(order => order.status === 'Cancelado').length;
-    const valorTotal = state.orders.reduce((sum, order) => sum + (order.valor || 0), 0);
-
+    const valorTotal = state.orders.reduce((sum, order) => sum + (order.valor_total || 0), 0);
     return {
       total,
       aprovados,
