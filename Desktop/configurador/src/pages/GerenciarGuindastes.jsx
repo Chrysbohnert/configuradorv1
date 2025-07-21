@@ -31,7 +31,7 @@ const GerenciarGuindastes = () => {
     imagem_url: ''
   });
   // Substituir o estado do opcionalFormData por um array de opcionais
-  const [opcionaisForm, setOpcionaisForm] = useState([{ nome: '', preco: '' }]);
+  const [opcionaisGuindasteForm, setOpcionaisGuindasteForm] = useState([{ nome: '', preco: '' }]);
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [selectedOpcionais, setSelectedOpcionais] = useState([]);
@@ -100,43 +100,6 @@ const GerenciarGuindastes = () => {
     setOpcionalFormData(prev => ({ ...prev, imagem_url: imageUrl }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      const guindasteData = {
-        ...formData,
-        preco: parseFloat(
-          String(formData.preco)
-            .replace('R$', '')
-            .replace(/\./g, '')
-            .replace(',', '.')
-        ),
-        ativo: true
-      };
-
-      if (editingGuindaste) {
-      
-        await db.updateGuindaste(editingGuindaste.id, guindasteData);
-        await db.vincularOpcionaisAoGuindaste(editingGuindaste.id, selectedOpcionais);
-        console.log('✅ Guindaste atualizado com sucesso!');
-      } else {
-        // Criar novo guindaste
-        const novo = await db.createGuindaste(guindasteData);
-        await db.vincularOpcionaisAoGuindaste(novo.id, selectedOpcionais);
-        console.log('✅ Guindaste criado com sucesso!');
-      }
-      
-      // Recarregar dados
-      await loadData();
-      handleCloseModal();
-      
-    } catch (error) {
-      console.error('Erro ao salvar guindaste:', error);
-      alert('Erro ao salvar guindaste. Tente novamente.');
-    }
-  };
-
   // Novo handleOpcionalSubmit para cadastrar todos de uma vez
   const handleOpcionalSubmit = async (e) => {
     e.preventDefault();
@@ -156,6 +119,7 @@ const GerenciarGuindastes = () => {
     }
   };
 
+  // Ao editar guindaste, buscar opcionais vinculados e preencher campos
   const handleEdit = async (item, type) => {
     if (type === 'guindaste') {
       setEditingGuindaste(item);
@@ -172,7 +136,7 @@ const GerenciarGuindastes = () => {
       });
       // Buscar opcionais vinculados
       const opcionaisVinculados = await db.getOpcionaisDoGuindaste(item.id);
-      setSelectedOpcionais(opcionaisVinculados.map(o => o.id));
+      setOpcionaisGuindasteForm(opcionaisVinculados.length > 0 ? opcionaisVinculados.map(o => ({ nome: o.nome, preco: o.preco })) : [{ nome: '', preco: '' }]);
       setShowModal(true);
     } else {
       setEditingOpcional(item);
@@ -235,6 +199,7 @@ const GerenciarGuindastes = () => {
     });
   };
 
+  // Ao adicionar novo guindaste, limpar opcionais
   const handleAddNew = (type) => {
     if (type === 'guindaste') {
       setEditingGuindaste(null);
@@ -249,7 +214,7 @@ const GerenciarGuindastes = () => {
         descricao: '',
         imagem_url: ''
       });
-      setSelectedOpcionais([]);
+      setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
       setShowModal(true);
     } else {
       setEditingOpcional(null);
@@ -687,19 +652,30 @@ const GerenciarGuindastes = () => {
               
               <div className="form-group">
                 <label>Opcionais do Guindaste</label>
-                <select
-                  multiple
-                  value={selectedOpcionais}
-                  onChange={e => {
-                    const options = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                    setSelectedOpcionais(options);
-                  }}
-                  style={{ minHeight: 80 }}
-                >
-                  {opcionais.map(opc => (
-                    <option key={opc.id} value={opc.id}>{opc.nome}</option>
-                  ))}
-                </select>
+                {opcionaisGuindasteForm.map((opc, idx) => (
+                  <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
+                    <input
+                      type="text"
+                      placeholder="Nome do opcional"
+                      value={opc.nome}
+                      onChange={e => handleOpcionalGuindasteChange(idx, 'nome', e.target.value)}
+                      style={{ flex: 2, marginRight: 8 }}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="Valor"
+                      value={opc.preco}
+                      onChange={e => handleOpcionalGuindasteChange(idx, 'preco', e.target.value)}
+                      style={{ flex: 1, marginRight: 8 }}
+                    />
+                    {opcionaisGuindasteForm.length > 1 && (
+                      <button type="button" onClick={() => handleRemoveOpcionalGuindaste(idx)} style={{ marginTop: 0 }}>🗑️</button>
+                    )}
+                  </div>
+                ))}
+                <button type="button" onClick={handleAddOpcionalGuindaste} style={{ margin: '8px 0' }}>+ Adicionar Opcional</button>
               </div>
 
               <div className="modal-actions">
