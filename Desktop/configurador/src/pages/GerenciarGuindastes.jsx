@@ -439,9 +439,9 @@ const GerenciarGuindastes = () => {
                   onChange={e => handleInputChange('tipo', e.target.value)}
                   required
                 >
-                  <option value="hidraulico">Hidráulico</option>
-                  <option value="telescopico">Telescópico</option>
-                  <option value="torre">Torre</option>
+                  <option value="interno">interno</option>
+                  <option value="externo">externo</option>
+                  
                 </select>
               </div>
               <div className="form-group">

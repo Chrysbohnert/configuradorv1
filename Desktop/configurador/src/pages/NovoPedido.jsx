@@ -6,6 +6,7 @@ import PDFGenerator from '../components/PDFGenerator';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/NovoPedido.css';
+import FormCaminhao from '../components/FormCaminhao';
 
 const NovoPedido = () => {
   const navigate = useNavigate();
@@ -21,7 +22,6 @@ const NovoPedido = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
-  const [opcionais, setOpcionais] = useState([]);
   const [opcionaisGuindaste, setOpcionaisGuindaste] = useState([]);
   const [guindasteSelecionado, setGuindasteSelecionado] = useState(null);
 
@@ -44,10 +44,7 @@ const NovoPedido = () => {
       setIsLoading(true);
       
       // Carregar guindastes e opcionais do Supabase
-      const [guindastesData, opcionaisData] = await Promise.all([
-        db.getGuindastes(),
-        db.getOpcionais()
-      ]);
+      const guindastesData = await db.getGuindastes();
       
       // Buscar preço por região para cada guindaste, se usuário for vendedor
       let guindastesComPreco = guindastesData;
@@ -60,7 +57,6 @@ const NovoPedido = () => {
         );
       }
       setGuindastes(guindastesComPreco);
-      setOpcionais(opcionaisData);
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -125,7 +121,12 @@ const NovoPedido = () => {
   };
 
   const getTotalCarrinho = () => {
-    return carrinho.reduce((total, item) => total + item.preco, 0);
+    let total = 0;
+    const guindaste = carrinho.find(item => item.tipo === 'guindaste');
+    const opcional = carrinho.find(item => item.tipo === 'opcional');
+    if (guindaste) total += Number(guindaste.preco);
+    if (opcional) total += Number(opcional.preco);
+    return total;
   };
 
   // Filtros
@@ -142,13 +143,30 @@ const NovoPedido = () => {
   // Função para buscar opcionais do guindaste selecionado
   const handleSelecionarGuindaste = async (guindaste) => {
     setGuindasteSelecionado(guindaste);
-    const opcionais = await db.getOpcionaisDoGuindaste(guindaste.id);
-    setOpcionaisGuindaste(opcionais);
+    setOpcionaisGuindaste(guindaste.opcionais || []);
   };
 
   const filteredOpcionais = opcionaisGuindaste.filter(opcional =>
     opcional.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Função para selecionar apenas um opcional por vez
+  const handleSelecionarOpcional = (opcional) => {
+    // Remove todos opcionais do carrinho
+    const carrinhoSemOpcionais = carrinho.filter(item => item.tipo !== 'opcional');
+    const isSelected = carrinho.find(item => item.tipo === 'opcional' && item.nome === opcional.nome);
+    if (isSelected) {
+      setCarrinho(carrinhoSemOpcionais);
+      localStorage.setItem('carrinho', JSON.stringify(carrinhoSemOpcionais));
+    } else {
+      const novoCarrinho = [...carrinhoSemOpcionais, { ...opcional, tipo: 'opcional' }];
+      setCarrinho(novoCarrinho);
+      localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+    }
+  };
+
+  // Função para saber qual opcional está selecionado
+  const opcionalSelecionado = carrinho.find(item => item.tipo === 'opcional');
 
   // Renderizar conteúdo do step
   const renderStepContent = () => {
@@ -236,14 +254,8 @@ const NovoPedido = () => {
                 <OpcionalCard
                   key={opcional.id}
                   opcional={opcional}
-                  isSelected={isInCart(opcional, 'opcional')}
-                  onToggle={() => {
-                    if (isInCart(opcional, 'opcional')) {
-                      removerDoCarrinho({...opcional, tipo: 'opcional'});
-                    } else {
-                      adicionarAoCarrinho(opcional, 'opcional');
-                    }
-                  }}
+                  isSelected={opcionalSelecionado && opcionalSelecionado.nome === opcional.nome}
+                  onToggle={() => handleSelecionarOpcional(opcional)}
                 />
               ))}
             </div>
@@ -268,7 +280,7 @@ const NovoPedido = () => {
               <h2>Configuração do Caminhão</h2>
               <p>Informações do veículo para o serviço</p>
             </div>
-            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
+            <FormCaminhao formData={caminhaoData} setFormData={setCaminhaoData} />
           </div>
         );
 
@@ -607,69 +619,6 @@ const ClienteForm = ({ formData, setFormData }) => {
             value={formData.observacoes || ''}
             onChange={(e) => handleChange('observacoes', e.target.value)}
             placeholder="Informações adicionais..."
-            rows="3"
-          />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// Componente Form do Caminhão
-const CaminhaoForm = ({ formData, setFormData }) => {
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  return (
-    <div className="form-container">
-      <div className="form-grid">
-        <div className="form-group">
-          <label>Placa *</label>
-          <input
-            type="text"
-            value={formData.placa || ''}
-            onChange={(e) => handleChange('placa', e.target.value.toUpperCase())}
-            placeholder="ABC-1234"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Modelo *</label>
-          <input
-            type="text"
-            value={formData.modelo || ''}
-            onChange={(e) => handleChange('modelo', e.target.value)}
-            placeholder="Ex: Mercedes-Benz"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Ano</label>
-          <input
-            type="number"
-            value={formData.ano || ''}
-            onChange={(e) => handleChange('ano', e.target.value)}
-            placeholder="2020"
-          />
-        </div>
-        
-        <div className="form-group">
-          <label>Cor</label>
-          <input
-            type="text"
-            value={formData.cor || ''}
-            onChange={(e) => handleChange('cor', e.target.value)}
-            placeholder="Branco"
-          />
-        </div>
-        
-        <div className="form-group full-width">
-          <label>Observações do Veículo</label>
-          <textarea
-            value={formData.observacoes || ''}
-            onChange={(e) => handleChange('observacoes', e.target.value)}
-            placeholder="Condições especiais, restrições..."
             rows="3"
           />
         </div>
