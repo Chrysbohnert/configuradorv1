@@ -26,6 +26,7 @@ const Login = () => {
 
     try {
       const { email, senha } = formData;
+      
       // Validação simples
       if (!email || !senha) {
         setError('Por favor, preencha todos os campos');
@@ -33,59 +34,24 @@ const Login = () => {
         return;
       }
 
-      // Login pelo Supabase Auth
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password: senha,
-      });
-
-      if (error) {
-        setError('Email ou senha incorretos');
-        setIsLoading(false);
-        return;
-      }
-
-      // Buscar dados extras do usuário na tabela, se quiser
-      // (opcional) Buscar usuário na tabela pelo email para pegar tipo, nome, etc
-      const users = await db.getUsers();
-      const user = users.find(u => u.email === email);
-      if (user) {
-        const { senha: _, ...userWithoutPassword } = user;
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        if (user.tipo === 'admin') {
-          navigate('/dashboard-admin');
-        } else {
-          navigate('/dashboard');
-        }
-      } else {
-        // Se não achar na tabela, só navega para dashboard
-        navigate('/dashboard');
-      }
-    } catch (error) {
-      console.error('Erro no login:', error);
-      setError('Erro ao fazer login. Verifique a conexão com o banco.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const quickLogin = async (email, senha, tipo) => {
-    setFormData({ email, senha });
-    setIsLoading(true);
-    
-    try {
+      // Buscar usuário diretamente no banco
       const users = await db.getUsers();
       const user = users.find(u => u.email === email && u.senha === senha);
 
       if (user) {
         const { senha: _, ...userWithoutPassword } = user;
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        navigate(tipo === 'admin' ? '/dashboard-admin' : '/dashboard');
+        
+        if (user.tipo === 'admin') {
+          navigate('/dashboard-admin');
+        } else {
+          navigate('/dashboard');
+        }
       } else {
-        setError('Usuário não encontrado no banco de dados');
+        setError('Email ou senha incorretos');
       }
     } catch (error) {
-      console.error('Erro no login rápido:', error);
+      console.error('Erro no login:', error);
       setError('Erro ao fazer login. Verifique a conexão com o banco.');
     } finally {
       setIsLoading(false);

@@ -26,7 +26,19 @@ const Historico = () => {
     const fetchPedidos = async () => {
       try {
         const pedidosData = await db.getPedidos();
-        setPedidos(pedidosData);
+        
+        // Filtrar pedidos do vendedor logado (se for vendedor)
+        let pedidosFiltrados = pedidosData;
+        if (userData) {
+          const user = JSON.parse(userData);
+          if (user.tipo === 'vendedor') {
+            pedidosFiltrados = pedidosData.filter(pedido => 
+              pedido.vendedor_id === user.id
+            );
+          }
+        }
+        
+        setPedidos(pedidosFiltrados);
       } catch (error) {
         console.error('Erro ao buscar pedidos:', error);
         setPedidos([]);
@@ -43,48 +55,56 @@ const Historico = () => {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case 'Finalizado':
+      case 'finalizado':
         return '#28a745';
-      case 'Em Andamento':
-        return '#6c757d';
+      case 'em_andamento':
+        return '#ffc107';
+      case 'cancelado':
+        return '#dc3545';
       default:
         return '#6c757d';
     }
   };
 
-  const handleVerDetalhes = (pedido) => {
-    // Simular dados do pedido para o PDF
+  const handleVerDetalhes = async (pedido) => {
+    try {
+      // Buscar itens do pedido
+      const itens = await db.getPedidoItens(pedido.id);
+      
+      // Preparar dados para o PDF
     const pedidoData = {
-      carrinho: [
-        {
-          nome: pedido.modelo,
-          tipo: 'guindaste',
-          preco: pedido.preco
-        }
-      ],
+        carrinho: itens.map(item => ({
+          nome: item.guindaste?.nome || item.opcional?.nome || 'Item não encontrado',
+          tipo: item.tipo,
+          preco: item.preco_unitario
+        })),
       clienteData: {
-        nome: pedido.cliente,
-        telefone: '(55) 99999-9999',
-        email: `${pedido.cliente.toLowerCase().replace(' ', '.')}@email.com`,
-        documento: '123.456.789-00',
-        endereco: 'Rua Exemplo, 123 - Cidade/UF'
+          nome: pedido.cliente?.nome || 'Cliente não informado',
+          telefone: pedido.cliente?.telefone || '',
+          email: pedido.cliente?.email || '',
+          documento: pedido.cliente?.documento || '',
+          endereco: pedido.cliente?.endereco || ''
       },
       caminhaoData: {
-        placa: 'ABC-1234',
-        modelo: 'Mercedes-Benz',
-        ano: '2020',
-        cor: 'Branco'
+          placa: pedido.caminhao?.placa || '',
+          modelo: pedido.caminhao?.modelo || '',
+          ano: pedido.caminhao?.ano || '',
+          cor: pedido.caminhao?.cor || ''
       }
     };
 
     // Gerar PDF diretamente
     const pdfGenerator = new PDFGenerator({ pedidoData, onGenerate: handlePDFGenerated });
     pdfGenerator.generatePDF();
+    } catch (error) {
+      console.error('Erro ao buscar detalhes do pedido:', error);
+      alert('Erro ao buscar detalhes do pedido.');
+    }
   };
 
   const handleWhatsApp = (pedido) => {
     const message = encodeURIComponent(
-      `Olá! Gostaria de discutir o pedido ${pedido.id} - ${pedido.modelo} por ${formatCurrency(pedido.preco)}. Status: ${pedido.status}`
+      `Olá! Gostaria de discutir o pedido ${pedido.numero_pedido} - ${pedido.cliente?.nome || 'Cliente'} por ${formatCurrency(pedido.valor_total)}. Status: ${pedido.status === 'finalizado' ? 'Finalizado' : pedido.status}`
     );
     window.open(`https://wa.me/55981721286?text=${message}`, '_blank');
   };
@@ -140,30 +160,41 @@ const Historico = () => {
               
               <div className="pedido-info">
                 <div className="pedido-header">
-                  <h3 className="cliente-name">{pedido.cliente}</h3>
+                  <h3 className="cliente-name">{pedido.cliente?.nome || 'Cliente não informado'}</h3>
                   <div 
                     className="pedido-status"
                     style={{ color: getStatusColor(pedido.status) }}
                   >
-                    {pedido.status}
+                    {pedido.status === 'finalizado' ? 'Finalizado' : 
+                     pedido.status === 'em_andamento' ? 'Em Andamento' : 
+                     pedido.status === 'cancelado' ? 'Cancelado' : pedido.status}
                   </div>
                 </div>
                 
                 <div className="pedido-details">
                   <div className="detail-item">
-                    <span className="detail-label">Modelo:</span>
-                    <span className="detail-value">{pedido.modelo}</span>
+                    <span className="detail-label">Número:</span>
+                    <span className="detail-value">{pedido.numero_pedido}</span>
                   </div>
                   
                   <div className="detail-item">
                     <span className="detail-label">Preço:</span>
-                    <span className="detail-value price">{formatCurrency(pedido.preco)}</span>
+                    <span className="detail-value price">{formatCurrency(pedido.valor_total)}</span>
                   </div>
                   
                   <div className="detail-item">
                     <span className="detail-label">Data:</span>
-                    <span className="detail-value">{pedido.data}</span>
+                    <span className="detail-value">
+                      {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
+                    </span>
                   </div>
+                  
+                  {pedido.vendedor && (
+                    <div className="detail-item">
+                      <span className="detail-label">Vendedor:</span>
+                      <span className="detail-value">{pedido.vendedor.nome}</span>
+                    </div>
+                  )}
                 </div>
               </div>
               

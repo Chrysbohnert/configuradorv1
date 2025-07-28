@@ -35,15 +35,16 @@ const DashboardVendedor = () => {
       // Carregar pedidos do vendedor
       const pedidos = await db.getPedidos();
       
-      // Filtrar pedidos do usuário atual (simulado por enquanto)
-      const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id || true);
+      // Filtrar pedidos do usuário atual
+      const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id);
       
-      // Calcular estatísticas
-      const valorTotal = pedidosDoVendedor.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
-      const pedidosPendentes = pedidosDoVendedor.filter(pedido => pedido.status === 'Pendente').length;
+      // Calcular estatísticas apenas de pedidos finalizados
+      const pedidosFinalizados = pedidosDoVendedor.filter(pedido => pedido.status === 'finalizado');
+      const valorTotal = pedidosFinalizados.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
+      const pedidosPendentes = pedidosDoVendedor.filter(pedido => pedido.status === 'em_andamento').length;
 
       setStats({
-        totalPedidos: pedidosDoVendedor.length,
+        totalPedidos: pedidosFinalizados.length,
         pedidosPendentes: pedidosPendentes,
         valorTotal: valorTotal
       });
@@ -181,50 +182,6 @@ const DashboardVendedor = () => {
             <div className="action-content">
               <h3>Alterar Senha</h3>
               <p>Atualizar senha de acesso</p>
-            </div>
-          </div>
-        </div>
-
-        <div className="recent-activity">
-          <h2>Atividade Recente</h2>
-          <div className="activity-list">
-            <div className="activity-item">
-              <div className="activity-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>
-              </div>
-              <div className="activity-content">
-                <div className="activity-title">Novo pedido criado</div>
-                <div className="activity-time">Há 2 horas</div>
-              </div>
-              <div className="activity-value">R$ 15.000</div>
-            </div>
-
-            <div className="activity-item">
-              <div className="activity-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </div>
-              <div className="activity-content">
-                <div className="activity-title">Pedido finalizado</div>
-                <div className="activity-time">Ontem</div>
-              </div>
-              <div className="activity-value">R$ 8.500</div>
-            </div>
-
-            <div className="activity-item">
-              <div className="activity-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-              </div>
-              <div className="activity-content">
-                <div className="activity-title">Pedido aprovado</div>
-                <div className="activity-time">2 dias atrás</div>
-              </div>
-              <div className="activity-value">R$ 12.300</div>
             </div>
           </div>
         </div>

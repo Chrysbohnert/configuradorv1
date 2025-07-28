@@ -20,6 +20,30 @@ const FormCaminhao = ({ formData, setFormData }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Tipo */}
+        <div>
+          <label className="block text-sm font-medium text-empresa-cinza mb-2">
+            Tipo *
+          </label>
+          <select
+            name="tipo"
+            value={formData.tipo || ''}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
+            required
+          >
+            <option value="">Selecione o tipo</option>
+            <option value="Truck">Truck</option>
+            <option value="Truck Tractor">Truck Tractor</option>
+            <option value="Truck 3/4">Truck 3/4</option>
+            <option value="Truck Toco">Truck Toco</option>
+            <option value="Carreta">Carreta</option>
+            <option value="Bitruck">Bitruck</option>
+            <option value="Tritruck">Tritruck</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+
         {/* Marca */}
         <div>
           <label className="block text-sm font-medium text-empresa-cinza mb-2">
@@ -63,47 +87,6 @@ const FormCaminhao = ({ formData, setFormData }) => {
           />
         </div>
 
-        {/* Tipo */}
-        <div>
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Tipo de Caminhão *
-          </label>
-          <select
-            name="tipo"
-            value={formData.tipo || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-            required
-          >
-            <option value="">Selecione o tipo</option>
-            <option value="Truck">Truck</option>
-            <option value="Truck Tractor">Truck Tractor</option>
-            <option value="Truck 3/4">Truck 3/4</option>
-            <option value="Truck Toco">Truck Toco</option>
-            <option value="Carreta">Carreta</option>
-            <option value="Bitruck">Bitruck</option>
-            <option value="Tritruck">Tritruck</option>
-            <option value="Outro">Outro</option>
-          </select>
-        </div>
-
-        {/* Ano */}
-        <div>
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Ano de Fabricação
-          </label>
-          <input
-            type="number"
-            name="ano"
-            value={formData.ano || ''}
-            onChange={handleChange}
-            min="1990"
-            max="2024"
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-            placeholder="2020"
-          />
-        </div>
-
         {/* Voltagem */}
         <div>
           <label className="block text-sm font-medium text-empresa-cinza mb-2">
@@ -120,70 +103,6 @@ const FormCaminhao = ({ formData, setFormData }) => {
             <option value="24V">24V</option>
             <option value="12V/24V">12V/24V</option>
           </select>
-        </div>
-
-        {/* Câmbio */}
-        <div>
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Tipo de Câmbio
-          </label>
-          <select
-            name="cambio"
-            value={formData.cambio || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-          >
-            <option value="">Selecione o câmbio</option>
-            <option value="Manual">Manual</option>
-            <option value="Automático">Automático</option>
-            <option value="Automatizado">Automatizado</option>
-            <option value="Powershift">Powershift</option>
-          </select>
-        </div>
-
-        {/* Cor */}
-        <div>
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Cor
-          </label>
-          <input
-            type="text"
-            name="cor"
-            value={formData.cor || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-            placeholder="Ex: Branco, Azul, Vermelho"
-          />
-        </div>
-
-        {/* Placa */}
-        <div>
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Placa
-          </label>
-          <input
-            type="text"
-            name="placa"
-            value={formData.placa || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-            placeholder="ABC-1234"
-          />
-        </div>
-
-        {/* Chassi */}
-        <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-empresa-cinza mb-2">
-            Número do Chassi
-          </label>
-          <input
-            type="text"
-            name="chassi"
-            value={formData.chassi || ''}
-            onChange={handleChange}
-            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
-            placeholder="17 dígitos do chassi"
-          />
         </div>
 
         {/* Observações */}
@@ -210,10 +129,10 @@ const FormCaminhao = ({ formData, setFormData }) => {
             Veículo Identificado
           </h4>
           <div className="text-sm text-blue-700 space-y-1">
+            {formData.tipo && <p><strong>Tipo:</strong> {formData.tipo}</p>}
             {formData.marca && <p><strong>Marca:</strong> {formData.marca}</p>}
             {formData.modelo && <p><strong>Modelo:</strong> {formData.modelo}</p>}
-            {formData.tipo && <p><strong>Tipo:</strong> {formData.tipo}</p>}
-            {formData.ano && <p><strong>Ano:</strong> {formData.ano}</p>}
+            {formData.voltagem && <p><strong>Voltagem:</strong> {formData.voltagem}</p>}
           </div>
         </div>
       )}

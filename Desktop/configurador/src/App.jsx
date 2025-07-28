@@ -8,6 +8,7 @@ import Historico from './pages/Historico';
 import Support from './pages/Support';
 import GerenciarVendedores from './pages/GerenciarVendedores';
 import GerenciarGuindastes from './pages/GerenciarGuindastes';
+import RelatorioCompleto from './pages/RelatorioCompleto';
 import AlterarSenha from './pages/AlterarSenha';
 
 function App() {
@@ -25,9 +26,9 @@ function App() {
           
           {/* Rotas do Admin */}
           <Route path="/dashboard-admin" element={<DashboardAdmin />} />
-          <Route path="/admin" element={<DashboardAdmin />} />
           <Route path="/gerenciar-vendedores" element={<GerenciarVendedores />} />
           <Route path="/gerenciar-guindastes" element={<GerenciarGuindastes />} />
+          <Route path="/relatorio-completo" element={<RelatorioCompleto />} />
           
           {/* Rota de Suporte */}
           <Route path="/suporte" element={<Support />} />

@@ -6,7 +6,6 @@ import PDFGenerator from '../components/PDFGenerator';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/NovoPedido.css';
-import FormCaminhao from '../components/FormCaminhao';
 
 const NovoPedido = () => {
   const navigate = useNavigate();
@@ -43,7 +42,7 @@ const NovoPedido = () => {
     try {
       setIsLoading(true);
       
-      // Carregar guindastes e opcionais do Supabase
+      // Carregar apenas guindastes do Supabase
       const guindastesData = await db.getGuindastes();
       
       // Buscar preço por região para cada guindaste, se usuário for vendedor
@@ -85,7 +84,17 @@ const NovoPedido = () => {
   const adicionarAoCarrinho = (item, tipo) => {
     const itemComTipo = { ...item, tipo };
     setCarrinho(prev => {
-      const newCart = [...prev, itemComTipo];
+      let newCart;
+      
+      if (tipo === 'guindaste') {
+        // Para guindastes, remove qualquer guindaste existente e adiciona o novo
+        const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
+        newCart = [...carrinhoSemGuindastes, itemComTipo];
+      } else {
+        // Para opcionais, apenas adiciona
+        newCart = [...prev, itemComTipo];
+      }
+      
       localStorage.setItem('carrinho', JSON.stringify(newCart));
       return newCart;
     });
@@ -121,12 +130,10 @@ const NovoPedido = () => {
   };
 
   const getTotalCarrinho = () => {
-    let total = 0;
-    const guindaste = carrinho.find(item => item.tipo === 'guindaste');
-    const opcional = carrinho.find(item => item.tipo === 'opcional');
-    if (guindaste) total += Number(guindaste.preco);
-    if (opcional) total += Number(opcional.preco);
-    return total;
+    return carrinho.reduce((total, item) => {
+      const preco = parseFloat(item.preco) || 0;
+      return total + preco;
+    }, 0);
   };
 
   // Filtros
@@ -140,33 +147,48 @@ const NovoPedido = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Função para buscar opcionais do guindaste selecionado
+  // Função para selecionar guindaste e carregar seus opcionais específicos
   const handleSelecionarGuindaste = async (guindaste) => {
     setGuindasteSelecionado(guindaste);
-    setOpcionaisGuindaste(guindaste.opcionais || []);
+    
+    try {
+      // Carregar opcionais específicos deste guindaste
+      const opcionaisDoGuindaste = await db.getOpcionaisDoGuindaste(guindaste.id);
+      setOpcionaisGuindaste(opcionaisDoGuindaste);
+    } catch (error) {
+      console.error('Erro ao carregar opcionais do guindaste:', error);
+      setOpcionaisGuindaste([]);
+    }
   };
 
   const filteredOpcionais = opcionaisGuindaste.filter(opcional =>
     opcional.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Função para selecionar apenas um opcional por vez
+  // Função para selecionar múltiplos opcionais
   const handleSelecionarOpcional = (opcional) => {
-    // Remove todos opcionais do carrinho
-    const carrinhoSemOpcionais = carrinho.filter(item => item.tipo !== 'opcional');
-    const isSelected = carrinho.find(item => item.tipo === 'opcional' && item.nome === opcional.nome);
+    // Se já está selecionado, desmarca (remove)
+    const isSelected = isInCart(opcional, 'opcional');
     if (isSelected) {
-      setCarrinho(carrinhoSemOpcionais);
-      localStorage.setItem('carrinho', JSON.stringify(carrinhoSemOpcionais));
+      setCarrinho(prev => {
+        const newCart = prev.filter(item => 
+          !(item.id === opcional.id && item.tipo === 'opcional')
+        );
+        localStorage.setItem('carrinho', JSON.stringify(newCart));
+        return newCart;
+      });
     } else {
-      const novoCarrinho = [...carrinhoSemOpcionais, { ...opcional, tipo: 'opcional' }];
-      setCarrinho(novoCarrinho);
-      localStorage.setItem('carrinho', JSON.stringify(novoCarrinho));
+      // Adiciona o opcional ao carrinho
+      setCarrinho(prev => {
+        const newCart = [...prev, { ...opcional, tipo: 'opcional' }];
+        localStorage.setItem('carrinho', JSON.stringify(newCart));
+        return newCart;
+      });
     }
   };
 
   // Função para saber qual opcional está selecionado
-  const opcionalSelecionado = carrinho.find(item => item.tipo === 'opcional');
+  const opcionaisSelecionados = carrinho.filter(item => item.tipo === 'opcional');
 
   // Renderizar conteúdo do step
   const renderStepContent = () => {
@@ -254,7 +276,7 @@ const NovoPedido = () => {
                 <OpcionalCard
                   key={opcional.id}
                   opcional={opcional}
-                  isSelected={opcionalSelecionado && opcionalSelecionado.nome === opcional.nome}
+                  isSelected={isInCart(opcional, 'opcional')}
                   onToggle={() => handleSelecionarOpcional(opcional)}
                 />
               ))}
@@ -280,7 +302,7 @@ const NovoPedido = () => {
               <h2>Configuração do Caminhão</h2>
               <p>Informações do veículo para o serviço</p>
             </div>
-            <FormCaminhao formData={caminhaoData} setFormData={setCaminhaoData} />
+            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
           </div>
         );
 
@@ -295,6 +317,7 @@ const NovoPedido = () => {
               carrinho={carrinho}
               clienteData={clienteData}
               caminhaoData={caminhaoData}
+              user={user}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
             />
@@ -315,7 +338,7 @@ const NovoPedido = () => {
       case 3:
         return clienteData.nome && clienteData.telefone;
       case 4:
-        return caminhaoData.placa && caminhaoData.modelo;
+        return caminhaoData.tipo && caminhaoData.marca && caminhaoData.modelo;
       case 5:
         return true;
       default:
@@ -335,10 +358,56 @@ const NovoPedido = () => {
     }
   };
 
-  const handleFinish = () => {
-    // Aqui você implementaria a lógica para finalizar o pedido
-    alert('Pedido finalizado com sucesso!');
-    navigate('/historico');
+  const handleFinish = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 1. Criar cliente
+      const cliente = await db.createCliente(clienteData);
+      
+      // 2. Criar caminhão
+      const caminhao = await db.createCaminhao({
+        ...caminhaoData,
+        cliente_id: cliente.id
+      });
+      
+      // 3. Gerar número do pedido
+      const numeroPedido = `PED${Date.now()}`;
+      
+      // 4. Criar pedido
+      const pedido = await db.createPedido({
+        numero_pedido: numeroPedido,
+        cliente_id: cliente.id,
+        vendedor_id: user.id,
+        caminhao_id: caminhao.id,
+        status: 'finalizado',
+        valor_total: getTotalCarrinho(),
+        observacoes: ''
+      });
+      
+      // 5. Criar itens do pedido
+      for (const item of carrinho) {
+        await db.createPedidoItem({
+          pedido_id: pedido.id,
+          tipo: item.tipo,
+          item_id: item.id,
+          quantidade: 1,
+          preco_unitario: item.preco
+        });
+      }
+      
+      // 6. Limpar carrinho
+      limparCarrinho();
+      
+      alert('Pedido finalizado com sucesso!');
+      navigate('/historico');
+      
+    } catch (error) {
+      console.error('Erro ao finalizar pedido:', error);
+      alert('Erro ao finalizar pedido. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -627,8 +696,95 @@ const ClienteForm = ({ formData, setFormData }) => {
   );
 };
 
+// Componente Form do Caminhão
+const CaminhaoForm = ({ formData, setFormData }) => {
+  const handleChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="form-container">
+      <div className="form-grid">
+        <div className="form-group">
+          <label>Tipo *</label>
+          <select
+            value={formData.tipo || ''}
+            onChange={(e) => handleChange('tipo', e.target.value)}
+            required
+          >
+            <option value="">Selecione o tipo</option>
+            <option value="Truck">Truck</option>
+            <option value="Truck Tractor">Truck Tractor</option>
+            <option value="Truck 3/4">Truck 3/4</option>
+            <option value="Truck Toco">Truck Toco</option>
+            <option value="Carreta">Carreta</option>
+            <option value="Bitruck">Bitruck</option>
+            <option value="Outro">Outro</option>
+          </select>
+        </div>
+        
+        <div className="form-group">
+          <label>Marca *</label>
+          <select
+            value={formData.marca || ''}
+            onChange={(e) => handleChange('marca', e.target.value)}
+            required
+          >
+            <option value="">Selecione a marca</option>
+            <option value="Mercedes-Benz">Mercedes-Benz</option>
+            <option value="Volvo">Volvo</option>
+            <option value="Scania">Scania</option>
+            <option value="Iveco">Iveco</option>
+            <option value="DAF">DAF</option>
+            <option value="MAN">MAN</option>
+            <option value="Ford">Ford</option>
+            <option value="Chevrolet">Chevrolet</option>
+            <option value="Fiat">Fiat</option>
+            <option value="Volkswagen">Volkswagen</option>
+            <option value="Outra">Outra</option>
+          </select>
+        </div>
+        
+        <div className="form-group">
+          <label>Modelo *</label>
+          <input
+            type="text"
+            value={formData.modelo || ''}
+            onChange={(e) => handleChange('modelo', e.target.value)}
+            placeholder="Ex: Actros, FH, R-Series"
+            required
+          />
+        </div>
+        
+        <div className="form-group">
+          <label>Voltagem</label>
+          <select
+            value={formData.voltagem || ''}
+            onChange={(e) => handleChange('voltagem', e.target.value)}
+          >
+            <option value="">Selecione a voltagem</option>
+            <option value="12V">12V</option>
+            <option value="24V">24V</option>
+            <option value="12V/24V">12V/24V</option>
+          </select>
+        </div>
+        
+        <div className="form-group full-width">
+          <label>Observações</label>
+          <textarea
+            value={formData.observacoes || ''}
+            onChange={(e) => handleChange('observacoes', e.target.value)}
+            placeholder="Informações adicionais sobre o caminhão..."
+            rows="3"
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, onRemoverItem, onLimparCarrinho }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user, onRemoverItem, onLimparCarrinho }) => {
   const handlePDFGenerated = (fileName) => {
     alert(`PDF gerado com sucesso: ${fileName}`);
   };
@@ -636,7 +792,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, onRemoverItem, onLi
   const pedidoData = {
     carrinho,
     clienteData,
-    caminhaoData
+    caminhaoData,
+    vendedor: user?.nome || 'Não informado'
   };
 
   return (
@@ -681,12 +838,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, onRemoverItem, onLi
         <h3>Dados do Caminhão</h3>
         <div className="resumo-data">
           <div className="data-row">
-            <span className="label">Placa:</span>
-            <span className="value">{caminhaoData.placa || 'Não informado'}</span>
+            <span className="label">Tipo:</span>
+            <span className="value">{caminhaoData.tipo || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Marca:</span>
+            <span className="value">{caminhaoData.marca || 'Não informado'}</span>
           </div>
           <div className="data-row">
             <span className="label">Modelo:</span>
             <span className="value">{caminhaoData.modelo || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Voltagem:</span>
+            <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
           </div>
         </div>
       </div>

@@ -234,21 +234,29 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+.edit-btn {
+  color: #495057;
+}
+
 .edit-btn:hover {
-  background: #0593f8;
+  background: #e3f2fd;
   border-color: #2196f3;
-  color: #2196f3;
+  color: #1976d2;
+}
+
+.delete-btn {
+  color: #495057;
 }
 
 .delete-btn:hover {
   background: #ffebee;
   border-color: #f44336;
-  color: #f44336;
+  color: #d32f2f;
 }
 
-.action-btn svg {
-  width: 16px;
-  height: 16px;
+.action-btn {
+  font-size: 16px;
+  line-height: 1;
 }
 
 .guindaste-details {

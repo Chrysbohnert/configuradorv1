@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from '../config/supabase';
+import { db } from '../config/supabase';
 
 const regioes = [
   { id: 'norte', nome: 'Norte' },
@@ -23,12 +23,11 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
 
   const fetchPrecos = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('precos_guindaste_regiao')
-      .select('*')
-      .eq('guindaste_id', guindasteId);
-    if (!error) {
+    try {
+      const data = await db.getPrecosPorRegiao(guindasteId);
       setPrecos(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar preços:', error);
     }
     setLoading(false);
   };
@@ -48,20 +47,24 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
 
   const handleSave = async () => {
     setSaving(true);
-    for (const regiao of regioes) {
-      const precoObj = precos.find(p => p.regiao === regiao.id);
-      if (precoObj && precoObj.id) {
-        // Update
-        await supabase
-          .from('precos_guindaste_regiao')
-          .update({ preco: parseFloat(String(precoObj.preco).replace('R$', '').replace(/\./g, '').replace(',', '.')) })
-          .eq('id', precoObj.id);
-      } else if (precoObj && precoObj.preco) {
-        // Insert
-        await supabase
-          .from('precos_guindaste_regiao')
-          .insert({ guindaste_id: guindasteId, regiao: regiao.id, preco: parseFloat(String(precoObj.preco).replace('R$', '').replace(/\./g, '').replace(',', '.')) });
+    try {
+      const precosParaSalvar = [];
+      
+      for (const regiao of regioes) {
+        const precoObj = precos.find(p => p.regiao === regiao.id);
+        if (precoObj && precoObj.preco) {
+          precosParaSalvar.push({
+            regiao: regiao.id,
+            preco: parseFloat(precoObj.preco)
+          });
+        }
       }
+      
+      await db.salvarPrecosPorRegiao(guindasteId, precosParaSalvar);
+      alert('Preços salvos com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar preços:', error);
+      alert('Erro ao salvar preços. Tente novamente.');
     }
     setSaving(false);
     onClose();

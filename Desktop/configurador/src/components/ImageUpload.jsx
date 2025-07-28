@@ -29,37 +29,43 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `guindastes/${fileName}`;
 
-      // Upload para Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('guindastes-images')
-        .upload(filePath, file);
+      // Tentar upload com fallback para base64
+      try {
+        console.log('Tentando upload para Supabase Storage...');
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('guindastes-images')
+          .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-      if (uploadError) {
-        console.error('Erro detalhado do Supabase:', uploadError);
-        if (uploadError.message) {
-          console.error('Mensagem do erro:', uploadError.message);
+        if (uploadError) {
+          console.log('Erro no Supabase Storage, usando base64...');
+          throw uploadError;
         }
-        if (uploadError.statusCode) {
-          console.error('Status code:', uploadError.statusCode);
-        }
-        if (uploadError.error) {
-          console.error('Erro:', uploadError.error);
-        }
-        throw uploadError;
+
+        // Obter URL pública
+        const { data: { publicUrl } } = supabase.storage
+          .from('guindastes-images')
+          .getPublicUrl(filePath);
+
+        console.log('✅ Upload realizado com sucesso:', publicUrl);
+        setPreview(publicUrl);
+        onImageUpload(publicUrl);
+
+      } catch (storageError) {
+        console.log('Usando base64 como fallback...');
+        
+        // Usar base64 como fallback
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const base64Data = e.target.result;
+          setPreview(base64Data);
+          onImageUpload(base64Data);
+        };
+        reader.readAsDataURL(file);
       }
-
-      // Obter URL pública
-      const { data: { publicUrl } } = supabase.storage
-        .from('guindastes-images')
-        .getPublicUrl(filePath);
-
-      // Atualizar preview
-      setPreview(publicUrl);
-      
-      // Chamar callback
-      onImageUpload(publicUrl);
-      
-      console.log('✅ Imagem enviada com sucesso:', publicUrl);
 
     } catch (error) {
       console.error('❌ Erro no upload:', error);

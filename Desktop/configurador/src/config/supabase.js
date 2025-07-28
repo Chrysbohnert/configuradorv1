@@ -99,6 +99,76 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  // ===== OPCIONAIS =====
+  async getOpcionais() {
+    const { data, error } = await supabase
+      .from('opcionais')
+      .select('*')
+      .eq('ativo', true)
+      .order('nome');
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createOpcional(opcionalData) {
+    const { data, error } = await supabase
+      .from('opcionais')
+      .insert([opcionalData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async updateOpcional(id, opcionalData) {
+    const { data, error } = await supabase
+      .from('opcionais')
+      .update(opcionalData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async getOpcionaisDoGuindaste(guindasteId) {
+    const { data, error } = await supabase
+      .from('guindaste_opcionais')
+      .select(`
+        opcional_id,
+        opcional:opcionais(*)
+      `)
+      .eq('guindaste_id', guindasteId);
+    
+    if (error) throw error;
+    return data?.map(item => item.opcional).filter(opcional => opcional && opcional.ativo) || [];
+  }
+
+  async salvarOpcionaisDoGuindaste(guindasteId, opcionais) {
+    // Primeiro, remove todos os opcionais existentes deste guindaste
+    await supabase
+      .from('guindaste_opcionais')
+      .delete()
+      .eq('guindaste_id', guindasteId);
+    
+    // Depois, adiciona os novos opcionais
+    if (opcionais && opcionais.length > 0) {
+      const opcionaisData = opcionais.map(opcional => ({
+        guindaste_id: guindasteId,
+        opcional_id: opcional.id
+      }));
+      
+      const { error } = await supabase
+        .from('guindaste_opcionais')
+        .insert(opcionaisData);
+      
+      if (error) throw error;
+    }
+  }
+
   // ===== CLIENTES =====
   async getClientes() {
     const { data, error } = await supabase
@@ -150,7 +220,8 @@ class DatabaseService {
       .select(`
         *,
         cliente:clientes(*),
-        vendedor:users(*)
+        vendedor:users(*),
+        caminhao:caminhoes(*)
       `)
       .order('created_at', { ascending: false });
     
@@ -217,6 +288,37 @@ class DatabaseService {
       .single();
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows found
     return data ? data.preco : null;
+  }
+
+  async getPrecosPorRegiao(guindasteId) {
+    const { data, error } = await supabase
+      .from('precos_guindaste_regiao')
+      .select('*')
+      .eq('guindaste_id', guindasteId);
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  async salvarPrecosPorRegiao(guindasteId, precos) {
+    // Primeiro, deletar preços existentes para este guindaste
+    await supabase
+      .from('precos_guindaste_regiao')
+      .delete()
+      .eq('guindaste_id', guindasteId);
+
+    // Depois, inserir os novos preços
+    if (precos && precos.length > 0) {
+      const { error } = await supabase
+        .from('precos_guindaste_regiao')
+        .insert(precos.map(p => ({
+          guindaste_id: guindasteId,
+          regiao: p.regiao,
+          preco: p.preco
+        })));
+      
+      if (error) throw error;
+    }
   }
 }
 

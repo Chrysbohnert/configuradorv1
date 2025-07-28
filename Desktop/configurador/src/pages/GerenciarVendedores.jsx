@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
+import AdminNavigation from '../components/AdminNavigation';
 import GuindasteLoading from '../components/GuindasteLoading';
 import { db } from '../config/supabase';
 import '../styles/GerenciarVendedores.css';
@@ -18,6 +18,7 @@ const GerenciarVendedores = () => {
     telefone: '',
     cpf: '',
     comissao: '',
+    regiao: '',
     tipo: 'vendedor',
     senha: 'vendedor123' // Senha padrão
   });
@@ -47,11 +48,13 @@ const GerenciarVendedores = () => {
         db.getUsers(),
         db.getPedidos()
       ]);
+      
       // Filtrar apenas vendedores (não admins)
       const vendedoresOnly = vendedoresData.filter(v => v.tipo === 'vendedor');
+      
       // Calcular vendas e valor total para cada vendedor
       const vendedoresComVendas = vendedoresOnly.map(vendedor => {
-        const pedidosDoVendedor = pedidos.filter(p => p.vendedor && p.vendedor.id === vendedor.id);
+        const pedidosDoVendedor = pedidos.filter(p => p.vendedor_id === vendedor.id);
         const vendas = pedidosDoVendedor.length;
         const valorTotal = pedidosDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
         return {
@@ -60,6 +63,7 @@ const GerenciarVendedores = () => {
           valorTotal
         };
       });
+      
       setVendedores(vendedoresComVendas);
     } catch (error) {
       console.error('Erro ao carregar vendedores:', error);
@@ -86,11 +90,9 @@ const GerenciarVendedores = () => {
       if (editingVendedor) {
         // Editar vendedor existente
         await db.updateUser(editingVendedor.id, vendedorData);
-        console.log('✅ Vendedor atualizado com sucesso!');
       } else {
         // Adicionar novo vendedor
         await db.createUser(vendedorData);
-        console.log('✅ Vendedor criado com sucesso!');
       }
       
       // Recarregar dados
@@ -111,6 +113,7 @@ const GerenciarVendedores = () => {
       telefone: vendedor.telefone,
       cpf: vendedor.cpf,
       comissao: vendedor.comissao.toString(),
+      regiao: vendedor.regiao || '',
       tipo: 'vendedor',
       senha: vendedor.senha || 'vendedor123'
     });
@@ -121,7 +124,6 @@ const GerenciarVendedores = () => {
     if (window.confirm('Tem certeza que deseja remover este vendedor?')) {
       try {
         await db.deleteUser(id);
-        console.log('✅ Vendedor removido com sucesso!');
         await loadVendedores();
       } catch (error) {
         console.error('Erro ao remover vendedor:', error);
@@ -139,6 +141,7 @@ const GerenciarVendedores = () => {
       telefone: '',
       cpf: '',
       comissao: '',
+      regiao: '',
       tipo: 'vendedor',
       senha: 'vendedor123'
     });
@@ -152,6 +155,7 @@ const GerenciarVendedores = () => {
       telefone: '',
       cpf: '',
       comissao: '',
+      regiao: '',
       tipo: 'vendedor',
       senha: 'vendedor123'
     });
@@ -166,7 +170,8 @@ const GerenciarVendedores = () => {
       email: vendedor.email,
       telefone: vendedor.telefone,
       cpf: vendedor.cpf,
-      comissao: vendedor.comissao,
+      comissao: vendedor.comissao.toString(),
+      regiao: vendedor.regiao || '',
       tipo: vendedor.tipo,
       senha: vendedor.senha || 'vendedor123'
     });
@@ -194,18 +199,12 @@ const GerenciarVendedores = () => {
   }
 
   return (
-    <div className="gerenciar-vendedores-container">
-      <UnifiedHeader 
-        showBackButton={true}
-        onBackClick={() => navigate('/dashboard-admin')}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title="Gerenciar Vendedores"
-        subtitle="Cadastro e Gestão de Vendedores"
-      />
-
-      <div className="gerenciar-vendedores-content">
+    <div className="admin-layout">
+      <AdminNavigation user={user} />
+      
+      <div className="admin-content">
+        <div className="gerenciar-vendedores-container">
+          <div className="gerenciar-vendedores-content">
         <div className="page-header">
           <div className="header-info">
             <h1>Vendedores</h1>
@@ -244,14 +243,10 @@ const GerenciarVendedores = () => {
                 </div>
                 <div className="vendedor-actions">
                   <button onClick={() => handleEditVendedor(vendedor)} className="action-btn edit-btn" title="Editar">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                    </svg>
+                    ✏️
                   </button>
                   <button onClick={() => handleDeleteVendedor(vendedor.id)} className="action-btn delete-btn" title="Remover">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5V6h14v2z"/>
-                    </svg>
+                    🗑️
                   </button>
                 </div>
               </div>
@@ -394,6 +389,8 @@ const GerenciarVendedores = () => {
           </div>
         </div>
       )}
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
+import AdminNavigation from '../components/AdminNavigation';
 import GuindasteLoading from '../components/GuindasteLoading';
 import ImageUpload from '../components/ImageUpload';
 import { db } from '../config/supabase';
@@ -25,7 +25,8 @@ const GerenciarGuindastes = () => {
     altura: '',
     preco: '',
     descricao: '',
-    imagem_url: ''
+    imagem_url: '',
+    grafico_carga_url: ''
   });
   // Substituir o estado do opcionalFormData por um array de opcionais
   const [opcionaisGuindasteForm, setOpcionaisGuindasteForm] = useState([{ nome: '', preco: '' }]);
@@ -89,6 +90,10 @@ const GerenciarGuindastes = () => {
     setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
   };
 
+  const handleGraficoCargaUpload = (imageUrl) => {
+    setFormData(prev => ({ ...prev, grafico_carga_url: imageUrl }));
+  };
+
   // Novo handleOpcionalSubmit para cadastrar todos de uma vez
   // Remover handleOpcionalSubmit completamente
   // No modal, trocar <form onSubmit={handleOpcionalSubmit}> por <form onSubmit={handleSubmit}>
@@ -107,16 +112,22 @@ const GerenciarGuindastes = () => {
         altura: item.altura || '',
         preco: item.preco.toString(),
         descricao: item.descricao || '',
-        imagem_url: item.imagem_url || ''
+        imagem_url: item.imagem_url || '',
+        grafico_carga_url: item.grafico_carga_url || ''
       });
       try {
         const opcionaisVinculados = await db.getOpcionaisDoGuindaste(item.id);
         if (Array.isArray(opcionaisVinculados) && opcionaisVinculados.length > 0) {
-          setOpcionaisGuindasteForm(opcionaisVinculados.map(o => ({ nome: o.nome || '', preco: o.preco || '' })));
+          setOpcionaisGuindasteForm(opcionaisVinculados.map(o => ({ 
+            id: o.id,
+            nome: o.nome || '', 
+            preco: o.preco || '' 
+          })));
         } else {
           setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
         }
       } catch (err) {
+        console.error('Erro ao carregar opcionais:', err);
         setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
       }
       setShowModal(true);
@@ -133,7 +144,6 @@ const GerenciarGuindastes = () => {
           await db.deleteOpcional(id);
         }
         
-        console.log(`✅ ${itemType} removido com sucesso!`);
         await loadData();
         
       } catch (error) {
@@ -155,7 +165,8 @@ const GerenciarGuindastes = () => {
       altura: '',
       preco: '',
       descricao: '',
-      imagem_url: ''
+      imagem_url: '',
+      grafico_carga_url: ''
     });
   };
 
@@ -172,7 +183,8 @@ const GerenciarGuindastes = () => {
         altura: '',
         preco: '',
         descricao: '',
-        imagem_url: ''
+        imagem_url: '',
+        grafico_carga_url: ''
       });
       setOpcionaisGuindasteForm([{ nome: '', preco: '' }]);
       setShowModal(true);
@@ -212,6 +224,7 @@ const GerenciarGuindastes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Preparar dados do guindaste (sem opcionais)
       const guindasteData = {
         ...formData,
         preco: parseFloat(
@@ -220,14 +233,52 @@ const GerenciarGuindastes = () => {
             .replace(/\./g, '')
             .replace(',', '.')
         ),
-        ativo: true,
-        opcionais: opcionaisGuindasteForm.filter(opc => opc.nome && opc.preco)
+        ativo: true
       };
+
+      // Remover campo opcionais dos dados do guindaste
+      delete guindasteData.opcionais;
+
+      let guindasteId;
       if (editingGuindaste) {
-        await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        const updatedGuindaste = await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        guindasteId = updatedGuindaste.id;
       } else {
-        await db.createGuindaste(guindasteData);
+        const newGuindaste = await db.createGuindaste(guindasteData);
+        guindasteId = newGuindaste.id;
       }
+
+      // Salvar opcionais na tabela guindaste_opcionais
+      const opcionaisFiltrados = opcionaisGuindasteForm.filter(opc => opc.nome && opc.preco);
+      if (opcionaisFiltrados.length > 0) {
+        // Primeiro, criar os opcionais se não existirem
+        const opcionaisCriados = await Promise.all(
+          opcionaisFiltrados.map(async (opcional) => {
+            if (opcional.id) {
+              // Opcional já existe, apenas atualizar
+              return await db.updateOpcional(opcional.id, {
+                nome: opcional.nome,
+                preco: parseFloat(opcional.preco),
+                ativo: true
+              });
+            } else {
+              // Criar novo opcional
+              return await db.createOpcional({
+                nome: opcional.nome,
+                preco: parseFloat(opcional.preco),
+                ativo: true
+              });
+            }
+          })
+        );
+
+        // Salvar relacionamento guindaste-opcional
+        await db.salvarOpcionaisDoGuindaste(guindasteId, opcionaisCriados);
+      } else {
+        // Se não há opcionais, limpar relacionamentos existentes
+        await db.salvarOpcionaisDoGuindaste(guindasteId, []);
+      }
+
       await loadData();
       handleCloseModal();
     } catch (error) {
@@ -245,18 +296,12 @@ const GerenciarGuindastes = () => {
   }
 
   return (
-    <div className="gerenciar-guindastes-container">
-      <UnifiedHeader 
-        showBackButton={true}
-        onBackClick={() => navigate('/dashboard-admin')}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title="Gerenciar Guindastes"
-        subtitle="Cadastro e Configuração de Equipamentos"
-      />
-
-      <div className="gerenciar-guindastes-content">
+    <div className="admin-layout">
+      <AdminNavigation user={user} />
+      
+      <div className="admin-content">
+        <div className="gerenciar-guindastes-container">
+          <div className="gerenciar-guindastes-content">
         <div className="page-header">
           <div className="header-info">
             <h1>Gerenciar Equipamentos</h1>
@@ -320,20 +365,14 @@ const GerenciarGuindastes = () => {
                         className="action-btn edit-btn"
                         title="Editar"
                       >
-                        {/* Ícone de lápis */}
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                        </svg>
+                        ✏️
                       </button>
                       <button 
                         onClick={() => handleDelete(guindaste.id, 'guindaste')}
                         className="action-btn delete-btn"
                         title="Remover"
                       >
-                        {/* Ícone de X */}
-                        <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                          <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/>
-                        </svg>
+                        🗑️
                       </button>
                       <button
                         className="action-btn"
@@ -490,6 +529,16 @@ const GerenciarGuindastes = () => {
                 <label>Imagem do Guindaste</label>
                 <ImageUpload onImageUpload={handleImageUpload} />
               </div>
+              <div className="form-group">
+                <label>Gráfico de Carga (Opcional)</label>
+                <ImageUpload 
+                  onImageUpload={handleGraficoCargaUpload} 
+                  label="Upload do Gráfico de Carga"
+                />
+                <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                  Imagem que mostra a capacidade de carga em diferentes posições da lança
+                </small>
+              </div>
 
               {opcionaisGuindasteForm.map((opc, idx) => (
                 <div className="form-row" key={idx} style={{ alignItems: 'center', gap: 8 }}>
@@ -533,6 +582,8 @@ const GerenciarGuindastes = () => {
         open={showPrecosModal}
         onClose={() => setShowPrecosModal(false)}
       />
+        </div>
+      </div>
     </div>
   );
 };
