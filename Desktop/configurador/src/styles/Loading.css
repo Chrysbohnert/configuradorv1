@@ -1,0 +1,275 @@
+/* Guindaste Loading Animation */
+
+.guindaste-loading-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+.guindaste-scene {
+  position: relative;
+  width: 300px;
+  height: 200px;
+  margin-bottom: 30px;
+}
+
+/* Base do guindaste */
+.guindaste-base {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 150px;
+}
+
+.guindaste-cabin {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 60px;
+  background: linear-gradient(135deg, #495057 0%, #343a40 100%);
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.guindaste-cabin::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 15px;
+  background: #fd7e14;
+  border-radius: 3px;
+}
+
+.guindaste-arm {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 180px;
+  height: 8px;
+  background: linear-gradient(90deg, #6c757d 0%, #495057 50%, #6c757d 100%);
+  border-radius: 4px;
+  animation: armRotate 3s ease-in-out infinite;
+}
+
+@keyframes armRotate {
+  0%, 100% { transform: translateX(-50%) rotate(-15deg); }
+  50% { transform: translateX(-50%) rotate(15deg); }
+}
+
+.guindaste-cable {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 80px;
+  background: #495057;
+  animation: cableMove 2s ease-in-out infinite;
+}
+
+@keyframes cableMove {
+  0%, 100% { height: 80px; }
+  50% { height: 60px; }
+}
+
+.guindaste-hook {
+  position: absolute;
+  top: 78px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 15px;
+  background: #fd7e14;
+  border-radius: 0 0 10px 10px;
+  animation: hookSwing 2s ease-in-out infinite;
+}
+
+@keyframes hookSwing {
+  0%, 100% { transform: translateX(-50%) rotate(-5deg); }
+  50% { transform: translateX(-50%) rotate(5deg); }
+}
+
+/* Carga */
+.cargo {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: cargoMove 4s ease-in-out infinite;
+}
+
+@keyframes cargoMove {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  25% { transform: translateX(-50%) translateY(-20px); }
+  50% { transform: translateX(-50%) translateY(-40px); }
+  75% { transform: translateX(-50%) translateY(-20px); }
+}
+
+.cargo-box {
+  width: 30px;
+  height: 25px;
+  background: linear-gradient(135deg, #fd7e14 0%, #e55a00 100%);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+}
+
+.cargo-box::before {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 20px;
+  height: 15px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+
+/* Partículas de movimento */
+.particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(253, 126, 20, 0.6);
+  border-radius: 50%;
+  animation: particleFloat 3s linear infinite;
+}
+
+.particle:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.particle:nth-child(2) {
+  top: 40%;
+  right: 30%;
+  animation-delay: 0.5s;
+}
+
+.particle:nth-child(3) {
+  bottom: 30%;
+  left: 30%;
+  animation-delay: 1s;
+}
+
+.particle:nth-child(4) {
+  bottom: 50%;
+  right: 20%;
+  animation-delay: 1.5s;
+}
+
+@keyframes particleFloat {
+  0% {
+    transform: translateY(0) scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) scale(1);
+    opacity: 0;
+  }
+}
+
+/* Texto de loading */
+.loading-text {
+  font-size: 18px;
+  font-weight: 600;
+  color: #495057;
+  text-align: center;
+  margin-bottom: 20px;
+  animation: textPulse 2s ease-in-out infinite;
+}
+
+@keyframes textPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.progress-container {
+  width: 200px;
+  height: 6px;
+  background: #dee2e6;
+  border-radius: 3px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #fd7e14 0%, #e55a00 100%);
+  border-radius: 3px;
+  animation: progressFill 3s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  0% { width: 0%; }
+  50% { width: 70%; }
+  100% { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .guindaste-scene {
+    width: 250px;
+    height: 150px;
+  }
+  
+  .guindaste-base {
+    width: 150px;
+    height: 100px;
+  }
+  
+  .guindaste-arm {
+    width: 140px;
+  }
+  
+  .loading-text {
+    font-size: 16px;
+  }
+  
+  .progress-container {
+    width: 150px;
+  }
+}
+
+.guindaste-loading-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(253, 126, 20, 0.1) 0%, transparent 70%);
+  animation: backgroundGlow 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes backgroundGlow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+} 
