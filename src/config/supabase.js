@@ -311,15 +311,36 @@ class DatabaseService {
     }
   }
 
-  // ===== GUINDASTES =====
-  async getGuindastes() {
+  // ===== PREÇOS POR REGIÃO DO GUINDASTE =====
+  async getPrecosPorRegiao(guindasteId) {
     const { data, error } = await supabase
-      .from('guindastes')
+      .from('precos_guindaste_regiao')
       .select('*')
-      .order('subgrupo');
+      .eq('guindaste_id', guindasteId);
     
     if (error) throw error;
     return data || [];
+  }
+
+  async salvarPrecosPorRegiao(guindasteId, precos) {
+    // Remove preços existentes
+    await supabase
+      .from('precos_guindaste_regiao')
+      .delete()
+      .eq('guindaste_id', guindasteId);
+
+    // Adiciona os novos preços
+    if (precos && precos.length > 0) {
+      const { error } = await supabase
+        .from('precos_guindaste_regiao')
+        .insert(precos.map(p => ({
+          guindaste_id: guindasteId,
+          regiao: p.regiao,
+          preco: p.preco
+        })));
+      
+      if (error) throw error;
+    }
   }
 }
 
