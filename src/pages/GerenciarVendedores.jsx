@@ -65,13 +65,12 @@ const GerenciarVendedores = () => {
       });
       
       setVendedores(vendedoresComVendas);
-    } catch (error) {
-      console.error('Erro ao carregar vendedores:', error);
-      alert('Erro ao carregar vendedores. Verifique a conexão com o banco.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      } catch {
+    alert('Erro ao carregar vendedores. Verifique a conexão com o banco.');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -102,33 +101,6 @@ const GerenciarVendedores = () => {
     } catch (error) {
       console.error('Erro ao salvar vendedor:', error);
       alert('Erro ao salvar vendedor. Tente novamente.');
-    }
-  };
-
-  const handleEdit = (vendedor) => {
-    setEditingVendedor(vendedor);
-    setFormData({
-      nome: vendedor.nome,
-      email: vendedor.email,
-      telefone: vendedor.telefone,
-      cpf: vendedor.cpf,
-      comissao: vendedor.comissao.toString(),
-      regiao: vendedor.regiao || '',
-      tipo: 'vendedor',
-      senha: vendedor.senha || 'vendedor123'
-    });
-    setShowModal(true);
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja remover este vendedor?')) {
-      try {
-        await db.deleteUser(id);
-        await loadVendedores();
-      } catch (error) {
-        console.error('Erro ao remover vendedor:', error);
-        alert('Erro ao remover vendedor. Tente novamente.');
-      }
     }
   };
 
@@ -184,9 +156,9 @@ const GerenciarVendedores = () => {
       try {
         await db.deleteUser(id);
         await loadVendedores();
-      } catch (error) {
-        alert('Erro ao remover vendedor.');
-      }
+        } catch {
+    alert('Erro ao remover vendedor.');
+  }
     }
   };
 

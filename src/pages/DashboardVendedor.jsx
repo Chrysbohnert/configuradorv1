@@ -25,37 +25,37 @@ const DashboardVendedor = () => {
       return;
     }
 
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Carregar pedidos do vendedor
+        const pedidos = await db.getPedidos();
+        
+        // Filtrar pedidos do usuário atual
+        const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id);
+        
+        // Calcular estatísticas apenas de pedidos finalizados
+        const pedidosFinalizados = pedidosDoVendedor.filter(pedido => pedido.status === 'finalizado');
+        const valorTotal = pedidosFinalizados.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
+        const pedidosPendentes = pedidosDoVendedor.filter(pedido => pedido.status === 'em_andamento').length;
+
+        setStats({
+          totalPedidos: pedidosFinalizados.length,
+          pedidosPendentes: pedidosPendentes,
+          valorTotal: valorTotal
+        });
+        
+      } catch (error) {
+        console.error('Erro ao carregar dados do dashboard:', error);
+        alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadDashboardData();
-  }, [navigate]);
-
-  const loadDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Carregar pedidos do vendedor
-      const pedidos = await db.getPedidos();
-      
-      // Filtrar pedidos do usuário atual
-      const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id);
-      
-      // Calcular estatísticas apenas de pedidos finalizados
-      const pedidosFinalizados = pedidosDoVendedor.filter(pedido => pedido.status === 'finalizado');
-      const valorTotal = pedidosFinalizados.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
-      const pedidosPendentes = pedidosDoVendedor.filter(pedido => pedido.status === 'em_andamento').length;
-
-      setStats({
-        totalPedidos: pedidosFinalizados.length,
-        pedidosPendentes: pedidosPendentes,
-        valorTotal: valorTotal
-      });
-      
-    } catch (error) {
-      console.error('Erro ao carregar dados do dashboard:', error);
-      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [navigate, user?.id]);
 
   const handleLogout = () => {
     localStorage.removeItem('user');

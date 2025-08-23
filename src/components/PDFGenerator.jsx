@@ -156,7 +156,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               </tr>
             </thead>
             <tbody>
-              ${pedidoData.carrinho.map((item, index) => `
+              ${pedidoData.carrinho.map((item) => `
                 <tr style="border-bottom: 1px solid #dee2e6;">
                   <td style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">${item.nome}</td>
                   <td style="padding: 12px; border: 1px solid #dee2e6; text-transform: capitalize; font-size: 14px;">${item.tipo}</td>

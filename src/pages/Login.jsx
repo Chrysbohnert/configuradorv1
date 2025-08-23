@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
-import { db, supabase } from '../config/supabase';
+import { db } from '../config/supabase';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -39,8 +39,10 @@ const Login = () => {
       const user = users.find(u => u.email === email && u.senha === senha);
 
       if (user) {
+        // Não armazenar a senha no localStorage por segurança
         const { senha: _, ...userWithoutPassword } = user;
         localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+        localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
         
         if (user.tipo === 'admin') {
           navigate('/dashboard-admin');

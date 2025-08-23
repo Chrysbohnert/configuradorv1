@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { supabase } from '../config/supabase';
 
 const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
   const [uploading, setUploading] = useState(false);
@@ -23,11 +22,6 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         alert('A imagem deve ter no máximo 5MB.');
         return;
       }
-
-      // Criar nome único para o arquivo
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `guindastes/${fileName}`;
 
       // Usar apenas base64 por enquanto (mais confiável)
       console.log('Convertendo imagem para base64...');

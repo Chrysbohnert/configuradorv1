@@ -1,5 +1,5 @@
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import { PDF_CONFIG } from '../config/constants';
 import QRCode from 'qrcode';
 
 // Função para gerar PDF de orçamento
@@ -107,7 +107,7 @@ export const generateQuotePDF = async (quoteData) => {
     
     let graficoYPosition = yPosition + 50;
     
-    quoteData.guindastes.forEach(async (guindaste, index) => {
+    quoteData.guindastes.forEach(async (guindaste) => {
       if (guindaste.grafico_carga_url) {
         try {
           // Adicionar título do guindaste

@@ -4,7 +4,7 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
 import PDFGenerator from '../components/PDFGenerator';
 import { db } from '../config/supabase';
-import { formatCurrency, generateCodigoProduto, getDescricaoProduto, validarCombinacaoOpcionais } from '../utils/formatters';
+import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import '../styles/NovoPedido.css';
 
@@ -134,15 +134,7 @@ const NovoPedido = () => {
     });
   };
 
-  const removerDoCarrinho = (item) => {
-    setCarrinho(prev => {
-      const newCart = prev.filter((carrinhoItem, index) => {
-        return !(carrinhoItem.id === item.id && carrinhoItem.tipo === item.tipo);
-      });
-      localStorage.setItem('carrinho', JSON.stringify(newCart));
-      return newCart;
-    });
-  };
+
 
   // Obter dados para a interface em cascata
   const capacidades = getCapacidadesUnicas();
@@ -241,11 +233,7 @@ const NovoPedido = () => {
     localStorage.removeItem('carrinho');
   };
 
-  const isInCart = (item, tipo) => {
-    return carrinho.some(carrinhoItem => 
-      carrinhoItem.id === item.id && carrinhoItem.tipo === tipo
-    );
-  };
+
 
   const getTotalCarrinho = () => {
     return carrinho.reduce((total, item) => {
@@ -560,7 +548,7 @@ const NovoPedido = () => {
       <div className="novo-pedido-content">
         {/* Progress Steps */}
         <div className="progress-steps">
-          {steps.map((step, index) => (
+          {steps.map((step) => (
             <div
               key={step.id}
               className={`step ${currentStep >= step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''}`}
@@ -695,8 +683,8 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
             <span className="spec-value">
               {configuracoes.length > 0 ? (
                 <div className="configuracoes-lista">
-                  {configuracoes.map((config, index) => (
-                    <div key={index} className="config-item">
+                  {configuracoes.map((config, idx) => (
+                    <div key={idx} className="config-item">
                       {config}
                     </div>
                   ))}
@@ -753,7 +741,7 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
 };
 
 // Componente Política de Pagamento
-const PoliticaPagamento = ({ carrinho, clienteData, onPagamentoChange }) => {
+const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
   const [formData, setFormData] = useState({
     tipoPagamento: '',
     prazoPagamento: '',
@@ -1096,7 +1084,7 @@ const CaminhaoForm = ({ formData, setFormData }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user, onRemoverItem, onLimparCarrinho }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
   const handlePDFGenerated = (fileName) => {
     alert(`PDF gerado com sucesso: ${fileName}`);
   };
@@ -1113,14 +1101,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user, onRemoverItem
       <div className="resumo-section">
         <h3>Itens Selecionados</h3>
         <div className="resumo-items">
-          {carrinho.map((item, index) => {
+          {carrinho.map((item, idx) => {
             let codigoProduto = null;
             if (item.tipo === 'equipamento') {
               const opcionaisSelecionados = carrinho.filter(i => i.tipo === 'opcional').map(i => i.nome);
               codigoProduto = generateCodigoProduto(item.nome, opcionaisSelecionados);
             }
             return (
-              <div key={index} className="resumo-item">
+              <div key={idx} className="resumo-item">
                 <div className="item-info">
                   <div className="item-name">{item.nome}</div>
                   <div className="item-type">{item.tipo}</div>
