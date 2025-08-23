@@ -11,8 +11,6 @@ export default defineConfig({
     // Variáveis globais
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
     __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-    // Expor variáveis de ambiente para o cliente
-    'process.env': process.env
   },
   
   // Configurações de build
@@ -53,15 +51,6 @@ export default defineConfig({
     port: 5173,
     host: true,
     open: true,
-    
-    // Configurações de proxy (para futuras APIs)
-    proxy: {
-      '/api': {
-        target: 'http://localhost:3001',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
   },
   
   // Configurações de preview
@@ -79,19 +68,6 @@ export default defineConfig({
       '@utils': resolve(__dirname, 'src/utils'),
       '@styles': resolve(__dirname, 'src/styles'),
       '@config': resolve(__dirname, 'src/config'),
-      '@contexts': resolve(__dirname, 'src/contexts'),
-      '@data': resolve(__dirname, 'src/data'),
-    },
-  },
-  
-  // Configurações de CSS
-  css: {
-    // Minificação de CSS
-    postcss: {
-      plugins: [
-        // Adicionar autoprefixer se necessário
-        // require('autoprefixer'),
-      ],
     },
   },
   
@@ -105,11 +81,5 @@ export default defineConfig({
       'html2canvas',
       'qrcode',
     ],
-  },
-  
-  // Configurações de esbuild
-  esbuild: {
-    // Remover console.log em produção
-    drop: process.env.NODE_ENV === 'production' ? ['console', 'debugger'] : [],
   },
 })
