@@ -63,9 +63,9 @@ const NovoPedido = () => {
 
   const steps = [
     { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
-    { id: 2, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
-    { id: 3, title: 'Caminhão', icon: '🚛', description: 'Configuração do veículo' },
-    { id: 4, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
+    { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
+    { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
+    { id: 4, title: 'Caminhão', icon: '🚛', description: 'Configuração do veículo' },
     { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
   ];
 
@@ -164,6 +164,17 @@ const NovoPedido = () => {
       };
       
       adicionarAoCarrinho(produto, 'guindaste');
+      
+      // Avançar automaticamente para o próximo step após selecionar um guindaste
+      setTimeout(() => {
+        setCurrentStep(2); // Ir para o step de Pagamento
+        
+        // Scroll para o topo da página
+        window.scrollTo({
+          top: 0,
+          behavior: 'smooth'
+        });
+      }, 800);
     }
   };
 
@@ -184,13 +195,17 @@ const NovoPedido = () => {
     setTimeout(() => {
       const stepElement = document.querySelector('.cascata-step:nth-child(2)');
       if (stepElement) {
-        stepElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
+        // Calcular offset para mobile
+        const isMobile = window.innerWidth <= 768;
+        const offset = isMobile ? 120 : 80;
+        
+        const elementPosition = stepElement.offsetTop - offset;
+        window.scrollTo({
+          top: elementPosition,
+          behavior: 'smooth'
         });
       }
-    }, 500);
+    }, 300);
   };
 
   // Função para selecionar modelo
@@ -209,13 +224,17 @@ const NovoPedido = () => {
     setTimeout(() => {
       const stepElement = document.querySelector('.cascata-step:nth-child(3)');
       if (stepElement) {
-        stepElement.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start',
-          inline: 'nearest'
+        // Calcular offset para mobile
+        const isMobile = window.innerWidth <= 768;
+        const offset = isMobile ? 120 : 80;
+        
+        const elementPosition = stepElement.offsetTop - offset;
+        window.scrollTo({
+          top: elementPosition,
+          behavior: 'smooth'
         });
       }
-    }, 500);
+    }, 300);
   };
 
 
@@ -378,28 +397,6 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             <div className="step-header">
-              <h2>Dados do Cliente</h2>
-              <p>Preencha as informações do cliente</p>
-            </div>
-            <ClienteForm formData={clienteData} setFormData={setClienteData} />
-          </div>
-        );
-
-      case 3:
-        return (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Configuração do Caminhão</h2>
-              <p>Informações do veículo para o serviço</p>
-            </div>
-            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
-          </div>
-        );
-
-      case 4:
-        return (
-          <div className="step-content">
-            <div className="step-header">
               <h2>Política de Pagamento</h2>
               <p>Selecione a forma de pagamento e visualize os descontos</p>
             </div>
@@ -408,6 +405,28 @@ const NovoPedido = () => {
               clienteData={clienteData}
               onPagamentoChange={setPagamentoData}
             />
+          </div>
+        );
+
+      case 3:
+        return (
+          <div className="step-content">
+            <div className="step-header">
+              <h2>Dados do Cliente</h2>
+              <p>Preencha as informações do cliente</p>
+            </div>
+            <ClienteForm formData={clienteData} setFormData={setClienteData} />
+          </div>
+        );
+
+      case 4:
+        return (
+          <div className="step-content">
+            <div className="step-header">
+              <h2>Configuração do Caminhão</h2>
+              <p>Informações do veículo para o serviço</p>
+            </div>
+            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
           </div>
         );
 
@@ -440,11 +459,11 @@ const NovoPedido = () => {
       case 1:
         return guindastesSelecionados.length > 0;
       case 2:
-        return clienteData.nome && clienteData.telefone;
-      case 3:
-        return caminhaoData.tipo && caminhaoData.marca && caminhaoData.modelo;
-      case 4:
         return pagamentoData.tipoPagamento && pagamentoData.prazoPagamento;
+      case 3:
+        return clienteData.nome && clienteData.telefone;
+      case 4:
+        return caminhaoData.tipo && caminhaoData.marca && caminhaoData.modelo;
       case 5:
         return true;
       default:
@@ -463,6 +482,8 @@ const NovoPedido = () => {
       setCurrentStep(currentStep - 1);
     }
   };
+
+
 
   const handleFinish = async () => {
     try {

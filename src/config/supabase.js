@@ -342,6 +342,64 @@ class DatabaseService {
       if (error) throw error;
     }
   }
+
+  // ===== GRÁFICOS DE CARGA =====
+  async getGraficosCarga() {
+    const { data, error } = await supabase
+      .from('graficos_carga')
+      .select('*')
+      .order('nome');
+    
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createGraficoCarga(graficoData) {
+    const { data, error } = await supabase
+      .from('graficos_carga')
+      .insert([graficoData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async updateGraficoCarga(id, graficoData) {
+    const { data, error } = await supabase
+      .from('graficos_carga')
+      .update(graficoData)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteGraficoCarga(id) {
+    const { error } = await supabase
+      .from('graficos_carga')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  }
+
+  async uploadGraficoCarga(file, fileName) {
+    const { data, error } = await supabase.storage
+      .from('graficos-carga')
+      .upload(fileName, file);
+    
+    if (error) throw error;
+    
+    // Obter URL pública
+    const { data: urlData } = supabase.storage
+      .from('graficos-carga')
+      .getPublicUrl(fileName);
+    
+    return urlData.publicUrl;
+  }
 }
 
 // Instância única do serviço

@@ -12,7 +12,6 @@ const DashboardVendedor = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalPedidos: 0,
-    pedidosPendentes: 0,
     valorTotal: 0
   });
 
@@ -38,11 +37,9 @@ const DashboardVendedor = () => {
         // Calcular estatísticas apenas de pedidos finalizados
         const pedidosFinalizados = pedidosDoVendedor.filter(pedido => pedido.status === 'finalizado');
         const valorTotal = pedidosFinalizados.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
-        const pedidosPendentes = pedidosDoVendedor.filter(pedido => pedido.status === 'em_andamento').length;
 
         setStats({
           totalPedidos: pedidosFinalizados.length,
-          pedidosPendentes: pedidosPendentes,
           valorTotal: valorTotal
         });
         
@@ -111,17 +108,7 @@ const DashboardVendedor = () => {
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-icon">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-              </svg>
-            </div>
-            <div className="stat-info">
-              <div className="stat-value">{stats.pedidosPendentes}</div>
-              <div className="stat-label">Pedidos Pendentes</div>
-            </div>
-          </div>
+
 
           <div className="stat-card">
             <div className="stat-icon">
@@ -170,6 +157,18 @@ const DashboardVendedor = () => {
             <div className="action-content">
               <h3>Suporte</h3>
               <p>Precisa de ajuda?</p>
+            </div>
+          </div>
+
+          <div className="action-card" onClick={() => navigate('/graficos-carga')}>
+            <div className="action-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+              </svg>
+            </div>
+            <div className="action-content">
+              <h3>Gráficos de Carga</h3>
+              <p>Download de gráficos técnicos</p>
             </div>
           </div>
 

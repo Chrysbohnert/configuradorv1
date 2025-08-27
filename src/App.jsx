@@ -10,6 +10,8 @@ import GerenciarVendedores from './pages/GerenciarVendedores';
 import GerenciarGuindastes from './pages/GerenciarGuindastes';
 import RelatorioCompleto from './pages/RelatorioCompleto';
 import AlterarSenha from './pages/AlterarSenha';
+import GraficosCarga from './pages/GraficosCarga';
+import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
 
 function App() {
   return (
@@ -35,6 +37,12 @@ function App() {
           
           {/* Rota de Alterar Senha */}
           <Route path="/alterar-senha" element={<AlterarSenha />} />
+          
+          {/* Rota de Gráficos de Carga */}
+          <Route path="/graficos-carga" element={<GraficosCarga />} />
+          
+          {/* Rota de Gerenciar Gráficos de Carga */}
+          <Route path="/gerenciar-graficos-carga" element={<GerenciarGraficosCarga />} />
           
           {/* Redirecionar rotas não encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />

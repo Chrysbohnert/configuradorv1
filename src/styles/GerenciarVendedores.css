@@ -27,20 +27,20 @@
 .header-info h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .header-info p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .add-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -53,7 +53,7 @@
 
 .add-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(55, 65, 81, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .add-btn svg {
@@ -80,7 +80,7 @@
 .vendedor-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-  border-color: #374151;
+  border-color: #000000;
 }
 
 .vendedor-header {
@@ -93,7 +93,7 @@
 .vendedor-avatar {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -111,13 +111,13 @@
 .vendedor-info h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 4px;
 }
 
 .vendedor-info p {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .vendedor-actions {
@@ -131,7 +131,7 @@
   border: 1px solid #dee2e6;
   border-radius: 8px;
   background: white;
-  color: #6c757d;
+  color: #000000;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -145,7 +145,7 @@
 }
 
 .edit-btn {
-  color: #495057;
+  color: #000000;
 }
 
 .edit-btn:hover {
@@ -155,7 +155,7 @@
 }
 
 .delete-btn {
-  color: #495057;
+  color: #000000;
 }
 
 .delete-btn:hover {
@@ -187,13 +187,13 @@
 
 .detail-label {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
   font-weight: 500;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #495057;
+  color: #000000;
   font-weight: 600;
 }
 
@@ -212,13 +212,13 @@
 .stat-value {
   font-size: 18px;
   font-weight: 700;
-  color: #374151;
+  color: #000000;
   margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #6c757d;
+  color: #000000;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -235,7 +235,7 @@
 .empty-icon {
   font-size: 64px;
   margin-bottom: 20px;
-  color: #6c757d;
+  color: #000000;
   opacity: 0.5;
 }
 
@@ -247,13 +247,13 @@
 .empty-state h3 {
   font-size: 20px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .empty-state p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
   margin-bottom: 24px;
 }
 
@@ -293,7 +293,7 @@
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
 }
 
 .close-btn {
@@ -301,7 +301,7 @@
   height: 32px;
   border: none;
   background: none;
-  color: #6c757d;
+  color: #000000;
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.3s ease;
@@ -309,7 +309,7 @@
 
 .close-btn:hover {
   background: #f8f9fa;
-  color: #495057;
+  color: #000000;
 }
 
 .close-btn svg {
@@ -329,7 +329,7 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
@@ -345,7 +345,7 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #374151;
+  border-color: #000000;
   box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.1);
 }
 
@@ -360,7 +360,7 @@
   padding: 12px 20px;
   border: 1px solid #dee2e6;
   background: white;
-  color: #6c757d;
+  color: #000000;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -369,14 +369,14 @@
 }
 
 .cancel-btn:hover {
-  border-color: #6c757d;
-  color: #495057;
+  border-color: #000000;
+  color: #000000;
 }
 
 .save-btn {
   flex: 1;
   padding: 12px 20px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -388,7 +388,7 @@
 
 .save-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(55, 65, 81, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsive Design */
@@ -533,7 +533,7 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #222c3c;
+  background: #000000;
   color: #fff;
   display: flex;
   align-items: center;
@@ -549,17 +549,17 @@
   flex: 1.5;
   min-width: 120px;
   font-size: 0.98rem;
-  color: #444;
+  color: #020202;
 }
 .vendedor-info-vendas {
   flex: 1.2;
   min-width: 100px;
   font-size: 0.98rem;
-  color: #444;
+  color: #000000;
 }
 .vendedor-info-dados span, .vendedor-info-vendas span {
   font-weight: 600;
-  color: #222c3c;
+  color: #000000;
   margin-right: 4px;
 }
 @media (max-width: 900px) {

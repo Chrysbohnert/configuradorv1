@@ -16,9 +16,7 @@ const RelatorioCompleto = () => {
     totalVendedores: 0,
     totalPedidos: 0,
     totalValor: 0,
-    pedidosFinalizados: 0,
-    pedidosEmAndamento: 0,
-    pedidosCancelados: 0
+    pedidosFinalizados: 0
   });
 
   useEffect(() => {
@@ -58,20 +56,14 @@ const RelatorioCompleto = () => {
         // Calcular estatísticas
         const totalPedidos = pedidosDoVendedor.length;
         const pedidosFinalizados = pedidosDoVendedor.filter(p => p.status === 'finalizado');
-        const pedidosEmAndamento = pedidosDoVendedor.filter(p => p.status === 'em_andamento');
-        const pedidosCancelados = pedidosDoVendedor.filter(p => p.status === 'cancelado');
         
         const valorTotal = pedidosFinalizados.reduce((total, p) => total + (p.valor_total || 0), 0);
-        const valorEmAndamento = pedidosEmAndamento.reduce((total, p) => total + (p.valor_total || 0), 0);
         
         return {
           ...vendedor,
           totalPedidos,
           pedidosFinalizados: pedidosFinalizados.length,
-          pedidosEmAndamento: pedidosEmAndamento.length,
-          pedidosCancelados: pedidosCancelados.length,
           valorTotal,
-          valorEmAndamento,
           pedidos: pedidosDoVendedor
         };
       });
@@ -81,9 +73,7 @@ const RelatorioCompleto = () => {
         totalVendedores: vendedoresData.length,
         totalPedidos: pedidos.length,
         totalValor: pedidos.reduce((total, p) => total + (p.valor_total || 0), 0),
-        pedidosFinalizados: pedidos.filter(p => p.status === 'finalizado').length,
-        pedidosEmAndamento: pedidos.filter(p => p.status === 'em_andamento').length,
-        pedidosCancelados: pedidos.filter(p => p.status === 'cancelado').length
+        pedidosFinalizados: pedidos.filter(p => p.status === 'finalizado').length
       };
 
       setVendedores(vendedoresComDados);
@@ -194,20 +184,8 @@ const RelatorioCompleto = () => {
                   </svg>
                 </div>
                 <div className="stat-info">
-                  <div className="stat-value">{resumoGeral.totalPedidos}</div>
-                  <div className="stat-label">Total de Pedidos</div>
-                </div>
-              </div>
-
-              <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#fff3e0' }}>
-                  <svg viewBox="0 0 24 24" fill="#fd7e14">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                  </svg>
-                </div>
-                <div className="stat-info">
                   <div className="stat-value">{resumoGeral.pedidosFinalizados}</div>
-                  <div className="stat-label">Finalizados</div>
+                  <div className="stat-label">Pedidos Finalizados</div>
                 </div>
               </div>
 
@@ -242,24 +220,10 @@ const RelatorioCompleto = () => {
                   <div className="vendedor-stats">
                     <div className="stat-row">
                       <div className="stat-item">
-                        <span className="stat-label">Total:</span>
-                        <span className="stat-value">{vendedor.totalPedidos}</span>
-                      </div>
-                      <div className="stat-item">
                         <span className="stat-label">Finalizados:</span>
                         <span className="stat-value success">{vendedor.pedidosFinalizados}</span>
                       </div>
                       <div className="stat-item">
-                        <span className="stat-label">Em Andamento:</span>
-                        <span className="stat-value warning">{vendedor.pedidosEmAndamento}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Cancelados:</span>
-                        <span className="stat-value danger">{vendedor.pedidosCancelados}</span>
-                      </div>
-                    </div>
-                    <div className="stat-row">
-                      <div className="stat-item full-width">
                         <span className="stat-label">Valor Total:</span>
                         <span className="stat-value price">{formatCurrency(vendedor.valorTotal)}</span>
                       </div>

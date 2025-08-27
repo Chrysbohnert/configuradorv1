@@ -49,13 +49,13 @@
 .form-header h2 {
   font-size: 28px;
   font-weight: 700;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .form-header p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .error-message {
@@ -104,7 +104,7 @@
   display: block;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
@@ -120,13 +120,13 @@
 
 .form-group input:focus {
   outline: none;
-  border-color: #374151;
+  border-color: #000000;
   box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.1);
 }
 
 .login-button {
   width: 100%;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   padding: 14px 24px;
@@ -144,7 +144,7 @@
 
 .login-button:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(55, 65, 81, 0.3);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
 }
 
 .login-button:disabled {
@@ -155,7 +155,7 @@
 .loading-spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(0, 0, 0, 0.3);
   border-top: 2px solid white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -179,14 +179,14 @@
   gap: 8px;
   font-size: 16px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 20px;
 }
 
 .test-credentials h3 svg {
   width: 16px;
   height: 16px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .credential-group {
@@ -207,19 +207,19 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 12px;
 }
 
 .credential-title svg {
   width: 14px;
   height: 14px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .credential-value {
   font-size: 13px;
-  color: #6c757d;
+  color: #000000;
   margin-bottom: 4px;
   font-family: 'Courier New', monospace;
   background: #f8f9fa;
@@ -232,7 +232,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   padding: 8px 16px;
@@ -261,7 +261,7 @@
 
 .back-btn {
   background: transparent;
-  color: #6c757d;
+  color: #000000;
   border: 1px solid #e9ecef;
   padding: 10px 20px;
   border-radius: 6px;
@@ -272,13 +272,13 @@
 
 .back-btn:hover {
   background: #f8f9fa;
-  color: #495057;
+  color: #000000;
 }
 
 .form-help {
   display: block;
   font-size: 12px;
-  color: #6c757d;
+  color: #000000;
   margin-top: 4px;
 }
 

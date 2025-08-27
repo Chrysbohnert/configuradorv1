@@ -23,6 +23,11 @@ const AdminNavigation = ({ user }) => {
       icon: '🏗️'
     },
     {
+      path: '/gerenciar-graficos-carga',
+      label: 'Gerenciar Gráficos',
+      icon: '📊'
+    },
+    {
       path: '/relatorio-completo',
       label: 'Relatório Completo',
       icon: '📈'

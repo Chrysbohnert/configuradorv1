@@ -27,13 +27,13 @@
 .header-info h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .header-info p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
 }
 
 /* Tabs */
@@ -57,7 +57,7 @@
   padding: 12px 20px;
   border: none;
   background: transparent;
-  color: #6c757d;
+  color: #000000;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -68,11 +68,11 @@
 
 .tab:hover {
   background: #f8f9fa;
-  color: #495057;
+  color: #000000;
 }
 
 .tab.active {
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
 }
 
@@ -99,14 +99,14 @@
 .content-header h2 {
   font-size: 24px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
 }
 
 .add-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   padding: 12px 20px;
@@ -119,7 +119,7 @@
 
 .add-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(55, 65, 81, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .add-btn svg {
@@ -146,7 +146,7 @@
 .guindaste-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-  border-color: #374151;
+  border-color: #000000;
 }
 
 .guindaste-header {
@@ -175,13 +175,13 @@
 
 .guindaste-thumbnail:hover {
   transform: scale(1.05);
-  border-color: #374151;
+  border-color: #000000;
 }
 
 .guindaste-icon {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -201,13 +201,13 @@
 .guindaste-info h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 4px;
 }
 
 .guindaste-info p {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .guindaste-actions {
@@ -226,7 +226,7 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #6c757d;
+  color: #000000;
 }
 
 .action-btn:hover {
@@ -235,23 +235,23 @@
 }
 
 .edit-btn {
-  color: #495057;
+  color: #000000;
 }
 
 .edit-btn:hover {
-  background: #e3f2fd;
-  border-color: #2196f3;
-  color: #1976d2;
+  background: #474f55;
+  border-color: #7a8289;
+  color: #000000;
 }
 
 .delete-btn {
-  color: #495057;
+  color: #000000;
 }
 
 .delete-btn:hover {
   background: #ffebee;
-  border-color: #f44336;
-  color: #d32f2f;
+  border-color: #50403f;
+  color: #3f3030;
 }
 
 .action-btn {
@@ -277,13 +277,13 @@
 
 .detail-label {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
   font-weight: 500;
 }
 
 .detail-value {
   font-size: 14px;
-  color: #495057;
+  color: #000000;
   font-weight: 600;
 }
 
@@ -296,9 +296,9 @@
 
 .config-item {
   font-size: 13px;
-  color: #495057;
+  color: #000000;
   padding: 2px 0;
-  border-left: 2px solid #667eea;
+  border-left: 2px solid #0c0c0c;
   padding-left: 8px;
   background: rgba(102, 126, 234, 0.05);
   border-radius: 0 4px 4px 0;
@@ -316,7 +316,7 @@
 
 .guindaste-description p {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
   line-height: 1.5;
   margin: 0;
 }
@@ -340,7 +340,7 @@
 .opcional-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-  border-color: #374151;
+  border-color: #000000;
 }
 
 .opcional-header {
@@ -369,13 +369,13 @@
 
 .opcional-thumbnail:hover {
   transform: scale(1.05);
-  border-color: #374151;
+  border-color: #000000;
 }
 
 .opcional-icon {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   border-radius: 10px;
   display: flex;
   align-items: center;
@@ -395,13 +395,13 @@
 .opcional-info h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 4px;
 }
 
 .opcional-info p {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .opcional-actions {
@@ -420,7 +420,7 @@
 
 .opcional-description p {
   font-size: 14px;
-  color: #6c757d;
+  color: #000000;
   line-height: 1.5;
   margin: 0;
 }
@@ -429,7 +429,7 @@
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .empty-icon {
@@ -441,7 +441,7 @@
   align-items: center;
   justify-content: center;
   margin: 0 auto 24px;
-  color: #adb5bd;
+  color: #32373b;
 }
 
 .empty-icon svg {
@@ -452,13 +452,13 @@
 .empty-state h3 {
   font-size: 20px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
 .empty-state p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
   margin-bottom: 24px;
 }
 
@@ -498,7 +498,7 @@
 .modal-header h2 {
   font-size: 20px;
   font-weight: 600;
-  color: #495057;
+  color: #000000;
   margin: 0;
 }
 
@@ -513,12 +513,12 @@
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #6c757d;
+  color: #000000;
 }
 
 .close-btn:hover {
   background: #e9ecef;
-  color: #495057;
+  color: #000000;
 }
 
 .close-btn svg {
@@ -549,7 +549,7 @@
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #495057;
+  color: #000000;
   margin-bottom: 8px;
 }
 
@@ -568,7 +568,7 @@
 .form-group select:focus,
 .form-group textarea:focus {
   outline: none;
-  border-color: #374151;
+  border-color: #000000;
   box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.1);
 }
 
@@ -597,7 +597,7 @@
   padding: 12px 24px;
   border: 2px solid #e9ecef;
   background: white;
-  color: #6c757d;
+  color: #000000;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -612,7 +612,7 @@
 
 .save-btn {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -624,7 +624,7 @@
 
 .save-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(55, 65, 81, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* Responsividade */
