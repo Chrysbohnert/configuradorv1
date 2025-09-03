@@ -12,6 +12,7 @@ import RelatorioCompleto from './pages/RelatorioCompleto';
 import AlterarSenha from './pages/AlterarSenha';
 import GraficosCarga from './pages/GraficosCarga';
 import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
+import DetalhesGuindaste from './pages/DetalhesGuindaste';
 
 function App() {
   return (
@@ -43,6 +44,9 @@ function App() {
           
           {/* Rota de Gerenciar Gráficos de Carga */}
           <Route path="/gerenciar-graficos-carga" element={<GerenciarGraficosCarga />} />
+          
+          {/* Rota de Detalhes do Guindaste */}
+          <Route path="/detalhes-guindaste" element={<DetalhesGuindaste />} />
           
           {/* Redirecionar rotas não encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />

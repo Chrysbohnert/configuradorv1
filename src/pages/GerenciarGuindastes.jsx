@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
 import GuindasteLoading from '../components/GuindasteLoading';
 import ImageUpload from '../components/ImageUpload';
+
 import { db } from '../config/supabase';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
@@ -22,7 +23,10 @@ const GerenciarGuindastes = () => {
     configuração: '',
     tem_contr: 'Sim',
     imagem_url: '',
-    grafico_carga_url: ''
+    grafico_carga_url: '',
+    descricao: '',
+    nao_incluido: '',
+    imagens_adicionais: []
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
@@ -76,6 +80,35 @@ const GerenciarGuindastes = () => {
     setFormData(prev => ({ ...prev, grafico_carga_url: imageUrl }));
   };
 
+  const handleImagensAdicionaisChange = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    try {
+      const uploadedUrls = [];
+      for (const file of files) {
+        const fileName = `guindaste_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
+        const imageUrl = await db.uploadImagemGuindaste(file, fileName);
+        uploadedUrls.push(imageUrl);
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        imagens_adicionais: [...prev.imagens_adicionais, ...uploadedUrls]
+      }));
+    } catch (error) {
+      console.error('Erro ao fazer upload das imagens:', error);
+      alert('Erro ao fazer upload das imagens. Tente novamente.');
+    }
+  };
+
+  const removeImagemAdicional = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index)
+    }));
+  };
+
   const handleEdit = async (item) => {
     setEditingGuindaste(item);
     setFormData({
@@ -85,7 +118,10 @@ const GerenciarGuindastes = () => {
       configuração: item.configuração,
       tem_contr: item.tem_contr,
       imagem_url: item.imagem_url || '',
-      grafico_carga_url: item.grafico_carga_url || ''
+      grafico_carga_url: item.grafico_carga_url || '',
+      descricao: item.descricao || '',
+      nao_incluido: item.nao_incluido || '',
+      imagens_adicionais: item.imagens_adicionais || []
     });
     setShowModal(true);
   };
@@ -112,7 +148,10 @@ const GerenciarGuindastes = () => {
       configuração: '',
       tem_contr: 'Sim',
       imagem_url: '',
-      grafico_carga_url: ''
+      grafico_carga_url: '',
+      descricao: '',
+      nao_incluido: '',
+      imagens_adicionais: []
     });
   };
 
@@ -125,7 +164,10 @@ const GerenciarGuindastes = () => {
       configuração: '',
       tem_contr: 'Sim',
       imagem_url: '',
-      grafico_carga_url: ''
+      grafico_carga_url: '',
+      descricao: '',
+      nao_incluido: '',
+      imagens_adicionais: []
     });
     setShowModal(true);
   };
@@ -145,7 +187,10 @@ const GerenciarGuindastes = () => {
         configuração: formData.configuração,
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url || '',
-        grafico_carga_url: formData.grafico_carga_url || ''
+        grafico_carga_url: formData.grafico_carga_url || '',
+              descricao: formData.descricao || '',
+      nao_incluido: formData.nao_incluido || '',
+      imagens_adicionais: formData.imagens_adicionais || []
       };
 
       if (editingGuindaste) {
@@ -359,6 +404,67 @@ const GerenciarGuindastes = () => {
                 <small style={{ color: '#6c757d', fontSize: '12px' }}>
                   Imagem que mostra a capacidade de carga em diferentes posições da lança
                 </small>
+              </div>
+
+              <div className="form-group">
+                <label>Descrição Técnica</label>
+                <textarea
+                  value={formData.descricao}
+                  onChange={e => handleInputChange('descricao', e.target.value)}
+                  rows="6"
+                  placeholder="Descreva as características técnicas, especificações, materiais, funcionalidades e qualquer informação relevante sobre o equipamento..."
+                />
+                <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                  Descrição completa do equipamento para os vendedores
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>O que NÃO está incluído</label>
+                <textarea
+                  value={formData.nao_incluido}
+                  onChange={e => handleInputChange('nao_incluido', e.target.value)}
+                  rows="4"
+                  placeholder="Ex: Instalação, transporte, documentação, treinamento, peças de reposição, etc..."
+                />
+                <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                  Itens que NÃO estão incluídos na proposta para evitar mal-entendidos
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Imagens Adicionais (Galeria)</label>
+                <div className="imagens-adicionais-container">
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImagensAdicionaisChange}
+                    className="file-input"
+                  />
+                  <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                    Selecione múltiplas imagens para criar uma galeria. A primeira imagem será a foto principal.
+                  </small>
+                </div>
+                {formData.imagens_adicionais.length > 0 && (
+                  <div className="imagens-preview">
+                    <h4>Imagens Selecionadas:</h4>
+                    <div className="imagens-grid">
+                      {formData.imagens_adicionais.map((img, index) => (
+                        <div key={index} className="imagem-preview-item">
+                          <img src={img} alt={`Preview ${index + 1}`} />
+                          <button
+                            type="button"
+                            onClick={() => removeImagemAdicional(index)}
+                            className="remove-imagem-btn"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="modal-actions">

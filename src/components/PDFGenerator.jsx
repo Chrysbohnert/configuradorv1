@@ -3,6 +3,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { formatCurrency } from '../utils/formatters';
 import { PDF_CONFIG } from '../config/constants';
+import ClausulasContratuais from './ClausulasContratuais';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
   
@@ -100,6 +101,37 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             </div>
           </div>
         </div>
+
+        ${pedidoData.guindastes?.map(guindaste => {
+          let guindasteInfo = `
+            <div style="margin-bottom: 25px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
+              <h3 style="color: #374151; font-size: 18px; margin-bottom: 15px;">${guindaste.nome}</h3>
+              <div style="display: flex; gap: 20px; margin-bottom: 15px;">
+                <div><strong>Modelo:</strong> ${guindaste.modelo}</div>
+                <div><strong>Código:</strong> ${guindaste.codigo_produto}</div>
+              </div>
+          `;
+          
+          if (guindaste.descricao) {
+            guindasteInfo += `
+              <div style="margin-bottom: 15px;">
+                <strong>Descrição:</strong> ${guindaste.descricao}
+              </div>
+            `;
+          }
+          
+          if (guindaste.nao_incluido) {
+            guindasteInfo += `
+              <div style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                <strong style="color: #92400e;">⚠️ Não está incluído:</strong> 
+                <span style="color: #92400e;">${guindaste.nao_incluido}</span>
+              </div>
+            `;
+          }
+          
+          guindasteInfo += `</div>`;
+          return guindasteInfo;
+        }).join('') || ''}
 
         <div style="margin-bottom: 30px;">
           <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
@@ -396,6 +428,54 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         
         console.log('Página de gráficos de carga concluída');
       }
+
+      // Adicionar página com cláusulas contratuais
+      pdf.addPage();
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont('Arial');
+      
+      // Título das cláusulas
+      pdf.setFontSize(12);
+      pdf.setTextColor(73, 80, 87);
+      pdf.text('CLÁUSULAS CONTRATUAIS', 20, 30);
+      
+      // Conteúdo das cláusulas
+      pdf.setFontSize(8.5);
+      pdf.setTextColor(0, 0, 0);
+      
+      const clausulas = [
+        '1. O prazo de entrega será de 30 (trinta) dias úteis, contados a partir da confirmação do pedido e aprovação do projeto técnico.',
+        '2. O pagamento será realizado em 3 (três) parcelas: 40% na assinatura do contrato, 30% na liberação para fabricação e 30% na entrega.',
+        '3. A garantia será de 12 (doze) meses para defeitos de fabricação, a partir da data de entrega.',
+        '4. O cliente deverá fornecer todas as informações técnicas necessárias para a fabricação no prazo de 5 (cinco) dias úteis.',
+        '5. Alterações no projeto após a aprovação técnica poderão gerar custos adicionais e alteração no prazo de entrega.',
+        '6. O equipamento será entregue na fábrica, sendo de responsabilidade do cliente o transporte e instalação.',
+        '7. A empresa não se responsabiliza por danos causados por uso inadequado ou manutenção incorreta.',
+        '8. Em caso de cancelamento, será cobrada multa de 20% sobre o valor total do contrato.',
+        '9. O equipamento será fabricado conforme especificações técnicas aprovadas pelo cliente.',
+        '10. A empresa se reserva o direito de alterar preços em caso de variação significativa nos custos de matéria-prima.',
+        '11. O cliente deverá realizar a vistoria técnica no prazo de 3 (três) dias úteis após a notificação de conclusão.',
+        '12. A empresa fornecerá treinamento técnico para operação e manutenção do equipamento.',
+        '13. Em caso de força maior, os prazos poderão ser prorrogados sem ônus para as partes.',
+        '14. O contrato será regido pelas leis brasileiras e qualquer litígio será resolvido no foro da comarca da sede da empresa.',
+        '15. O cliente deverá manter o equipamento em condições adequadas de uso e conservação.',
+        '16. A empresa se compromete a manter sigilo sobre informações técnicas e comerciais do cliente.'
+      ];
+      
+      let yPos = 50;
+      clausulas.forEach((clausula, index) => {
+        // Verificar se precisa de nova página
+        if (yPos > 250) {
+          pdf.addPage();
+          yPos = 30;
+        }
+        
+        // Adicionar cláusula
+        const lines = pdf.splitTextToSize(clausula, 170);
+        pdf.text(lines, 20, yPos);
+        yPos += (lines.length * 5) + 10;
+      });
 
       // Salvar PDF
       const fileName = `proposta_stark_${new Date().toISOString().split('T')[0]}.pdf`;

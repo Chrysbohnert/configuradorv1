@@ -1,0 +1,77 @@
+/* Estilos para Cláusulas Contratuais */
+.clausulas-contratuais {
+  page-break-before: always; /* Força quebra de página para última página */
+  margin-top: 20px;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  font-size: 8.5pt; /* Arial 8.5 conforme solicitado */
+  line-height: 1.2;
+  color: #000;
+}
+
+.clausulas-titulo {
+  font-family: Arial, sans-serif;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  color: #000;
+  border-bottom: 1px solid #000;
+  padding-bottom: 10px;
+}
+
+.clausulas-lista {
+  text-align: justify;
+}
+
+.clausula-item {
+  margin: 0 0 8px 0;
+  padding: 0;
+  text-indent: 0;
+  font-family: Arial, sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.3;
+  color: #000;
+}
+
+/* Estilos específicos para PDF */
+@media print {
+  .clausulas-contratuais {
+    page-break-before: always;
+    margin: 0;
+    padding: 15px;
+    font-size: 8.5pt;
+    line-height: 1.2;
+  }
+  
+  .clausulas-titulo {
+    font-size: 10pt;
+    margin-bottom: 15px;
+  }
+  
+  .clausula-item {
+    font-size: 8.5pt;
+    margin-bottom: 6px;
+    line-height: 1.2;
+  }
+}
+
+/* Estilos para visualização na tela */
+@media screen {
+  .clausulas-contratuais {
+    background: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+  
+  .clausulas-titulo {
+    color: #333;
+    border-bottom-color: #666;
+  }
+  
+  .clausula-item {
+    color: #333;
+  }
+}

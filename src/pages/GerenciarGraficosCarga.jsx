@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGraficosCarga.css';
 
 const GerenciarGraficosCarga = () => {
@@ -14,30 +14,44 @@ const GerenciarGraficosCarga = () => {
   const [editingGrafico, setEditingGrafico] = useState(null);
   const [formData, setFormData] = useState({
     nome: '',
-    modelo: '',
-    capacidade: '',
-    tipo: '',
-    lanca: '',
     arquivo: null
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      setUser(userObj);
-      
-      // Verificar se é admin
-      if (userObj.tipo !== 'admin') {
-        navigate('/dashboard');
-        return;
+    const checkAuth = () => {
+      try {
+        console.log('🔍 Verificando autenticação via localStorage...');
+        
+        // Verificar usuário no localStorage (método atual)
+        const userData = localStorage.getItem('user');
+        
+        if (!userData) {
+          console.log('❌ Nenhum usuário no localStorage');
+          navigate('/');
+          return;
+        }
+        
+        const userObj = JSON.parse(userData);
+        console.log('✅ Usuário encontrado no localStorage:', userObj);
+        
+        // Verificar se é admin
+        if (userObj.tipo !== 'admin') {
+          console.log('❌ Usuário não é admin:', userObj.tipo);
+          navigate('/dashboard');
+          return;
+        }
+        
+        console.log('✅ Usuário é admin, carregando gráficos...');
+        setUser(userObj);
+        loadGraficos();
+        
+      } catch (error) {
+        console.error('❌ Erro na verificação de autenticação:', error);
+        navigate('/');
       }
-    } else {
-      navigate('/');
-      return;
-    }
-
-    loadGraficos();
+    };
+    
+    checkAuth();
   }, [navigate]);
 
   const loadGraficos = async () => {
@@ -59,6 +73,41 @@ const GerenciarGraficosCarga = () => {
     try {
       setIsLoading(true);
       
+      // Verificar se o usuário está autenticado (via localStorage)
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        alert('Usuário não autenticado. Faça login novamente.');
+        navigate('/');
+        return;
+      }
+      
+      // Sincronizar com Supabase Auth se necessário
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('🔑 Sessão Supabase inativa, tentando sincronizar...');
+          
+          // Tentar fazer sign in com email/senha se disponível
+          const userObj = JSON.parse(userData);
+          if (userObj.email && userObj.password) {
+            const { error: signInError } = await supabase.auth.signInWithPassword({
+              email: userObj.email,
+              password: userObj.password
+            });
+            
+            if (signInError) {
+              console.log('❌ Erro ao sincronizar com Supabase:', signInError);
+              // Continuar mesmo assim, pode funcionar
+            } else {
+              console.log('✅ Sincronização com Supabase realizada');
+            }
+          }
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao sincronizar com Supabase:', error);
+        // Continuar mesmo assim
+      }
+      
       let arquivoUrl = '';
       
       // Se há um arquivo para upload
@@ -69,10 +118,6 @@ const GerenciarGraficosCarga = () => {
       
       const graficoData = {
         nome: formData.nome,
-        modelo: formData.modelo,
-        capacidade: parseFloat(formData.capacidade),
-        tipo: formData.tipo,
-        lanca: formData.lanca,
         arquivo_url: arquivoUrl || editingGrafico?.arquivo_url
       };
       
@@ -91,7 +136,42 @@ const GerenciarGraficosCarga = () => {
       
     } catch (error) {
       console.error('Erro ao salvar gráfico:', error);
-      alert('Erro ao salvar gráfico. Tente novamente.');
+      console.error('Detalhes completos:', JSON.stringify(error, null, 2));
+      
+      // Mensagens de erro mais específicas
+      let errorMessage = 'Erro ao salvar gráfico. Tente novamente.';
+      
+      if (error.message) {
+        console.log('Mensagem de erro:', error.message);
+        
+        if (error.message.includes('storage')) {
+          errorMessage = 'Erro no sistema de arquivos. Verifique se o arquivo é válido e tente novamente.';
+        } else if (error.message.includes('bucket')) {
+          errorMessage = 'Erro na configuração do sistema. Entre em contato com o suporte.';
+        } else if (error.message.includes('permission')) {
+          errorMessage = 'Erro de permissão. Verifique suas credenciais.';
+        } else if (error.message.includes('file size')) {
+          errorMessage = 'Arquivo muito grande. O tamanho máximo é 50MB.';
+        } else if (error.message.includes('file type')) {
+          errorMessage = 'Tipo de arquivo não suportado. Use apenas arquivos PDF.';
+        } else if (error.message.includes('RLS') || error.message.includes('row-level security policy')) {
+          errorMessage = 'Erro de permissão: Configure as políticas de acesso no Supabase Storage. Abra o console (F12) e execute testSupabaseStorage() para instruções detalhadas.';
+        } else if (error.message.includes('400')) {
+          errorMessage = 'Erro de requisição. Verifique se o arquivo é válido.';
+        } else if (error.message.includes('403')) {
+          errorMessage = 'Acesso negado. Verifique suas permissões no Supabase.';
+        }
+      }
+      
+      // Mostrar erro detalhado no console para debug
+      console.error('Erro detalhado para debug:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint
+      });
+      
+      alert(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -101,10 +181,6 @@ const GerenciarGraficosCarga = () => {
     setEditingGrafico(grafico);
     setFormData({
       nome: grafico.nome,
-      modelo: grafico.modelo,
-      capacidade: grafico.capacidade.toString(),
-      tipo: grafico.tipo || '',
-      lanca: grafico.lanca || '',
       arquivo: null
     });
     setShowModal(true);
@@ -131,10 +207,6 @@ const GerenciarGraficosCarga = () => {
   const resetForm = () => {
     setFormData({
       nome: '',
-      modelo: '',
-      capacidade: '',
-      tipo: '',
-      lanca: '',
       arquivo: null
     });
   };
@@ -216,20 +288,10 @@ const GerenciarGraficosCarga = () => {
                       </div>
                       <div className="grafico-details">
                         <h3>{grafico.nome}</h3>
-                        <p className="modelo">{grafico.modelo}</p>
-                        <span className="capacidade">{grafico.capacidade} Ton</span>
                       </div>
                     </div>
                     
                     <div className="grafico-meta">
-                      <div className="meta-item">
-                        <span className="label">Tipo:</span>
-                        <span className="value">{grafico.tipo || 'Padrão'}</span>
-                      </div>
-                      <div className="meta-item">
-                        <span className="label">Lança:</span>
-                        <span className="value">{grafico.lanca || 'N/A'}</span>
-                      </div>
                       <div className="meta-item">
                         <span className="label">Atualizado:</span>
                         <span className="value">
@@ -303,49 +365,6 @@ const GerenciarGraficosCarga = () => {
                     onChange={(e) => setFormData(prev => ({ ...prev, nome: e.target.value }))}
                     placeholder="Ex: GSI 6.5 - Gráfico de Carga"
                     required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Modelo *</label>
-                  <input
-                    type="text"
-                    value={formData.modelo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, modelo: e.target.value }))}
-                    placeholder="Ex: GSI 6.5"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Capacidade (Ton) *</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.capacidade}
-                    onChange={(e) => setFormData(prev => ({ ...prev, capacidade: e.target.value }))}
-                    placeholder="Ex: 6.5"
-                    required
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Tipo</label>
-                  <input
-                    type="text"
-                    value={formData.tipo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value }))}
-                    placeholder="Ex: Padrão, Especial"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Lança</label>
-                  <input
-                    type="text"
-                    value={formData.lanca}
-                    onChange={(e) => setFormData(prev => ({ ...prev, lanca: e.target.value }))}
-                    placeholder="Ex: 12m, 15m"
                   />
                 </div>
                 

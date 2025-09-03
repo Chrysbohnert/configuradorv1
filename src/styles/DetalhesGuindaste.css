@@ -1,0 +1,485 @@
+.detalhes-guindaste-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  padding: 20px;
+}
+
+.detalhes-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+/* Header */
+.detalhes-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.voltar-btn {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  padding: 12px 20px;
+  border-radius: 25px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+}
+
+.voltar-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.voltar-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.detalhes-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+/* Informações do Guindaste */
+.guindaste-info-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.guindaste-info-section h2 {
+  margin: 0 0 20px 0;
+  font-size: 32px;
+  color: #1f2937;
+  font-weight: 700;
+}
+
+.guindaste-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.guindaste-meta span {
+  background: #f3f4f6;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Foto Principal */
+.foto-principal-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.foto-principal-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.foto-principal {
+  display: flex;
+  justify-content: center;
+}
+
+.foto-principal-img {
+  max-width: 100%;
+  max-height: 500px;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+}
+
+.foto-principal-img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+}
+
+.sem-foto {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 400px;
+  height: 300px;
+  background: #f9fafb;
+  border: 2px dashed #d1d5db;
+  border-radius: 15px;
+  color: #6b7280;
+}
+
+.sem-foto span {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.sem-foto p {
+  margin: 0;
+  font-size: 18px;
+}
+
+/* Galeria */
+.galeria-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.galeria-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.galeria-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.galeria-item {
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.galeria-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.galeria-img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.galeria-img:hover {
+  transform: scale(1.05);
+}
+
+/* Descrição */
+.descricao-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.descricao-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 24px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.descricao-content {
+  background: #f9fafb;
+  padding: 25px;
+  border-radius: 12px;
+  border-left: 4px solid #667eea;
+}
+
+ .descricao-content p {
+   margin: 0;
+   font-size: 16px;
+   line-height: 1.7;
+   color: #374151;
+   white-space: pre-line;
+ }
+
+ .sem-descricao {
+   display: flex;
+   flex-direction: column;
+   align-items: center;
+   justify-content: center;
+   padding: 20px;
+   color: #6b7280;
+   text-align: center;
+ }
+
+  .sem-descricao span {
+   font-size: 24px;
+   margin-bottom: 10px;
+ }
+
+ /* O que NÃO está incluído */
+ .nao-incluido-section {
+   padding: 20px 30px;
+   border-bottom: 1px solid #e5e7eb;
+   background: #fef3c7;
+   border-left: 8px solid #f59e0b;
+ }
+
+ .nao-incluido-content {
+   display: flex;
+   align-items: center;
+   gap: 12px;
+ }
+
+ .nao-incluido-icon {
+   font-size: 18px;
+   flex-shrink: 0;
+ }
+
+ .nao-incluido-content p {
+   margin: 0;
+   font-size: 14px;
+   line-height: 1.4;
+   color: #92400e;
+   font-weight: 500;
+ }
+
+ /* Cláusulas */
+.clausulas-section {
+  padding: 30px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Ações */
+.acoes-section {
+  padding: 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.continuar-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border: none;
+  padding: 18px 36px;
+  border-radius: 50px;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s ease;
+  box-shadow: 0 10px 25px rgba(16, 185, 129, 0.3);
+}
+
+.continuar-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(16, 185, 129, 0.4);
+}
+
+.continuar-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+/* Modal de Imagem */
+.image-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90vw;
+  max-height: 90vh;
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.close-modal-btn {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 24px;
+  z-index: 10;
+  transition: all 0.3s ease;
+}
+
+.close-modal-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.modal-image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+}
+
+.modal-image {
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+
+.nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  z-index: 10;
+}
+
+.nav-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.nav-btn svg {
+  width: 24px;
+  height: 24px;
+}
+
+.prev-btn {
+  left: 20px;
+}
+
+.next-btn {
+  right: 20px;
+}
+
+.modal-indicators {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  padding: 20px;
+  background: #f9fafb;
+}
+
+.indicator {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #d1d5db;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.indicator.active {
+  background: #667eea;
+  transform: scale(1.2);
+}
+
+.indicator:hover {
+  background: #9ca3af;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .detalhes-guindaste-container {
+    padding: 10px;
+  }
+  
+  .detalhes-header {
+    padding: 20px;
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+  
+  .detalhes-header h1 {
+    font-size: 24px;
+  }
+  
+  .guindaste-info-section,
+  .foto-principal-section,
+  .galeria-section,
+  .descricao-section,
+  .acoes-section {
+    padding: 20px;
+  }
+  
+  .guindaste-info-section h2 {
+    font-size: 24px;
+  }
+  
+  .guindaste-meta {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .galeria-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 15px;
+  }
+  
+  .continuar-btn {
+    padding: 16px 28px;
+    font-size: 16px;
+  }
+  
+  .nav-btn {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .nav-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .detalhes-header h1 {
+    font-size: 20px;
+  }
+  
+  .guindaste-info-section h2 {
+    font-size: 20px;
+  }
+  
+  .galeria-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .continuar-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

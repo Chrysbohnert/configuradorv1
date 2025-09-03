@@ -387,20 +387,321 @@ class DatabaseService {
   }
 
   async uploadGraficoCarga(file, fileName) {
-    const { data, error } = await supabase.storage
-      .from('graficos-carga')
-      .upload(fileName, file);
-    
-    if (error) throw error;
-    
-    // Obter URL pública
-    const { data: urlData } = supabase.storage
-      .from('graficos-carga')
-      .getPublicUrl(fileName);
-    
-    return urlData.publicUrl;
+    try {
+      console.log('Iniciando upload do arquivo:', fileName);
+      
+      // Verificar se há sessão ativa
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        console.log('🔑 Nenhuma sessão Supabase ativa, verificando localStorage...');
+        
+        // Verificar se há indicação de sessão Supabase no localStorage
+        const supabaseSession = localStorage.getItem('supabaseSession');
+        
+        if (supabaseSession === 'active') {
+          console.log('🔄 Sessão Supabase marcada como ativa, tentando renovar...');
+          
+          // Tentar renovar a sessão
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (refreshError) {
+            console.log('❌ Erro ao renovar sessão:', refreshError);
+            // Se não conseguir renovar, tentar fazer sign in novamente
+            throw new Error('Sessão Supabase expirada. Faça login novamente.');
+          } else {
+            console.log('✅ Sessão Supabase renovada com sucesso');
+          }
+        } else {
+          throw new Error('Sessão Supabase não encontrada. Faça login novamente.');
+        }
+      }
+      
+      // Fazer upload diretamente (bucket já existe)
+      const { data, error } = await supabase.storage
+        .from('graficos-carga')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Erro no upload:', error);
+        console.error('Detalhes do erro:', JSON.stringify(error, null, 2));
+        console.error('Mensagem do erro:', error.message);
+        console.error('Código do erro:', error.code);
+        
+        // Se for erro de arquivo duplicado, tentar com upsert
+        if (error.message && error.message.includes('already exists')) {
+          console.log('Arquivo já existe, tentando com upsert...');
+          const { data: upsertData, error: upsertError } = await supabase.storage
+            .from('graficos-carga')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: true
+            });
+          
+          if (upsertError) {
+            console.error('Erro no upsert:', upsertError);
+            throw upsertError;
+          }
+          
+          const { data: urlData } = supabase.storage
+            .from('graficos-carga')
+            .getPublicUrl(fileName);
+          
+          return urlData.publicUrl;
+        }
+        
+        throw error;
+      }
+      
+      console.log('Upload realizado com sucesso:', data);
+      
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('graficos-carga')
+        .getPublicUrl(fileName);
+      
+      console.log('URL pública gerada:', urlData.publicUrl);
+      return urlData.publicUrl;
+      
+    } catch (error) {
+      console.error('Erro completo no uploadGraficoCarga:', error);
+      throw error;
+    }
+  }
+
+  // Função para upload de imagens de guindastes
+  async uploadImagemGuindaste(file, fileName) {
+    try {
+      console.log('Iniciando upload da imagem:', fileName);
+      
+      // Verificar se o bucket existe
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets.some(bucket => bucket.name === 'guindastes');
+      
+      if (!bucketExists) {
+        console.log('Bucket guindastes não existe, criando...');
+        const { error: createError } = await supabase.storage.createBucket('guindastes', {
+          public: true,
+          allowedMimeTypes: ['image/*'],
+          fileSizeLimit: 52428800 // 50MB
+        });
+        
+        if (createError) {
+          console.error('Erro ao criar bucket:', createError);
+          throw new Error('Erro ao criar bucket de storage');
+        }
+      }
+      
+      // Fazer upload da imagem
+      const { data, error } = await supabase.storage
+        .from('guindastes')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+      
+      if (error) {
+        console.error('Erro no upload:', error);
+        throw error;
+      }
+      
+      console.log('Upload realizado com sucesso:', data);
+      
+      // Obter URL pública
+      const { data: urlData } = supabase.storage
+        .from('guindastes')
+        .getPublicUrl(fileName);
+      
+      console.log('URL pública gerada:', urlData.publicUrl);
+      return urlData.publicUrl;
+      
+    } catch (error) {
+      console.error('Erro completo no uploadImagemGuindaste:', error);
+      throw error;
+    }
   }
 }
 
 // Instância única do serviço
-export const db = new DatabaseService(); 
+export const db = new DatabaseService();
+
+// Função de teste para verificar buckets (disponível no console do navegador)
+if (typeof window !== 'undefined') {
+  window.testSupabaseStorage = async () => {
+    try {
+      console.log('🔍 Testando configuração do Supabase Storage...');
+      
+      // Verificar autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔑 Sessão ativa:', session ? 'Sim' : 'Não');
+      
+      if (!session) {
+        console.error('❌ Nenhuma sessão ativa! Faça login primeiro.');
+        console.log('💡 Dica: Vá para a página de login e faça login novamente.');
+        return;
+      }
+      
+      const { data: { user } } = await supabase.auth.getUser();
+      console.log('👤 Usuário autenticado:', user ? 'Sim' : 'Não');
+      console.log('🆔 ID do usuário:', user?.id);
+      console.log('📧 Email do usuário:', user?.email);
+      console.log('🔍 Metadata do usuário:', user?.user_metadata);
+      
+      if (!user) {
+        console.error('❌ Usuário não autenticado! Faça login primeiro.');
+        return;
+      }
+      
+      // Listar buckets
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error('❌ Erro ao listar buckets:', bucketsError);
+        console.error('Detalhes:', JSON.stringify(bucketsError, null, 2));
+        return;
+      }
+      
+      console.log('📦 Buckets encontrados:', buckets);
+      
+      // Verificar se graficos-carga existe
+      const graficosBucket = buckets.find(b => b.name === 'graficos-carga');
+      
+      if (graficosBucket) {
+        console.log('✅ Bucket graficos-carga encontrado:', graficosBucket);
+        
+        // Testar upload com PDF
+        const testContent = '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n72 720 Td\n(Test PDF) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000204 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n297\n%%EOF';
+        const testFile = new File([testContent], 'test.pdf', { type: 'application/pdf' });
+        
+        console.log('📤 Tentando upload de PDF de teste...');
+        const { data, error } = await supabase.storage
+          .from('graficos-carga')
+          .upload(`test_${Date.now()}.pdf`, testFile);
+        
+        if (error) {
+          console.error('❌ Erro no teste de upload:', error);
+          console.error('Mensagem:', error.message);
+          console.error('Código:', error.code);
+          console.error('Detalhes:', JSON.stringify(error, null, 2));
+          
+          if (error.message.includes('row-level security policy')) {
+            console.error('🔒 PROBLEMA IDENTIFICADO: Row Level Security (RLS)');
+            console.error('📋 SOLUÇÃO: Configure as políticas de acesso no Supabase');
+            console.error('📋 PASSO A PASSO:');
+            console.error('1. Vá para o painel do Supabase');
+            console.error('2. Storage → graficos-carga → Policies');
+            console.error('3. Clique em "New Policy"');
+            console.error('4. Selecione "Create a policy from scratch"');
+            console.error('5. Configure:');
+            console.error('   - Policy name: "Allow authenticated uploads"');
+            console.error('   - Allowed operation: INSERT');
+            console.error('   - Target roles: authenticated');
+            console.error('   - Policy definition: true');
+            console.error('6. Salve a política');
+          }
+        } else {
+          console.log('✅ Upload de teste bem-sucedido:', data);
+          
+          // Obter URL pública
+          const { data: urlData } = supabase.storage
+            .from('graficos-carga')
+            .getPublicUrl(data.path);
+          
+          console.log('🔗 URL pública:', urlData.publicUrl);
+          
+          // Limpar arquivo de teste
+          await supabase.storage.from('graficos-carga').remove([data.path]);
+          console.log('✅ Arquivo de teste removido');
+        }
+      } else {
+        console.log('❌ Bucket graficos-carga não encontrado');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro no teste:', error);
+      console.error('Detalhes:', JSON.stringify(error, null, 2));
+    }
+  };
+
+  // Função para debug da autenticação
+  window.debugAuth = async () => {
+    try {
+      console.log('🔍 DEBUG: Verificando autenticação completa...');
+      
+      // Verificar localStorage
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const userObj = JSON.parse(userData);
+        console.log('✅ Usuário no localStorage:', userObj);
+        console.log('🔑 Tem senha:', userObj.password ? 'Sim' : 'Não');
+        console.log('📧 Email:', userObj.email);
+      } else {
+        console.log('❌ Nenhum usuário no localStorage');
+      }
+      
+      // Verificar sessão do Supabase
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('🔑 Sessão Supabase:', session ? 'Ativa' : 'Inativa');
+      
+      // Verificar indicador de sessão no localStorage
+      const supabaseSession = localStorage.getItem('supabaseSession');
+      console.log('🔑 Indicador Supabase no localStorage:', supabaseSession);
+      
+      // Verificar usuário do Supabase
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      console.log('👤 Usuário Supabase:', user ? 'Autenticado' : 'Não autenticado');
+      if (userError) console.error('❌ Erro no usuário Supabase:', userError);
+      
+      if (session) {
+        console.log('📋 Detalhes da sessão Supabase:');
+        console.log('  - ID:', session.user.id);
+        console.log('  - Email:', session.user.email);
+        console.log('  - Metadata:', session.user.user_metadata);
+        console.log('  - Expira em:', new Date(session.expires_at * 1000).toLocaleString());
+      }
+      
+      if (user) {
+        console.log('📋 Detalhes do usuário Supabase:');
+        console.log('  - ID:', user.id);
+        console.log('  - Email:', user.email);
+        console.log('  - Metadata:', user.user_metadata);
+      }
+      
+      // Verificar se existe na tabela users
+      if (user) {
+        try {
+          const { data: userData, error: dbError } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+          
+          if (dbError) {
+            console.error('❌ Erro ao buscar na tabela users:', dbError);
+          } else if (userData) {
+            console.log('✅ Usuário encontrado na tabela users:', userData);
+          } else {
+            console.log('❌ Usuário não encontrado na tabela users');
+          }
+        } catch (error) {
+          console.error('❌ Erro ao verificar tabela users:', error);
+        }
+      }
+      
+      // Recomendações
+      if (!session && supabaseSession !== 'active') {
+        console.log('💡 RECOMENDAÇÃO: Faça login novamente para ativar a sessão Supabase');
+      } else if (!session && supabaseSession === 'active') {
+        console.log('💡 RECOMENDAÇÃO: Sessão marcada mas inativa, tente renovar');
+      } else if (session) {
+        console.log('✅ Sessão Supabase ativa e funcionando');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro no debug:', error);
+    }
+  };
+} 

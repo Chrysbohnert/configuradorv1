@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
 import PDFGenerator from '../components/PDFGenerator';
+
 import { db } from '../config/supabase';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
@@ -10,6 +11,7 @@ import '../styles/NovoPedido.css';
 
 const NovoPedido = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   const [carrinho, setCarrinho] = useState(() => {
     const savedCart = localStorage.getItem('carrinho');
@@ -44,6 +46,34 @@ const NovoPedido = () => {
     if (!user) return;
     loadData();
   }, [user, navigate]);
+
+  // Verificar se há um guindaste selecionado vindo da tela de detalhes
+  useEffect(() => {
+    if (location.state?.guindasteSelecionado) {
+      const guindaste = location.state.guindasteSelecionado;
+      setGuindastesSelecionados([guindaste]);
+      
+      // Adicionar ao carrinho se não estiver
+      const produto = {
+        id: guindaste.id,
+        nome: guindaste.subgrupo,
+        modelo: guindaste.modelo,
+        codigo_produto: guindaste.codigo_referencia,
+        preco: guindaste.preco || 0,
+        tipo: 'guindaste'
+      };
+      
+      adicionarAoCarrinho(produto, 'guindaste');
+      
+      // Definir step correto
+      if (location.state.step) {
+        setCurrentStep(location.state.step);
+      }
+      
+      // Limpar o estado da navegação
+      navigate(location.pathname, { replace: true });
+    }
+  }, [location.state, navigate]);
 
   const loadData = async () => {
     try {
@@ -165,14 +195,14 @@ const NovoPedido = () => {
       
       adicionarAoCarrinho(produto, 'guindaste');
       
-      // Avançar automaticamente para o próximo step após selecionar um guindaste
+      // Navegar para a tela de detalhes do guindaste
       setTimeout(() => {
-        setCurrentStep(2); // Ir para o step de Pagamento
-        
-        // Scroll para o topo da página
-        window.scrollTo({
-          top: 0,
-          behavior: 'smooth'
+        navigate('/detalhes-guindaste', { 
+          state: { 
+            guindaste: guindaste,
+            returnTo: '/novo-pedido',
+            step: 2
+          } 
         });
       }, 800);
     }
@@ -310,7 +340,37 @@ const NovoPedido = () => {
                       onClick={() => handleSelecionarCapacidade(capacidade)}
                       data-capacidade={capacidade}
                     >
-                      <div className="capacidade-icon">🏗️</div>
+                      <div className="capacidade-icon">
+                        {(() => {
+                          // Encontrar um guindaste "standard" desta capacidade para mostrar a imagem
+                          const guindasteStandard = guindastes.find(g => {
+                            const subgrupo = g.subgrupo || '';
+                            const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+                            const match = modeloBase.match(/(\d+\.?\d*)/);
+                            return match && match[1] === capacidade && g.imagem_url;
+                          });
+                          
+                          if (guindasteStandard && guindasteStandard.imagem_url) {
+                            return (
+                              <img
+                                src={guindasteStandard.imagem_url}
+                                alt={`Guindaste ${capacidade} ton`}
+                                className="capacidade-thumbnail"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            );
+                          }
+                          
+                          return (
+                            <div className="capacidade-fallback">
+                              <span>🏗️</span>
+                            </div>
+                          );
+                        })()}
+                      </div>
                       <div className="capacidade-info">
                         <h4>{capacidade} Ton</h4>
                         <p>Capacidade {capacidade} toneladas</p>
@@ -348,7 +408,21 @@ const NovoPedido = () => {
                           data-modelo={modeloBase}
                         >
                           <div className="modelo-icon">
-                            {modeloBase.includes('GSI') ? '🏭' : '🏗️'}
+                            {guindaste.imagem_url ? (
+                              <img
+                                src={guindaste.imagem_url}
+                                alt={modeloBase}
+                                className="modelo-thumbnail"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              <div className="modelo-fallback">
+                                <span>{modeloBase.includes('GSI') ? '🏭' : '🏗️'}</span>
+                              </div>
+                            )}
                           </div>
                           <div className="modelo-info">
                             <h4>{modeloBase}</h4>
@@ -667,24 +741,33 @@ const extrairConfiguracoes = (subgrupo) => {
   return configuracoes;
 };
 
+
+
 // Componente Card do Guindaste
 const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
-  const defaultImage = '/header-bg.jpg';
   const configuracoes = extrairConfiguracoes(guindaste.subgrupo);
   
   return (
     <div className={`guindaste-card ${isSelected ? 'selected' : ''}`} onClick={onSelect}>
       <div className="card-header">
-        <div className="guindaste-image" style={{ width: '40%', height: '170px', marginBottom: 8 }}>
-          <img
-            src={guindaste.imagem_url || defaultImage}
-            alt={guindaste.subgrupo}
-            className="guindaste-thumbnail"
-            style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8, border: '1px solid #eee' }}
-            onError={e => { e.target.src = defaultImage; }}
-          />
+        <div className="guindaste-image">
+          {guindaste.imagem_url ? (
+            <img
+              src={guindaste.imagem_url}
+              alt={guindaste.subgrupo}
+              className="guindaste-thumbnail"
+              onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextSibling.style.display = 'flex';
+              }}
+            />
+          ) : null}
+          <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
+            </svg>
+          </div>
         </div>
-        <div className="guindaste-icon"></div>
         <div className="guindaste-info">
           <h3>{guindaste.subgrupo}</h3>
           <p className="modelo">Modelo: {guindaste.modelo}</p>

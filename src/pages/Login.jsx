@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import GuindasteLoading from '../components/GuindasteLoading';
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -34,23 +34,54 @@ const Login = () => {
         return;
       }
 
-      // Buscar usuário diretamente no banco
-      const users = await db.getUsers();
-      const user = users.find(u => u.email === email && u.senha === senha);
+      // Primeiro, fazer login no Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: email,
+        password: senha
+      });
 
-      if (user) {
-        // Não armazenar a senha no localStorage por segurança
-        const { senha: _, ...userWithoutPassword } = user;
-        localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-        localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-        
-        if (user.tipo === 'admin') {
-          navigate('/dashboard-admin');
+      if (authError) {
+        console.error('Erro no Supabase Auth:', authError);
+        // Se falhar no Supabase Auth, tentar login direto no banco
+        const users = await db.getUsers();
+        const user = users.find(u => u.email === email && u.senha === senha);
+
+        if (user) {
+          // Login direto no banco (fallback)
+          const { senha: _, ...userWithoutPassword } = user;
+          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+          localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+          
+          if (user.tipo === 'admin') {
+            navigate('/dashboard-admin');
+          } else {
+            navigate('/dashboard');
+          }
         } else {
-          navigate('/dashboard');
+          setError('Email ou senha incorretos');
         }
       } else {
-        setError('Email ou senha incorretos');
+        // Login no Supabase Auth bem-sucedido
+        console.log('✅ Login no Supabase Auth realizado');
+        
+        // Buscar dados completos do usuário no banco
+        const users = await db.getUsers();
+        const user = users.find(u => u.email === email);
+        
+        if (user) {
+          // Salvar dados do usuário (sem senha) e sessão do Supabase
+          const { senha: _, ...userWithoutPassword } = user;
+          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+          localStorage.setItem('supabaseSession', 'active');
+          
+          if (user.tipo === 'admin') {
+            navigate('/dashboard-admin');
+          } else {
+            navigate('/dashboard');
+          }
+        } else {
+          setError('Usuário não encontrado no banco de dados');
+        }
       }
     } catch (error) {
       console.error('Erro no login:', error);
