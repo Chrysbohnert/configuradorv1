@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGraficosCarga.css';
 
 const GerenciarGraficosCarga = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [graficos, setGraficos] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingGrafico, setEditingGrafico] = useState(null);
@@ -221,12 +220,10 @@ const GerenciarGraficosCarga = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando..." />;
-  }
+  
 
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

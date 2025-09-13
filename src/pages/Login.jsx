@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db, supabase } from '../config/supabase';
+import { verifyPassword } from '../utils/passwordHash';
+import { showError } from '../utils/errorHandler';
+import { debugLogin } from '../utils/debugAuth';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -42,23 +44,38 @@ const Login = () => {
 
       if (authError) {
         console.error('Erro no Supabase Auth:', authError);
-        // Se falhar no Supabase Auth, tentar login direto no banco
-        const users = await db.getUsers();
-        const user = users.find(u => u.email === email && u.senha === senha);
-
-        if (user) {
-          // Login direto no banco (fallback)
-          const { senha: _, ...userWithoutPassword } = user;
+        console.log('🔄 Tentando fallback para banco local...');
+        
+        // Debug detalhado do login
+        const debugResult = await debugLogin(email, senha);
+        
+        if (debugResult.user && debugResult.isValidPassword) {
+          console.log('✅ Login via fallback bem-sucedido!');
+          
+          // Login direto no banco (fallback) - senha verificada com hash
+          const { senha: _, ...userWithoutPassword } = debugResult.user;
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
           localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
           
-          if (user.tipo === 'admin') {
+          if (debugResult.user.tipo === 'admin') {
             navigate('/dashboard-admin');
           } else {
             navigate('/dashboard');
           }
         } else {
-          setError('Email ou senha incorretos');
+          console.log('❌ Fallback falhou:', debugResult);
+          
+          if (!debugResult.user) {
+            setError('Email não encontrado no sistema');
+          } else if (!debugResult.isValidPassword) {
+            if (!debugResult.isHashed) {
+              setError('Senha em formato antigo. Execute a migração de senhas.');
+            } else {
+              setError('Senha incorreta');
+            }
+          } else {
+            setError('Erro interno. Tente novamente.');
+          }
         }
       } else {
         // Login no Supabase Auth bem-sucedido
@@ -84,8 +101,8 @@ const Login = () => {
         }
       }
     } catch (error) {
-      console.error('Erro no login:', error);
-      setError('Erro ao fazer login. Verifique a conexão com o banco.');
+      const errorInfo = showError(error, 'Login');
+      setError(errorInfo.message);
     } finally {
       setIsLoading(false);
     }

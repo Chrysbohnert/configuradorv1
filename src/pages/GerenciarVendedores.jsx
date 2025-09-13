@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db } from '../config/supabase';
 import '../styles/GerenciarVendedores.css';
 
 const GerenciarVendedores = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState(null);
@@ -162,12 +161,10 @@ const GerenciarVendedores = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando vendedores..." />;
-  }
+  
 
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

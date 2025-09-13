@@ -5,6 +5,10 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('❌ Variáveis de ambiente do Supabase não configuradas!');
+  console.error('📋 Verifique se o arquivo .env.local existe e contém:');
+  console.error('   VITE_SUPABASE_URL=sua-url');
+  console.error('   VITE_SUPABASE_ANON_KEY=sua-chave');
   throw new Error('Variáveis de ambiente do Supabase não configuradas!');
 }
 
@@ -24,6 +28,12 @@ class DatabaseService {
   }
 
   async createUser(userData) {
+    // Se a senha não estiver em hash, fazer hash automaticamente
+    if (userData.senha && !this.isPasswordHashed(userData.senha)) {
+      const { hashPassword } = await import('../utils/passwordHash');
+      userData.senha = hashPassword(userData.senha);
+    }
+    
     const { data, error } = await supabase
       .from('users')
       .insert([userData])
@@ -34,7 +44,18 @@ class DatabaseService {
     return data;
   }
 
+  // Verificar se a senha já está em hash
+  isPasswordHashed(password) {
+    return password && password.length === 64 && /^[a-f0-9]+$/i.test(password);
+  }
+
   async updateUser(id, userData) {
+    // Se a senha não estiver em hash, fazer hash automaticamente
+    if (userData.senha && !this.isPasswordHashed(userData.senha)) {
+      const { hashPassword } = await import('../utils/passwordHash');
+      userData.senha = hashPassword(userData.senha);
+    }
+    
     const { data, error } = await supabase
       .from('users')
       .update(userData)

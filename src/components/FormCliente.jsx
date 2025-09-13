@@ -83,6 +83,21 @@ const FormCliente = ({ formData, setFormData }) => {
           />
         </div>
 
+        {/* Inscrição Estadual */}
+        <div>
+          <label className="block text-sm font-medium text-empresa-cinza mb-2">
+            Inscrição Estadual
+          </label>
+          <input
+            type="text"
+            name="inscricaoEstadual"
+            value={formData.inscricaoEstadual || ''}
+            onChange={handleChange}
+            className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-empresa-vermelho focus:ring-2 focus:ring-red-100 transition-all duration-200 bg-gray-50"
+            placeholder="000.000.000.000"
+          />
+        </div>
+
         {/* Endereço */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-empresa-cinza mb-2">
@@ -197,6 +212,7 @@ const FormCliente = ({ formData, setFormData }) => {
             {formData.nome && <p><strong>Nome:</strong> {formData.nome}</p>}
             {formData.documento && <p><strong>Documento:</strong> {formData.documento}</p>}
             {formData.telefone && <p><strong>Telefone:</strong> {formData.telefone}</p>}
+            {formData.inscricaoEstadual && <p><strong>Inscrição Estadual:</strong> {formData.inscricaoEstadual}</p>}
           </div>
         </div>
       )}
@@ -204,4 +220,4 @@ const FormCliente = ({ formData, setFormData }) => {
   );
 };
 
-export default FormCliente; 
+export default FormCliente;

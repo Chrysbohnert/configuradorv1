@@ -13,6 +13,12 @@ import AlterarSenha from './pages/AlterarSenha';
 import GraficosCarga from './pages/GraficosCarga';
 import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
 import DetalhesGuindaste from './pages/DetalhesGuindaste';
+import ProtectedRoute from './components/ProtectedRoute';
+
+// Carregar scripts de migração em desenvolvimento
+if (import.meta.env.DEV) {
+  import('./utils/runMigration');
+}
 
 function App() {
   return (
@@ -23,30 +29,74 @@ function App() {
           <Route path="/" element={<Login />} />
           
           {/* Rotas do Vendedor */}
-          <Route path="/dashboard" element={<DashboardVendedor />} />
-          <Route path="/novo-pedido" element={<NovoPedido />} />
-          <Route path="/historico" element={<Historico />} />
+          <Route path="/dashboard" element={
+            <ProtectedRoute>
+              <DashboardVendedor />
+            </ProtectedRoute>
+          } />
+          <Route path="/novo-pedido" element={
+            <ProtectedRoute>
+              <NovoPedido />
+            </ProtectedRoute>
+          } />
+          <Route path="/historico" element={
+            <ProtectedRoute>
+              <Historico />
+            </ProtectedRoute>
+          } />
           
           {/* Rotas do Admin */}
-          <Route path="/dashboard-admin" element={<DashboardAdmin />} />
-          <Route path="/gerenciar-vendedores" element={<GerenciarVendedores />} />
-          <Route path="/gerenciar-guindastes" element={<GerenciarGuindastes />} />
-          <Route path="/relatorio-completo" element={<RelatorioCompleto />} />
+          <Route path="/dashboard-admin" element={
+            <ProtectedRoute requireAdmin={true}>
+              <DashboardAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/gerenciar-vendedores" element={
+            <ProtectedRoute requireAdmin={true}>
+              <GerenciarVendedores />
+            </ProtectedRoute>
+          } />
+          <Route path="/gerenciar-guindastes" element={
+            <ProtectedRoute requireAdmin={true}>
+              <GerenciarGuindastes />
+            </ProtectedRoute>
+          } />
+          <Route path="/relatorio-completo" element={
+            <ProtectedRoute requireAdmin={true}>
+              <RelatorioCompleto />
+            </ProtectedRoute>
+          } />
           
           {/* Rota de Suporte */}
           <Route path="/suporte" element={<Support />} />
           
           {/* Rota de Alterar Senha */}
-          <Route path="/alterar-senha" element={<AlterarSenha />} />
+          <Route path="/alterar-senha" element={
+            <ProtectedRoute>
+              <AlterarSenha />
+            </ProtectedRoute>
+          } />
           
           {/* Rota de Gráficos de Carga */}
-          <Route path="/graficos-carga" element={<GraficosCarga />} />
+          <Route path="/graficos-carga" element={
+            <ProtectedRoute>
+              <GraficosCarga />
+            </ProtectedRoute>
+          } />
           
           {/* Rota de Gerenciar Gráficos de Carga */}
-          <Route path="/gerenciar-graficos-carga" element={<GerenciarGraficosCarga />} />
+          <Route path="/gerenciar-graficos-carga" element={
+            <ProtectedRoute requireAdmin={true}>
+              <GerenciarGraficosCarga />
+            </ProtectedRoute>
+          } />
           
           {/* Rota de Detalhes do Guindaste */}
-          <Route path="/detalhes-guindaste" element={<DetalhesGuindaste />} />
+          <Route path="/detalhes-guindaste" element={
+            <ProtectedRoute>
+              <DetalhesGuindaste />
+            </ProtectedRoute>
+          } />
           
           {/* Redirecionar rotas não encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />

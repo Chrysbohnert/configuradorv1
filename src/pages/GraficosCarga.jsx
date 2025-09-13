@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db } from '../config/supabase';
 import '../styles/GraficosCarga.css';
 
 const GraficosCarga = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [graficos, setGraficos] = useState([]);
   const [filteredGraficos, setFilteredGraficos] = useState([]);
   const [filter, setFilter] = useState('');
@@ -72,12 +71,10 @@ const GraficosCarga = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando..." />;
-  }
+  
 
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

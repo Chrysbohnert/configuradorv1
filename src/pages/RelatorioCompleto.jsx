@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import { generateReportPDF } from '../utils/pdfGenerator';
@@ -10,7 +9,7 @@ import '../styles/Dashboard.css';
 const RelatorioCompleto = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [resumoGeral, setResumoGeral] = useState({
     totalVendedores: 0,
@@ -145,9 +144,7 @@ const RelatorioCompleto = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading />;
-  }
+  
 
   return (
     <div className="admin-layout">

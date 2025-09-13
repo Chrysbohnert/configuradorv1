@@ -75,7 +75,6 @@ src/
 │   ├── CardGuindaste.jsx      # Card de guindaste
 │   ├── FormCliente.jsx        # Formulário de cliente
 │   ├── FormCaminhao.jsx       # Formulário de caminhão
-│   ├── GuindasteLoading.jsx   # Componente de loading
 │   ├── ImageUpload.jsx        # Upload de imagens
 │   ├── PDFGenerator.jsx       # Geração de PDF
 │   ├── PrecosPorRegiaoModal.jsx # Modal de preços por região

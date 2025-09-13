@@ -14,7 +14,7 @@ const FormCaminhao = ({ formData, setFormData }) => {
       <div className="text-center mb-6">
         <h3 className="text-xl font-semibold text-empresa-cinza mb-2 flex items-center justify-center">
           <span className="mr-2">🚛</span>
-          Dados do Caminhão
+          Estudo Veicular
         </h3>
         <p className="text-sm text-gray-600">Informações do veículo para o orçamento</p>
       </div>
@@ -101,7 +101,6 @@ const FormCaminhao = ({ formData, setFormData }) => {
             <option value="">Selecione a voltagem</option>
             <option value="12V">12V</option>
             <option value="24V">24V</option>
-            <option value="12V/24V">12V/24V</option>
           </select>
         </div>
 
@@ -140,4 +139,4 @@ const FormCaminhao = ({ formData, setFormData }) => {
   );
 };
 
-export default FormCaminhao; 
+export default FormCaminhao;

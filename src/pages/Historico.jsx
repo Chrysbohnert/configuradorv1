@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import PDFGenerator from '../components/PDFGenerator';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/Historico.css';
@@ -10,7 +9,7 @@ import { db } from '../config/supabase';
 const Historico = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [pedidos, setPedidos] = useState([]);
 
   useEffect(() => {
@@ -109,12 +108,10 @@ const Historico = () => {
     window.open(`https://wa.me/55981721286?text=${message}`, '_blank');
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando histórico..." />;
-  }
+  
 
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
-import GuindasteLoading from '../components/GuindasteLoading';
 import ImageUpload from '../components/ImageUpload';
 
 import { db } from '../config/supabase';
@@ -11,7 +10,7 @@ import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
@@ -207,12 +206,8 @@ const GerenciarGuindastes = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando guindastes..." />;
-  }
-
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

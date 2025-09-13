@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import { db } from '../config/supabase';
 import '../styles/Login.css';
 
@@ -98,7 +97,7 @@ const AlterarSenha = () => {
   };
 
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (

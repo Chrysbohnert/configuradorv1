@@ -2,6 +2,17 @@ import jsPDF from 'jspdf';
 import { PDF_CONFIG } from '../config/constants';
 import QRCode from 'qrcode';
 
+// Função auxiliar para carregar imagem de forma síncrona
+const loadImage = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+};
+
 // Função para gerar PDF de orçamento
 export const generateQuotePDF = async (quoteData) => {
   const doc = new jsPDF();
@@ -40,23 +51,25 @@ export const generateQuotePDF = async (quoteData) => {
   doc.text('Dados do Cliente:', 20, 85);
   doc.setFontSize(10);
   doc.text(`Nome: ${quoteData.cliente.nome}`, 20, 95);
-  doc.text(`Email: ${quoteData.cliente.email}`, 20, 105);
-  doc.text(`Telefone: ${quoteData.cliente.telefone}`, 20, 115);
-  doc.text(`CNPJ/CPF: ${quoteData.cliente.documento}`, 20, 125);
+  doc.text(`Email: ${quoteData.cliente.email || 'Não informado'}`, 20, 103);
+  doc.text(`Telefone: ${quoteData.cliente.telefone}`, 20, 111);
+  doc.text(`CNPJ/CPF: ${quoteData.cliente.documento}`, 20, 119);
+  doc.text(`Inscrição Estadual: ${quoteData.cliente.inscricaoEstadual || 'Não informado'}`, 20, 127);
   
   // Informações do caminhão
   doc.setFontSize(12);
-  doc.text('Dados do Caminhão:', 20, 145);
+  doc.text('Estudo Veicular:', 20, 137);
   doc.setFontSize(10);
-  doc.text(`Placa: ${quoteData.caminhao.placa}`, 20, 155);
-  doc.text(`Modelo: ${quoteData.caminhao.modelo}`, 20, 165);
-  doc.text(`Ano: ${quoteData.caminhao.ano}`, 20, 175);
+  doc.text(`Tipo: ${quoteData.caminhao.tipo}`, 20, 145);
+  doc.text(`Marca: ${quoteData.caminhao.marca}`, 20, 153);
+  doc.text(`Modelo: ${quoteData.caminhao.modelo}`, 20, 161);
+  doc.text(`Voltagem: ${quoteData.caminhao.voltagem || 'Não informado'}`, 20, 169);
   
   // Produtos selecionados
   doc.setFontSize(12);
-  doc.text('Produtos Selecionados:', 20, 195);
+  doc.text('Produtos Selecionados:', 20, 177);
   
-  let yPosition = 205;
+  let yPosition = 187;
   let totalValue = 0;
   
   // Guindastes
@@ -100,14 +113,15 @@ export const generateQuotePDF = async (quoteData) => {
   if (hasGraficoCarga) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text('Gráficos de Carga:', 20, yPosition + 30);
+    doc.text('Gráficos de Carga:', 20, yPosition + 20);
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-          doc.text('Abaixo estão os gráficos de carga dos guindastes selecionados:', 20, yPosition + 40);
+    doc.text('Abaixo estão os gráficos de carga dos guindastes selecionados:', 20, yPosition + 30);
     
-    let graficoYPosition = yPosition + 50;
+    let graficoYPosition = yPosition + 40;
     
-    quoteData.guindastes.forEach(async (guindaste) => {
+    // Carregar e adicionar gráficos de carga
+    for (const guindaste of quoteData.guindastes) {
       if (guindaste.grafico_carga_url) {
         try {
           // Adicionar título do guindaste
@@ -115,56 +129,56 @@ export const generateQuotePDF = async (quoteData) => {
           doc.setFont('helvetica', 'bold');
           doc.text(`${guindaste.modelo} - Gráfico de Carga:`, 20, graficoYPosition);
           
-          // Adicionar imagem do gráfico de carga
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
+          // Carregar imagem do gráfico de carga
+          const img = await loadImage(guindaste.grafico_carga_url);
           
-          img.onload = () => {
-            // Calcular proporções para caber na página
-            const maxWidth = 170;
-            const maxHeight = 80;
-            let imgWidth = img.width;
-            let imgHeight = img.height;
-            
-            // Redimensionar mantendo proporção
-            if (imgWidth > maxWidth) {
-              imgHeight = (imgHeight * maxWidth) / imgWidth;
-              imgWidth = maxWidth;
-            }
-            if (imgHeight > maxHeight) {
-              imgWidth = (imgWidth * maxHeight) / imgHeight;
-              imgHeight = maxHeight;
-            }
-            
-            // Centralizar na página
-            const xPosition = (210 - imgWidth) / 2;
-            
-            doc.addImage(img, 'JPEG', xPosition, graficoYPosition + 5, imgWidth, imgHeight);
-          };
+          // Calcular proporções para caber na página
+          const maxWidth = 170;
+          const maxHeight = 80;
+          let imgWidth = img.width;
+          let imgHeight = img.height;
           
-          img.src = guindaste.grafico_carga_url;
+          // Redimensionar mantendo proporção
+          if (imgWidth > maxWidth) {
+            imgHeight = (imgHeight * maxWidth) / imgWidth;
+            imgWidth = maxWidth;
+          }
+          if (imgHeight > maxHeight) {
+            imgWidth = (imgWidth * maxHeight) / imgHeight;
+            imgHeight = maxHeight;
+          }
           
-          graficoYPosition += 100; // Espaço para próxima imagem
+          // Centralizar na página
+          const xPosition = (210 - imgWidth) / 2;
+          
+          doc.addImage(img, 'JPEG', xPosition, graficoYPosition + 5, imgWidth, imgHeight);
+          
+          graficoYPosition += imgHeight + 15; // Espaço para próxima imagem
         } catch (error) {
           console.error('Erro ao carregar gráfico de carga:', error);
+          // Se não conseguir carregar a imagem, mostrar apenas o texto
+          doc.setFontSize(10);
+          doc.setFont('helvetica', 'normal');
+          doc.text(`Gráfico de carga não disponível para ${guindaste.modelo}`, 20, graficoYPosition + 5);
+          graficoYPosition += 20;
         }
       }
-    });
+    }
     
     // Ajustar posição para condições de pagamento
-    yPosition = graficoYPosition + 20;
+    yPosition = graficoYPosition + 10;
   }
   
   // Condições de pagamento
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text('Condições de Pagamento:', 20, yPosition + 30);
-  doc.text('• Entrada de 30% na assinatura do contrato', 20, yPosition + 40);
-  doc.text('• Saldo em até 12x no cartão ou boleto', 20, yPosition + 50);
-  doc.text('• Prazo de entrega: 15 dias úteis', 20, yPosition + 60);
+  doc.text('Condições de Pagamento:', 20, yPosition + 20);
+  doc.text('• Entrada de 30% na assinatura do contrato', 20, yPosition + 28);
+  doc.text('• Saldo em até 12x no cartão ou boleto', 20, yPosition + 36);
+  doc.text('• Prazo de entrega: 15 dias úteis', 20, yPosition + 44);
   
   // Validade do orçamento
-  doc.text('Validade do orçamento: 30 dias', 20, yPosition + 75);
+  doc.text('Validade do orçamento: 30 dias', 20, yPosition + 56);
   
   // QR Code para WhatsApp
   const whatsappText = `Olá! Gostaria de mais informações sobre o orçamento #${quoteData.id}`;
@@ -181,7 +195,7 @@ export const generateQuotePDF = async (quoteData) => {
     });
     
     // Ajustar posição do QR Code baseado no conteúdo
-    const qrCodeY = hasGraficoCarga ? yPosition + 30 : yPosition + 30;
+    const qrCodeY = yPosition + 20;
     doc.addImage(qrCodeDataURL, 'PNG', 150, qrCodeY, 30, 30);
     doc.setFontSize(8);
     doc.text('Escaneie para WhatsApp', 150, qrCodeY + 35, { align: 'center' });
@@ -190,7 +204,7 @@ export const generateQuotePDF = async (quoteData) => {
   }
   
   // Rodapé - ajustar posição baseado no conteúdo
-  const footerY = hasGraficoCarga ? yPosition + 80 : 280;
+  const footerY = yPosition + 70;
   doc.setFontSize(8);
   doc.setTextColor(107, 114, 128);
   doc.text('GuindastesPro - Sistema Profissional de Orçamentos', 105, footerY, { align: 'center' });

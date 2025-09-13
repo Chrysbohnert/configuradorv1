@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import GuindasteLoading from '../components/GuindasteLoading';
 import PDFGenerator from '../components/PDFGenerator';
 
 import { db } from '../config/supabase';
@@ -27,7 +26,7 @@ const NovoPedido = () => {
     valorFinal: 0
   });
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
   const [guindastesSelecionados, setGuindastesSelecionados] = useState([]);
   const [selectedCapacidade, setSelectedCapacidade] = useState(null);
@@ -95,7 +94,7 @@ const NovoPedido = () => {
     { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
     { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
     { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
-    { id: 4, title: 'Caminhão', icon: '🚛', description: 'Configuração do veículo' },
+    { id: 4, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
     { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
   ];
 
@@ -497,7 +496,7 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             <div className="step-header">
-              <h2>Configuração do Caminhão</h2>
+              <h2>Estudo Veicular</h2>
               <p>Informações do veículo para o serviço</p>
             </div>
             <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
@@ -620,12 +619,8 @@ const NovoPedido = () => {
     }
   };
 
-  if (isLoading) {
-    return <GuindasteLoading text="Carregando..." />;
-  }
-
   if (!user) {
-    return <GuindasteLoading text="Verificando usuário..." />;
+    return null;
   }
 
   return (
@@ -1249,7 +1244,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
       </div>
 
       <div className="resumo-section">
-        <h3>Dados do Caminhão</h3>
+        <h3>Estudo Veicular</h3>
         <div className="resumo-data">
           <div className="data-row">
             <span className="label">Tipo:</span>

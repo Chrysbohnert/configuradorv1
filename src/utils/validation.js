@@ -2,7 +2,7 @@
 
 // Validar email
 export const validateEmail = (email) => {
-  if (!email) return 'Email é obrigatório';
+  if (!email) return null; // Email é opcional
   
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
@@ -165,6 +165,18 @@ export const validatePassword = (password) => {
 export const validateRequired = (value, fieldName) => {
   if (!value && value !== 0) {
     return `${fieldName} é obrigatório`;
+  }
+  
+  return null;
+};
+
+// Validar inscrição estadual
+export const validateInscricaoEstadual = (inscricao) => {
+  if (!inscricao) return null; // Inscrição estadual é opcional
+  
+  const cleaned = inscricao.replace(/\D/g, '');
+  if (cleaned.length < 8 || cleaned.length > 14) {
+    return 'Inscrição estadual deve ter entre 8 e 14 dígitos';
   }
   
   return null;
