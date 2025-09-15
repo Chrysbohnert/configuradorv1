@@ -45,7 +45,7 @@
 }
 
 .add-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #2d3432 0%, #47524e 100%);
   color: white;
   border: none;
   padding: 15px 25px;
@@ -62,7 +62,7 @@
 
 .add-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+  box-shadow: 0 8px 25px rgba(49, 56, 54, 0.4);
 }
 
 .add-btn svg {
@@ -129,7 +129,7 @@
 .grafico-item:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border-color: #3b82f6;
+  border-color: #292d34;
 }
 
 .grafico-item::before {
@@ -139,7 +139,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #3d3f44 0%, #302e33 100%);
 }
 
 .grafico-info {
@@ -155,7 +155,7 @@
 .grafico-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  background: linear-gradient(135deg, #3a3d42 0%, #3c3942 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -186,7 +186,7 @@
 
 .grafico-details .capacidade {
   display: inline-block;
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #5d6864 0%, #393f3d 100%);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
@@ -246,7 +246,7 @@
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #5275a6 0%, #484a51 100%);
   color: white;
 }
 
@@ -256,7 +256,7 @@
 }
 
 .delete-btn {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: linear-gradient(135deg, #9c4b4b 0%, #584c4c 100%);
   color: white;
 }
 
@@ -266,7 +266,7 @@
 }
 
 .view-btn {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #8b9c42 0%, #585361 100%);
   color: white;
 }
 

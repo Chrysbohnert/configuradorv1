@@ -5,10 +5,7 @@ const SALT = 'stark_orcamento_2024';
 
 // Gerar hash da senha
 export const hashPassword = (password) => {
-  return CryptoJS.PBKDF2(password, SALT, {
-    keySize: 256/32,
-    iterations: 10000
-  }).toString();
+  return CryptoJS.SHA256(password).toString();
 };
 
 // Verificar senha

@@ -1645,4 +1645,37 @@
 .btn-select svg {
   width: 18px;
   height: 18px;
+}
+
+/* Estilos para validação de erros */
+.error-message {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+  display: block;
+  font-weight: 500;
+}
+
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.validation-error {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  color: #721c24;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.validation-error .error-message {
+  color: #721c24;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
 } 

@@ -146,11 +146,19 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               <strong>Email:</strong> ${pedidoData.clienteData.email || 'Não informado'}
             </div>
             <div style="margin-bottom: 8px; font-size: 14px;">
-              <strong>Documento:</strong> ${pedidoData.clienteData.documento || 'Não informado'}
+              <strong>CPF/CNPJ:</strong> ${pedidoData.clienteData.documento || 'Não informado'}
             </div>
-            <div style="font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 14px;">
+              <strong>Inscrição Estadual:</strong> ${pedidoData.clienteData.inscricao_estadual || 'Não informado'}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 14px;">
               <strong>Endereço:</strong> ${pedidoData.clienteData.endereco || 'Não informado'}
             </div>
+            ${pedidoData.clienteData.observacoes ? `
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 14px;">
+              <strong>Observações:</strong> ${pedidoData.clienteData.observacoes}
+            </div>
+            ` : ''}
           </div>
         </div>
 
@@ -233,11 +241,58 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         })()}
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
+          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <div style="margin-bottom: 8px; font-size: 14px;">
-              <strong>Forma de Pagamento:</strong> A combinar
+              <strong>Tipo de Pagamento:</strong> ${
+                pedidoData.pagamentoData?.tipoPagamento === 'revenda_gsi' ? 'Revenda - Guindastes GSI' :
+                pedidoData.pagamentoData?.tipoPagamento === 'cnpj_cpf_gse' ? 'CNPJ/CPF - Guindastes GSE' :
+                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_interno' ? 'Parcelamento Interno - Revenda' :
+                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_cnpj' ? 'Parcelamento - CNPJ/CPF' :
+                'Não informado'
+              }
             </div>
+            <div style="margin-bottom: 8px; font-size: 14px;">
+              <strong>Prazo de Pagamento:</strong> ${
+                pedidoData.pagamentoData?.prazoPagamento === 'a_vista' ? 'À Vista' :
+                pedidoData.pagamentoData?.prazoPagamento === '30_dias' ? 'Até 30 dias (+3%)' :
+                pedidoData.pagamentoData?.prazoPagamento === '60_dias' ? 'Até 60 dias (+1%)' :
+                pedidoData.pagamentoData?.prazoPagamento === '120_dias_interno' ? 'Até 120 dias (sem acréscimo)' :
+                pedidoData.pagamentoData?.prazoPagamento === '90_dias_cnpj' ? 'Até 90 dias (sem acréscimo)' :
+                pedidoData.pagamentoData?.prazoPagamento === 'mais_120_dias' ? 'Após 120 dias (+2% ao mês)' :
+                pedidoData.pagamentoData?.prazoPagamento === 'mais_90_dias' ? 'Após 90 dias (+2% ao mês)' :
+                'Não informado'
+              }
+            </div>
+            ${pedidoData.pagamentoData?.desconto > 0 ? `
+            <div style="margin-bottom: 8px; font-size: 14px; color: #28a745;">
+              <strong>Desconto:</strong> ${pedidoData.pagamentoData.desconto}%
+            </div>
+            ` : ''}
+            ${pedidoData.pagamentoData?.acrescimo > 0 ? `
+            <div style="margin-bottom: 8px; font-size: 14px; color: #dc3545;">
+              <strong>Acréscimo:</strong> ${pedidoData.pagamentoData.acrescimo}%
+            </div>
+            ` : ''}
+            <div style="margin-bottom: 8px; font-size: 16px; font-weight: bold; color: #007bff;">
+              <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 14px;">
+              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
+            </div>
+            <div style="font-size: 14px;">
+              <strong>Tipo de Instalação:</strong> ${
+                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
+                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
+                'Não informado'
+              }
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <div style="margin-bottom: 8px; font-size: 14px;">
               <strong>Prazo de Entrega:</strong> Conforme disponibilidade
             </div>
@@ -330,7 +385,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
         
       } else {
-        // Conteúdo realmente muito grande - usar múltiplas páginas
+        // Conteúdo muito grande - usar múltiplas páginas
         const totalPages = Math.ceil(contentHeight / availableContentHeight);
         
         for (let pageNum = 0; pageNum < totalPages; pageNum++) {
@@ -346,9 +401,25 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           const contentStartY = margin + headerHeight + 5;
           const contentForThisPage = Math.min(availableContentHeight, contentHeight - (pageNum * availableContentHeight));
           
-          // Adicionar parte do conteúdo
+          // Adicionar parte do conteúdo (cortar verticalmente)
           const contentImgData = contentCanvas.toDataURL('image/png');
-          pdf.addImage(contentImgData, 'PNG', margin, contentStartY, contentWidth, contentForThisPage);
+          const sourceY = pageNum * availableContentHeight;
+          const sourceHeight = Math.min(availableContentHeight, contentHeight - sourceY);
+          
+          // Criar um canvas temporário para cortar a imagem
+          const tempCanvas = document.createElement('canvas');
+          const tempCtx = tempCanvas.getContext('2d');
+          tempCanvas.width = contentCanvas.width;
+          tempCanvas.height = sourceHeight;
+          
+          tempCtx.drawImage(
+            contentCanvas,
+            0, sourceY, contentCanvas.width, sourceHeight,
+            0, 0, contentCanvas.width, sourceHeight
+          );
+          
+          const croppedImgData = tempCanvas.toDataURL('image/png');
+          pdf.addImage(croppedImgData, 'PNG', margin, contentStartY, contentWidth, contentForThisPage);
           
           // Adicionar rodapé em todas as páginas
           const footerImgData = footerCanvas.toDataURL('image/png');
@@ -367,17 +438,21 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         // Adicionar nova página para gráficos de carga
         pdf.addPage();
         
+        // Adicionar cabeçalho
+        const headerImgData = headerCanvas.toDataURL('image/png');
+        pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
+        
         // Título da página
         pdf.setFontSize(18);
         pdf.setTextColor(73, 80, 87);
-        pdf.text('GRÁFICOS DE CARGA', 105, 30, { align: 'center' });
+        pdf.text('GRÁFICOS DE CARGA', 105, margin + headerHeight + 20, { align: 'center' });
         
         // Descrição
         pdf.setFontSize(12);
         pdf.setTextColor(108, 117, 125);
-        pdf.text('Capacidade de elevação em diferentes posições da lança', 105, 40, { align: 'center' });
+        pdf.text('Capacidade de elevação em diferentes posições da lança', 105, margin + headerHeight + 30, { align: 'center' });
         
-        let yPosition = 60;
+        let yPosition = margin + headerHeight + 50;
         
         for (let i = 0; i < guindastesComGrafico.length; i++) {
           const guindaste = guindastesComGrafico[i];
@@ -420,17 +495,31 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           }
           
           // Verificar se precisa de nova página
-          if (yPosition > 250) {
+          if (yPosition > pageHeight - footerHeight - margin - 50) {
             pdf.addPage();
-            yPosition = 30;
+            
+            // Adicionar cabeçalho na nova página
+            const headerImgData = headerCanvas.toDataURL('image/png');
+            pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
+            
+            yPosition = margin + headerHeight + 20;
           }
         }
+        
+        // Adicionar rodapé na última página de gráficos
+        const footerImgData = footerCanvas.toDataURL('image/png');
+        pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
         
         console.log('Página de gráficos de carga concluída');
       }
 
       // Adicionar página com cláusulas contratuais
       pdf.addPage();
+      
+      // Adicionar cabeçalho
+      const headerImgData = headerCanvas.toDataURL('image/png');
+      pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
+      
       pdf.setFontSize(8.5);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont('Arial');
@@ -438,44 +527,54 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       // Título das cláusulas
       pdf.setFontSize(12);
       pdf.setTextColor(73, 80, 87);
-      pdf.text('CLÁUSULAS CONTRATUAIS', 20, 30);
+      pdf.text('CLÁUSULAS CONTRATUAIS', 20, margin + headerHeight + 20);
       
-      // Conteúdo das cláusulas
+      // Conteúdo das cláusulas (usando as cláusulas reais do componente)
       pdf.setFontSize(8.5);
       pdf.setTextColor(0, 0, 0);
       
       const clausulas = [
-        '1. O prazo de entrega será de 30 (trinta) dias úteis, contados a partir da confirmação do pedido e aprovação do projeto técnico.',
-        '2. O pagamento será realizado em 3 (três) parcelas: 40% na assinatura do contrato, 30% na liberação para fabricação e 30% na entrega.',
-        '3. A garantia será de 12 (doze) meses para defeitos de fabricação, a partir da data de entrega.',
-        '4. O cliente deverá fornecer todas as informações técnicas necessárias para a fabricação no prazo de 5 (cinco) dias úteis.',
-        '5. Alterações no projeto após a aprovação técnica poderão gerar custos adicionais e alteração no prazo de entrega.',
-        '6. O equipamento será entregue na fábrica, sendo de responsabilidade do cliente o transporte e instalação.',
-        '7. A empresa não se responsabiliza por danos causados por uso inadequado ou manutenção incorreta.',
-        '8. Em caso de cancelamento, será cobrada multa de 20% sobre o valor total do contrato.',
-        '9. O equipamento será fabricado conforme especificações técnicas aprovadas pelo cliente.',
-        '10. A empresa se reserva o direito de alterar preços em caso de variação significativa nos custos de matéria-prima.',
-        '11. O cliente deverá realizar a vistoria técnica no prazo de 3 (três) dias úteis após a notificação de conclusão.',
-        '12. A empresa fornecerá treinamento técnico para operação e manutenção do equipamento.',
-        '13. Em caso de força maior, os prazos poderão ser prorrogados sem ônus para as partes.',
-        '14. O contrato será regido pelas leis brasileiras e qualquer litígio será resolvido no foro da comarca da sede da empresa.',
-        '15. O cliente deverá manter o equipamento em condições adequadas de uso e conservação.',
-        '16. A empresa se compromete a manter sigilo sobre informações técnicas e comerciais do cliente.'
+        '• O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário.',
+        '• Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes.',
+        '• Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta.',
+        '• O prazo de entrega do equipamento terá início a partir do recebimento da autorização de faturamento quando via banco, do pagamento de 100% da entrada quando via parcelado fábrica e 100% do valor do equipamento quando à vista.',
+        '• Vendas com parcelamento fábrica, é obrigatório o envio da documentação solicitada para análise de crédito em até 5 (cinco) dias úteis.',
+        '• O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica.',
+        '• As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo.',
+        '• O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo.',
+        '• É obrigatório informar placa, chassi e modelo de caminhão onde será instalado o guindaste para confecção do Contrato de Reserva de Domínio, mediante cópia do documento ou NF do caminhão. Desde já fica autorizada a inclusão desta no documento do veículo.',
+        '• Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem.',
+        '• Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida.',
+        '• O atraso na definição da marca/modelo do veículo e do nº e modelo da caixa de câmbio, bem como, atraso no encaminhamento do veículo para montagem, prorrogam automaticamente o prazo de entrega, em números de dias úteis equivalentes.',
+        '• No caso de vendas feitas a prazo, caso ocorra inadimplência de quaisquer das parcelas ficará suspensa a garantia contratual do equipamento no respectivo período, a qual perdurará até a data de regularização da situação. O inadimplemento de parcela(s) ensejará no pagamento de multa de 2% sobre seu respectivo valor e juros de 0,33% por dia de atraso.',
+        '• É obrigatório o estudo de integração veicular para a montagem do equipamento, sendo de responsabilidade do cliente o envio à STARK Guindastes dos dados do caminhão em até 5 (cinco) dias úteis contados da assinatura do pedido. Caso a montagem seja feita sem o estudo, a STARK Guindastes não se responsabiliza pela mesma.',
+        '• A STARK Guindastes não se responsabiliza por despesas extras com o caminhão, tais como: deslocamento de arla, aumento de entre eixo e balanço traseiro, inclusão de eixo extra, deslocamento de barra de direção, reforço de molas, retirada e modificações em carrocerias e parametrização do caminhão.',
+        '• No momento do faturamento, o preço do equipamento será atualizado para o valor a ele correspondente na tabela vigente (Tabela de Preços STARK Guindastes), ficando condicionado o seu embarque ao pagamento da respectiva diferença resultante dessa correção a ser feito pelo Contratante à STARK Guindastes.',
+        '• As assinaturas abaixo, formalizam o presente pedido, indicando a total concordância entre as partes com aos termos e condições do presente negócio.'
       ];
       
-      let yPos = 50;
+      let yPos = margin + headerHeight + 40;
       clausulas.forEach((clausula, index) => {
         // Verificar se precisa de nova página
-        if (yPos > 250) {
+        if (yPos > pageHeight - footerHeight - margin - 30) {
           pdf.addPage();
-          yPos = 30;
+          
+          // Adicionar cabeçalho na nova página
+          const headerImgData = headerCanvas.toDataURL('image/png');
+          pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
+          
+          yPos = margin + headerHeight + 20;
         }
         
         // Adicionar cláusula
         const lines = pdf.splitTextToSize(clausula, 170);
         pdf.text(lines, 20, yPos);
-        yPos += (lines.length * 5) + 10;
+        yPos += (lines.length * 4) + 8;
       });
+      
+      // Adicionar rodapé na última página de cláusulas
+      const footerImgData = footerCanvas.toDataURL('image/png');
+      pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
 
       // Salvar PDF
       const fileName = `proposta_stark_${new Date().toISOString().split('T')[0]}.pdf`;

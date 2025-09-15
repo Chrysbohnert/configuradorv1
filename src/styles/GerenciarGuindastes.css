@@ -829,4 +829,85 @@ textarea:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+/* Filtro de Capacidade */
+.filtro-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e9ecef;
+}
+
+.filtro-capacidade {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filtro-capacidade label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 14px;
+  margin: 0;
+}
+
+.filtro-select {
+  padding: 8px 12px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  color: #495057;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 150px;
+}
+
+.filtro-select:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.filtro-select:hover {
+  border-color: #007bff;
+}
+
+.filtro-info {
+  display: flex;
+  align-items: center;
+}
+
+.resultado-count {
+  background: #f8f9fa;
+  color: #6c757d;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e9ecef;
+}
+
+/* Responsive para o filtro */
+@media (max-width: 768px) {
+  .filtro-container {
+    flex-direction: column;
+    gap: 15px;
+    align-items: stretch;
+  }
+  
+  .filtro-capacidade {
+    justify-content: center;
+  }
+  
+  .filtro-select {
+    min-width: 200px;
+  }
 } 

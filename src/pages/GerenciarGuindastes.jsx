@@ -29,6 +29,7 @@ const GerenciarGuindastes = () => {
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
+  const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -58,6 +59,40 @@ const GerenciarGuindastes = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Função para extrair capacidades únicas dos guindastes
+  const getCapacidadesUnicas = () => {
+    const capacidades = new Set();
+    
+    guindastes.forEach(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      
+      // Extrair apenas o número (6.5, 8.0, 10.8, etc.)
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) {
+        capacidades.add(match[1]);
+      }
+    });
+    
+    return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
+  };
+
+  // Função para filtrar guindastes por capacidade
+  const getGuindastesFiltrados = () => {
+    if (filtroCapacidade === 'todos') {
+      return guindastes;
+    }
+    
+    return guindastes.filter(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      
+      // Extrair apenas o número e comparar
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      return match && match[1] === filtroCapacidade;
+    });
   };
 
   const handleInputChange = (field, value) => {
@@ -250,8 +285,32 @@ const GerenciarGuindastes = () => {
                   </button>
                 </div>
 
+                <div className="filtro-container">
+                  <div className="filtro-capacidade">
+                    <label htmlFor="filtro-capacidade">Filtrar por Capacidade:</label>
+                    <select 
+                      id="filtro-capacidade"
+                      value={filtroCapacidade} 
+                      onChange={(e) => setFiltroCapacidade(e.target.value)}
+                      className="filtro-select"
+                    >
+                      <option value="todos">Todos</option>
+                      {getCapacidadesUnicas().map(capacidade => (
+                        <option key={capacidade} value={capacidade}>
+                          {capacidade} Toneladas
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="filtro-info">
+                    <span className="resultado-count">
+                      {getGuindastesFiltrados().length} guindaste(s) encontrado(s)
+                    </span>
+                  </div>
+                </div>
+
                 <div className="guindastes-grid">
-                  {guindastes.map((guindaste) => (
+                  {getGuindastesFiltrados().map((guindaste) => (
                     <div key={guindaste.id} className="guindaste-card">
                       <div className="guindaste-header">
                         <div className="guindaste-image">

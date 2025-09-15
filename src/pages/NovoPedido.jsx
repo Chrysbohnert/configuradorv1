@@ -23,7 +23,9 @@ const NovoPedido = () => {
     prazoPagamento: '',
     desconto: 0,
     acrescimo: 0,
-    valorFinal: 0
+    valorFinal: 0,
+    localInstalacao: '',
+    tipoInstalacao: ''
   });
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,6 +33,7 @@ const NovoPedido = () => {
   const [guindastesSelecionados, setGuindastesSelecionados] = useState([]);
   const [selectedCapacidade, setSelectedCapacidade] = useState(null);
   const [selectedModelo, setSelectedModelo] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -460,6 +463,12 @@ const NovoPedido = () => {
                       />
                     ))}
                   </div>
+                  
+                  {validationErrors.guindaste && (
+                    <div className="validation-error">
+                      <span className="error-message">{validationErrors.guindaste}</span>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -477,6 +486,7 @@ const NovoPedido = () => {
               carrinho={carrinho}
               clienteData={clienteData}
               onPagamentoChange={setPagamentoData}
+              errors={validationErrors}
             />
           </div>
         );
@@ -488,7 +498,7 @@ const NovoPedido = () => {
               <h2>Dados do Cliente</h2>
               <p>Preencha as informações do cliente</p>
             </div>
-            <ClienteForm formData={clienteData} setFormData={setClienteData} />
+            <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
           </div>
         );
 
@@ -499,7 +509,7 @@ const NovoPedido = () => {
               <h2>Estudo Veicular</h2>
               <p>Informações do veículo para o serviço</p>
             </div>
-            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} />
+            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
           </div>
         );
 
@@ -527,16 +537,70 @@ const NovoPedido = () => {
     }
   };
 
+  const validateStep = (step) => {
+    const errors = {};
+    
+    switch (step) {
+      case 1:
+        if (guindastesSelecionados.length === 0) {
+          errors.guindaste = 'Selecione pelo menos um guindaste';
+        }
+        break;
+      case 2:
+        if (!pagamentoData.tipoPagamento) {
+          errors.tipoPagamento = 'Selecione o tipo de pagamento';
+        }
+        if (!pagamentoData.prazoPagamento) {
+          errors.prazoPagamento = 'Selecione o prazo de pagamento';
+        }
+        if (!pagamentoData.localInstalacao) {
+          errors.localInstalacao = 'Informe o local de instalação';
+        }
+        if (!pagamentoData.tipoInstalacao) {
+          errors.tipoInstalacao = 'Selecione o tipo de instalação';
+        }
+        break;
+      case 3:
+        if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
+        if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
+        if (!clienteData.email) errors.email = 'Email é obrigatório';
+        if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
+        if (!clienteData.inscricao_estadual) errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
+        break;
+      case 4:
+        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
+        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
+        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
+        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
+        break;
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const canGoNext = () => {
     switch (currentStep) {
       case 1:
         return guindastesSelecionados.length > 0;
       case 2:
-        return pagamentoData.tipoPagamento && pagamentoData.prazoPagamento;
+        return pagamentoData.tipoPagamento && 
+               pagamentoData.prazoPagamento && 
+               pagamentoData.localInstalacao && 
+               pagamentoData.tipoInstalacao;
       case 3:
-        return clienteData.nome && clienteData.telefone;
+        return clienteData.nome && 
+               clienteData.telefone && 
+               clienteData.email && 
+               clienteData.documento && 
+               clienteData.inscricao_estadual && 
+               clienteData.endereco;
       case 4:
-        return caminhaoData.tipo && caminhaoData.marca && caminhaoData.modelo;
+        return caminhaoData.tipo && 
+               caminhaoData.marca && 
+               caminhaoData.modelo && 
+               caminhaoData.voltagem;
       case 5:
         return true;
       default:
@@ -545,8 +609,9 @@ const NovoPedido = () => {
   };
 
   const handleNext = () => {
-    if (canGoNext() && currentStep < 5) {
+    if (validateStep(currentStep) && currentStep < 5) {
       setCurrentStep(currentStep + 1);
+      setValidationErrors({}); // Limpar erros ao avançar
     }
   };
 
@@ -559,64 +624,9 @@ const NovoPedido = () => {
 
 
   const handleFinish = async () => {
-    try {
-      setIsLoading(true);
-      
-      // 1. Criar cliente
-      const cliente = await db.createCliente(clienteData);
-      
-      // 2. Criar caminhão
-      const caminhao = await db.createCaminhao({
-        ...caminhaoData,
-        cliente_id: cliente.id
-      });
-      
-      // 3. Gerar número do pedido
-      const numeroPedido = `PED${Date.now()}`;
-      
-      // 4. Criar pedido
-      const pedido = await db.createPedido({
-        numero_pedido: numeroPedido,
-        cliente_id: cliente.id,
-        vendedor_id: user.id,
-        caminhao_id: caminhao.id,
-        status: 'finalizado',
-        valor_total: getTotalCarrinho(),
-        observacoes: ''
-      });
-      
-      // 5. Criar itens do pedido
-      for (const item of carrinho) {
-        let codigo_produto = null;
-        if (item.tipo === 'equipamento') {
-          // Pega todos opcionais selecionados
-          const opcionaisSelecionados = carrinho
-            .filter(i => i.tipo === 'opcional')
-            .map(i => i.nome);
-          codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
-        }
-        await db.createPedidoItem({
-          pedido_id: pedido.id,
-          tipo: item.tipo,
-          item_id: item.id,
-          quantidade: 1,
-          preco_unitario: item.preco,
-          codigo_produto
-        });
-      }
-      
-      // 6. Limpar carrinho
-      limparCarrinho();
-      
-      alert('Pedido finalizado com sucesso!');
-      navigate('/historico');
-      
-    } catch (error) {
-      console.error('Erro ao finalizar pedido:', error);
-      alert('Erro ao finalizar pedido. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
+    // Limpar carrinho e navegar para histórico
+    limparCarrinho();
+    navigate('/historico');
   };
 
   if (!user) {
@@ -840,11 +850,13 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
 };
 
 // Componente Política de Pagamento
-const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
+const PoliticaPagamento = ({ carrinho, onPagamentoChange, errors = {} }) => {
   const [formData, setFormData] = useState({
     tipoPagamento: '',
     prazoPagamento: '',
-    tipoCliente: 'revenda' // revenda ou cnpj_cpf
+    tipoCliente: 'revenda', // revenda ou cnpj_cpf
+    localInstalacao: '',
+    tipoInstalacao: ''
   });
 
   // Calcular totais
@@ -924,7 +936,9 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
       ...newData,
       desconto: novoDesconto,
       acrescimo: novoAcrescimo,
-      valorFinal: novoValorFinal
+      valorFinal: novoValorFinal,
+      localInstalacao: newData.localInstalacao,
+      tipoInstalacao: newData.tipoInstalacao
     });
   };
 
@@ -934,7 +948,6 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
         <h3>Resumo do Carrinho</h3>
         <div className="resumo-info">
           <p><strong>Total de Guindastes:</strong> {totalGuindastes}</p>
-          <p><strong>GSI:</strong> {guindastesGSI} | <strong>GSE:</strong> {guindastesGSE}</p>
           <p><strong>Valor Total:</strong> R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
         </div>
       </div>
@@ -947,7 +960,7 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
           <select
             value={formData.tipoPagamento}
             onChange={(e) => handleChange('tipoPagamento', e.target.value)}
-            required
+            className={errors.tipoPagamento ? 'error' : ''}
           >
             <option value="">Selecione a opção</option>
             <option value="revenda_gsi">Revenda - Guindastes GSI</option>
@@ -955,6 +968,7 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
             <option value="parcelamento_interno">Parcelamento Interno - Revenda</option>
             <option value="parcelamento_cnpj">Parcelamento - CNPJ/CPF</option>
           </select>
+          {errors.tipoPagamento && <span className="error-message">{errors.tipoPagamento}</span>}
         </div>
 
         <div className="form-group">
@@ -962,7 +976,7 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
           <select
             value={formData.prazoPagamento}
             onChange={(e) => handleChange('prazoPagamento', e.target.value)}
-            required
+            className={errors.prazoPagamento ? 'error' : ''}
           >
             <option value="">Selecione o prazo</option>
             {formData.tipoPagamento === 'revenda_gsi' && (
@@ -992,6 +1006,33 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
               </>
             )}
           </select>
+          {errors.prazoPagamento && <span className="error-message">{errors.prazoPagamento}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>Local de Instalação *</label>
+          <input
+            type="text"
+            value={formData.localInstalacao}
+            onChange={(e) => handleChange('localInstalacao', e.target.value)}
+            placeholder="Em qual mecanica o guindaste será instalado?"
+            className={errors.localInstalacao ? 'error' : ''}
+          />
+          {errors.localInstalacao && <span className="error-message">{errors.localInstalacao}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>Tipo de Instalação *</label>
+          <select
+            value={formData.tipoInstalacao}
+            onChange={(e) => handleChange('tipoInstalacao', e.target.value)}
+            className={errors.tipoInstalacao ? 'error' : ''}
+          >
+            <option value="">Selecione o tipo de instalação</option>
+            <option value="cliente">Por conta do cliente</option>
+            <option value="fabrica">Por conta da fábrica</option>
+          </select>
+          {errors.tipoInstalacao && <span className="error-message">{errors.tipoInstalacao}</span>}
         </div>
       </div>
 
@@ -1023,7 +1064,7 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange }) => {
 };
 
 // Componente Form do Cliente
-const ClienteForm = ({ formData, setFormData }) => {
+const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -1038,7 +1079,9 @@ const ClienteForm = ({ formData, setFormData }) => {
             value={formData.nome || ''}
             onChange={(e) => handleChange('nome', e.target.value)}
             placeholder="Digite o nome completo"
+            className={errors.nome ? 'error' : ''}
           />
+          {errors.nome && <span className="error-message">{errors.nome}</span>}
         </div>
         
         <div className="form-group">
@@ -1048,37 +1091,57 @@ const ClienteForm = ({ formData, setFormData }) => {
             value={formData.telefone || ''}
             onChange={(e) => handleChange('telefone', e.target.value)}
             placeholder="(00) 00000-0000"
+            className={errors.telefone ? 'error' : ''}
           />
+          {errors.telefone && <span className="error-message">{errors.telefone}</span>}
         </div>
         
         <div className="form-group">
-          <label>Email</label>
+          <label>Email *</label>
           <input
             type="email"
             value={formData.email || ''}
             onChange={(e) => handleChange('email', e.target.value)}
             placeholder="email@exemplo.com"
+            className={errors.email ? 'error' : ''}
           />
+          {errors.email && <span className="error-message">{errors.email}</span>}
         </div>
         
         <div className="form-group">
-          <label>CPF/CNPJ</label>
+          <label>CPF/CNPJ *</label>
           <input
             type="text"
             value={formData.documento || ''}
             onChange={(e) => handleChange('documento', e.target.value)}
             placeholder="000.000.000-00"
+            className={errors.documento ? 'error' : ''}
           />
+          {errors.documento && <span className="error-message">{errors.documento}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>Inscrição Estadual *</label>
+          <input
+            type="text"
+            value={formData.inscricao_estadual || ''}
+            onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
+            placeholder="00000000000000"
+            className={errors.inscricao_estadual ? 'error' : ''}
+          />
+          {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
         </div>
         
         <div className="form-group full-width">
-          <label>Endereço</label>
+          <label>Endereço *</label>
           <input
             type="text"
             value={formData.endereco || ''}
             onChange={(e) => handleChange('endereco', e.target.value)}
             placeholder="Rua, número, bairro, cidade"
+            className={errors.endereco ? 'error' : ''}
           />
+          {errors.endereco && <span className="error-message">{errors.endereco}</span>}
         </div>
         
         <div className="form-group">
@@ -1096,7 +1159,7 @@ const ClienteForm = ({ formData, setFormData }) => {
 };
 
 // Componente Form do Caminhão
-const CaminhaoForm = ({ formData, setFormData }) => {
+const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -1109,17 +1172,18 @@ const CaminhaoForm = ({ formData, setFormData }) => {
           <select
             value={formData.tipo || ''}
             onChange={(e) => handleChange('tipo', e.target.value)}
-            required
+            className={errors.tipo ? 'error' : ''}
           >
             <option value="">Selecione o tipo</option>
             <option value="Truck">Truck</option>
-            <option value="Truck Tractor">Truck Tractor</option>
-            <option value="Truck 3/4">Truck 3/4</option>
-            <option value="Truck Toco">Truck Toco</option>
+            <option value="Tractor CAVALINHO">Tractor CAVALINHO</option>
+            <option value="3/4">3/4</option>
+            <option value="Toco">Toco</option>
             <option value="Carreta">Carreta</option>
             <option value="Bitruck">Bitruck</option>
             <option value="Outro">Outro</option>
           </select>
+          {errors.tipo && <span className="error-message">{errors.tipo}</span>}
         </div>
         
         <div className="form-group">
@@ -1127,7 +1191,7 @@ const CaminhaoForm = ({ formData, setFormData }) => {
           <select
             value={formData.marca || ''}
             onChange={(e) => handleChange('marca', e.target.value)}
-            required
+            className={errors.marca ? 'error' : ''}
           >
             <option value="">Selecione a marca</option>
             <option value="Mercedes-Benz">Mercedes-Benz</option>
@@ -1138,10 +1202,10 @@ const CaminhaoForm = ({ formData, setFormData }) => {
             <option value="MAN">MAN</option>
             <option value="Ford">Ford</option>
             <option value="Chevrolet">Chevrolet</option>
-            <option value="Fiat">Fiat</option>
             <option value="Volkswagen">Volkswagen</option>
             <option value="Outra">Outra</option>
           </select>
+          {errors.marca && <span className="error-message">{errors.marca}</span>}
         </div>
         
         <div className="form-group">
@@ -1151,21 +1215,23 @@ const CaminhaoForm = ({ formData, setFormData }) => {
             value={formData.modelo || ''}
             onChange={(e) => handleChange('modelo', e.target.value)}
             placeholder="Ex: Actros, FH, R-Series"
-            required
+            className={errors.modelo ? 'error' : ''}
           />
+          {errors.modelo && <span className="error-message">{errors.modelo}</span>}
         </div>
         
         <div className="form-group">
-          <label>Voltagem</label>
+          <label>Voltagem *</label>
           <select
             value={formData.voltagem || ''}
             onChange={(e) => handleChange('voltagem', e.target.value)}
+            className={errors.voltagem ? 'error' : ''}
           >
             <option value="">Selecione a voltagem</option>
             <option value="12V">12V</option>
             <option value="24V">24V</option>
-            <option value="12V/24V">12V/24V</option>
           </select>
+          {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
         </div>
         
         <div className="form-group full-width">
@@ -1183,15 +1249,81 @@ const CaminhaoForm = ({ formData, setFormData }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
-  const handlePDFGenerated = (fileName) => {
-    alert(`PDF gerado com sucesso: ${fileName}`);
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user }) => {
+  const handlePDFGenerated = async (fileName) => {
+    try {
+      // Salvar relatório automaticamente no banco de dados
+      await salvarRelatorio();
+      alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
+    } catch (error) {
+      console.error('Erro ao salvar relatório:', error);
+      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatório automaticamente.`);
+    }
+  };
+
+  const salvarRelatorio = async () => {
+    try {
+      // 1. Criar cliente
+      const cliente = await db.createCliente(clienteData);
+      
+      // 2. Criar caminhão
+      const caminhao = await db.createCaminhao({
+        ...caminhaoData,
+        cliente_id: cliente.id
+      });
+      
+      // 3. Gerar número do pedido
+      const numeroPedido = `PED${Date.now()}`;
+      
+      // 4. Criar pedido
+      const pedido = await db.createPedido({
+        numero_pedido: numeroPedido,
+        cliente_id: cliente.id,
+        vendedor_id: user.id,
+        caminhao_id: caminhao.id,
+        status: 'proposta_gerada',
+        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+        observacoes: `Proposta gerada em ${new Date().toLocaleString('pt-BR')}. Local de instalação: ${pagamentoData.localInstalacao}. Tipo de instalação: ${pagamentoData.tipoInstalacao === 'cliente' ? 'Por conta do cliente' : 'Por conta da fábrica'}.`
+      });
+      
+      // 5. Criar itens do pedido
+      for (const item of carrinho) {
+        let codigo_produto = null;
+        if (item.tipo === 'equipamento') {
+          // Pega todos opcionais selecionados
+          const opcionaisSelecionados = carrinho
+            .filter(i => i.tipo === 'opcional')
+            .map(i => i.nome);
+          codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
+        }
+        await db.createPedidoItem({
+          pedido_id: pedido.id,
+          tipo: item.tipo,
+          item_id: item.id,
+          quantidade: 1,
+          preco_unitario: item.preco,
+          codigo_produto
+        });
+      }
+      
+      console.log('Relatório salvo com sucesso:', {
+        pedidoId: pedido.id,
+        numeroPedido,
+        cliente: cliente.nome,
+        vendedor: user.nome
+      });
+      
+    } catch (error) {
+      console.error('Erro ao salvar relatório:', error);
+      throw error;
+    }
   };
 
   const pedidoData = {
     carrinho,
     clienteData,
     caminhaoData,
+    pagamentoData,
     vendedor: user?.nome || 'Não informado'
   };
 
@@ -1240,6 +1372,24 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
             <span className="label">Email:</span>
             <span className="value">{clienteData.email || 'Não informado'}</span>
           </div>
+          <div className="data-row">
+            <span className="label">CPF/CNPJ:</span>
+            <span className="value">{clienteData.documento || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Inscrição Estadual:</span>
+            <span className="value">{clienteData.inscricao_estadual || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Endereço:</span>
+            <span className="value">{clienteData.endereco || 'Não informado'}</span>
+          </div>
+          {clienteData.observacoes && (
+            <div className="data-row">
+              <span className="label">Observações:</span>
+              <span className="value">{clienteData.observacoes}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -1262,6 +1412,71 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
             <span className="label">Voltagem:</span>
             <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
           </div>
+          {caminhaoData.observacoes && (
+            <div className="data-row">
+              <span className="label">Observações:</span>
+              <span className="value">{caminhaoData.observacoes}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="resumo-section">
+        <h3>Política de Pagamento</h3>
+        <div className="resumo-data">
+          <div className="data-row">
+            <span className="label">Tipo de Pagamento:</span>
+            <span className="value">
+              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda - Guindastes GSI'}
+              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ/CPF - Guindastes GSE'}
+              {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno - Revenda'}
+              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento - CNPJ/CPF'}
+              {!pagamentoData.tipoPagamento && 'Não informado'}
+            </span>
+          </div>
+          <div className="data-row">
+            <span className="label">Prazo de Pagamento:</span>
+            <span className="value">
+              {pagamentoData.prazoPagamento === 'a_vista' && 'À Vista'}
+              {pagamentoData.prazoPagamento === '30_dias' && 'Até 30 dias (+3%)'}
+              {pagamentoData.prazoPagamento === '60_dias' && 'Até 60 dias (+1%)'}
+              {pagamentoData.prazoPagamento === '120_dias_interno' && 'Até 120 dias (sem acréscimo)'}
+              {pagamentoData.prazoPagamento === '90_dias_cnpj' && 'Até 90 dias (sem acréscimo)'}
+              {pagamentoData.prazoPagamento === 'mais_120_dias' && 'Após 120 dias (+2% ao mês)'}
+              {pagamentoData.prazoPagamento === 'mais_90_dias' && 'Após 90 dias (+2% ao mês)'}
+              {!pagamentoData.prazoPagamento && 'Não informado'}
+            </span>
+          </div>
+          {pagamentoData.desconto > 0 && (
+            <div className="data-row">
+              <span className="label">Desconto:</span>
+              <span className="value">{pagamentoData.desconto}%</span>
+            </div>
+          )}
+          {pagamentoData.acrescimo > 0 && (
+            <div className="data-row">
+              <span className="label">Acréscimo:</span>
+              <span className="value">{pagamentoData.acrescimo}%</span>
+            </div>
+          )}
+          <div className="data-row">
+            <span className="label">Valor Final:</span>
+            <span className="value" style={{ fontWeight: 'bold', color: '#007bff' }}>
+              {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0))}
+            </span>
+          </div>
+          <div className="data-row">
+            <span className="label">Local de Instalação:</span>
+            <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Tipo de Instalação:</span>
+            <span className="value">
+              {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
+              {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+              {!pagamentoData.tipoInstalacao && 'Não informado'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -1272,31 +1487,6 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, user }) => {
             pedidoData={pedidoData} 
             onGenerate={handlePDFGenerated}
           />
-          <button 
-            onClick={() => {
-              const message = encodeURIComponent(`Olá! Gostaria de discutir a proposta de equipamento. Total: ${formatCurrency(carrinho.reduce((total, item) => total + item.preco, 0))}`);
-              window.open(`https://wa.me/${clienteData.telefone}{?text=${message}`, '_blank');
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #25d366 0%, #128c7e 100%)',
-              color: 'white',
-              border: 'none',
-              padding: '12px 20px',
-              borderRadius: '8px',
-              fontSize: '14px',
-              fontWeight: '600',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px'
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
-            </svg>
-            Enviar WhatsApp
-          </button>
         </div>
       </div>
     </div>

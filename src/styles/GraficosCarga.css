@@ -49,7 +49,7 @@
 
 .search-input:focus {
   outline: none;
-  border-color: #3b82f6;
+  border-color: #393c42;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
   transform: translateY(-1px);
 }
@@ -64,13 +64,13 @@
 }
 
 .stats-badge {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, #2d2f33, #363232);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(53, 56, 61, 0.3);
 }
 
 /* Grid de Gráficos */
@@ -99,13 +99,13 @@
   left: 0;
   right: 0;
   height: 3px;
-  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  background: linear-gradient(90deg, #383a3d, #363539);
   transform: scaleX(0);
   transition: transform 0.3s ease;
 }
 
 .grafico-card:hover {
-  border-color: #3b82f6;
+  border-color: #2c2e32;
   box-shadow: 0 10px 25px rgba(59, 130, 246, 0.15);
   transform: translateY(-2px);
 }
@@ -130,7 +130,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: #34383e;
   flex-shrink: 0;
 }
 
@@ -153,7 +153,7 @@
 }
 
 .capacidade-badge {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, #10b981, #393e3d);
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
@@ -163,7 +163,7 @@
 }
 
 .tipo-badge {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
+  background: linear-gradient(135deg, #2f2e2c, #3b3936);
   color: white;
   padding: 6px 12px;
   border-radius: 20px;
@@ -191,7 +191,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  background: linear-gradient(135deg, #434548, #303135);
   color: white;
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
@@ -199,7 +199,7 @@
 .download-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background: linear-gradient(135deg, #1e1f21, #242528);
 }
 
 .download-button svg {
@@ -224,19 +224,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #94a3b8;
+  color: #2a2e33;
 }
 
 .empty-state h3 {
   font-size: 24px;
   font-weight: 700;
-  color: #1e293b;
+  color: #383c42;
   margin: 0 0 10px 0;
 }
 
 .empty-state p {
   font-size: 16px;
-  color: #64748b;
+  color: #33373c;
   margin: 0 0 25px 0;
 }
 
@@ -249,7 +249,7 @@
 
 .suggestion-tag {
   background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  color: #475569;
+  color: #373b40;
   padding: 8px 16px;
   border-radius: 20px;
   font-size: 14px;
