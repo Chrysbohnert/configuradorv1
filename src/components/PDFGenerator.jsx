@@ -46,6 +46,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
   const generatePDF = async () => {
     try {
+      // Debug: Verificar dados de pagamento
+      console.log('Dados de pagamento recebidos:', pedidoData.pagamentoData);
       // Criar elementos separados para cabeçalho e rodapé
       const headerElement = document.createElement('div');
       headerElement.style.position = 'absolute';
@@ -243,6 +245,10 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         <div style="margin-bottom: 30px;">
           <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <!-- Debug: Verificar dados de pagamento -->
+            <div style="display: none;">
+              Debug: ${JSON.stringify(pedidoData.pagamentoData)}
+            </div>
             <div style="margin-bottom: 8px; font-size: 14px;">
               <strong>Tipo de Pagamento:</strong> ${
                 pedidoData.pagamentoData?.tipoPagamento === 'revenda_gsi' ? 'Revenda - Guindastes GSI' :
@@ -264,14 +270,17 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                 'Não informado'
               }
             </div>
+            <div style="margin-bottom: 8px; font-size: 14px;">
+              <strong>Valor Total:</strong> ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
+            </div>
             ${pedidoData.pagamentoData?.desconto > 0 ? `
             <div style="margin-bottom: 8px; font-size: 14px; color: #28a745;">
-              <strong>Desconto:</strong> ${pedidoData.pagamentoData.desconto}%
+              <strong>Desconto (${pedidoData.pagamentoData.desconto}%):</strong> -${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.desconto) / 100)}
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.acrescimo > 0 ? `
             <div style="margin-bottom: 8px; font-size: 14px; color: #dc3545;">
-              <strong>Acréscimo:</strong> ${pedidoData.pagamentoData.acrescimo}%
+              <strong>Acréscimo (${pedidoData.pagamentoData.acrescimo}%):</strong> +${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.acrescimo) / 100)}
             </div>
             ` : ''}
             <div style="margin-bottom: 8px; font-size: 16px; font-weight: bold; color: #007bff;">
@@ -280,7 +289,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             <div style="margin-bottom: 8px; font-size: 14px;">
               <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>
-            <div style="font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 14px;">
               <strong>Tipo de Instalação:</strong> ${
                 pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
                 pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
@@ -529,34 +538,21 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       pdf.setTextColor(73, 80, 87);
       pdf.text('CLÁUSULAS CONTRATUAIS', 20, margin + headerHeight + 20);
       
-      // Conteúdo das cláusulas (usando as cláusulas reais do componente)
+      // Conteúdo das cláusulas (texto contínuo sem espaçamento)
       pdf.setFontSize(8.5);
       pdf.setTextColor(0, 0, 0);
       
-      const clausulas = [
-        '• O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário.',
-        '• Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes.',
-        '• Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta.',
-        '• O prazo de entrega do equipamento terá início a partir do recebimento da autorização de faturamento quando via banco, do pagamento de 100% da entrada quando via parcelado fábrica e 100% do valor do equipamento quando à vista.',
-        '• Vendas com parcelamento fábrica, é obrigatório o envio da documentação solicitada para análise de crédito em até 5 (cinco) dias úteis.',
-        '• O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica.',
-        '• As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo.',
-        '• O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo.',
-        '• É obrigatório informar placa, chassi e modelo de caminhão onde será instalado o guindaste para confecção do Contrato de Reserva de Domínio, mediante cópia do documento ou NF do caminhão. Desde já fica autorizada a inclusão desta no documento do veículo.',
-        '• Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem.',
-        '• Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida.',
-        '• O atraso na definição da marca/modelo do veículo e do nº e modelo da caixa de câmbio, bem como, atraso no encaminhamento do veículo para montagem, prorrogam automaticamente o prazo de entrega, em números de dias úteis equivalentes.',
-        '• No caso de vendas feitas a prazo, caso ocorra inadimplência de quaisquer das parcelas ficará suspensa a garantia contratual do equipamento no respectivo período, a qual perdurará até a data de regularização da situação. O inadimplemento de parcela(s) ensejará no pagamento de multa de 2% sobre seu respectivo valor e juros de 0,33% por dia de atraso.',
-        '• É obrigatório o estudo de integração veicular para a montagem do equipamento, sendo de responsabilidade do cliente o envio à STARK Guindastes dos dados do caminhão em até 5 (cinco) dias úteis contados da assinatura do pedido. Caso a montagem seja feita sem o estudo, a STARK Guindastes não se responsabiliza pela mesma.',
-        '• A STARK Guindastes não se responsabiliza por despesas extras com o caminhão, tais como: deslocamento de arla, aumento de entre eixo e balanço traseiro, inclusão de eixo extra, deslocamento de barra de direção, reforço de molas, retirada e modificações em carrocerias e parametrização do caminhão.',
-        '• No momento do faturamento, o preço do equipamento será atualizado para o valor a ele correspondente na tabela vigente (Tabela de Preços STARK Guindastes), ficando condicionado o seu embarque ao pagamento da respectiva diferença resultante dessa correção a ser feito pelo Contratante à STARK Guindastes.',
-        '• As assinaturas abaixo, formalizam o presente pedido, indicando a total concordância entre as partes com aos termos e condições do presente negócio.'
-      ];
+      // Texto das cláusulas como um único parágrafo contínuo
+      const clausulasTexto = '• O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário. • Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes. • Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta. • O prazo de entrega do equipamento terá início a partir do recebimento da autorização de faturamento quando via banco, do pagamento de 100% da entrada quando via parcelado fábrica e 100% do valor do equipamento quando à vista. • Vendas com parcelamento fábrica, é obrigatório o envio da documentação solicitada para análise de crédito em até 5 (cinco) dias úteis. • O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica. • As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo. • O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo. • É obrigatório informar placa, chassi e modelo de caminhão onde será instalado o guindaste para confecção do Contrato de Reserva de Domínio, mediante cópia do documento ou NF do caminhão. Desde já fica autorizada a inclusão desta no documento do veículo. • Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem. • Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida. • O atraso na definição da marca/modelo do veículo e do nº e modelo da caixa de câmbio, bem como, atraso no encaminhamento do veículo para montagem, prorrogam automaticamente o prazo de entrega, em números de dias úteis equivalentes. • No caso de vendas feitas a prazo, caso ocorra inadimplência de quaisquer das parcelas ficará suspensa a garantia contratual do equipamento no respectivo período, a qual perdurará até a data de regularização da situação. O inadimplemento de parcela(s) ensejará no pagamento de multa de 2% sobre seu respectivo valor e juros de 0,33% por dia de atraso. • É obrigatório o estudo de integração veicular para a montagem do equipamento, sendo de responsabilidade do cliente o envio à STARK Guindastes dos dados do caminhão em até 5 (cinco) dias úteis contados da assinatura do pedido. Caso a montagem seja feita sem o estudo, a STARK Guindastes não se responsabiliza pela mesma. • A STARK Guindastes não se responsabiliza por despesas extras com o caminhão, tais como: deslocamento de arla, aumento de entre eixo e balanço traseiro, inclusão de eixo extra, deslocamento de barra de direção, reforço de molas, retirada e modificações em carrocerias e parametrização do caminhão. • No momento do faturamento, o preço do equipamento será atualizado para o valor a ele correspondente na tabela vigente (Tabela de Preços STARK Guindastes), ficando condicionado o seu embarque ao pagamento da respectiva diferença resultante dessa correção a ser feito pelo Contratante à STARK Guindastes. • As assinaturas abaixo, formalizam o presente pedido, indicando a total concordância entre as partes com aos termos e condições do presente negócio.';
       
       let yPos = margin + headerHeight + 40;
-      clausulas.forEach((clausula, index) => {
+      
+      // Dividir o texto em linhas que cabem na página
+      const lines = pdf.splitTextToSize(clausulasTexto, 170);
+      
+      for (let i = 0; i < lines.length; i++) {
         // Verificar se precisa de nova página
-        if (yPos > pageHeight - footerHeight - margin - 30) {
+        if (yPos > pageHeight - footerHeight - margin - 15) {
           pdf.addPage();
           
           // Adicionar cabeçalho na nova página
@@ -566,11 +562,10 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           yPos = margin + headerHeight + 20;
         }
         
-        // Adicionar cláusula
-        const lines = pdf.splitTextToSize(clausula, 170);
-        pdf.text(lines, 20, yPos);
-        yPos += (lines.length * 4) + 8;
-      });
+        // Adicionar linha do texto
+        pdf.text(lines[i], 20, yPos);
+        yPos += 3.5; // Espaçamento mínimo entre linhas
+      }
       
       // Adicionar rodapé na última página de cláusulas
       const footerImgData = footerCanvas.toDataURL('image/png');

@@ -225,13 +225,21 @@ class DatabaseService {
   }
 
   async createCaminhao(caminhaoData) {
+    console.log('🔍 Tentando criar caminhão com dados:', caminhaoData);
+    
     const { data, error } = await supabase
       .from('caminhoes')
       .insert([caminhaoData])
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Erro na criação do caminhão:', error);
+      console.error('📋 Dados enviados:', caminhaoData);
+      throw error;
+    }
+    
+    console.log('✅ Caminhão criado com sucesso:', data);
     return data;
   }
 
@@ -644,6 +652,107 @@ if (typeof window !== 'undefined') {
     } catch (error) {
       console.error('❌ Erro no teste:', error);
       console.error('Detalhes:', JSON.stringify(error, null, 2));
+    }
+  };
+
+  // Função para testar status válidos da tabela pedidos
+  window.testPedidosStatus = async () => {
+    try {
+      console.log('🔍 Testando status válidos para pedidos...');
+      
+      const statusPossiveis = ['ativo', 'pendente', 'concluido', 'cancelado', 'em_andamento', 'aguardando', 'aprovado'];
+      
+      for (const status of statusPossiveis) {
+        try {
+          console.log(`📋 Testando status: "${status}"`);
+          
+          const testData = {
+            numero_pedido: `TEST_${Date.now()}`,
+            cliente_id: 1, // Assumindo que existe um cliente com ID 1
+            vendedor_id: 1, // Assumindo que existe um vendedor com ID 1
+            caminhao_id: 1, // Assumindo que existe um caminhão com ID 1
+            status: status,
+            valor_total: 1000.00,
+            observacoes: 'Teste de status'
+          };
+          
+          const { data, error } = await supabase
+            .from('pedidos')
+            .insert([testData])
+            .select()
+            .single();
+          
+          if (error) {
+            console.log(`❌ Status "${status}" inválido:`, error.message);
+          } else {
+            console.log(`✅ Status "${status}" válido!`, data);
+            
+            // Limpar o registro de teste
+            await supabase.from('pedidos').delete().eq('id', data.id);
+            console.log(`🧹 Registro de teste removido`);
+          }
+        } catch (error) {
+          console.log(`❌ Erro ao testar status "${status}":`, error.message);
+        }
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro no teste:', error);
+    }
+  };
+
+  // Função para testar estrutura da tabela caminhoes
+  window.testCaminhoesTable = async () => {
+    try {
+      console.log('🔍 Testando estrutura da tabela caminhoes...');
+      
+      // Tentar inserir um caminhão de teste
+      const testData = {
+        tipo: 'Truck',
+        marca: 'Mercedes-Benz',
+        modelo: 'Actros',
+        voltagem: '24V',
+        observacoes: 'Teste de inserção',
+        cliente_id: 1 // Assumindo que existe um cliente com ID 1
+      };
+      
+      console.log('📋 Dados de teste:', testData);
+      
+      const { data, error } = await supabase
+        .from('caminhoes')
+        .insert([testData])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ Erro no teste:', error);
+        console.error('📋 Detalhes:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Se for erro de constraint, mostrar sugestões
+        if (error.message.includes('foreign key')) {
+          console.log('💡 SUGESTÃO: O cliente_id não existe. Verifique se há clientes na tabela.');
+        }
+        if (error.message.includes('not-null')) {
+          console.log('💡 SUGESTÃO: Algum campo obrigatório não está sendo preenchido.');
+        }
+        if (error.message.includes('duplicate')) {
+          console.log('💡 SUGESTÃO: Já existe um registro com esses dados.');
+        }
+      } else {
+        console.log('✅ Teste bem-sucedido:', data);
+        
+        // Limpar o registro de teste
+        await supabase.from('caminhoes').delete().eq('id', data.id);
+        console.log('🧹 Registro de teste removido');
+      }
+      
+    } catch (error) {
+      console.error('❌ Erro no teste:', error);
     }
   };
 

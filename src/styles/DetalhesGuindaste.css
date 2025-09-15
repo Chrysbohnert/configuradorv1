@@ -15,7 +15,7 @@
 
 /* Header */
 .detalhes-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #35363c 0%, #2e2a31 100%);
   color: white;
   padding: 30px;
   display: flex;
@@ -197,7 +197,7 @@
   background: #f9fafb;
   padding: 25px;
   border-radius: 12px;
-  border-left: 4px solid #667eea;
+  border-left: 4px solid #2d2f37;
 }
 
  .descricao-content p {
@@ -246,7 +246,7 @@
    margin: 0;
    font-size: 14px;
    line-height: 1.4;
-   color: #92400e;
+   color: #713a18;
    font-weight: 500;
  }
 
@@ -264,7 +264,7 @@
 }
 
 .continuar-btn {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  background: linear-gradient(135deg, #10b981 0%, #51645e 100%);
   color: white;
   border: none;
   padding: 18px 36px;

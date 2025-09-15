@@ -624,9 +624,19 @@ const NovoPedido = () => {
 
 
   const handleFinish = async () => {
-    // Limpar carrinho e navegar para histórico
-    limparCarrinho();
-    navigate('/historico');
+    try {
+      // Salvar relatório no banco de dados
+      await salvarRelatorio();
+      
+      // Limpar carrinho e navegar para histórico
+      limparCarrinho();
+      navigate('/historico');
+      
+      alert('Pedido finalizado e salvo com sucesso!');
+    } catch (error) {
+      console.error('Erro ao finalizar pedido:', error);
+      alert('Erro ao salvar pedido. Tente novamente.');
+    }
   };
 
   if (!user) {
@@ -932,14 +942,17 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange, errors = {} }) => {
     const novoValorFinal = valorTotal - ((valorTotal * novoDesconto) / 100) + ((valorTotal * novoAcrescimo) / 100);
     
     // Atualizar dados de pagamento
-    onPagamentoChange({
+    const dadosPagamento = {
       ...newData,
       desconto: novoDesconto,
       acrescimo: novoAcrescimo,
       valorFinal: novoValorFinal,
       localInstalacao: newData.localInstalacao,
       tipoInstalacao: newData.tipoInstalacao
-    });
+    };
+    
+    console.log('Dados de pagamento sendo enviados:', dadosPagamento);
+    onPagamentoChange(dadosPagamento);
   };
 
   return (
@@ -1263,31 +1276,67 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   const salvarRelatorio = async () => {
     try {
+      console.log('🔄 Iniciando salvamento do relatório...');
+      console.log('📋 Dados do cliente:', clienteData);
+      console.log('🚛 Dados do caminhão:', caminhaoData);
+      console.log('💳 Dados de pagamento:', pagamentoData);
+      console.log('🛒 Carrinho:', carrinho);
+      console.log('👤 Usuário:', user);
+      
       // 1. Criar cliente
+      console.log('1️⃣ Criando cliente...');
       const cliente = await db.createCliente(clienteData);
+      console.log('✅ Cliente criado:', cliente);
       
       // 2. Criar caminhão
-      const caminhao = await db.createCaminhao({
+      console.log('2️⃣ Criando caminhão...');
+      
+      // Verificar se todos os campos obrigatórios estão preenchidos
+      const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
+      const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
+      
+      if (camposFaltando.length > 0) {
+        throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+      }
+      
+      const caminhaoDataToSave = {
         ...caminhaoData,
-        cliente_id: cliente.id
-      });
+        cliente_id: cliente.id,
+        // Garantir que campos opcionais tenham valores padrão
+        observacoes: caminhaoData.observacoes || null,
+        // Campo placa é obrigatório no banco mas não usado no formulário
+        placa: 'N/A'
+      };
+      
+      console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
+      
+      const caminhao = await db.createCaminhao(caminhaoDataToSave);
+      console.log('✅ Caminhão criado:', caminhao);
       
       // 3. Gerar número do pedido
       const numeroPedido = `PED${Date.now()}`;
+      console.log('3️⃣ Número do pedido gerado:', numeroPedido);
       
       // 4. Criar pedido
-      const pedido = await db.createPedido({
+      console.log('4️⃣ Criando pedido...');
+      const pedidoDataToSave = {
         numero_pedido: numeroPedido,
         cliente_id: cliente.id,
         vendedor_id: user.id,
         caminhao_id: caminhao.id,
-        status: 'proposta_gerada',
+        status: 'em_andamento', // Status válido confirmado no banco
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
         observacoes: `Proposta gerada em ${new Date().toLocaleString('pt-BR')}. Local de instalação: ${pagamentoData.localInstalacao}. Tipo de instalação: ${pagamentoData.tipoInstalacao === 'cliente' ? 'Por conta do cliente' : 'Por conta da fábrica'}.`
-      });
+      };
+      console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);
+      
+      const pedido = await db.createPedido(pedidoDataToSave);
+      console.log('✅ Pedido criado:', pedido);
       
       // 5. Criar itens do pedido
+      console.log('5️⃣ Criando itens do pedido...');
       for (const item of carrinho) {
+        console.log(`   Processando item: ${item.nome} (${item.tipo})`);
         let codigo_produto = null;
         if (item.tipo === 'equipamento') {
           // Pega todos opcionais selecionados
@@ -1296,17 +1345,28 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             .map(i => i.nome);
           codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
         }
-        await db.createPedidoItem({
+        
+        const itemDataToSave = {
           pedido_id: pedido.id,
           tipo: item.tipo,
           item_id: item.id,
           quantidade: 1,
           preco_unitario: item.preco,
           codigo_produto
-        });
+        };
+        
+        console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
+        
+        try {
+          const pedidoItem = await db.createPedidoItem(itemDataToSave);
+          console.log(`   ✅ Item criado:`, pedidoItem);
+        } catch (itemError) {
+          console.error(`   ❌ Erro ao criar item ${item.nome}:`, itemError);
+          throw itemError;
+        }
       }
       
-      console.log('Relatório salvo com sucesso:', {
+      console.log('🎉 Relatório salvo com sucesso:', {
         pedidoId: pedido.id,
         numeroPedido,
         cliente: cliente.nome,
@@ -1314,7 +1374,18 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       });
       
     } catch (error) {
-      console.error('Erro ao salvar relatório:', error);
+      console.error('❌ Erro ao salvar relatório:', error);
+      console.error('📋 Detalhes do erro:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
+      
+      // Log mais detalhado para debug
+      console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
+      
       throw error;
     }
   };
