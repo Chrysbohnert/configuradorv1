@@ -28,6 +28,11 @@ const AdminNavigation = ({ user }) => {
       icon: '📊'
     },
     {
+      path: '/logistica',
+      label: 'Logística',
+      icon: '🚚'
+    },
+    {
       path: '/relatorio-completo',
       label: 'Relatório Completo',
       icon: '📈'

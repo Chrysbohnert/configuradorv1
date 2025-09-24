@@ -446,15 +446,26 @@ const GerenciarGuindastes = () => {
 
               <div className="form-group">
                 <label>Imagem do Guindaste</label>
-                <ImageUpload onImageUpload={handleImageUpload} />
+                <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
+                {formData.imagem_url ? (
+                  <small style={{ color: '#28a745', fontSize: '12px' }}>Imagem já cadastrada</small>
+                ) : (
+                  <small style={{ color: '#6c757d', fontSize: '12px' }}>Nenhuma imagem cadastrada</small>
+                )}
               </div>
 
               <div className="form-group">
                 <label>Gráfico de Carga (Opcional)</label>
                 <ImageUpload 
                   onImageUpload={handleGraficoCargaUpload} 
+                  currentImageUrl={formData.grafico_carga_url}
                   label="Upload do Gráfico de Carga"
                 />
+                {formData.grafico_carga_url ? (
+                  <small style={{ color: '#28a745', fontSize: '12px' }}>Gráfico de carga já cadastrado</small>
+                ) : (
+                  <small style={{ color: '#6c757d', fontSize: '12px' }}>Nenhum gráfico cadastrado</small>
+                )}
                 <small style={{ color: '#6c757d', fontSize: '12px' }}>
                   Imagem que mostra a capacidade de carga em diferentes posições da lança
                 </small>

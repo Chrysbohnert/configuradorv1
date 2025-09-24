@@ -119,6 +119,92 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  // ===== LOGÍSTICA: CALENDÁRIO =====
+  async getEventosLogistica({ startDate, endDate } = {}) {
+    let query = supabase
+      .from('eventos_logistica')
+      .select('*')
+      .order('data', { ascending: true });
+    
+    if (startDate) query = query.gte('data', startDate);
+    if (endDate) query = query.lte('data', endDate);
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async createEventoLogistica(eventoData) {
+    const { data, error } = await supabase
+      .from('eventos_logistica')
+      .insert([eventoData])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateEventoLogistica(id, eventoData) {
+    const { data, error } = await supabase
+      .from('eventos_logistica')
+      .update(eventoData)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteEventoLogistica(id) {
+    const { error } = await supabase
+      .from('eventos_logistica')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
+  // ===== LOGÍSTICA: PRONTA ENTREGA =====
+  async getProntaEntrega() {
+    const { data, error } = await supabase
+      .from('pronta_entrega')
+      .select(`
+        *,
+        guindaste:guindastes(*)
+      `)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+
+  async addProntaEntrega(itemData) {
+    const { data, error } = await supabase
+      .from('pronta_entrega')
+      .insert([itemData])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async updateProntaEntrega(id, itemData) {
+    const { data, error } = await supabase
+      .from('pronta_entrega')
+      .update(itemData)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async removeProntaEntrega(id) {
+    const { error } = await supabase
+      .from('pronta_entrega')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
   // ===== OPCIONAIS DO GUINDASTE =====
   async getOpcionaisDoGuindaste(guindasteId) {
     const { data, error } = await supabase

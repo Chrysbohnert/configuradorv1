@@ -1,15 +1,33 @@
 import React from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { PDF_CONFIG } from '../config/constants';
 import ClausulasContratuais from './ClausulasContratuais';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
+  // Sequência de número de proposta local (persistido no navegador)
+  const getNextProposalNumber = () => {
+    try {
+      const storageKey = 'proposta_seq_number';
+      let current = parseInt(localStorage.getItem(storageKey) || '0', 10);
+      if (Number.isNaN(current) || current < 0) current = 0;
+      const formatted = String(current).padStart(4, '0');
+      localStorage.setItem(storageKey, String(current + 1));
+      return formatted;
+    } catch (_) {
+      // Fallback em caso de bloqueio ao localStorage
+      return Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    }
+  };
   
   // Função para carregar imagem como base64
   const loadImageAsBase64 = async (url) => {
     try {
+      // Se já for um data URL base64, retornar diretamente
+      if (url && typeof url === 'string' && url.startsWith('data:image')) {
+        return url;
+      }
       console.log('Tentando carregar imagem:', url);
       
       const response = await fetch(url, {
@@ -46,6 +64,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
   const generatePDF = async () => {
     try {
+      const addSeparatePolicyPage = false; // política já está dentro do conteúdo principal
       // Debug: Verificar dados de pagamento
       console.log('Dados de pagamento recebidos:', pedidoData.pagamentoData);
       // Criar elementos separados para cabeçalho e rodapé
@@ -63,7 +82,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       footerElement.style.backgroundColor = 'white';
       footerElement.innerHTML = `
         <img src="/rodapé.png" alt="Rodapé STARK" style="width: 100%; height: auto; display: block;">
-        <div style="text-align: center; font-size: 10px; color: #6c757d; padding: 5px; background: white;">
+        <div style="text-align: center; font-size: 11px; color:rgb(0, 0, 0); padding: 5px; background: white;">
           Proposta gerada automaticamente pelo sistema em ${new Date().toLocaleString('pt-BR')}
         </div>
       `;
@@ -76,12 +95,13 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       contentElement.style.backgroundColor = 'white';
       contentElement.style.padding = '10px';
       contentElement.style.fontFamily = 'Arial, sans-serif';
-      contentElement.style.fontSize = '14px';
+      contentElement.style.fontSize = '20px';
       contentElement.style.lineHeight = '1.5';
       
+      const propostaNumero = getNextProposalNumber();
       contentElement.innerHTML = `
-        <div style="border-bottom: 2px solid #374151; margin-bottom: 30px; padding-bottom: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: #6c757d;">
+        <div style="border-bottom: 2px solidrgb(0, 0, 0); margin-bottom: 30px; padding-bottom: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 18px; color: #6c757d;">
             <div>
               <strong>Vendedor:</strong> ${pedidoData.vendedor || 'Não informado'}
             </div>
@@ -92,14 +112,14 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h2 style="color: #495057; font-size: 22px; margin-bottom: 15px;">PROPOSTA COMERCIAL</h2>
+          <h2 style="color:rgb(0, 0, 0); font-size: 28px; margin-bottom: 15px;">PROPOSTA COMERCIAL</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <div>
               <strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}
             </div>
             <div>
-              <strong>Proposta Nº:</strong> ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}
+              <strong>Proposta Nº:</strong> ${propostaNumero}
             </div>
           </div>
         </div>
@@ -107,7 +127,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         ${pedidoData.guindastes?.map(guindaste => {
           let guindasteInfo = `
             <div style="margin-bottom: 25px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
-              <h3 style="color: #374151; font-size: 18px; margin-bottom: 15px;">${guindaste.nome}</h3>
+              <h3 style="color:rgb(0, 0, 0); font-size: 22px; margin-bottom: 15px;">${guindaste.nome}</h3>
               <div style="display: flex; gap: 20px; margin-bottom: 15px;">
                 <div><strong>Modelo:</strong> ${guindaste.modelo}</div>
                 <div><strong>Código:</strong> ${guindaste.codigo_produto}</div>
@@ -136,51 +156,63 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         }).join('') || ''}
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
+          <h3 style="color: #495057; font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Nome:</strong> ${pedidoData.clienteData.nome || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Telefone:</strong> ${pedidoData.clienteData.telefone || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Email:</strong> ${pedidoData.clienteData.email || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>CPF/CNPJ:</strong> ${pedidoData.clienteData.documento || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
-              <strong>Inscrição Estadual:</strong> ${pedidoData.clienteData.inscricao_estadual || 'Não informado'}
+            <div style="margin-bottom: 8px; font-size: 18px;">
+              <strong>Inscrição Estadual:</strong> ${pedidoData.clienteData.inscricao_estadual || pedidoData.clienteData.inscricaoEstadual || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Endereço:</strong> ${pedidoData.clienteData.endereco || 'Não informado'}
             </div>
+            ${pedidoData.clienteData.cidade || pedidoData.clienteData.uf || pedidoData.clienteData.cep ? `
+            <div style="display: flex; gap: 20px; margin-bottom: 8px; font-size: 18px;">
+              <div><strong>Cidade:</strong> ${pedidoData.clienteData.cidade || 'Não informado'}</div>
+              <div><strong>UF:</strong> ${pedidoData.clienteData.uf || 'Não informado'}</div>
+              <div><strong>CEP:</strong> ${pedidoData.clienteData.cep || 'Não informado'}</div>
+            </div>
+            ` : ''}
             ${pedidoData.clienteData.observacoes ? `
-            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 14px;">
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 18px;">
               <strong>Observações:</strong> ${pedidoData.clienteData.observacoes}
             </div>
             ` : ''}
           </div>
         </div>
 
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">DADOS DO VEÍCULO</h3>
+        <div style="margin-bottom: 30px; display: none;">
+          <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO VEÍCULO</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Tipo:</strong> ${pedidoData.caminhaoData.tipo || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Marca:</strong> ${pedidoData.caminhaoData.marca || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Modelo:</strong> ${pedidoData.caminhaoData.modelo || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            ${pedidoData.caminhaoData.ano ? `
+            <div style=\"margin-bottom: 8px; font-size: 18px;\">
+              <strong>Ano:</strong> ${pedidoData.caminhaoData.ano}
+            </div>
+            ` : ''}
+            <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Voltagem:</strong> ${pedidoData.caminhaoData.voltagem || 'Não informado'}
             </div>
             ${pedidoData.caminhaoData.observacoes ? `
-            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 14px;">
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 16px;">
               <strong>Observações:</strong> ${pedidoData.caminhaoData.observacoes}
             </div>
             ` : ''}
@@ -188,68 +220,82 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 15px;">ITENS DA PROPOSTA</h3>
+          <h3 style="color: #495057; font-size: 24px; margin-bottom: 15px;">ITENS DA PROPOSTA</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <thead>
               <tr style="background: #374151; color: white;">
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 14px;">Item</th>
-                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 14px;">Tipo</th>
-                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6; font-size: 14px;">Preço</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Item</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Tipo</th>
+                <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Código</th>
+                <th style="padding: 12px; text-align: right; border: 1px solid #dee2e6; font-size: 18px;">Preço</th>
               </tr>
             </thead>
             <tbody>
               ${pedidoData.carrinho.map((item) => `
                 <tr style="border-bottom: 1px solid #dee2e6;">
-                  <td style="padding: 12px; border: 1px solid #dee2e6; font-size: 14px;">${item.nome}</td>
-                  <td style="padding: 12px; border: 1px solid #dee2e6; text-transform: capitalize; font-size: 14px;">${item.tipo}</td>
-                  <td style="padding: 12px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; font-size: 14px;">${formatCurrency(item.preco)}</td>
+                  <td style="padding: 12px; border: 1px solid #dee2e6; font-size: 18px;">${item.nome}</td>
+                  <td style="padding: 12px; border: 1px solid #dee2e6; text-transform: capitalize; font-size: 18px;">${item.tipo}</td>
+                  <td style="padding: 12px; border: 1px solid #dee2e6; font-size: 18px;">${(() => {
+                    try {
+                      const opcionaisSelecionados = pedidoData.carrinho
+                        .filter(i => i.tipo === 'opcional')
+                        .map(i => i.nome);
+                      if (item.tipo === 'guindaste') {
+                        const codigo = generateCodigoProduto(item.modelo || item.nome, opcionaisSelecionados);
+                        return codigo || item.codigo_produto || '-';
+                      }
+                      return item.codigo_produto || '-';
+                    } catch(_) { return item.codigo_produto || '-'; }
+                  })()}</td>
+                  <td style="padding: 12px; border: 1px solid #dee2e6; text-align: right; font-weight: bold; font-size: 18px;">${formatCurrency(item.preco)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
           
-          <div style="text-align: right; font-size: 20px; font-weight: bold; color: #374151; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+          ${(() => {
+            const opcionais = pedidoData.carrinho.filter(i => i.tipo === 'opcional');
+            if (opcionais.length === 0) return '';
+            return `
+              <div style="margin: 12px 0 20px 0;">
+                <h4 style="color:rgb(0, 0, 0); font-size: 20px; margin: 0 0 8px 0;">Opcionais Selecionados</h4>
+                <table style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr style="background: #f1f3f5; color:rgb(0, 0, 0);">
+                      <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6; font-size: 16px;">Opcional</th>
+                      <th style="padding: 8px; text-align: left; border: 1px solid #dee2e6; font-size: 16px;">Descrição</th>
+                      <th style="padding: 8px; text-align: right; border: 1px solid #dee2e6; font-size: 16px;">Preço</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${opcionais.map(op => `
+                      <tr>
+                        <td style="padding: 8px; border: 1px solid #dee2e6; font-size: 16px;">${op.nome}</td>
+                        <td style="padding: 8px; border: 1px solid #dee2e6; font-size: 16px;">${op.descricao || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #dee2e6; font-size: 16px; text-align: right;">${formatCurrency(op.preco || 0)}</td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `;
+          })()}
+          
+          <div style="text-align: right; font-size: 26px; font-weight: bold; color: #374151; padding: 15px; background: #f8f9fa; border-radius: 8px;">
             <strong>TOTAL: ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}</strong>
           </div>
         </div>
 
-        ${(() => {
-          // Verificar se há guindastes com gráfico de carga
-          const guindastesComGrafico = pedidoData.carrinho.filter(item => 
-            item.tipo === 'guindaste' && item.grafico_carga_url
-          );
-          
-          if (guindastesComGrafico.length > 0) {
-            return `
-              <div style="margin-bottom: 30px;">
-                <h3 style="color: #495057; font-size: 18px; margin-bottom: 15px;">GRÁFICOS DE CARGA</h3>
-                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-                  <p style="font-size: 14px; color: #6c757d; margin-bottom: 15px;">
-                    Os gráficos de carga detalhados estão disponíveis na próxima página deste documento.
-                  </p>
-                  <div style="text-align: center; padding: 20px; background: #e3f2fd; border-radius: 4px; border: 1px solid #bbdefb;">
-                    <p style="margin: 0; font-size: 14px; color: #1976d2;">
-                      📄 <strong>Ver próxima página para gráficos técnicos</strong>
-                    </p>
-                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #1976d2;">
-                      Capacidade de elevação em diferentes posições da lança
-                    </p>
-                  </div>
-                </div>
-              </div>
-            `;
-          }
-          return '';
-        })()}
+        
 
-        <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
+              <div style="margin-bottom: 30px;">
+          <h3 style="color:rgb(0, 0, 0); font-size: 22px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <!-- Debug: Verificar dados de pagamento -->
             <div style="display: none;">
               Debug: ${JSON.stringify(pedidoData.pagamentoData)}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 10px; font-size: 16px;">
               <strong>Tipo de Pagamento:</strong> ${
                 pedidoData.pagamentoData?.tipoPagamento === 'revenda_gsi' ? 'Revenda - Guindastes GSI' :
                 pedidoData.pagamentoData?.tipoPagamento === 'cnpj_cpf_gse' ? 'CNPJ/CPF - Guindastes GSE' :
@@ -258,7 +304,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                 'Não informado'
               }
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 10px; font-size: 16px;">
               <strong>Prazo de Pagamento:</strong> ${
                 pedidoData.pagamentoData?.prazoPagamento === 'a_vista' ? 'À Vista' :
                 pedidoData.pagamentoData?.prazoPagamento === '30_dias' ? 'Até 30 dias (+3%)' :
@@ -270,26 +316,26 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                 'Não informado'
               }
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 10px; font-size: 16px;">
               <strong>Valor Total:</strong> ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
             </div>
             ${pedidoData.pagamentoData?.desconto > 0 ? `
-            <div style="margin-bottom: 8px; font-size: 14px; color: #28a745;">
+            <div style="margin-bottom: 10px; font-size: 16px; color: #28a745;">
               <strong>Desconto (${pedidoData.pagamentoData.desconto}%):</strong> -${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.desconto) / 100)}
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.acrescimo > 0 ? `
-            <div style="margin-bottom: 8px; font-size: 14px; color: #dc3545;">
+            <div style="margin-bottom: 10px; font-size: 16px; color: #dc3545;">
               <strong>Acréscimo (${pedidoData.pagamentoData.acrescimo}%):</strong> +${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.acrescimo) / 100)}
             </div>
             ` : ''}
-            <div style="margin-bottom: 8px; font-size: 16px; font-weight: bold; color: #007bff;">
+            <div style="margin-bottom: 10px; font-size: 20px; font-weight: bold; color: #007bff;">
               <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 10px; font-size: 16px;">
               <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
+            <div style="margin-bottom: 10px; font-size: 16px;">
               <strong>Tipo de Instalação:</strong> ${
                 pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
                 pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
@@ -300,17 +346,45 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 18px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
+          <h3 style="color:rgb(0, 0, 0); font-size: 20px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <div style="margin-bottom: 8px; font-size: 14px;">
-              <strong>Prazo de Entrega:</strong> Conforme disponibilidade
+            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom: 8px; font-size: 15px;">
+              <div><strong>Prazo de Entrega:</strong> Conforme disponibilidade</div>
+              <div><strong>Validade da Proposta:</strong> 30 dias</div>
+              <div><strong>Vendedor:</strong> ${pedidoData.vendedor || 'Não informado'}</div>
+              <div><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
-            <div style="margin-bottom: 8px; font-size: 14px;">
-              <strong>Validade da Proposta:</strong> 30 dias
-            </div>
-            <div style="font-size: 14px;">
+            <div style="font-size: 15px;">
               <strong>Observações:</strong> ${pedidoData.clienteData.observacoes || 'Nenhuma observação adicional.'}
             </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 30px;">
+          <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO VEÍCULO</h3>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+            <div style="margin-bottom: 8px; font-size: 18px;">
+              <strong>Tipo:</strong> ${pedidoData.caminhaoData.tipo || 'Não informado'}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 18px;">
+              <strong>Marca:</strong> ${pedidoData.caminhaoData.marca || 'Não informado'}
+            </div>
+            <div style="margin-bottom: 8px; font-size: 18px;">
+              <strong>Modelo:</strong> ${pedidoData.caminhaoData.modelo || 'Não informado'}
+            </div>
+            ${pedidoData.caminhaoData.ano ? `
+            <div style=\"margin-bottom: 8px; font-size: 18px;\"> 
+              <strong>Ano:</strong> ${pedidoData.caminhaoData.ano}
+            </div>
+            ` : ''}
+            <div style="margin-bottom: 8px; font-size: 18px;">
+              <strong>Voltagem:</strong> ${pedidoData.caminhaoData.voltagem || 'Não informado'}
+            </div>
+            ${pedidoData.caminhaoData.observacoes ? `
+            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 18px;">
+              <strong>Observações:</strong> ${pedidoData.caminhaoData.observacoes}
+            </div>
+            ` : ''}
           </div>
         </div>
       `;
@@ -375,9 +449,11 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         ).length
       });
       
-      // Para orçamentos simples, sempre usar uma página
-      // Só usar múltiplas páginas se o conteúdo for realmente muito grande
-      if (contentHeight <= availableContentHeight * 1.5) {
+      // Não renderizaremos mais página separada de política
+      let policyPageRendered = true;
+
+      // Usar uma página apenas se todo o conteúdo couber na área útil
+      if (contentHeight <= availableContentHeight) {
         // Conteúdo cabe em uma página - usar a página atual (não criar nova)
         
         // Adicionar cabeçalho
@@ -396,6 +472,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       } else {
         // Conteúdo muito grande - usar múltiplas páginas
         const totalPages = Math.ceil(contentHeight / availableContentHeight);
+        // Conversão de mm (no PDF) para pixels (no canvas)
+        const pixelsPerMm = contentCanvas.height / contentHeight;
         
         for (let pageNum = 0; pageNum < totalPages; pageNum++) {
           if (pageNum > 0) {
@@ -408,12 +486,18 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           
           // Calcular posição e altura do conteúdo para esta página
           const contentStartY = margin + headerHeight + 5;
-          const contentForThisPage = Math.min(availableContentHeight, contentHeight - (pageNum * availableContentHeight));
+          const overlapMm = 2; // sobreposição para evitar corte de linhas
+          const yStartMm = Math.max(0, pageNum * availableContentHeight - (pageNum === 0 ? 0 : overlapMm));
+          const contentForThisPage = Math.min(
+            availableContentHeight + (pageNum === 0 ? 0 : overlapMm),
+            contentHeight - yStartMm
+          );
           
           // Adicionar parte do conteúdo (cortar verticalmente)
-          const contentImgData = contentCanvas.toDataURL('image/png');
-          const sourceY = pageNum * availableContentHeight;
-          const sourceHeight = Math.min(availableContentHeight, contentHeight - sourceY);
+          const sourceYmm = yStartMm;
+          const sourceHeightMm = contentForThisPage;
+          const sourceY = Math.floor(sourceYmm * pixelsPerMm);
+          const sourceHeight = Math.ceil(sourceHeightMm * pixelsPerMm);
           
           // Criar um canvas temporário para cortar a imagem
           const tempCanvas = document.createElement('canvas');
@@ -434,6 +518,12 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           const footerImgData = footerCanvas.toDataURL('image/png');
           pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
         }
+
+        // Política já foi embutida no conteúdo anterior; pular bloco separado
+        // (Bloco de página separada removido)
+
+      // Se por qualquer motivo a página de política ainda não foi renderizada (ex.: conteúdo coube em 1 página), renderizar agora
+        // Desativado porque política já está embutida no conteúdo principal
       }
 
       // Adicionar gráficos de carga se houver
@@ -442,87 +532,79 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       );
 
       if (guindastesComGrafico.length > 0) {
-        console.log('Adicionando página de gráficos de carga...');
-        
-        // Adicionar nova página para gráficos de carga
+        console.log('Preparando página(s) de gráficos de carga...');
+        let graficosPageIniciada = false;
+        let yPosition = 0;
+        const iniciarPaginaGraficos = () => {
+          if (graficosPageIniciada) return;
         pdf.addPage();
-        
-        // Adicionar cabeçalho
         const headerImgData = headerCanvas.toDataURL('image/png');
         pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-        
-        // Título da página
-        pdf.setFontSize(18);
+          pdf.setFontSize(20);
         pdf.setTextColor(73, 80, 87);
         pdf.text('GRÁFICOS DE CARGA', 105, margin + headerHeight + 20, { align: 'center' });
-        
-        // Descrição
-        pdf.setFontSize(12);
+          pdf.setFontSize(13);
         pdf.setTextColor(108, 117, 125);
         pdf.text('Capacidade de elevação em diferentes posições da lança', 105, margin + headerHeight + 30, { align: 'center' });
-        
-        let yPosition = margin + headerHeight + 50;
+          yPosition = margin + headerHeight + 50;
+          graficosPageIniciada = true;
+        };
         
         for (let i = 0; i < guindastesComGrafico.length; i++) {
           const guindaste = guindastesComGrafico[i];
           console.log(`Processando gráfico para: ${guindaste.nome}`);
           
-          // Título do guindaste
-          pdf.setFontSize(14);
-          pdf.setTextColor(73, 80, 87);
-          pdf.text(`${guindaste.nome} - Gráfico de Carga`, 20, yPosition);
-          
-          // Tentar carregar e adicionar a imagem
           try {
-            console.log(`Carregando imagem: ${guindaste.grafico_carga_url}`);
             const base64Image = await loadImageAsBase64(guindaste.grafico_carga_url);
-            
             if (base64Image) {
-              console.log('Imagem carregada com sucesso, adicionando ao PDF...');
-              
-              // Adicionar imagem (máximo 150mm de largura)
+              iniciarPaginaGraficos();
+              pdf.setFontSize(16);
+              pdf.setTextColor(73, 80, 87);
+              pdf.text(`${guindaste.nome} - Gráfico de Carga`, 20, yPosition);
               const imgWidth = 150;
-              const imgHeight = 80; // Altura fixa para manter proporção
-              
+              const imgHeight = 80;
               pdf.addImage(base64Image, 'JPEG', 20, yPosition + 10, imgWidth, imgHeight);
-              console.log('Imagem adicionada ao PDF');
               yPosition += imgHeight + 30;
             } else {
-              console.log('Falha ao carregar imagem, adicionando texto informativo');
-              // Se não conseguir carregar, adicionar texto informativo
-              pdf.setFontSize(10);
+              // Sem imagem válida, registrar mensagem apenas se já existir página
+              iniciarPaginaGraficos();
+              pdf.setFontSize(11);
               pdf.setTextColor(108, 117, 125);
               pdf.text('Gráfico de carga disponível mas não foi possível carregar a imagem', 20, yPosition + 15);
               yPosition += 40;
             }
           } catch (error) {
             console.error('Erro ao carregar gráfico de carga:', error);
-            pdf.setFontSize(10);
+            iniciarPaginaGraficos();
+            pdf.setFontSize(11);
             pdf.setTextColor(108, 117, 125);
             pdf.text('Erro ao carregar gráfico de carga', 20, yPosition + 15);
             yPosition += 40;
           }
           
-          // Verificar se precisa de nova página
-          if (yPosition > pageHeight - footerHeight - margin - 50) {
+          if (
+            graficosPageIniciada &&
+            yPosition > pageHeight - footerHeight - margin - 50 &&
+            i < guindastesComGrafico.length - 1
+          ) {
+            // Só cria nova página se ainda existir gráfico a ser desenhado
             pdf.addPage();
-            
-            // Adicionar cabeçalho na nova página
             const headerImgData = headerCanvas.toDataURL('image/png');
             pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-            
             yPosition = margin + headerHeight + 20;
           }
         }
         
-        // Adicionar rodapé na última página de gráficos
+        if (graficosPageIniciada) {
         const footerImgData = footerCanvas.toDataURL('image/png');
         pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
-        
-        console.log('Página de gráficos de carga concluída');
+          console.log('Página(s) de gráficos de carga concluída(s)');
+        }
       }
 
       // Adicionar página com cláusulas contratuais
+      // Evitar página em branco: só adicionar nova página se a anterior não estiver vazia acabada de criar
+      // Garantimos nova página explicitamente aqui, pois após gráficos sempre queremos cláusulas em página própria
       pdf.addPage();
       
       // Adicionar cabeçalho
@@ -531,43 +613,96 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       
       pdf.setFontSize(8.5);
       pdf.setTextColor(0, 0, 0);
-      pdf.setFont('Arial');
+      // Evitar erro de fonte ausente
+      pdf.setFont('helvetica', 'normal');
       
       // Título das cláusulas
       pdf.setFontSize(12);
       pdf.setTextColor(73, 80, 87);
       pdf.text('CLÁUSULAS CONTRATUAIS', 20, margin + headerHeight + 20);
       
-      // Conteúdo das cláusulas (texto contínuo sem espaçamento)
+      // Conteúdo das cláusulas (cada cláusula em uma linha, letra pequena, espaçamento mínimo)
       pdf.setFontSize(8.5);
       pdf.setTextColor(0, 0, 0);
-      
-      // Texto das cláusulas como um único parágrafo contínuo
-      const clausulasTexto = '• O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário. • Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes. • Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta. • O prazo de entrega do equipamento terá início a partir do recebimento da autorização de faturamento quando via banco, do pagamento de 100% da entrada quando via parcelado fábrica e 100% do valor do equipamento quando à vista. • Vendas com parcelamento fábrica, é obrigatório o envio da documentação solicitada para análise de crédito em até 5 (cinco) dias úteis. • O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica. • As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo. • O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo. • É obrigatório informar placa, chassi e modelo de caminhão onde será instalado o guindaste para confecção do Contrato de Reserva de Domínio, mediante cópia do documento ou NF do caminhão. Desde já fica autorizada a inclusão desta no documento do veículo. • Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem. • Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida. • O atraso na definição da marca/modelo do veículo e do nº e modelo da caixa de câmbio, bem como, atraso no encaminhamento do veículo para montagem, prorrogam automaticamente o prazo de entrega, em números de dias úteis equivalentes. • No caso de vendas feitas a prazo, caso ocorra inadimplência de quaisquer das parcelas ficará suspensa a garantia contratual do equipamento no respectivo período, a qual perdurará até a data de regularização da situação. O inadimplemento de parcela(s) ensejará no pagamento de multa de 2% sobre seu respectivo valor e juros de 0,33% por dia de atraso. • É obrigatório o estudo de integração veicular para a montagem do equipamento, sendo de responsabilidade do cliente o envio à STARK Guindastes dos dados do caminhão em até 5 (cinco) dias úteis contados da assinatura do pedido. Caso a montagem seja feita sem o estudo, a STARK Guindastes não se responsabiliza pela mesma. • A STARK Guindastes não se responsabiliza por despesas extras com o caminhão, tais como: deslocamento de arla, aumento de entre eixo e balanço traseiro, inclusão de eixo extra, deslocamento de barra de direção, reforço de molas, retirada e modificações em carrocerias e parametrização do caminhão. • No momento do faturamento, o preço do equipamento será atualizado para o valor a ele correspondente na tabela vigente (Tabela de Preços STARK Guindastes), ficando condicionado o seu embarque ao pagamento da respectiva diferença resultante dessa correção a ser feito pelo Contratante à STARK Guindastes. • As assinaturas abaixo, formalizam o presente pedido, indicando a total concordância entre as partes com aos termos e condições do presente negócio.';
-      
+
+      const clausulasArray = [
+        '• O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário.',
+        '• Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes.',
+        '• Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta.',
+        '• O prazo de entrega do equipamento terá início a partir do recebimento da autorização de faturamento quando via banco, do pagamento de 100% da entrada quando via parcelado fábrica e 100% do valor do equipamento quando à vista.',
+        '• Vendas com parcelamento fábrica, é obrigatório o envio da documentação solicitada para análise de crédito em até 5 (cinco) dias úteis.',
+        '• O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica.',
+        '• As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo.',
+        '• O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo.',
+        '• É obrigatório informar placa, chassi e modelo de caminhão onde será instalado o guindaste para confecção do Contrato de Reserva de Domínio, mediante cópia do documento ou NF do caminhão. Desde já fica autorizada a inclusão desta no documento do veículo.',
+        '• Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem.',
+        '• Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida.',
+        '• O atraso na definição da marca/modelo do veículo e do nº e modelo da caixa de câmbio, bem como, atraso no encaminhamento do veículo para montagem, prorrogam automaticamente o prazo de entrega, em números de dias úteis equivalentes.',
+        '• No caso de vendas feitas a prazo, caso ocorra inadimplência de quaisquer das parcelas ficará suspensa a garantia contratual do equipamento no respectivo período, a qual perdurará até a data de regularização da situação. O inadimplemento de parcela(s) ensejará no pagamento de multa de 2% sobre seu respectivo valor e juros de 0,33% por dia de atraso.',
+        '• É obrigatório o estudo de integração veicular para a montagem do equipamento, sendo de responsabilidade do cliente o envio à STARK Guindastes dos dados do caminhão em até 5 (cinco) dias úteis contados da assinatura do pedido. Caso a montagem seja feita sem o estudo, a STARK Guindastes não se responsabiliza pela mesma.',
+        '• A STARK Guindastes não se responsabiliza por despesas extras com o caminhão, tais como: deslocamento de arla, aumento de entre eixo e balanço traseiro, inclusão de eixo extra, deslocamento de barra de direção, reforço de molas, retirada e modificações em carrocerias e parametrização do caminhão.',
+        '• No momento do faturamento, o preço do equipamento será atualizado para o valor a ele correspondente na tabela vigente (Tabela de Preços STARK Guindastes), ficando condicionado o seu embarque ao pagamento da respectiva diferença resultante dessa correção a ser feito pelo Contratante à STARK Guindastes.',
+        '• As assinaturas abaixo, formalizam o presente pedido, indicando a total concordância entre as partes com aos termos e condições do presente negócio.'
+      ];
+
       let yPos = margin + headerHeight + 40;
-      
-      // Dividir o texto em linhas que cabem na página
-      const lines = pdf.splitTextToSize(clausulasTexto, 170);
-      
-      for (let i = 0; i < lines.length; i++) {
-        // Verificar se precisa de nova página
-        if (yPos > pageHeight - footerHeight - margin - 15) {
-          pdf.addPage();
-          
-          // Adicionar cabeçalho na nova página
-          const headerImgData = headerCanvas.toDataURL('image/png');
-          pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-          
-          yPos = margin + headerHeight + 20;
+      const lineWidth = 170;
+      const lineSpacing = 3.2; // bem juntinho
+      const signatureReservedHeight = 65; // reservar espaço para assinaturas nesta mesma página
+
+      for (const clausula of clausulasArray) {
+        const lines = pdf.splitTextToSize(clausula, lineWidth);
+        for (let i = 0; i < lines.length; i++) {
+          if (yPos > pageHeight - footerHeight - margin - (15 + signatureReservedHeight)) {
+            pdf.addPage();
+            const headerImgData = headerCanvas.toDataURL('image/png');
+            pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
+            yPos = margin + headerHeight + 20;
+          }
+          pdf.text(lines[i], 20, yPos);
+          yPos += lineSpacing;
         }
-        
-        // Adicionar linha do texto
-        pdf.text(lines[i], 20, yPos);
-        yPos += 3.5; // Espaçamento mínimo entre linhas
       }
       
-      // Adicionar rodapé na última página de cláusulas
+      // Rodapé movido para após as assinaturas
+
+      // Área de Assinaturas (mesma página das cláusulas)
+      // Verificar se há espaço, senão quebrar para nova página de continuidade das cláusulas
+      const leftX = 25;
+      const rightX = 115;
+      let signatureTitleY = yPos + 15;
+      const neededHeight = 50; // título + linhas + legendas
+      const availableBottom = pageHeight - footerHeight - margin - signatureTitleY;
+      if (availableBottom < neededHeight) {
+        pdf.addPage();
+        const headerImgDataSign = headerCanvas.toDataURL('image/png');
+        pdf.addImage(headerImgDataSign, 'PNG', margin, margin, contentWidth, headerHeight);
+        signatureTitleY = margin + headerHeight + 20;
+      }
+      // Nomes para assinaturas
+      let vendedorNome = pedidoData.vendedor || '';
+      try {
+        if (!vendedorNome) {
+          const userData = JSON.parse(localStorage.getItem('user') || '{}');
+          vendedorNome = userData.nome || '';
+        }
+      } catch (_) {}
+      if (!vendedorNome) vendedorNome = 'Não informado';
+      const clienteNome = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : 'Não informado';
+
+      pdf.setFontSize(16);
+      pdf.setTextColor(0,0,0);
+      pdf.text('Assinaturas', 105, signatureTitleY, { align: 'center' });
+      const lineY = signatureTitleY + 30;
+      pdf.setDrawColor(0);
+      pdf.setLineWidth(0.4);
+      pdf.line(leftX, lineY, leftX + 70, lineY);
+      pdf.line(rightX, lineY, rightX + 70, lineY);
+      pdf.setFontSize(12);
+      pdf.text(`Cliente: ${clienteNome}`, leftX + 35, lineY + 6, { align: 'center' });
+      pdf.text(`Vendedor: ${vendedorNome}`, rightX + 35, lineY + 6, { align: 'center' });
+
+      // Adicionar rodapé após as assinaturas
       const footerImgData = footerCanvas.toDataURL('image/png');
       pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
 

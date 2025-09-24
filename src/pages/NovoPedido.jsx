@@ -61,6 +61,7 @@ const NovoPedido = () => {
         nome: guindaste.subgrupo,
         modelo: guindaste.modelo,
         codigo_produto: guindaste.codigo_referencia,
+        grafico_carga_url: guindaste.grafico_carga_url,
         preco: guindaste.preco || 0,
         tipo: 'guindaste'
       };
@@ -191,6 +192,7 @@ const NovoPedido = () => {
         nome: guindaste.subgrupo,
         modelo: guindaste.modelo,
         codigo_produto: guindaste.codigo_referencia,
+        grafico_carga_url: guindaste.grafico_carga_url,
         preco: guindaste.preco || 0,
         tipo: 'guindaste'
       };
@@ -573,6 +575,10 @@ const NovoPedido = () => {
         if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
         if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
         if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
+        // Ano é opcional; se informado, validar intervalo
+        if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
+          errors.ano = 'Ano inválido';
+        }
         break;
     }
     
@@ -1176,6 +1182,13 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+  const years = (() => {
+    const current = new Date().getFullYear();
+    const start = 1960;
+    const list = [];
+    for (let y = current; y >= start; y--) list.push(y);
+    return list;
+  })();
 
   return (
     <div className="form-container">
@@ -1232,6 +1245,18 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           />
           {errors.modelo && <span className="error-message">{errors.modelo}</span>}
         </div>
+        <div className="form-group">
+          <label>Ano</label>
+          <select
+            value={formData.ano || ''}
+            onChange={(e) => handleChange('ano', e.target.value)}
+          >
+            <option value="">Selecione o ano</option>
+            {years.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
         
         <div className="form-group">
           <label>Voltagem *</label>
@@ -1246,6 +1271,11 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </select>
           {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
         </div>
+        {errors.ano && (
+          <div className="form-group full-width">
+            <span className="error-message">{errors.ano}</span>
+          </div>
+        )}
         
         <div className="form-group full-width">
           <label>Observações</label>
@@ -1263,10 +1293,15 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 
 // Componente Resumo do Pedido
 const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user }) => {
+  const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
+
   const handlePDFGenerated = async (fileName) => {
     try {
-      // Salvar relatório automaticamente no banco de dados
-      await salvarRelatorio();
+      // Salvar relatório automaticamente no banco de dados (apenas uma vez)
+      if (!pedidoSalvoId) {
+        const pedido = await salvarRelatorio();
+        setPedidoSalvoId(pedido?.id || null);
+      }
       alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
     } catch (error) {
       console.error('Erro ao salvar relatório:', error);
@@ -1358,8 +1393,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
         
         try {
-          const pedidoItem = await db.createPedidoItem(itemDataToSave);
-          console.log(`   ✅ Item criado:`, pedidoItem);
+          await db.createPedidoItem(itemDataToSave);
         } catch (itemError) {
           console.error(`   ❌ Erro ao criar item ${item.nome}:`, itemError);
           throw itemError;
@@ -1372,7 +1406,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         cliente: cliente.nome,
         vendedor: user.nome
       });
-      
+      return pedido;
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error);
       console.error('📋 Detalhes do erro:', {
@@ -1382,10 +1416,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         hint: error.hint,
         stack: error.stack
       });
-      
-      // Log mais detalhado para debug
       console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
-      
       throw error;
     }
   };

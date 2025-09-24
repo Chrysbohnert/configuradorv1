@@ -197,6 +197,73 @@
   line-height: 1.5;
 }
 
+/* Mini widget: Pronta Entrega (compacto) */
+.mini-widget-pronta {
+  background: #fff;
+  border: 1px solid #f0f2f5;
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  max-width: 520px;
+}
+
+.mini-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mini-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #10b981;
+}
+
+.mini-title {
+  font-weight: 600;
+}
+
+.mini-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+.mini-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: #374151;
+  font-size: 13px;
+}
+
+.mini-list li {
+  padding: 4px 0;
+  border-bottom: 1px dashed #eef2f7;
+}
+
+.mini-empty {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+/* Pronta Entrega página - compacto */
+.pronta-compact .vendedores-list.compact-list {
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+}
+
+.pronta-compact .vendedor-card {
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.pronta-compact .vendedor-name {
+  font-size: 14px;
+  font-weight: 600;
+}
+
 /* Admin Sections */
 .admin-sections {
   display: block;

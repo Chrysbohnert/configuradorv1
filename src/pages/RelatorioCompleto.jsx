@@ -11,6 +11,8 @@ const RelatorioCompleto = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
+  const [filtroVendedor, setFiltroVendedor] = useState('');
+  const [filtroMes, setFiltroMes] = useState('');
   const [resumoGeral, setResumoGeral] = useState({
     totalVendedores: 0,
     totalPedidos: 0,
@@ -50,7 +52,15 @@ const RelatorioCompleto = () => {
       
       // Processar dados de cada vendedor
       const vendedoresComDados = vendedoresData.map(vendedor => {
-        const pedidosDoVendedor = pedidos.filter(p => p.vendedor_id === vendedor.id);
+        let pedidosDoVendedor = pedidos.filter(p => p.vendedor_id === vendedor.id);
+        // Aplicar filtros
+        if (filtroMes) {
+          const [ano, mes] = filtroMes.split('-').map(Number);
+          pedidosDoVendedor = pedidosDoVendedor.filter(p => {
+            const d = new Date(p.created_at);
+            return d.getFullYear() === ano && (d.getMonth() + 1) === mes;
+          });
+        }
         
         // Calcular estatísticas
         const totalPedidos = pedidosDoVendedor.length;
@@ -75,7 +85,12 @@ const RelatorioCompleto = () => {
         pedidosFinalizados: pedidos.filter(p => p.status === 'finalizado').length
       };
 
-      setVendedores(vendedoresComDados);
+      // Aplicar filtro por vendedor (após montar dados)
+      const listaFiltrada = filtroVendedor
+        ? vendedoresComDados.filter(v => String(v.id) === String(filtroVendedor))
+        : vendedoresComDados;
+
+      setVendedores(listaFiltrada);
       setResumoGeral(resumo);
       
     } catch (error) {
@@ -85,6 +100,14 @@ const RelatorioCompleto = () => {
       setIsLoading(false);
     }
   };
+
+  // Recarregar ao alterar filtros
+  useEffect(() => {
+    if (user) {
+      loadRelatorio();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroVendedor, filtroMes]);
 
   const handleGerarRelatorioPDF = async (vendedor) => {
     try {
@@ -157,6 +180,21 @@ const RelatorioCompleto = () => {
               <div className="welcome-section">
                 <h1>Relatório Completo de Vendedores</h1>
                 <p>Visualize todos os vendedores e seus orçamentos</p>
+              </div>
+              <div style={{ display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap' }}>
+                <div>
+                  <label className="text-sm text-gray-700">Filtrar por vendedor</label>
+                  <select value={filtroVendedor} onChange={e=>setFiltroVendedor(e.target.value)} className="filter-select" style={{ minWidth: 220 }}>
+                    <option value="">Todos</option>
+                    {vendedores.sort((a,b)=>a.nome.localeCompare(b.nome)).map(v=> (
+                      <option key={v.id} value={v.id}>{v.nome}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm text-gray-700">Filtrar por mês</label>
+                  <input type="month" value={filtroMes} onChange={e=>setFiltroMes(e.target.value)} className="filter-select" />
+                </div>
               </div>
             </div>
 

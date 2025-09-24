@@ -124,6 +124,9 @@
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 220px;
 }
 
 .grafico-item:hover {
@@ -178,6 +181,30 @@
   line-height: 1.3;
 }
 
+/* chip para abrir PDF */
+.pdf-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #1f2937;
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  text-decoration: none;
+}
+
+.pdf-chip:hover {
+  background: #e0e7ff;
+}
+
+.pdf-chip svg {
+  width: 14px;
+  height: 14px;
+}
+
 .grafico-details .modelo {
   font-size: 0.9rem;
   color: #6b7280;
@@ -225,6 +252,7 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: auto;
 }
 
 .edit-btn,

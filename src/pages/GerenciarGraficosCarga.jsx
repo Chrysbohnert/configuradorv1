@@ -285,6 +285,20 @@ const GerenciarGraficosCarga = () => {
                       </div>
                       <div className="grafico-details">
                         <h3>{grafico.nome}</h3>
+                        {grafico.arquivo_url && (
+                          <a
+                            href={grafico.arquivo_url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="pdf-chip"
+                            title="Abrir PDF em nova aba"
+                          >
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19 3H5c-1.1 0-2 .9-2 2v14l4-4h12c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/>
+                            </svg>
+                            Abrir PDF
+                          </a>
+                        )}
                       </div>
                     </div>
                     

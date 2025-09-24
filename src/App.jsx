@@ -13,6 +13,8 @@ import AlterarSenha from './pages/AlterarSenha';
 import GraficosCarga from './pages/GraficosCarga';
 import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
 import DetalhesGuindaste from './pages/DetalhesGuindaste';
+import Logistica from './pages/Logistica';
+import ProntaEntrega from './pages/ProntaEntrega';
 import ProtectedRoute from './components/ProtectedRoute';
 
 // Carregar scripts de migração em desenvolvimento
@@ -44,11 +46,21 @@ function App() {
               <Historico />
             </ProtectedRoute>
           } />
+          <Route path="/pronta-entrega" element={
+            <ProtectedRoute>
+              <ProntaEntrega />
+            </ProtectedRoute>
+          } />
           
           {/* Rotas do Admin */}
           <Route path="/dashboard-admin" element={
             <ProtectedRoute requireAdmin={true}>
               <DashboardAdmin />
+            </ProtectedRoute>
+          } />
+          <Route path="/logistica" element={
+            <ProtectedRoute requireAdmin={true}>
+              <Logistica />
             </ProtectedRoute>
           } />
           <Route path="/gerenciar-vendedores" element={

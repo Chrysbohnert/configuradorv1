@@ -41,6 +41,8 @@ const DashboardVendedor = () => {
           totalPedidos: pedidosFinalizados.length,
           valorTotal: valorTotal
         });
+
+        // (Removido resumo de pronta-entrega no dashboard)
         
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
@@ -74,6 +76,7 @@ const DashboardVendedor = () => {
       />
 
       <div className="dashboard-content">
+        {/* Widget de Pronta Entrega removido conforme solicitação */}
         <div className="dashboard-header">
           <div className="welcome-section">
             <h1>Bem-vindo, {user.nome}!</h1>
@@ -119,6 +122,17 @@ const DashboardVendedor = () => {
         </div>
 
         <div className="actions-grid">
+          <div className="action-card" onClick={() => navigate('/pronta-entrega')}>
+            <div className="action-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M20 8h-3V4H3v13h2a3 3 0 106 0h4a3 3 0 106 0h1V12l-2-4zM7 19a1 1 0 110-2 1 1 0 010 2zm10-9h2.586L21 12h-4V10zM17 19a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </div>
+            <div className="action-content">
+              <h3>Pronta Entrega</h3>
+              <p>Ver equipamentos disponíveis</p>
+            </div>
+          </div>
           <div className="action-card" onClick={() => navigate('/novo-pedido')}>
             <div className="action-icon">
               <svg viewBox="0 0 24 24" fill="currentColor">
