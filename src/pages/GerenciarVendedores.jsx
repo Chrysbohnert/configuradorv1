@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import '../styles/GerenciarVendedores.css';
 
@@ -172,6 +173,15 @@ const GerenciarVendedores = () => {
       <AdminNavigation user={user} />
       
       <div className="admin-content">
+        <UnifiedHeader 
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Vendedores"
+          subtitle="Gerencie a equipe de vendas"
+        />
         <div className="gerenciar-vendedores-container">
           <div className="gerenciar-vendedores-content">
         <div className="page-header">

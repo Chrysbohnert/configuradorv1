@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import { generateReportPDF } from '../utils/pdfGenerator';
@@ -11,14 +12,10 @@ const RelatorioCompleto = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
+  const [pedidosFiltrados, setPedidosFiltrados] = useState([]);
+  const [todosPedidos, setTodosPedidos] = useState([]);
   const [filtroVendedor, setFiltroVendedor] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
-  const [resumoGeral, setResumoGeral] = useState({
-    totalVendedores: 0,
-    totalPedidos: 0,
-    totalValor: 0,
-    pedidosFinalizados: 0
-  });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -33,66 +30,15 @@ const RelatorioCompleto = () => {
       navigate('/');
       return;
     }
-
-    loadRelatorio();
   }, [navigate]);
 
   const loadRelatorio = async () => {
     try {
       setIsLoading(true);
-      
-      // Carregar todos os dados necessários
-      const [users, pedidos] = await Promise.all([
-        db.getUsers(),
-        db.getPedidos()
-      ]);
-
-      // Filtrar apenas vendedores
+      const [users, pedidos] = await Promise.all([db.getUsers(), db.getPedidos()]);
       const vendedoresData = users.filter(u => u.tipo === 'vendedor');
-      
-      // Processar dados de cada vendedor
-      const vendedoresComDados = vendedoresData.map(vendedor => {
-        let pedidosDoVendedor = pedidos.filter(p => p.vendedor_id === vendedor.id);
-        // Aplicar filtros
-        if (filtroMes) {
-          const [ano, mes] = filtroMes.split('-').map(Number);
-          pedidosDoVendedor = pedidosDoVendedor.filter(p => {
-            const d = new Date(p.created_at);
-            return d.getFullYear() === ano && (d.getMonth() + 1) === mes;
-          });
-        }
-        
-        // Calcular estatísticas
-        const totalPedidos = pedidosDoVendedor.length;
-        const pedidosFinalizados = pedidosDoVendedor.filter(p => p.status === 'finalizado');
-        
-        const valorTotal = pedidosFinalizados.reduce((total, p) => total + (p.valor_total || 0), 0);
-        
-        return {
-          ...vendedor,
-          totalPedidos,
-          pedidosFinalizados: pedidosFinalizados.length,
-          valorTotal,
-          pedidos: pedidosDoVendedor
-        };
-      });
-
-      // Calcular resumo geral
-      const resumo = {
-        totalVendedores: vendedoresData.length,
-        totalPedidos: pedidos.length,
-        totalValor: pedidos.reduce((total, p) => total + (p.valor_total || 0), 0),
-        pedidosFinalizados: pedidos.filter(p => p.status === 'finalizado').length
-      };
-
-      // Aplicar filtro por vendedor (após montar dados)
-      const listaFiltrada = filtroVendedor
-        ? vendedoresComDados.filter(v => String(v.id) === String(filtroVendedor))
-        : vendedoresComDados;
-
-      setVendedores(listaFiltrada);
-      setResumoGeral(resumo);
-      
+      setVendedores(vendedoresData);
+      setTodosPedidos(pedidos);
     } catch (error) {
       console.error('Erro ao carregar relatório:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
@@ -101,226 +47,193 @@ const RelatorioCompleto = () => {
     }
   };
 
-  // Recarregar ao alterar filtros
   useEffect(() => {
-    if (user) {
-      loadRelatorio();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtroVendedor, filtroMes]);
+    if (user) loadRelatorio();
+  }, [user]);
 
-  const handleGerarRelatorioPDF = async (vendedor) => {
+  useEffect(() => {
+    // Aplicar filtros a partir de todosPedidos
+    let lista = [...todosPedidos];
+    if (filtroVendedor) {
+      lista = lista.filter(p => String(p.vendedor_id) === String(filtroVendedor));
+    }
+    if (filtroMes) {
+      const [ano, mes] = filtroMes.split('-').map(Number);
+      lista = lista.filter(p => {
+        const d = new Date(p.created_at);
+        return d.getFullYear() === ano && d.getMonth() + 1 === mes;
+      });
+    }
+    setPedidosFiltrados(lista);
+  }, [todosPedidos, filtroVendedor, filtroMes]);
+
+  const resumo = useMemo(() => {
+    // Considerar todos os pedidos como finalizados para métricas simples
+    const finalizados = pedidosFiltrados;
+    const valorTotal = finalizados.reduce((t, p) => t + (p.valor_total || 0), 0);
+    const ticketMedio = finalizados.length > 0 ? valorTotal / finalizados.length : 0;
+    return {
+      totalPedidos: pedidosFiltrados.length,
+      pedidosFinalizados: finalizados.length,
+      valorTotal,
+      ticketMedio
+    };
+  }, [pedidosFiltrados]);
+
+  const handleExportarPDF = async () => {
     try {
+      const vendedorNome = filtroVendedor
+        ? vendedores.find(v => String(v.id) === String(filtroVendedor))?.nome || 'Vendedor'
+        : 'Todos';
       const reportData = {
-        vendedor: vendedor.nome,
-        periodo: 'Todos os períodos',
-        status: 'Todos os status',
-        totalVendas: vendedor.pedidos.length,
-        valorTotal: vendedor.valorTotal,
-        vendas: vendedor.pedidos.map(pedido => ({
-          cliente: pedido.cliente?.nome || 'Cliente não informado',
-          modelo: `Pedido #${pedido.numero_pedido}`,
-          valor: pedido.valor_total || 0,
-          status: pedido.status,
-          data: new Date(pedido.created_at).toLocaleDateString('pt-BR')
+        vendedor: vendedorNome,
+        periodo: filtroMes || 'Todos os meses',
+        totalVendas: resumo.pedidosFinalizados,
+        valorTotal: resumo.valorTotal,
+        vendas: pedidosFiltrados.map(p => ({
+          cliente: p.cliente?.nome || 'Cliente',
+          modelo: '',
+          valor: p.valor_total || 0,
+          status: 'finalizado',
+          data: new Date(p.created_at).toLocaleDateString('pt-BR')
         }))
       };
-      
       const doc = await generateReportPDF(reportData);
-      
-      // Gerar e fazer download do PDF
       const pdfBlob = doc.output('blob');
-      const fileName = `Relatorio_${vendedor.nome.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
-      
+      const fileName = `Relatorio_${vendedorNome.replace(/\s+/g, '_')}_${new Date()
+        .toISOString()
+        .split('T')[0]}.pdf`;
       const link = document.createElement('a');
       link.href = URL.createObjectURL(pdfBlob);
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
-      // Limpar URL
       setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-      
-      alert(`Relatório PDF gerado com sucesso!\nArquivo: ${fileName}`);
     } catch (error) {
-      console.error('Erro ao gerar relatório:', error);
-      alert('Erro ao gerar relatório PDF. Verifique se há dados para gerar o relatório.');
+      console.error('Erro ao gerar PDF:', error);
+      alert('Erro ao gerar PDF.');
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'finalizado': return '#27b207';
-      case 'em_andamento': return '#fd7e14';
-      case 'cancelado': return '#dc3545';
-      default: return '#6c757d';
-    }
-  };
+  const corStatus = (s) => (s === 'finalizado' ? '#27b207' : s === 'em_andamento' ? '#fd7e14' : s === 'cancelado' ? '#dc3545' : '#6c757d');
+  const textoStatus = (s) => (s === 'finalizado' ? 'Finalizado' : s === 'em_andamento' ? 'Em Andamento' : s === 'cancelado' ? 'Cancelado' : s);
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'finalizado': return 'Finalizado';
-      case 'em_andamento': return 'Em Andamento';
-      case 'cancelado': return 'Cancelado';
-      default: return status;
-    }
-  };
-
-  
+  if (!user) return null;
 
   return (
     <div className="admin-layout">
       <AdminNavigation user={user} />
-      
       <div className="admin-content">
+        <UnifiedHeader 
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Relatório"
+          subtitle="Resumo simples por período e vendedor"
+        />
         <div className="dashboard-container">
           <div className="dashboard-content">
             <div className="dashboard-header">
               <div className="welcome-section">
-                <h1>Relatório Completo de Vendedores</h1>
-                <p>Visualize todos os vendedores e seus orçamentos</p>
+                <h1>Relatório</h1>
+                <p>Resumo simples por período e vendedor</p>
               </div>
-              <div style={{ display:'flex', gap:'12px', alignItems:'center', flexWrap:'wrap' }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
                 <div>
-                  <label className="text-sm text-gray-700">Filtrar por vendedor</label>
-                  <select value={filtroVendedor} onChange={e=>setFiltroVendedor(e.target.value)} className="filter-select" style={{ minWidth: 220 }}>
+                  <label style={{ fontSize: 12, color: '#6b7280' }}>Vendedor</label>
+                  <select value={filtroVendedor} onChange={(e)=>setFiltroVendedor(e.target.value)} className="filter-select" style={{ minWidth: 220 }}>
                     <option value="">Todos</option>
-                    {vendedores.sort((a,b)=>a.nome.localeCompare(b.nome)).map(v=> (
+                    {vendedores.map(v => (
                       <option key={v.id} value={v.id}>{v.nome}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-700">Filtrar por mês</label>
-                  <input type="month" value={filtroMes} onChange={e=>setFiltroMes(e.target.value)} className="filter-select" />
+                  <label style={{ fontSize: 12, color: '#6b7280' }}>Mês</label>
+                  <input type="month" value={filtroMes} onChange={(e)=>setFiltroMes(e.target.value)} className="filter-select" />
                 </div>
+                <button className="add-btn" onClick={handleExportarPDF} disabled={pedidosFiltrados.length === 0}>Exportar PDF</button>
               </div>
             </div>
 
-            {/* Resumo Geral */}
+            {/* Cards de Resumo */}
             <div className="stats-grid">
               <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#e3f2fd' }}>
-                  <svg viewBox="0 0 24 24" fill="#1976d2">
-                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                  </svg>
-                </div>
                 <div className="stat-info">
-                  <div className="stat-value">{resumoGeral.totalVendedores}</div>
-                  <div className="stat-label">Vendedores</div>
+                  <div className="stat-value">{resumo.totalPedidos}</div>
+                  <div className="stat-label">Pedidos (todos)</div>
                 </div>
               </div>
-
               <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#e8f5e8' }}>
-                  <svg viewBox="0 0 24 24" fill="#27b207">
-                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                  </svg>
-                </div>
                 <div className="stat-info">
-                  <div className="stat-value">{resumoGeral.pedidosFinalizados}</div>
-                  <div className="stat-label">Pedidos Finalizados</div>
+                  <div className="stat-value">{resumo.pedidosFinalizados}</div>
+                  <div className="stat-label">Finalizados</div>
                 </div>
               </div>
-
               <div className="stat-card">
-                <div className="stat-icon" style={{ background: '#fce4ec' }}>
-                  <svg viewBox="0 0 24 24" fill="#e91e63">
-                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11H7v-2h10v2z"/>
-                  </svg>
-                </div>
                 <div className="stat-info">
-                  <div className="stat-value">{formatCurrency(resumoGeral.totalValor)}</div>
-                  <div className="stat-label">Valor Total</div>
+                  <div className="stat-value">{formatCurrency(resumo.valorTotal)}</div>
+                  <div className="stat-label">Valor Finalizados</div>
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="stat-info">
+                  <div className="stat-value">{formatCurrency(resumo.ticketMedio)}</div>
+                  <div className="stat-label">Ticket Médio</div>
                 </div>
               </div>
             </div>
 
-            {/* Lista de Vendedores */}
-            <div className="vendedores-grid">
-              {vendedores.map((vendedor) => (
-                <div key={vendedor.id} className="vendedor-card">
-                  <div className="vendedor-header">
-                    <div className="vendedor-avatar">
-                      {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+            {/* Tabela simples de pedidos */}
+            <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <h3 style={{ margin: 0 }}>Pedidos ({pedidosFiltrados.length})</h3>
                     </div>
-                    <div className="vendedor-info">
-                      <h3>{vendedor.nome}</h3>
-                      <p>{vendedor.email}</p>
-                      <p className="comissao">Comissão: {vendedor.comissao}%</p>
-                    </div>
-                  </div>
-
-                  <div className="vendedor-stats">
-                    <div className="stat-row">
-                      <div className="stat-item">
-                        <span className="stat-label">Finalizados:</span>
-                        <span className="stat-value success">{vendedor.pedidosFinalizados}</span>
-                      </div>
-                      <div className="stat-item">
-                        <span className="stat-label">Valor Total:</span>
-                        <span className="stat-value price">{formatCurrency(vendedor.valorTotal)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Lista de Pedidos */}
-                  <div className="pedidos-section">
-                    <h4>Pedidos ({vendedor.pedidos.length})</h4>
-                    {vendedor.pedidos.length > 0 ? (
-                      <div className="pedidos-list">
-                        {vendedor.pedidos.slice(0, 5).map((pedido) => (
-                          <div key={pedido.id} className="pedido-item">
-                            <div className="pedido-info">
-                              <div className="pedido-numero">#{pedido.numero_pedido}</div>
-                              <div className="pedido-cliente">
-                                {pedido.cliente?.nome || 'Cliente não informado'}
-                              </div>
-                              <div className="pedido-data">
-                                {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
-                              </div>
-                            </div>
-                            <div className="pedido-valor">
-                              {formatCurrency(pedido.valor_total)}
-                            </div>
-                            <div 
-                              className="pedido-status"
-                              style={{ color: getStatusColor(pedido.status) }}
-                            >
-                              {getStatusText(pedido.status)}
-                            </div>
-                          </div>
-                        ))}
-                        {vendedor.pedidos.length > 5 && (
-                          <div className="pedido-item more-pedidos">
-                            <span>+ {vendedor.pedidos.length - 5} pedidos mais...</span>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <p className="no-pedidos">Nenhum pedido encontrado.</p>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#f9fafb', color: '#374151' }}>
+                      {/* Número do pedido ocultado por solicitação */}
+                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}></th>
+                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Data</th>
+                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Vendedor</th>
+                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Cliente</th>
+                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Status</th>
+                      <th style={{ textAlign: 'right', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pedidosFiltrados.map((p) => (
+                      <tr key={p.id}>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}></td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{p.vendedor?.nome || '-'}</td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{p.cliente?.nome || '-'}</td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', color: corStatus('finalizado') }}>{textoStatus('finalizado')}</td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>{formatCurrency(p.valor_total || 0)}</td>
+                      </tr>
+                    ))}
+                    {pedidosFiltrados.length === 0 && (
+                      <tr>
+                        <td colSpan="6" style={{ padding: 16, textAlign: 'center', color: '#6b7280' }}>Sem dados para os filtros selecionados</td>
+                      </tr>
                     )}
-                  </div>
-
-                  <div className="vendedor-actions">
-                    <button 
-                      className="btn-relatorio"
-                      onClick={() => handleGerarRelatorioPDF(vendedor)}
-                      disabled={vendedor.pedidos.length === 0}
-                    >
-                      📊 Gerar Relatório PDF
-                    </button>
-                  </div>
+                  </tbody>
+                  {pedidosFiltrados.length > 0 && (
+                    <tfoot>
+                      <tr>
+                        <td colSpan="5" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>Total (finalizados):</td>
+                        <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(resumo.valorTotal)}</td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
                 </div>
-              ))}
             </div>
 
-            {vendedores.length === 0 && (
-              <div className="empty-state">
-                <p>Nenhum vendedor encontrado.</p>
-              </div>
-            )}
           </div>
         </div>
       </div>

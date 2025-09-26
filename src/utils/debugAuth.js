@@ -1,6 +1,6 @@
 // Utilitário para debug de autenticação
 import { db } from '../config/supabase';
-import { verifyPassword } from './passwordHash';
+import { verifyPassword, hashPassword } from './passwordHash';
 
 export const debugLogin = async (email, senha) => {
   console.log('🔍 DEBUG: Iniciando verificação de login...');
@@ -62,7 +62,6 @@ export const testPasswordHash = (senha) => {
   console.log('🧪 Testando hash de senha...');
   console.log('🔐 Senha original:', senha);
   
-  const { hashPassword } = require('./passwordHash');
   const hashed = hashPassword(senha);
   
   console.log('🔒 Senha hasheada:', hashed);

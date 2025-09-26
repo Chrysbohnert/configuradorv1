@@ -82,9 +82,9 @@ const NovoPedido = () => {
     try {
       setIsLoading(true);
       
-      // Carregar apenas guindastes do Supabase
-      const guindastesData = await db.getGuindastes();
-      setGuindastes(guindastesData);
+      // Carregar guindastes (versão leve)
+      const { data } = await db.getGuindastesLite({ page: 1, pageSize: 100 });
+      setGuindastes(data);
       
     } catch (error) {
       console.error('Erro ao carregar dados:', error);

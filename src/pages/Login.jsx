@@ -80,17 +80,24 @@ const Login = () => {
       } else {
         // Login no Supabase Auth bem-sucedido
         console.log('✅ Login no Supabase Auth realizado');
-        
+
+        // Criar/Padronizar token local com expiração (alinha com validateSession)
+        const loginTime = Date.now();
+        const rand = Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('authToken', `auth_${loginTime}_${rand}`);
+
+        // Marcar indicador de sessão Supabase
+        localStorage.setItem('supabaseSession', 'active');
+
         // Buscar dados completos do usuário no banco
         const users = await db.getUsers();
         const user = users.find(u => u.email === email);
-        
+
         if (user) {
-          // Salvar dados do usuário (sem senha) e sessão do Supabase
+          // Salvar dados do usuário (sem senha)
           const { senha: _, ...userWithoutPassword } = user;
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          localStorage.setItem('supabaseSession', 'active');
-          
+
           if (user.tipo === 'admin') {
             navigate('/dashboard-admin');
           } else {

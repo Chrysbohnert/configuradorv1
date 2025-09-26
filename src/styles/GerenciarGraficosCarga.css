@@ -4,21 +4,21 @@
 
 .gerenciar-graficos-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
   padding: 20px;
 }
 
 .gerenciar-content {
   max-width: 1200px;
   margin: 0 auto;
-  background: white;
+  background: rgb(204, 204, 204);
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px rgba(255, 255, 255, 0.1);
   overflow: hidden;
 }
 
 .header-section {
-  background: linear-gradient(135deg, #000000 0%, #000000 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
   color: white;
   padding: 40px;
   display: flex;
@@ -32,7 +32,7 @@
   font-size: 2.5rem;
   font-weight: 700;
   margin: 0 0 10px 0;
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -40,12 +40,12 @@
 
 .header-info p {
   font-size: 1.1rem;
-  color: #d1d5db;
+  color: #000000;
   margin: 0;
 }
 
 .add-btn {
-  background: linear-gradient(135deg, #2d3432 0%, #47524e 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   border: none;
   padding: 15px 25px;
@@ -57,7 +57,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 .add-btn:hover {
@@ -78,7 +78,7 @@
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  color: #6b7280;
+  color: #000000;
 }
 
 .empty-icon {
@@ -102,7 +102,7 @@
   font-size: 1.8rem;
   font-weight: 600;
   margin: 0 0 15px 0;
-  color: #374151;
+  color: #000000;
 }
 
 .empty-state p {
@@ -132,7 +132,7 @@
 .grafico-item:hover {
   transform: translateY(-5px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  border-color: #292d34;
+  border-color: #000000;
 }
 
 .grafico-item::before {
@@ -142,7 +142,7 @@
   left: 0;
   right: 0;
   height: 4px;
-  background: linear-gradient(135deg, #3d3f44 0%, #302e33 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
 }
 
 .grafico-info {
@@ -158,7 +158,7 @@
 .grafico-icon {
   width: 50px;
   height: 50px;
-  background: linear-gradient(135deg, #3a3d42 0%, #3c3942 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -176,7 +176,7 @@
 .grafico-details h3 {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #000000;
   margin: 0 0 5px 0;
   line-height: 1.3;
 }
@@ -207,13 +207,13 @@
 
 .grafico-details .modelo {
   font-size: 0.9rem;
-  color: #6b7280;
+  color: #000000;
   margin: 0 0 8px 0;
 }
 
 .grafico-details .capacidade {
   display: inline-block;
-  background: linear-gradient(135deg, #5d6864 0%, #393f3d 100%);
+  background: linear-gradient(135deg, #000000 0%, #000000 100%);
   color: white;
   padding: 4px 12px;
   border-radius: 20px;
@@ -239,12 +239,12 @@
 
 .meta-item .label {
   font-weight: 600;
-  color: #6b7280;
+  color: #000000;
   font-size: 0.9rem;
 }
 
 .meta-item .value {
-  color: #374151;
+  color: #000000;
   font-size: 0.9rem;
 }
 
@@ -274,7 +274,7 @@
 }
 
 .edit-btn {
-  background: linear-gradient(135deg, #5275a6 0%, #484a51 100%);
+  background: linear-gradient(135deg, #5275a6 0%);
   color: white;
 }
 
@@ -284,7 +284,7 @@
 }
 
 .delete-btn {
-  background: linear-gradient(135deg, #9c4b4b 0%, #584c4c 100%);
+  background: linear-gradient(135deg, #ad2020 0%);
   color: white;
 }
 

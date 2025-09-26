@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
+import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
 
 import { db } from '../config/supabase';
@@ -12,6 +13,9 @@ const GerenciarGuindastes = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 24;
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
@@ -45,14 +49,16 @@ const GerenciarGuindastes = () => {
       return;
     }
 
-    loadData();
+    loadData(1);
   }, [navigate]);
 
-  const loadData = async () => {
+  const loadData = async (pageToLoad = page) => {
     try {
       setIsLoading(true);
-      const guindastesData = await db.getGuindastes();
-      setGuindastes(guindastesData);
+      const { data, count } = await db.getGuindastesLite({ page: pageToLoad, pageSize });
+      setGuindastes(data);
+      setTotal(count || 0);
+      setPage(pageToLoad);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
@@ -64,32 +70,20 @@ const GerenciarGuindastes = () => {
   // Função para extrair capacidades únicas dos guindastes
   const getCapacidadesUnicas = () => {
     const capacidades = new Set();
-    
     guindastes.forEach(guindaste => {
       const subgrupo = guindaste.subgrupo || '';
       const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      
-      // Extrair apenas o número (6.5, 8.0, 10.8, etc.)
       const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) {
-        capacidades.add(match[1]);
-      }
+      if (match) capacidades.add(match[1]);
     });
-    
     return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
   };
 
-  // Função para filtrar guindastes por capacidade
   const getGuindastesFiltrados = () => {
-    if (filtroCapacidade === 'todos') {
-      return guindastes;
-    }
-    
+    if (filtroCapacidade === 'todos') return guindastes;
     return guindastes.filter(guindaste => {
       const subgrupo = guindaste.subgrupo || '';
       const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      
-      // Extrair apenas o número e comparar
       const match = modeloBase.match(/(\d+\.?\d*)/);
       return match && match[1] === filtroCapacidade;
     });
@@ -117,7 +111,6 @@ const GerenciarGuindastes = () => {
   const handleImagensAdicionaisChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-
     try {
       const uploadedUrls = [];
       for (const file of files) {
@@ -125,11 +118,7 @@ const GerenciarGuindastes = () => {
         const imageUrl = await db.uploadImagemGuindaste(file, fileName);
         uploadedUrls.push(imageUrl);
       }
-      
-      setFormData(prev => ({
-        ...prev,
-        imagens_adicionais: [...prev.imagens_adicionais, ...uploadedUrls]
-      }));
+      setFormData(prev => ({ ...prev, imagens_adicionais: [...prev.imagens_adicionais, ...uploadedUrls] }));
     } catch (error) {
       console.error('Erro ao fazer upload das imagens:', error);
       alert('Erro ao fazer upload das imagens. Tente novamente.');
@@ -137,10 +126,7 @@ const GerenciarGuindastes = () => {
   };
 
   const removeImagemAdicional = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index)
-    }));
+    setFormData(prev => ({ ...prev, imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index) }));
   };
 
   const handleEdit = async (item) => {
@@ -164,7 +150,7 @@ const GerenciarGuindastes = () => {
     if (window.confirm('Tem certeza que deseja remover este guindaste?')) {
       try {
         await db.deleteGuindaste(id);
-        await loadData();
+        await loadData(page);
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
         alert('Erro ao remover guindaste. Tente novamente.');
@@ -213,7 +199,6 @@ const GerenciarGuindastes = () => {
         alert('Por favor, preencha todos os campos obrigatórios.');
         return;
       }
-      
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
@@ -222,18 +207,16 @@ const GerenciarGuindastes = () => {
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url || '',
         grafico_carga_url: formData.grafico_carga_url || '',
-              descricao: formData.descricao || '',
-      nao_incluido: formData.nao_incluido || '',
-      imagens_adicionais: formData.imagens_adicionais || []
+        descricao: formData.descricao || '',
+        nao_incluido: formData.nao_incluido || '',
+        imagens_adicionais: formData.imagens_adicionais || []
       };
-
       if (editingGuindaste) {
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
       } else {
         await db.createGuindaste(guindasteData);
       }
-
-      await loadData();
+      await loadData(page);
       handleCloseModal();
     } catch (error) {
       console.error('Erro ao salvar guindaste:', error);
@@ -241,15 +224,24 @@ const GerenciarGuindastes = () => {
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
+
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="admin-layout">
       <AdminNavigation user={user} />
       
       <div className="admin-content">
+        <UnifiedHeader 
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Gerenciar Guindastes"
+          subtitle="Cadastre e edite os guindastes"
+        />
         <div className="gerenciar-guindastes-container">
           <div className="gerenciar-guindastes-content">
             <div className="page-header">
@@ -304,7 +296,7 @@ const GerenciarGuindastes = () => {
                   </div>
                   <div className="filtro-info">
                     <span className="resultado-count">
-                      {getGuindastesFiltrados().length} guindaste(s) encontrado(s)
+                      {getGuindastesFiltrados().length} guindaste(s) nesta página
                     </span>
                   </div>
                 </div>
@@ -336,32 +328,22 @@ const GerenciarGuindastes = () => {
                           <p>Modelo: {guindaste.modelo}</p>
                         </div>
                         <div className="guindaste-actions">
-                          <button 
-                            onClick={() => handleEdit(guindaste)}
-                            className="action-btn edit-btn"
-                            title="Editar"
-                          >
-                            ✏️
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(guindaste.id)}
-                            className="action-btn delete-btn"
-                            title="Remover"
-                          >
-                            🗑️
-                          </button>
-                          <button
-                            className="action-btn"
-                            title="Preços por Região"
-                            onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
-                          >
-                            💲
-                          </button>
+                          <button onClick={() => handleEdit(guindaste)} className="action-btn edit-btn" title="Editar">✏️</button>
+                          <button onClick={() => handleDelete(guindaste.id)} className="action-btn delete-btn" title="Remover">🗑️</button>
+                          <button className="action-btn" title="Preços por Região" onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}>💲</button>
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
+
+                {/* Paginação */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
+                  <button className="cancel-btn" disabled={page <= 1} onClick={() => loadData(page - 1)}>Anterior</button>
+                  <div style={{ alignSelf: 'center', color: '#6b7280' }}>Página {page} de {totalPages}</div>
+                  <button className="save-btn" disabled={page >= totalPages} onClick={() => loadData(page + 1)}>Próxima</button>
+                </div>
+
               </div>
             )}
           </div>
@@ -373,35 +355,56 @@ const GerenciarGuindastes = () => {
           <div className="modal-content">
             <div className="modal-header">
               <h2>{editingGuindaste ? 'Editar Guindaste' : 'Novo Guindaste'}</h2>
-              <button onClick={handleCloseModal} className="close-btn">×</button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button form="guindaste-form" type="submit" className="save-btn">Salvar</button>
+                <button onClick={handleCloseModal} className="close-btn">×</button>
+              </div>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label>Subgrupo</label>
-                <input
-                  type="text"
-                  value={formData.subgrupo}
-                  onChange={e => handleInputChange('subgrupo', e.target.value)}
-                  required
-                />
+            <form id="guindaste-form" onSubmit={handleSubmit} className="modal-form">
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Subgrupo</label>
+                  <input
+                    type="text"
+                    value={formData.subgrupo}
+                    onChange={e => handleInputChange('subgrupo', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Modelo</label>
+                  <input
+                    type="text"
+                    value={formData.modelo}
+                    onChange={e => handleInputChange('modelo', e.target.value)}
+                    required
+                  />
+                </div>
               </div>
-              <div className="form-group">
-                <label>Modelo</label>
-                <input
-                  type="text"
-                  value={formData.modelo}
-                  onChange={e => handleInputChange('modelo', e.target.value)}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Peso (kg)</label>
-                <input
-                  type="text"
-                  value={formData.peso_kg}
-                  onChange={e => handleInputChange('peso_kg', e.target.value)}
-                  required
-                />
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Peso (kg)</label>
+                  <input
+                    type="text"
+                    value={formData.peso_kg}
+                    onChange={e => handleInputChange('peso_kg', e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Tem Controle Remoto</label>
+                  <select
+                    value={formData.tem_contr}
+                    onChange={e => handleInputChange('tem_contr', e.target.value)}
+                    required
+                  >
+                    <option value="Sim">Sim</option>
+                    <option value="Não">Não</option>
+                  </select>
+                  <small style={{ color: '#6c757d', fontSize: '12px' }}>
+                    Campo automático baseado na configuração selecionada
+                  </small>
+                </div>
               </div>
               <div className="form-group">
                 <label>Configuração</label>
@@ -427,20 +430,6 @@ const GerenciarGuindastes = () => {
                 </select>
                 <small style={{ color: '#6c757d', fontSize: '12px' }}>
                   Selecione a configuração completa do guindaste
-                </small>
-              </div>
-              <div className="form-group">
-                <label>Tem Controle Remoto</label>
-                <select
-                  value={formData.tem_contr}
-                  onChange={e => handleInputChange('tem_contr', e.target.value)}
-                  required
-                >
-                  <option value="Sim">Sim</option>
-                  <option value="Não">Não</option>
-                </select>
-                <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                  Campo automático baseado na configuração selecionada
                 </small>
               </div>
 
@@ -541,11 +530,7 @@ const GerenciarGuindastes = () => {
         </div>
       )}
 
-      <PrecosPorRegiaoModal
-        guindasteId={guindasteIdPrecos}
-        open={showPrecosModal}
-        onClose={() => setShowPrecosModal(false)}
-      />
+      <PrecosPorRegiaoModal guindasteId={guindasteIdPrecos} open={showPrecosModal} onClose={() => setShowPrecosModal(false)} />
     </div>
   );
 };

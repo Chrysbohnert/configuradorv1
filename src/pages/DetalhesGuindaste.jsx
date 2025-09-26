@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/DetalhesGuindaste.css';
+import UnifiedHeader from '../components/UnifiedHeader';
 
 const DetalhesGuindaste = () => {
   const navigate = useNavigate();
@@ -59,17 +60,16 @@ const DetalhesGuindaste = () => {
 
   return (
     <div className="detalhes-guindaste-container">
+      <UnifiedHeader 
+        showBackButton={true}
+        onBackClick={handleVoltar}
+        showSupportButton={true}
+        showUserInfo={false}
+        title="Detalhes do Equipamento"
+        subtitle={guindaste?.subgrupo}
+      />
       <div className="detalhes-content">
-        {/* Header */}
-        <div className="detalhes-header">
-          <button onClick={handleVoltar} className="voltar-btn">
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
-            </svg>
-            Voltar
-          </button>
-          <h1>Detalhes do Equipamento</h1>
-        </div>
+        {/* Header substituído por UnifiedHeader */}
 
         {/* Informações do Guindaste */}
         <div className="guindaste-info-section">

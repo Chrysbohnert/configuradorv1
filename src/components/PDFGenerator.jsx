@@ -286,65 +286,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           </div>
         </div>
 
-        
-
-              <div style="margin-bottom: 30px;">
-          <h3 style="color:rgb(0, 0, 0); font-size: 22px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <!-- Debug: Verificar dados de pagamento -->
-            <div style="display: none;">
-              Debug: ${JSON.stringify(pedidoData.pagamentoData)}
-            </div>
-            <div style="margin-bottom: 10px; font-size: 16px;">
-              <strong>Tipo de Pagamento:</strong> ${
-                pedidoData.pagamentoData?.tipoPagamento === 'revenda_gsi' ? 'Revenda - Guindastes GSI' :
-                pedidoData.pagamentoData?.tipoPagamento === 'cnpj_cpf_gse' ? 'CNPJ/CPF - Guindastes GSE' :
-                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_interno' ? 'Parcelamento Interno - Revenda' :
-                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_cnpj' ? 'Parcelamento - CNPJ/CPF' :
-                'Não informado'
-              }
-            </div>
-            <div style="margin-bottom: 10px; font-size: 16px;">
-              <strong>Prazo de Pagamento:</strong> ${
-                pedidoData.pagamentoData?.prazoPagamento === 'a_vista' ? 'À Vista' :
-                pedidoData.pagamentoData?.prazoPagamento === '30_dias' ? 'Até 30 dias (+3%)' :
-                pedidoData.pagamentoData?.prazoPagamento === '60_dias' ? 'Até 60 dias (+1%)' :
-                pedidoData.pagamentoData?.prazoPagamento === '120_dias_interno' ? 'Até 120 dias (sem acréscimo)' :
-                pedidoData.pagamentoData?.prazoPagamento === '90_dias_cnpj' ? 'Até 90 dias (sem acréscimo)' :
-                pedidoData.pagamentoData?.prazoPagamento === 'mais_120_dias' ? 'Após 120 dias (+2% ao mês)' :
-                pedidoData.pagamentoData?.prazoPagamento === 'mais_90_dias' ? 'Após 90 dias (+2% ao mês)' :
-                'Não informado'
-              }
-            </div>
-            <div style="margin-bottom: 10px; font-size: 16px;">
-              <strong>Valor Total:</strong> ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
-            </div>
-            ${pedidoData.pagamentoData?.desconto > 0 ? `
-            <div style="margin-bottom: 10px; font-size: 16px; color: #28a745;">
-              <strong>Desconto (${pedidoData.pagamentoData.desconto}%):</strong> -${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.desconto) / 100)}
-            </div>
-            ` : ''}
-            ${pedidoData.pagamentoData?.acrescimo > 0 ? `
-            <div style="margin-bottom: 10px; font-size: 16px; color: #dc3545;">
-              <strong>Acréscimo (${pedidoData.pagamentoData.acrescimo}%):</strong> +${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.acrescimo) / 100)}
-            </div>
-            ` : ''}
-            <div style="margin-bottom: 10px; font-size: 20px; font-weight: bold; color: #007bff;">
-              <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
-            </div>
-            <div style="margin-bottom: 10px; font-size: 16px;">
-              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
-            </div>
-            <div style="margin-bottom: 10px; font-size: 16px;">
-              <strong>Tipo de Instalação:</strong> ${
-                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
-                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
-                'Não informado'
-              }
-            </div>
-          </div>
-        </div>
-
         <div style="margin-bottom: 30px;">
           <h3 style="color:rgb(0, 0, 0); font-size: 20px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
@@ -393,6 +334,70 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       document.body.appendChild(footerElement);
       document.body.appendChild(contentElement);
 
+      // Elemento separado para POLÍTICA DE PAGAMENTO (página própria)
+      const policyElement = document.createElement('div');
+      policyElement.style.position = 'absolute';
+      policyElement.style.left = '-9999px';
+      policyElement.style.width = '1000px';
+      policyElement.style.backgroundColor = 'white';
+      policyElement.style.padding = '10px';
+      policyElement.style.fontFamily = 'Arial, sans-serif';
+      policyElement.innerHTML = `
+        <div style="margin-bottom: 20px;">
+          <h3 style="color:rgb(0, 0, 0); font-size: 26px; margin-bottom: 10px;">POLÍTICA DE PAGAMENTO</h3>
+          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 16px;">
+            <div style="margin-bottom: 10px;">
+              <strong>Tipo de Pagamento:</strong> ${
+                pedidoData.pagamentoData?.tipoPagamento === 'revenda_gsi' ? 'Revenda - Guindastes GSI' :
+                pedidoData.pagamentoData?.tipoPagamento === 'cnpj_cpf_gse' ? 'CNPJ/CPF - Guindastes GSE' :
+                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_interno' ? 'Parcelamento Interno - Revenda' :
+                pedidoData.pagamentoData?.tipoPagamento === 'parcelamento_cnpj' ? 'Parcelamento - CNPJ/CPF' :
+                'Não informado'
+              }
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong>Prazo de Pagamento:</strong> ${
+                pedidoData.pagamentoData?.prazoPagamento === 'a_vista' ? 'À Vista' :
+                pedidoData.pagamentoData?.prazoPagamento === '30_dias' ? 'Até 30 dias (+3%)' :
+                pedidoData.pagamentoData?.prazoPagamento === '60_dias' ? 'Até 60 dias (+1%)' :
+                pedidoData.pagamentoData?.prazoPagamento === '120_dias_interno' ? 'Até 120 dias (sem acréscimo)' :
+                pedidoData.pagamentoData?.prazoPagamento === '90_dias_cnpj' ? 'Até 90 dias (sem acréscimo)' :
+                pedidoData.pagamentoData?.prazoPagamento === 'mais_120_dias' ? 'Após 120 dias (+2% ao mês)' :
+                pedidoData.pagamentoData?.prazoPagamento === 'mais_90_dias' ? 'Após 90 dias (+2% ao mês)' :
+                'Não informado'
+              }
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong>Valor Total:</strong> ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
+            </div>
+            ${pedidoData.pagamentoData?.desconto > 0 ? `
+            <div style="margin-bottom: 10px; color: #28a745;">
+              <strong>Desconto (${pedidoData.pagamentoData.desconto}%):</strong> -${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.desconto) / 100)}
+            </div>
+            ` : ''}
+            ${pedidoData.pagamentoData?.acrescimo > 0 ? `
+            <div style="margin-bottom: 10px; color: #dc3545;">
+              <strong>Acréscimo (${pedidoData.pagamentoData.acrescimo}%):</strong> +${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.acrescimo) / 100)}
+            </div>
+            ` : ''}
+            <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
+              <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
+            </div>
+            <div>
+              <strong>Tipo de Instalação:</strong> ${
+                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
+                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
+                'Não informado'
+              }
+            </div>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(policyElement);
+
       // Gerar imagens separadas
       const headerCanvas = await html2canvas(headerElement, {
         scale: 2,
@@ -415,9 +420,17 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         backgroundColor: '#ffffff'
       });
 
+      const policyCanvas = await html2canvas(policyElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      });
+
       document.body.removeChild(headerElement);
       document.body.removeChild(footerElement);
       document.body.removeChild(contentElement);
+      document.body.removeChild(policyElement);
 
       // Criar PDF com controle de páginas
       const pdf = new jsPDF('p', 'mm', 'a4');
@@ -449,8 +462,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         ).length
       });
       
-      // Não renderizaremos mais página separada de política
-      let policyPageRendered = true;
+      // Vamos renderizar a POLÍTICA DE PAGAMENTO em página própria
+      let policyPageRendered = false;
 
       // Usar uma página apenas se todo o conteúdo couber na área útil
       if (contentHeight <= availableContentHeight) {
@@ -519,11 +532,48 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
         }
 
-        // Política já foi embutida no conteúdo anterior; pular bloco separado
-        // (Bloco de página separada removido)
+        // Fim da paginação do conteúdo principal
+      }
 
-      // Se por qualquer motivo a página de política ainda não foi renderizada (ex.: conteúdo coube em 1 página), renderizar agora
-        // Desativado porque política já está embutida no conteúdo principal
+      // Renderizar a página da POLÍTICA DE PAGAMENTO sempre na sequência
+      {
+        const policyHeight = (policyCanvas.height * contentWidth) / policyCanvas.width;
+        const headerImgDataPolicy = headerCanvas.toDataURL('image/png');
+        const footerImgDataPolicy = footerCanvas.toDataURL('image/png');
+        const pixelsPerMmPolicy = policyCanvas.height / policyHeight;
+        const contentStartYPolicy = margin + headerHeight + 5;
+
+        // nova página
+        pdf.addPage();
+        pdf.addImage(headerImgDataPolicy, 'PNG', margin, margin, contentWidth, headerHeight);
+
+        if (policyHeight <= availableContentHeight) {
+          const policyImgData = policyCanvas.toDataURL('image/png');
+          pdf.addImage(policyImgData, 'PNG', margin, contentStartYPolicy, contentWidth, policyHeight);
+        } else {
+          const totalPolicyPages = Math.ceil(policyHeight / availableContentHeight);
+          for (let p = 0; p < totalPolicyPages; p++) {
+            if (p > 0) {
+              pdf.addPage();
+              pdf.addImage(headerImgDataPolicy, 'PNG', margin, margin, contentWidth, headerHeight);
+            }
+            const yStartMm = p * availableContentHeight;
+            const hMm = Math.min(availableContentHeight, policyHeight - yStartMm);
+            const sourceY = Math.floor(yStartMm * pixelsPerMmPolicy);
+            const sourceHeight = Math.ceil(hMm * pixelsPerMmPolicy);
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            tempCanvas.width = policyCanvas.width;
+            tempCanvas.height = sourceHeight;
+            tempCtx.drawImage(policyCanvas, 0, sourceY, policyCanvas.width, sourceHeight, 0, 0, policyCanvas.width, sourceHeight);
+            const cropped = tempCanvas.toDataURL('image/png');
+            pdf.addImage(cropped, 'PNG', margin, contentStartYPolicy, contentWidth, hMm);
+            pdf.addImage(footerImgDataPolicy, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
+          }
+        }
+        // rodapé da primeira página da política
+        pdf.addImage(footerImgDataPolicy, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
+        policyPageRendered = true;
       }
 
       // Adicionar gráficos de carga se houver
@@ -602,7 +652,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         }
       }
 
-      // Adicionar página com cláusulas contratuais
+      // Adicionar página com cláusulas contratuais (tudo na MESMA página com assinaturas)
       // Evitar página em branco: só adicionar nova página se a anterior não estiver vazia acabada de criar
       // Garantimos nova página explicitamente aqui, pois após gráficos sempre queremos cláusulas em página própria
       pdf.addPage();
@@ -621,8 +671,10 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       pdf.setTextColor(73, 80, 87);
       pdf.text('CLÁUSULAS CONTRATUAIS', 20, margin + headerHeight + 20);
       
-      // Conteúdo das cláusulas (cada cláusula em uma linha, letra pequena, espaçamento mínimo)
-      pdf.setFontSize(8.5);
+      // Conteúdo das cláusulas
+      let clausulasFontSize = 8.5;
+      let lineSpacing = 2.8; // mais compacto
+      pdf.setFontSize(clausulasFontSize);
       pdf.setTextColor(0, 0, 0);
 
       const clausulasArray = [
@@ -646,39 +698,46 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       ];
 
       let yPos = margin + headerHeight + 40;
-      const lineWidth = 170;
-      const lineSpacing = 3.2; // bem juntinho
-      const signatureReservedHeight = 65; // reservar espaço para assinaturas nesta mesma página
+      let lineWidth = 175;
+      let signatureReservedHeight = 32; // espaço pequeno para assinaturas
 
-      for (const clausula of clausulasArray) {
-        const lines = pdf.splitTextToSize(clausula, lineWidth);
-        for (let i = 0; i < lines.length; i++) {
-          if (yPos > pageHeight - footerHeight - margin - (15 + signatureReservedHeight)) {
-            pdf.addPage();
-            const headerImgData = headerCanvas.toDataURL('image/png');
-            pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-            yPos = margin + headerHeight + 20;
-          }
-          pdf.text(lines[i], 20, yPos);
-          yPos += lineSpacing;
+      // Pré-calcular linhas e ajustar para caber em uma única página
+      const buildLines = () => {
+        const allLines = [];
+        for (const clausula of clausulasArray) {
+          const lines = pdf.splitTextToSize(clausula, lineWidth);
+          for (const l of lines) allLines.push(l);
         }
+        return allLines;
+      };
+
+      let allLines = buildLines();
+      const availableForText = pageHeight - footerHeight - margin - (15 + signatureReservedHeight) - yPos;
+      let requiredHeight = allLines.length * lineSpacing;
+      let fitAttempts = 0;
+      while (requiredHeight > availableForText && fitAttempts < 6) {
+        // reduzir ligeiramente tamanho/entrelinha e aumentar largura
+        clausulasFontSize = Math.max(7.0, clausulasFontSize - 0.3);
+        lineSpacing = Math.max(2.2, lineSpacing - 0.1);
+        lineWidth = Math.min(180, lineWidth + 1);
+        pdf.setFontSize(clausulasFontSize);
+        allLines = buildLines();
+        requiredHeight = allLines.length * lineSpacing;
+        fitAttempts += 1;
+      }
+
+      // Desenhar todas as linhas sem quebrar página
+      for (const line of allLines) {
+        pdf.text(line, 20, yPos);
+        yPos += lineSpacing;
       }
       
       // Rodapé movido para após as assinaturas
 
-      // Área de Assinaturas (mesma página das cláusulas)
-      // Verificar se há espaço, senão quebrar para nova página de continuidade das cláusulas
+      // Área de Assinaturas (compacta e na mesma página)
       const leftX = 25;
       const rightX = 115;
-      let signatureTitleY = yPos + 15;
-      const neededHeight = 50; // título + linhas + legendas
-      const availableBottom = pageHeight - footerHeight - margin - signatureTitleY;
-      if (availableBottom < neededHeight) {
-        pdf.addPage();
-        const headerImgDataSign = headerCanvas.toDataURL('image/png');
-        pdf.addImage(headerImgDataSign, 'PNG', margin, margin, contentWidth, headerHeight);
-        signatureTitleY = margin + headerHeight + 20;
-      }
+      let signatureTitleY = yPos + 8;
       // Nomes para assinaturas
       let vendedorNome = pedidoData.vendedor || '';
       try {
@@ -690,15 +749,15 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       if (!vendedorNome) vendedorNome = 'Não informado';
       const clienteNome = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : 'Não informado';
 
-      pdf.setFontSize(16);
+      pdf.setFontSize(12);
       pdf.setTextColor(0,0,0);
       pdf.text('Assinaturas', 105, signatureTitleY, { align: 'center' });
-      const lineY = signatureTitleY + 30;
+      const lineY = signatureTitleY + 18;
       pdf.setDrawColor(0);
       pdf.setLineWidth(0.4);
       pdf.line(leftX, lineY, leftX + 70, lineY);
       pdf.line(rightX, lineY, rightX + 70, lineY);
-      pdf.setFontSize(12);
+      pdf.setFontSize(10);
       pdf.text(`Cliente: ${clienteNome}`, leftX + 35, lineY + 6, { align: 'center' });
       pdf.text(`Vendedor: ${vendedorNome}`, rightX + 35, lineY + 6, { align: 'center' });
 

@@ -41,6 +41,9 @@ const AdminNavigation = ({ user }) => {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('supabaseSession');
+    localStorage.removeItem('carrinho');
     navigate('/');
   };
 

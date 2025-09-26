@@ -480,10 +480,11 @@
 .modal-content {
   background: white;
   border-radius: 16px;
-  max-width: 600px;
+  max-width: 900px;
   width: 100%;
   max-height: 90vh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 20px 25px rgba(0, 0, 0, 0.1);
 }
 
@@ -527,7 +528,8 @@
 }
 
 .modal-form {
-  padding: 30px;
+  padding: 24px 30px 12px 30px;
+  overflow: auto;
 }
 
 .form-row {
@@ -586,11 +588,14 @@
 }
 
 .modal-actions {
+  position: sticky;
+  bottom: 0;
+  background: white;
+  padding: 16px 30px;
   display: flex;
   gap: 12px;
   justify-content: flex-end;
-  padding-top: 20px;
-  border-top: 1px solid #f8f9fa;
+  border-top: 1px solid #f1f3f5;
 }
 
 .cancel-btn {

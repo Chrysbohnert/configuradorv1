@@ -1,8 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { format as dfFormat, parse as dfParse, startOfWeek, getDay, startOfMonth, addDays, isToday } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { startOfWeek, startOfMonth, addDays, isToday, format as dfFormat } from 'date-fns';
 import AdminNavigation from '../components/AdminNavigation';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import '../styles/Dashboard.css';
 import '../styles/Logistica.css';
@@ -11,8 +10,6 @@ const Logistica = () => {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [eventos, setEventos] = useState([]);
-  const [prontaEntrega, setProntaEntrega] = useState([]);
-  const [guindastes, setGuindastes] = useState([]);
   const [notaAtual, setNotaAtual] = useState({ id: null, data: '', titulo: '', descricao: '' });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isNotaModalOpen, setIsNotaModalOpen] = useState(false);
@@ -36,14 +33,8 @@ const Logistica = () => {
   const loadData = async () => {
     try {
       setIsLoading(true);
-      const [ev, pe, gs] = await Promise.all([
-        db.getEventosLogistica(),
-        db.getProntaEntrega(),
-        db.getGuindastes()
-      ]);
+      const ev = await db.getEventosLogistica();
       setEventos(ev);
-      setProntaEntrega(pe);
-      setGuindastes(gs);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
@@ -107,7 +98,7 @@ const Logistica = () => {
   const handleSalvarNota = async (e) => {
     e.preventDefault();
     if (!notaAtual.data || !notaAtual.titulo) {
-      alert('Preencha data e título.');
+      alert('Informe a anotação.');
       return;
     }
     try {
@@ -115,13 +106,13 @@ const Logistica = () => {
         await db.updateEventoLogistica(notaAtual.id, {
           data: notaAtual.data,
           titulo: notaAtual.titulo,
-          descricao: notaAtual.descricao || ''
+          descricao: ''
         });
       } else {
         await db.createEventoLogistica({
           data: notaAtual.data,
           titulo: notaAtual.titulo,
-          descricao: notaAtual.descricao || ''
+          descricao: ''
         });
       }
       setNotaAtual({ id: null, data: '', titulo: '', descricao: '' });
@@ -136,7 +127,7 @@ const Logistica = () => {
   const handleEditarNota = (ev) => {
     const dia = (ev.data || '').slice(0,10);
     setSelectedDateStr(dia);
-    setNotaAtual({ id: ev.id, data: dia, titulo: ev.titulo || '', descricao: ev.descricao || '' });
+    setNotaAtual({ id: ev.id, data: dia, titulo: ev.titulo || ev.descricao || '', descricao: '' });
     setIsNotaModalOpen(true);
   };
 
@@ -145,30 +136,11 @@ const Logistica = () => {
     try {
       await db.deleteEventoLogistica(id);
       await loadData();
+      setNotaAtual({ id: null, data: '', titulo: '', descricao: '' });
+      setIsNotaModalOpen(false);
     } catch (error) {
       console.error('Erro ao remover nota:', error);
       alert('Erro ao remover nota.');
-    }
-  };
-
-  const handleAdicionarPronta = async (guindasteId) => {
-    try {
-      await db.addProntaEntrega({ guindaste_id: guindasteId, status: 'disponivel' });
-      await loadData();
-    } catch (error) {
-      console.error('Erro ao adicionar pronta-entrega:', error);
-      alert('Erro ao adicionar à pronta-entrega.');
-    }
-  };
-
-  const handleRemoverPronta = async (id) => {
-    if (!window.confirm('Remover da pronta-entrega?')) return;
-    try {
-      await db.removeProntaEntrega(id);
-      await loadData();
-    } catch (error) {
-      console.error('Erro ao remover pronta-entrega:', error);
-      alert('Erro ao remover.');
     }
   };
 
@@ -178,201 +150,114 @@ const Logistica = () => {
     <div className="admin-layout logistica-page">
       <AdminNavigation user={user} />
       <div className="admin-content">
+        <UnifiedHeader 
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Logística"
+          subtitle="Calendário simples de anotações"
+        />
         <div className="dashboard-container">
           <div className="dashboard-content">
             <div className="dashboard-header">
               <div className="welcome-section">
                 <h1>Logística</h1>
-                <p>Calendário de notas e gestão de pronta-entrega</p>
+                <p>Calendário simples de anotações</p>
               </div>
             </div>
-              
-            
 
-            <div className="admin-sections" style={{ gap: '24px' }}>
-              <div className="top-vendedores-section" style={{ flex: 1 }}>
-                <h2>Calendário de Notas</h2>
-
-                <div className="calendar-container" style={{ background: '#fff', borderRadius: 16, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: 20 }}>
-                  <div className="calendar-controls">
-                    <select
-                      value={currentDate.getMonth()}
-                      onChange={(e)=>{
-                        const newMonth = Number(e.target.value);
-                        setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
-                      }}
-                    >
-                      {months.map(m => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
-                    <select
-                      value={currentDate.getFullYear()}
-                      onChange={(e)=>{
-                        const newYear = Number(e.target.value);
-                        setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
-                      }}
-                    >
-                      {years.map(y => (
-                        <option key={y} value={y}>{y}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="month-grid">
-                    <div className="month-grid-header">
-                      <div>Seg</div>
-                      <div>Ter</div>
-                      <div>Qua</div>
-                      <div>Qui</div>
-                      <div>Sex</div>
-                      <div>Sáb</div>
-                      <div>Dom</div>
-                    </div>
-                    <div className="month-grid-body">
-                      {monthGridDays.map((d) => (
-                        <button
-                          key={d.iso}
-                          className={`month-cell ${d.isCurrentMonth ? '' : 'outside'} ${d.isToday ? 'today' : ''}`.trim()}
-                          onClick={()=>{
-                            setSelectedDateStr(d.iso);
-                            setNotaAtual({ id: null, data: d.iso, titulo: '', descricao: '' });
-                            setIsNotaModalOpen(true);
-                          }}
-                        >
-                          <span className="day-number">{d.date.getDate()}</span>
-                          {d.count > 0 && (
-                            <span className="note-indicator" title={`${d.count} anotação(ões)`}>{d.count}</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            <div className="calendar-container" style={{ background: '#fff', borderRadius: 16, padding: 12, boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: 12 }}>
+              <div className="calendar-controls">
+                <select
+                  value={currentDate.getMonth()}
+                  onChange={(e)=>{
+                    const newMonth = Number(e.target.value);
+                    setCurrentDate(new Date(currentDate.getFullYear(), newMonth, 1));
+                  }}
+                >
+                  {months.map(m => (
+                    <option key={m.value} value={m.value}>{m.label}</option>
+                  ))}
+                </select>
+                <select
+                  value={currentDate.getFullYear()}
+                  onChange={(e)=>{
+                    const newYear = Number(e.target.value);
+                    setCurrentDate(new Date(newYear, currentDate.getMonth(), 1));
+                  }}
+                >
+                  {years.map(y => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="month-grid">
+                <div className="month-grid-header">
+                  <div>Seg</div>
+                  <div>Ter</div>
+                  <div>Qua</div>
+                  <div>Qui</div>
+                  <div>Sex</div>
+                  <div>Sáb</div>
+                  <div>Dom</div>
                 </div>
-                {isNotaModalOpen && (
-                  <div className="nota-modal-overlay" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>
-                    <div className="nota-modal" onClick={(e)=>e.stopPropagation()}>
-                      <div className="nota-modal-header">
-                        <h3>{new Date((notaAtual.data || '')).toLocaleDateString()}</h3>
-                        <button className="close-btn" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>✕</button>
-                      </div>
-                      <div className="nota-modal-list" style={{ marginBottom: 12 }}>
-                        {(eventosPorDia[notaAtual.data] || []).map(ev => (
-                          <div key={ev.id} className="action-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 12, borderRadius: 10 }}>
-                            <div>
-                              <div style={{ fontWeight: 600 }}>{ev.titulo}</div>
-                              {ev.descricao ? <div style={{ color: '#6b7280' }}>{ev.descricao}</div> : null}
-                            </div>
-                            <div style={{ display: 'flex', gap: 8 }}>
-                              <button className="action-btn" onClick={()=>handleEditarNota(ev)}>✏️ Editar</button>
-                              <button className="action-btn" onClick={()=>handleRemoverNota(ev.id)}>🗑️ Remover</button>
-                            </div>
-                          </div>
-                        ))}
-                        {(eventosPorDia[notaAtual.data] || []).length === 0 && (
-                          <div className="vendedor-card" style={{ padding: 12 }}>
-                            <div className="vendedor-name">Sem anotações neste dia</div>
-                          </div>
-                        )}
-                      </div>
-                      <form onSubmit={handleSalvarNota} className="gerenciar-form">
-                        <div className="form-row">
-                          <div className="form-group">
-                            <label>Data</label>
-                            <input type="date" value={notaAtual.data} onChange={(e)=>setNotaAtual(prev=>({ ...prev, data: e.target.value }))} required />
-                          </div>
-                          <div className="form-group" style={{ flex: 1 }}>
-                            <label>Título</label>
-                            <input type="text" placeholder="Ex: 20/10 pronto guindaste X do cliente Y" value={notaAtual.titulo} onChange={(e)=>setNotaAtual(prev=>({ ...prev, titulo: e.target.value }))} required />
-                          </div>
-                        </div>
-                        <div className="form-group">
-                          <label>Descrição (opcional)</label>
-                          <textarea rows="6" value={notaAtual.descricao} onChange={(e)=>setNotaAtual(prev=>({ ...prev, descricao: e.target.value }))} />
-                        </div>
-                        <div className="modal-actions">
-                          {notaAtual.id && (
-                            <button type="button" className="cancel-btn" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>Cancelar</button>
-                          )}
-                          <button type="submit" className="save-btn">{notaAtual.id ? 'Atualizar Nota' : 'Adicionar Nota'}</button>
-                        </div>
-                      </form>
-                    </div>
-                  </div>
-                )}
-
-                <div className="vendedores-list">
-                  {Object.keys(eventosPorDia).sort().map(dia => (
-                    <div key={dia} className="vendedor-card">
-                      <div className="vendedor-info">
-                        <div className="vendedor-details">
-                          <div className="vendedor-name">{new Date(dia).toLocaleDateString()}</div>
-                          <div className="vendedor-stats">
-                            <span>{eventosPorDia[dia].length} nota(s)</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="vendedor-actions" style={{ flexWrap: 'wrap', gap: '8px' }}>
-                        {eventosPorDia[dia].map(ev => (
-                          <div key={ev.id} className="action-card" style={{ cursor: 'default' }}>
-                            <div className="action-content" style={{ minWidth: '300px' }}>
-                              <h3 style={{ marginBottom: 4 }}>{ev.titulo}</h3>
-                              {ev.descricao ? <p style={{ margin: 0 }}>{ev.descricao}</p> : null}
-                              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                                <button className="action-btn" onClick={()=>handleEditarNota(ev)}>✏️ Editar</button>
-                                <button className="action-btn" onClick={()=>handleRemoverNota(ev.id)}>🗑️ Remover</button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                <div className="month-grid-body">
+                  {monthGridDays.map((d) => (
+                    <button
+                      key={d.iso}
+                      className={`month-cell ${d.isCurrentMonth ? '' : 'outside'} ${d.isToday ? 'today' : ''}`.trim()}
+                      onClick={()=>{
+                        const existing = (eventosPorDia[d.iso] || [])[0];
+                        setSelectedDateStr(d.iso);
+                        if (existing) {
+                          setNotaAtual({ id: existing.id, data: d.iso, titulo: existing.titulo || existing.descricao || '', descricao: '' });
+                        } else {
+                          setNotaAtual({ id: null, data: d.iso, titulo: '', descricao: '' });
+                        }
+                        setIsNotaModalOpen(true);
+                      }}
+                    >
+                      <span className="day-number">{d.date.getDate()}</span>
+                      {d.count > 0 && (
+                        <span className="note-indicator" title={`${d.count} anotação(ões)`}>{d.count}</span>
+                      )}
+                    </button>
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="top-vendedores-section" style={{ flex: 1 }}>
-                <h2>Pronta-Entrega</h2>
-                <div className="gerenciar-form" style={{ marginBottom: 16 }}>
-                  <div className="form-group">
-                    <label>Adicionar guindaste</label>
-                    <select onChange={(e)=>{ const id = Number(e.target.value); if (id) { handleAdicionarPronta(id); e.target.value=''; } }}>
-                      <option value="">Selecione um guindaste</option>
-                      {guindastes.map(g => (
-                        <option key={g.id} value={g.id}>{g.subgrupo} - {g.modelo}</option>
-                      ))}
-                    </select>
+            {isNotaModalOpen && (
+              <div className="nota-modal-overlay" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>
+                <div className="nota-modal" onClick={(e)=>e.stopPropagation()}>
+                  <div className="nota-modal-header">
+                    <h3>{new Date((notaAtual.data || '')).toLocaleDateString()}</h3>
+                    <button className="close-btn" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>✕</button>
                   </div>
-                </div>
 
-                <div className="vendedores-list">
-                  {prontaEntrega.map(item => (
-                    <div key={item.id} className="vendedor-card">
-                      <div className="vendedor-info">
-                        <div className="vendedor-details">
-                          <div className="vendedor-name">{item.guindaste?.subgrupo} - {item.guindaste?.modelo}</div>
-                          <div className="vendedor-stats">
-                            <span>Status: {item.status || 'disponivel'}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="vendedor-actions">
-                        <button className="action-btn" onClick={()=>handleRemoverPronta(item.id)}>Remover</button>
-                      </div>
+                  <form onSubmit={handleSalvarNota} className="gerenciar-form">
+                    <div className="form-group">
+                      <label>Anotação</label>
+                      <textarea
+                        rows="5"
+                        placeholder="Escreva sua anotação..."
+                        value={notaAtual.titulo}
+                        onChange={(e)=>setNotaAtual(prev=>({ ...prev, titulo: e.target.value }))}
+                      />
                     </div>
-                  ))}
-                  {prontaEntrega.length === 0 && (
-                    <div className="vendedor-card">
-                      <div className="vendedor-info">
-                        <div className="vendedor-details">
-                          <div className="vendedor-name">Nenhum item à pronta-entrega</div>
-                          <div className="vendedor-stats"><span>Use o seletor acima para adicionar</span></div>
-                        </div>
-                      </div>
+                    <div className="modal-actions">
+                      {notaAtual.id && (
+                        <button type="button" className="cancel-btn" onClick={()=>handleRemoverNota(notaAtual.id)}>Excluir</button>
+                      )}
+                      <button type="submit" className="save-btn">{notaAtual.id ? 'Atualizar' : 'Salvar'}</button>
                     </div>
-                  )}
+                  </form>
                 </div>
               </div>
-            </div>
+            )}
+
           </div>
         </div>
       </div>

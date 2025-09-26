@@ -1,12 +1,13 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { getCurrentUser, isAdmin, isVendedor } from '../utils/auth';
+import { getCurrentUser, isAdmin, isVendedor, validateSession } from '../utils/auth';
 
 const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = false }) => {
   const user = getCurrentUser();
+  const sessionValid = validateSession();
   
   // Se não há usuário logado
-  if (!user) {
+  if (!user || !sessionValid) {
     return <Navigate to="/" replace />;
   }
   

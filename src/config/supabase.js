@@ -87,6 +87,26 @@ class DatabaseService {
     return data || [];
   }
 
+  // Versão leve para listagens: apenas campos necessários, com paginação e busca
+  async getGuindastesLite({ page = 1, pageSize = 24, search = '' } = {}) {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
+
+    let query = supabase
+      .from('guindastes')
+      .select('id, subgrupo, modelo, imagem_url, grafico_carga_url, peso_kg, codigo_referencia, updated_at', { count: 'exact' })
+      .order('subgrupo');
+
+    if (search && search.trim()) {
+      const pattern = `%${search.trim()}%`;
+      query = query.or(`subgrupo.ilike.${pattern},modelo.ilike.${pattern}`);
+    }
+
+    const { data, error, count } = await query.range(from, to);
+    if (error) throw error;
+    return { data: data || [], count: count || 0 };
+  }
+
   async createGuindaste(guindasteData) {
     const { data, error } = await supabase
       .from('guindastes')
@@ -205,77 +225,10 @@ class DatabaseService {
     if (error) throw error;
   }
 
-  // ===== OPCIONAIS DO GUINDASTE =====
-  async getOpcionaisDoGuindaste(guindasteId) {
-    const { data, error } = await supabase
-      .from('guindaste_opcionais')
-      .select(`
-        opcional_id,
-        opcional:opcionais(*)
-      `)
-      .eq('guindaste_id', guindasteId);
-    
-    if (error) throw error;
-    return data?.map(item => item.opcional).filter(opcional => opcional && opcional.ativo) || [];
-  }
+  // Métodos relacionados a tabelas de opcionais foram removidos
+  // pois não existem nas tabelas do projeto atual (ver Supabase).
 
-  async salvarOpcionaisDoGuindaste(guindasteId, opcionais) {
-    // Remove todos os opcionais existentes deste guindaste
-    await supabase
-      .from('guindaste_opcionais')
-      .delete()
-      .eq('guindaste_id', guindasteId);
-    
-    // Adiciona os novos opcionais
-    if (opcionais && opcionais.length > 0) {
-      const opcionaisData = opcionais.map(opcional => ({
-        guindaste_id: guindasteId,
-        opcional_id: opcional.id
-      }));
-      
-      const { error } = await supabase
-        .from('guindaste_opcionais')
-        .insert(opcionaisData);
-      
-      if (error) throw error;
-    }
-  }
-
-  // ===== OPCIONAIS DO EQUIPAMENTO =====
-  async getOpcionaisDoEquipamento(equipamentoId) {
-    const { data, error } = await supabase
-      .from('equipamento_opcionais')
-      .select(`
-        opcional_id,
-        opcional:opcionais(*)
-      `)
-      .eq('equipamento_id', equipamentoId);
-    
-    if (error) throw error;
-    return data?.map(item => item.opcional).filter(opcional => opcional && opcional.ativo) || [];
-  }
-
-  async salvarOpcionaisDoEquipamento(equipamentoId, opcionais) {
-    // Remove todos os opcionais existentes deste equipamento
-    await supabase
-      .from('equipamento_opcionais')
-      .delete()
-      .eq('equipamento_id', equipamentoId);
-    
-    // Adiciona os novos opcionais
-    if (opcionais && opcionais.length > 0) {
-      const opcionaisData = opcionais.map(opcional => ({
-        equipamento_id: equipamentoId,
-        opcional_id: opcional.id
-      }));
-      
-      const { error } = await supabase
-        .from('equipamento_opcionais')
-        .insert(opcionaisData);
-      
-      if (error) throw error;
-    }
-  }
+  // Métodos de opcionais de equipamento removidos (tabelas ausentes)
 
   // ===== CLIENTES =====
   async getClientes() {
@@ -394,37 +347,7 @@ class DatabaseService {
     return data || [];
   }
 
-  // ===== PREÇOS POR REGIÃO DO EQUIPAMENTO =====
-  async getPrecosPorRegiaoEquipamento(equipamentoId) {
-    const { data, error } = await supabase
-      .from('precos_equipamento_regiao')
-      .select('*')
-      .eq('equipamento_id', equipamentoId);
-    
-    if (error) throw error;
-    return data || [];
-  }
-
-  async salvarPrecosPorRegiaoEquipamento(equipamentoId, precos) {
-    // Remove preços existentes
-    await supabase
-      .from('precos_equipamento_regiao')
-      .delete()
-      .eq('equipamento_id', equipamentoId);
-
-    // Adiciona os novos preços
-    if (precos && precos.length > 0) {
-      const { error } = await supabase
-        .from('precos_equipamento_regiao')
-        .insert(precos.map(p => ({
-          equipamento_id: equipamentoId,
-          regiao: p.regiao,
-          preco: p.preco
-        })));
-      
-      if (error) throw error;
-    }
-  }
+  // Métodos de preços por região de equipamento removidos (tabela ausente)
 
   // ===== PREÇOS POR REGIÃO DO GUINDASTE =====
   async getPrecosPorRegiao(guindasteId) {
