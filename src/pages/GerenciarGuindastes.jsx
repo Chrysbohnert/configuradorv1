@@ -26,7 +26,6 @@ const GerenciarGuindastes = () => {
     configuração: '',
     tem_contr: 'Sim',
     imagem_url: '',
-    grafico_carga_url: '',
     descricao: '',
     nao_incluido: '',
     imagens_adicionais: []
@@ -104,9 +103,7 @@ const GerenciarGuindastes = () => {
     setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
   };
 
-  const handleGraficoCargaUpload = (imageUrl) => {
-    setFormData(prev => ({ ...prev, grafico_carga_url: imageUrl }));
-  };
+  // Removido upload de gráfico de carga (PDF é anexado automaticamente na proposta)
 
   const handleImagensAdicionaisChange = async (e) => {
     const files = Array.from(e.target.files);
@@ -138,7 +135,6 @@ const GerenciarGuindastes = () => {
       configuração: item.configuração,
       tem_contr: item.tem_contr,
       imagem_url: item.imagem_url || '',
-      grafico_carga_url: item.grafico_carga_url || '',
       descricao: item.descricao || '',
       nao_incluido: item.nao_incluido || '',
       imagens_adicionais: item.imagens_adicionais || []
@@ -168,7 +164,6 @@ const GerenciarGuindastes = () => {
       configuração: '',
       tem_contr: 'Sim',
       imagem_url: '',
-      grafico_carga_url: '',
       descricao: '',
       nao_incluido: '',
       imagens_adicionais: []
@@ -184,7 +179,6 @@ const GerenciarGuindastes = () => {
       configuração: '',
       tem_contr: 'Sim',
       imagem_url: '',
-      grafico_carga_url: '',
       descricao: '',
       nao_incluido: '',
       imagens_adicionais: []
@@ -206,12 +200,12 @@ const GerenciarGuindastes = () => {
         configuração: formData.configuração,
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url || '',
-        grafico_carga_url: formData.grafico_carga_url || '',
         descricao: formData.descricao || '',
         nao_incluido: formData.nao_incluido || '',
         imagens_adicionais: formData.imagens_adicionais || []
       };
       if (editingGuindaste) {
+        console.log('Atualizando guindaste id=', editingGuindaste?.id, 'payload=', guindasteData);
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
       } else {
         await db.createGuindaste(guindasteData);
@@ -443,22 +437,7 @@ const GerenciarGuindastes = () => {
                 )}
               </div>
 
-              <div className="form-group">
-                <label>Gráfico de Carga (Opcional)</label>
-                <ImageUpload 
-                  onImageUpload={handleGraficoCargaUpload} 
-                  currentImageUrl={formData.grafico_carga_url}
-                  label="Upload do Gráfico de Carga"
-                />
-                {formData.grafico_carga_url ? (
-                  <small style={{ color: '#28a745', fontSize: '12px' }}>Gráfico de carga já cadastrado</small>
-                ) : (
-                  <small style={{ color: '#6c757d', fontSize: '12px' }}>Nenhum gráfico cadastrado</small>
-                )}
-                <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                  Imagem que mostra a capacidade de carga em diferentes posições da lança
-                </small>
-              </div>
+              {/* Upload de gráfico de carga removido: agora os PDFs técnicos são gerenciados em Gráficos de Carga e anexados automaticamente na proposta. */}
 
               <div className="form-group">
                 <label>Descrição Técnica</label>

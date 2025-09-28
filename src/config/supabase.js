@@ -119,15 +119,22 @@ class DatabaseService {
   }
 
   async updateGuindaste(id, guindasteData) {
+    // Estratégia à prova de 406: não pedir objeto único no retorno
     const { data, error } = await supabase
       .from('guindastes')
       .update(guindasteData)
-      .eq('id', id)
-      .select('*')
-      .single();
-    
+      .eq('id', Number(id))
+      .select('id'); // retorna array (possivelmente vazio)
     if (error) throw error;
-    return data;
+    if (!data || data.length === 0) throw new Error('Registro não encontrado para atualização.');
+    // Buscar registro atualizado apenas se necessário
+    const { data: row, error: fetchError } = await supabase
+      .from('guindastes')
+      .select('*')
+      .eq('id', Number(id))
+      .single();
+    if (fetchError) throw fetchError;
+    return row;
   }
 
   async deleteGuindaste(id) {

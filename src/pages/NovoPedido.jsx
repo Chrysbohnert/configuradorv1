@@ -340,40 +340,12 @@ const NovoPedido = () => {
                   {capacidades.map((capacidade) => (
                     <button
                       key={capacidade}
-                      className={`capacidade-card ${selectedCapacidade === capacidade ? 'selected' : ''}`}
+                      className={`capacidade-card no-photo ${selectedCapacidade === capacidade ? 'selected' : ''}`}
                       onClick={() => handleSelecionarCapacidade(capacidade)}
                       data-capacidade={capacidade}
                     >
                       <div className="capacidade-icon">
-                        {(() => {
-                          // Encontrar um guindaste "standard" desta capacidade para mostrar a imagem
-                          const guindasteStandard = guindastes.find(g => {
-                            const subgrupo = g.subgrupo || '';
-                            const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-                            const match = modeloBase.match(/(\d+\.?\d*)/);
-                            return match && match[1] === capacidade && g.imagem_url;
-                          });
-                          
-                          if (guindasteStandard && guindasteStandard.imagem_url) {
-                            return (
-                              <img
-                                src={guindasteStandard.imagem_url}
-                                alt={`Guindaste ${capacidade} ton`}
-                                className="capacidade-thumbnail"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            );
-                          }
-                          
-                          return (
-                            <div className="capacidade-fallback">
-                              <span>🏗️</span>
-                            </div>
-                          );
-                        })()}
+                        <div className="capacidade-fallback" aria-hidden="true">🏗️</div>
                       </div>
                       <div className="capacidade-info">
                         <h4>{capacidade} Ton</h4>
@@ -1084,9 +1056,119 @@ const PoliticaPagamento = ({ carrinho, onPagamentoChange, errors = {} }) => {
 
 // Componente Form do Cliente
 const ClienteForm = ({ formData, setFormData, errors = {} }) => {
-  const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const onlyDigits = (value) => (value || '').replace(/\D/g, '');
+  const maskCEP = (value) => {
+    const digits = onlyDigits(value).slice(0, 8);
+    if (digits.length > 5) return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+    return digits;
   };
+  const maskPhone = (value) => {
+    const digits = onlyDigits(value).slice(0, 11);
+    const ddd = digits.slice(0, 2);
+    const isMobile = digits.length > 10; // 11 dígitos
+    const partA = isMobile ? digits.slice(2, 7) : digits.slice(2, 6);
+    const partB = isMobile ? digits.slice(7, 11) : digits.slice(6, 10);
+    let out = '';
+    if (ddd) out += `(${ddd}`;
+    if (ddd.length === 2) out += ') ';
+    out += partA;
+    if (partB) out += `-${partB}`;
+    return out;
+  };
+  const composeEndereco = (data) => {
+    const parts = [];
+    if (data.logradouro) parts.push(data.logradouro);
+    if (data.numero) parts.push(`, ${data.numero}`);
+    if (data.bairro) parts.push(` - ${data.bairro}`);
+    if (data.cidade || data.uf) parts.push(` - ${data.cidade || ''}${data.uf ? (data.cidade ? '/' : '') + data.uf : ''}`);
+    if (data.cep) parts.push(` - CEP: ${data.cep}`);
+    return parts.join('');
+  };
+  const [cidadesUF, setCidadesUF] = React.useState([]);
+  const [loadingCidades, setLoadingCidades] = React.useState(false);
+  const [manualEndereco, setManualEndereco] = React.useState(false);
+
+  const handleChange = (field, value) => {
+    setFormData(prev => {
+      let maskedValue = value;
+      if (field === 'telefone') maskedValue = maskPhone(value);
+      if (field === 'cep') maskedValue = maskCEP(value);
+      const next = { ...prev, [field]: maskedValue };
+      // Consistência: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
+      if (field === 'uf') {
+        next.cidade = '';
+        if (!manualEndereco && next.cep) next.cep = '';
+      }
+      if (field === 'cidade') {
+        if (!manualEndereco && next.cep) next.cep = '';
+      }
+      // Se o campo alterado é parte do endereço detalhado, atualizar 'endereco' composto
+      if ([
+        'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep'
+      ].includes(field)) {
+        next.endereco = composeEndereco(next);
+      }
+      return next;
+    });
+  };
+
+  React.useEffect(() => {
+    if (manualEndereco) return; // não sobrescrever quando edição manual estiver ativa
+    const raw = onlyDigits(formData.cep || '');
+    if (raw.length !== 8) return;
+    let cancelled = false;
+    const fetchCEP = async () => {
+      try {
+        const response = await fetch(`https://viacep.com.br/ws/${raw}/json/`);
+        const data = await response.json();
+        if (cancelled || !data || data.erro) return;
+        setFormData(prev => {
+          const next = {
+            ...prev,
+            cep: maskCEP(raw),
+            // CEP é a fonte da verdade para UF e Cidade
+            uf: data.uf || '',
+            cidade: data.localidade || '',
+            // Logradouro e bairro: preencher apenas se ainda não informados
+            logradouro: prev.logradouro || data.logradouro || '',
+            bairro: prev.bairro || data.bairro || '',
+          };
+          next.endereco = composeEndereco(next);
+          return next;
+        });
+      } catch (_) {
+        // silencioso
+      }
+    };
+    fetchCEP();
+    return () => { cancelled = true; };
+  }, [formData.cep, setFormData, manualEndereco]);
+
+  // Carregar cidades quando UF mudar
+  React.useEffect(() => {
+    const uf = (formData.uf || '').trim();
+    if (!uf) {
+      setCidadesUF([]);
+      return;
+    }
+    let cancelled = false;
+    const loadCidades = async () => {
+      try {
+        setLoadingCidades(true);
+        const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`);
+        const arr = await res.json();
+        if (cancelled || !Array.isArray(arr)) return;
+        const nomes = arr.map(c => c.nome).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        setCidadesUF(nomes);
+      } catch (_) {
+        setCidadesUF([]);
+      } finally {
+        if (!cancelled) setLoadingCidades(false);
+      }
+    };
+    loadCidades();
+    return () => { cancelled = true; };
+  }, [formData.uf]);
 
   return (
     <div className="form-container">
@@ -1151,14 +1233,105 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
         </div>
         
+        {/* Endereço - fluxo em cascata: CEP → UF → Cidade → Rua/Número/Bairro */}
         <div className="form-group full-width">
           <label>Endereço *</label>
+          <div className="form-grid">
+            <div className="form-group">
+              <label>CEP</label>
+              <input
+                type="text"
+                value={formData.cep || ''}
+                onChange={(e) => handleChange('cep', e.target.value)}
+                placeholder="00000-000"
+              />
+              {onlyDigits(formData.cep || '').length === 8 && !manualEndereco && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setManualEndereco(true)}
+                  style={{ marginTop: '6px' }}
+                >
+                  Editar manualmente UF/Cidade
+                </button>
+              )}
+              {onlyDigits(formData.cep || '').length === 8 && manualEndereco && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setManualEndereco(false)}
+                  style={{ marginTop: '6px' }}
+                >
+                  Voltar ao modo CEP
+                </button>
+              )}
+            </div>
+            <div className="form-group">
+              <label>UF</label>
+              <select
+                value={formData.uf || ''}
+                onChange={(e) => handleChange('uf', e.target.value)}
+                disabled={onlyDigits(formData.cep || '').length === 8 && !manualEndereco}
+              >
+                <option value="">Selecione UF</option>
+                {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(uf => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
+              </select>
+            </div>
+            <div className="form-group">
+              <label>Cidade</label>
+              <select
+                value={formData.cidade || ''}
+                onChange={(e) => handleChange('cidade', e.target.value)}
+                disabled={!formData.uf || loadingCidades || (onlyDigits(formData.cep || '').length === 8 && !manualEndereco)}
+              >
+                <option value="">{loadingCidades ? 'Carregando...' : (formData.uf ? 'Selecione a cidade' : 'Selecione UF primeiro')}</option>
+                {cidadesUF.map((nome) => (
+                  <option key={nome} value={nome}>{nome}</option>
+                ))}
+              </select>
+            </div>
+            {formData.uf && formData.cidade && (
+              <>
+                <div className="form-group">
+                  <label>Rua/Avenida</label>
+                  <input
+                    type="text"
+                    value={formData.logradouro || ''}
+                    onChange={(e) => handleChange('logradouro', e.target.value)}
+                    placeholder="Logradouro"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Número</label>
+                  <input
+                    type="text"
+                    value={formData.numero || ''}
+                    onChange={(e) => handleChange('numero', e.target.value)}
+                    placeholder="Número"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Bairro</label>
+                  <input
+                    type="text"
+                    value={formData.bairro || ''}
+                    onChange={(e) => handleChange('bairro', e.target.value)}
+                    placeholder="Bairro"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {/* Campo composto (somente leitura) */}
           <input
             type="text"
             value={formData.endereco || ''}
-            onChange={(e) => handleChange('endereco', e.target.value)}
-            placeholder="Rua, número, bairro, cidade"
+            readOnly
+            placeholder="Endereço completo (gerado automaticamente)"
             className={errors.endereco ? 'error' : ''}
+            style={{ marginTop: '8px' }}
           />
           {errors.endereco && <span className="error-message">{errors.endereco}</span>}
         </div>
@@ -1297,15 +1470,25 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   const handlePDFGenerated = async (fileName) => {
     try {
-      // Salvar relatório automaticamente no banco de dados (apenas uma vez)
-      if (!pedidoSalvoId) {
-        const pedido = await salvarRelatorio();
-        setPedidoSalvoId(pedido?.id || null);
+      // Critérios mínimos para salvar automaticamente sem interromper a experiência
+      const camposClienteOK = Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
+      const camposCaminhaoOK = Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo && caminhaoData?.voltagem);
+      const usuarioOK = Boolean(user?.id);
+
+      if (camposClienteOK && camposCaminhaoOK && usuarioOK) {
+        // Salvar relatório automaticamente no banco de dados (apenas uma vez)
+        if (!pedidoSalvoId) {
+          const pedido = await salvarRelatorio();
+          setPedidoSalvoId(pedido?.id || null);
+        }
+        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
+      } else {
+        alert(`PDF gerado com sucesso: ${fileName}\nObservação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios (Cliente e/ou Caminhão). Ao clicar em Finalizar, ele será salvo.`);
       }
-      alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
     } catch (error) {
       console.error('Erro ao salvar relatório:', error);
-      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatório automaticamente.`);
+      const msg = (error && error.message) ? `\nMotivo: ${error.message}` : '';
+      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatório automaticamente.${msg}`);
     }
   };
 
@@ -1486,6 +1669,18 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <span className="label">Endereço:</span>
             <span className="value">{clienteData.endereco || 'Não informado'}</span>
           </div>
+          {clienteData.bairro && (
+            <div className="data-row">
+              <span className="label">Bairro:</span>
+              <span className="value">{clienteData.bairro}</span>
+            </div>
+          )}
+          {(clienteData.cidade || clienteData.uf || clienteData.cep) && (
+            <div className="data-row">
+              <span className="label">Cidade/UF/CEP:</span>
+              <span className="value">{`${clienteData.cidade || '—'}/${clienteData.uf || '—'}${clienteData.cep ? ' - ' + clienteData.cep : ''}`}</span>
+            </div>
+          )}
           {clienteData.observacoes && (
             <div className="data-row">
               <span className="label">Observações:</span>

@@ -3,7 +3,12 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { PDF_CONFIG } from '../config/constants';
-import ClausulasContratuais from './ClausulasContratuais';
+import * as pdfjsLib from 'pdfjs-dist';
+import { buildGraficoKey, resolveGraficoUrl } from '../utils/modelNormalization';
+import { db } from '../config/supabase';
+
+// Usar worker do PDF.js via CDN para evitar configuração de bundler
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
   // Sequência de número de proposta local (persistido no navegador)
@@ -174,15 +179,19 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               <strong>Inscrição Estadual:</strong> ${pedidoData.clienteData.inscricao_estadual || pedidoData.clienteData.inscricaoEstadual || 'Não informado'}
             </div>
             <div style="margin-bottom: 8px; font-size: 18px;">
-              <strong>Endereço:</strong> ${pedidoData.clienteData.endereco || 'Não informado'}
+              <strong>Endereço:</strong>
+              ${(() => {
+                try {
+                  const c = pedidoData.clienteData || {};
+                  const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
+                  const bairro = c.bairro ? ` - ${c.bairro}` : '';
+                  const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
+                  const cep = c.cep ? ` - CEP: ${c.cep}` : '';
+                  const linha = `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim();
+                  return linha || (c.endereco || 'Não informado');
+                } catch(_) { return pedidoData.clienteData.endereco || 'Não informado'; }
+              })()}
             </div>
-            ${pedidoData.clienteData.cidade || pedidoData.clienteData.uf || pedidoData.clienteData.cep ? `
-            <div style="display: flex; gap: 20px; margin-bottom: 8px; font-size: 18px;">
-              <div><strong>Cidade:</strong> ${pedidoData.clienteData.cidade || 'Não informado'}</div>
-              <div><strong>UF:</strong> ${pedidoData.clienteData.uf || 'Não informado'}</div>
-              <div><strong>CEP:</strong> ${pedidoData.clienteData.cep || 'Não informado'}</div>
-            </div>
-            ` : ''}
             ${pedidoData.clienteData.observacoes ? `
             <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 18px;">
               <strong>Observações:</strong> ${pedidoData.clienteData.observacoes}
@@ -576,80 +585,79 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         policyPageRendered = true;
       }
 
-      // Adicionar gráficos de carga se houver
-      const guindastesComGrafico = pedidoData.carrinho.filter(item => 
-        item.tipo === 'guindaste' && item.grafico_carga_url
-      );
-
-      if (guindastesComGrafico.length > 0) {
-        console.log('Preparando página(s) de gráficos de carga...');
-        let graficosPageIniciada = false;
-        let yPosition = 0;
-        const iniciarPaginaGraficos = () => {
-          if (graficosPageIniciada) return;
-        pdf.addPage();
-        const headerImgData = headerCanvas.toDataURL('image/png');
-        pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-          pdf.setFontSize(20);
-        pdf.setTextColor(73, 80, 87);
-        pdf.text('GRÁFICOS DE CARGA', 105, margin + headerHeight + 20, { align: 'center' });
-          pdf.setFontSize(13);
-        pdf.setTextColor(108, 117, 125);
-        pdf.text('Capacidade de elevação em diferentes posições da lança', 105, margin + headerHeight + 30, { align: 'center' });
-          yPosition = margin + headerHeight + 50;
-          graficosPageIniciada = true;
-        };
-        
-        for (let i = 0; i < guindastesComGrafico.length; i++) {
-          const guindaste = guindastesComGrafico[i];
-          console.log(`Processando gráfico para: ${guindaste.nome}`);
-          
-          try {
-            const base64Image = await loadImageAsBase64(guindaste.grafico_carga_url);
-            if (base64Image) {
-              iniciarPaginaGraficos();
-              pdf.setFontSize(16);
-              pdf.setTextColor(73, 80, 87);
-              pdf.text(`${guindaste.nome} - Gráfico de Carga`, 20, yPosition);
-              const imgWidth = 150;
-              const imgHeight = 80;
-              pdf.addImage(base64Image, 'JPEG', 20, yPosition + 10, imgWidth, imgHeight);
-              yPosition += imgHeight + 30;
-            } else {
-              // Sem imagem válida, registrar mensagem apenas se já existir página
-              iniciarPaginaGraficos();
-              pdf.setFontSize(11);
-              pdf.setTextColor(108, 117, 125);
-              pdf.text('Gráfico de carga disponível mas não foi possível carregar a imagem', 20, yPosition + 15);
-              yPosition += 40;
+      // Adicionar gráficos de carga como PDF técnico por modelo (substitui imagens)
+      try {
+        // Carregar lista de PDFs de gráficos cadastrados
+        const graficosCadastrados = await db.getGraficosCarga();
+        // Helpers de normalização para casar variações de nome (CR/EH etc.)
+        // Indexar PDFs cadastrados por chaves normalizadas (nome e modelo)
+        const indexPdfPorChave = new Map();
+        for (const g of graficosCadastrados || []) {
+          const candidatos = new Set([
+            buildGraficoKey(g.nome || ''),
+            buildGraficoKey(g.modelo || ''),
+          ].filter(Boolean));
+          for (const key of candidatos) {
+            if (g.arquivo_url && !indexPdfPorChave.has(key)) {
+              indexPdfPorChave.set(key, g.arquivo_url);
             }
-          } catch (error) {
-            console.error('Erro ao carregar gráfico de carga:', error);
-            iniciarPaginaGraficos();
-            pdf.setFontSize(11);
-            pdf.setTextColor(108, 117, 125);
-            pdf.text('Erro ao carregar gráfico de carga', 20, yPosition + 15);
-            yPosition += 40;
-          }
-          
-          if (
-            graficosPageIniciada &&
-            yPosition > pageHeight - footerHeight - margin - 50 &&
-            i < guindastesComGrafico.length - 1
-          ) {
-            // Só cria nova página se ainda existir gráfico a ser desenhado
-            pdf.addPage();
-            const headerImgData = headerCanvas.toDataURL('image/png');
-            pdf.addImage(headerImgData, 'PNG', margin, margin, contentWidth, headerHeight);
-            yPosition = margin + headerHeight + 20;
           }
         }
-        
-        if (graficosPageIniciada) {
-        const footerImgData = footerCanvas.toDataURL('image/png');
-        pdf.addImage(footerImgData, 'PNG', margin, pageHeight - footerHeight - margin, contentWidth, footerHeight);
-          console.log('Página(s) de gráficos de carga concluída(s)');
+
+        // Extrair modelos únicos dos itens 'guindaste' do carrinho e normalizar
+        const itensGuindaste = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
+        const modelosUnicos = Array.from(new Set(
+          itensGuindaste.map(i => buildGraficoKey(i.modelo || i.nome || '')).filter(Boolean)
+        ));
+
+        // Resolver URL de PDF para cada modelo com fallbacks inteligentes
+        const modeloParaPdf = new Map();
+        for (const key of modelosUnicos) {
+          const url = resolveGraficoUrl(indexPdfPorChave, key);
+          if (url) modeloParaPdf.set(key, url);
         }
+
+        if (modeloParaPdf.size > 0) {
+          for (const [modelo, pdfUrl] of modeloParaPdf.entries()) {
+            try {
+              const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
+              const pdfExternal = await loadingTask.promise;
+              const numPages = pdfExternal.numPages;
+
+              for (let p = 1; p <= numPages; p++) {
+                const page = await pdfExternal.getPage(p);
+                const viewport = page.getViewport({ scale: 2 });
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                const imgData = canvas.toDataURL('image/png');
+
+                // Nova página no PDF destino: sem cabeçalho/rodapé para ampliar o gráfico
+                pdf.addPage();
+                // Ajuste para preencher a página mantendo proporção
+                const maxW = pageWidth - 2 * margin;
+                const scaledH = (canvas.height * maxW) / canvas.width;
+                const maxH = pageHeight - 2 * margin;
+                let drawW = maxW;
+                let drawH = scaledH;
+                if (scaledH > maxH) {
+                  drawH = maxH;
+                  drawW = (canvas.width * maxH) / canvas.height;
+                }
+                const offsetX = (pageWidth - drawW) / 2;
+                const offsetY = (pageHeight - drawH) / 2;
+                pdf.addImage(imgData, 'PNG', offsetX, offsetY, drawW, drawH);
+              }
+            } catch (e) {
+              console.error('Erro ao incorporar PDF de gráfico:', modelo, e);
+              // Em caso de erro, seguir para o próximo
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Erro ao preparar PDFs de gráficos:', e);
       }
 
       // Adicionar página com cláusulas contratuais (tudo na MESMA página com assinaturas)

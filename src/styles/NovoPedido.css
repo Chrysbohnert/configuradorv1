@@ -504,6 +504,19 @@
   font-size: 14px;
 }
 
+/* Variante sem foto na etapa 1 */
+.capacidade-card.no-photo .capacidade-icon {
+  background: transparent;
+}
+.capacidade-card.no-photo .capacidade-fallback {
+  background: transparent;
+  font-size: 26px;
+  border: 2px dashed #e5e7eb;
+}
+.capacidade-card.no-photo .capacidade-info h4 {
+  font-size: 20px;
+}
+
 /* Grid de Modelos */
 .modelos-grid {
   display: grid;
