@@ -24,6 +24,7 @@ const PaymentPolicy = ({
   const [pagamentoPorConta, setPagamentoPorConta] = useState(''); // 'cliente' | 'fabrica'
   const [valorSinal, setValorSinal] = useState('');
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50'
+  const [formaEntrada, setFormaEntrada] = useState(''); // Forma de pagamento da entrada
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
 
@@ -49,6 +50,11 @@ const PaymentPolicy = ({
 
   // Efeito para recalcular quando mudar o tipo, prazo ou preço base
   useEffect(() => {
+    // Se for À Vista, zerar o valor do sinal
+    if (prazoSelecionado === 'À Vista' && valorSinal) {
+      setValorSinal('');
+    }
+    
     if (!tipoCliente || !prazoSelecionado || !precoBase) {
       setCalculoAtual(null);
       setErroCalculo('');
@@ -96,6 +102,7 @@ const PaymentPolicy = ({
           entradaTotal: entradaTotal,
           faltaEntrada: Math.max(0, faltaEntrada),
           saldoAPagar: saldo,
+          formaEntrada: formaEntrada, // Forma de pagamento da entrada
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
@@ -118,7 +125,7 @@ const PaymentPolicy = ({
         onPaymentComputed(null);
       }
     }
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, onPaymentComputed, onPlanSelected]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, onPaymentComputed, onPlanSelected]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -176,20 +183,23 @@ const PaymentPolicy = ({
         {/* Campos de sinal e entrada apenas para "cliente" */}
         {tipoCliente === 'cliente' && (
           <>
-            <div className="form-group">
-              <label htmlFor="valorSinal">
-                Valor do Sinal
-              </label>
-              <input
-                id="valorSinal"
-                type="number"
-                value={valorSinal}
-                onChange={(e) => setValorSinal(e.target.value)}
-                placeholder="Digite o valor do sinal"
-                min="0"
-                step="0.01"
-              />
-            </div>
+            {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
+            {prazoSelecionado !== 'À Vista' && (
+              <div className="form-group">
+                <label htmlFor="valorSinal">
+                  Valor do Sinal
+                </label>
+                <input
+                  id="valorSinal"
+                  type="number"
+                  value={valorSinal}
+                  onChange={(e) => setValorSinal(e.target.value)}
+                  placeholder="Digite o valor do sinal"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+            )}
 
             <div className="form-group">
               <label htmlFor="percentualEntrada">
@@ -206,7 +216,7 @@ const PaymentPolicy = ({
               </select>
               <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
                 {percentualEntrada === '30' && 'Planos específicos para 30% de entrada (sem desconto/acréscimo)'}
-                {percentualEntrada === '50' && 'Planos específicos para 50% de entrada (com descontos de 1% a 3%)'}
+                {percentualEntrada === '50' && 'Planos específicos para 50% de entrada (com descontos de 1% a 5%)'}
               </small>
             </div>
           </>
@@ -310,6 +320,22 @@ const PaymentPolicy = ({
                       <div className="calc-row entry" style={{ fontSize: '0.95em', paddingLeft: '10px' }}>
                         <span className="calc-label">↳ Falta pagar de entrada:</span>
                         <span className="calc-value" style={{ fontWeight: 'bold' }}>{formatCurrency(Math.max(0, faltaEntrada))}</span>
+                      </div>
+                      
+                      {/* Campo para forma de pagamento da entrada */}
+                      <div className="form-group" style={{ marginTop: '12px', marginLeft: '10px' }}>
+                        <label htmlFor="formaEntrada" style={{ fontSize: '0.9em', marginBottom: '5px' }}>
+                          Forma de pagamento da entrada:
+                        </label>
+                        <input
+                          id="formaEntrada"
+                          type="text"
+                          value={formaEntrada}
+                          onChange={(e) => setFormaEntrada(e.target.value)}
+                          placeholder="Ex: Boleto, Pix, Transferência..."
+                          maxLength="100"
+                          style={{ fontSize: '0.9em' }}
+                        />
                       </div>
                     </>
                   )}

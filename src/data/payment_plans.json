@@ -174,6 +174,17 @@
   },
   {
     "audience": "cliente",
+    "order": 49,
+    "description": "À Vista",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
     "order": 50,
     "description": "7 DD",
     "installments": 1,

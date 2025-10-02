@@ -404,6 +404,11 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               <div style="margin-left: 15px; font-size: 16px;">
                 ↳ Falta pagar de entrada: <strong>${formatCurrency(pedidoData.pagamentoData.faltaEntrada || 0)}</strong>
               </div>
+              ${pedidoData.pagamentoData?.formaEntrada ? `
+              <div style="margin-left: 25px; margin-top: 5px; font-size: 14px; font-style: italic; color: #555;">
+                Forma de pagamento: ${pedidoData.pagamentoData.formaEntrada}
+              </div>
+              ` : ''}
               ` : ''}
             </div>
             <div style="margin: 15px 0; padding: 15px; background: #e3f2fd; border-left: 4px solid #007bff; font-weight: bold; font-size: 20px;">

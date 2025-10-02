@@ -1624,6 +1624,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
                       {formatCurrency(pagamentoData.faltaEntrada || 0)}
                     </span>
                   </div>
+                  
+                  {/* Exibir forma de pagamento da entrada se preenchida */}
+                  {pagamentoData.formaEntrada && (
+                    <div className="data-row" style={{ fontSize: '0.9em', marginLeft: '10px', marginTop: '5px', fontStyle: 'italic', color: '#555' }}>
+                      <span className="label">Forma de pagamento:</span>
+                      <span className="value">{pagamentoData.formaEntrada}</span>
+                    </div>
+                  )}
                 </>
               )}
               <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #007bff' }}>

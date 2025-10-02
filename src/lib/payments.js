@@ -113,10 +113,18 @@ export function calcularPagamento({ precoBase, plan, dataEmissaoNF = new Date() 
   // Parsear os dias de vencimento da descrição
   const diasVencimento = parsePrazoDD(plan.description);
   
-  // Se não houver dias específicos, gerar de 30 em 30
-  const dias = diasVencimento.length === numParcelas 
-    ? diasVencimento 
-    : Array.from({ length: numParcelas }, (_, i) => 30 * (i + 1));
+  // Determinar os dias de vencimento
+  let dias;
+  if (plan.description.toLowerCase().includes('vista')) {
+    // À Vista: vencimento no mesmo dia (0 dias)
+    dias = [0];
+  } else if (diasVencimento.length === numParcelas) {
+    // Usar os dias parseados da descrição
+    dias = diasVencimento;
+  } else {
+    // Se não houver dias específicos, gerar de 30 em 30
+    dias = Array.from({ length: numParcelas }, (_, i) => 30 * (i + 1));
+  }
 
   // Calcular valor base de cada parcela
   const valorParcela = saldo / numParcelas;
