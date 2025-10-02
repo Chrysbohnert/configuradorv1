@@ -392,6 +392,24 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
               <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
             </div>
+            ${pedidoData.pagamentoData?.tipoCliente === 'cliente' && pedidoData.pagamentoData?.percentualEntrada > 0 ? `
+            <div style="margin: 15px 0; padding: 12px; background: #f8f9fa; border-left: 3px solid #6c757d;">
+              <div style="margin-bottom: 8px;">
+                <strong>Entrada Total (${pedidoData.pagamentoData.percentualEntrada}%):</strong> ${formatCurrency(pedidoData.pagamentoData.entradaTotal || 0)}
+              </div>
+              ${pedidoData.pagamentoData?.valorSinal > 0 ? `
+              <div style="margin-left: 15px; margin-bottom: 5px; font-size: 16px; color: #28a745;">
+                ↳ Sinal (já pago): <strong>- ${formatCurrency(pedidoData.pagamentoData.valorSinal)}</strong>
+              </div>
+              <div style="margin-left: 15px; font-size: 16px;">
+                ↳ Falta pagar de entrada: <strong>${formatCurrency(pedidoData.pagamentoData.faltaEntrada || 0)}</strong>
+              </div>
+              ` : ''}
+            </div>
+            <div style="margin: 15px 0; padding: 15px; background: #e3f2fd; border-left: 4px solid #007bff; font-weight: bold; font-size: 20px;">
+              <strong style="color: #007bff;">Saldo a Pagar (após entrada):</strong> <span style="color: #007bff;">${formatCurrency(pedidoData.pagamentoData.saldoAPagar || pedidoData.pagamentoData.valorFinal || 0)}</span>
+            </div>
+            ` : ''}
             <div style="margin-bottom: 10px;">
               <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>

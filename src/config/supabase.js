@@ -388,6 +388,23 @@ class DatabaseService {
     }
   }
 
+  // Buscar preço específico de um guindaste por região
+  async getPrecoPorRegiao(guindasteId, regiao) {
+    const { data, error } = await supabase
+      .from('precos_guindaste_regiao')
+      .select('preco')
+      .eq('guindaste_id', guindasteId)
+      .eq('regiao', regiao)
+      .single();
+    
+    if (error) {
+      // Se não encontrar preço específico, retornar 0
+      if (error.code === 'PGRST116') return 0;
+      throw error;
+    }
+    return data?.preco || 0;
+  }
+
   // ===== GRÁFICOS DE CARGA =====
   async getGraficosCarga() {
     const { data, error } = await supabase

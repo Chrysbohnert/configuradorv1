@@ -598,13 +598,13 @@
 
 .modelo-info p {
   margin: 0 0 4px 0;
-  color: #6b7280;
+  color: #000000;
   font-size: 14px;
 }
 
 .modelo-codigo {
   font-size: 12px;
-  color: #9ca3af;
+  color: #000000;
   font-family: 'Courier New', monospace;
 }
 

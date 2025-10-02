@@ -1,0 +1,305 @@
+/* Payment Policy - Design Moderno e Limpo */
+
+.payment-policy {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.payment-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.payment-section h3 {
+  margin: 0 0 20px 0;
+  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Summary Box */
+.summary-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: #495057;
+}
+
+.summary-value {
+  font-size: 18px;
+  font-weight: 600;
+  color: #000;
+}
+
+/* Form Groups */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.form-group select,
+.form-group input[type="text"] {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  color: #1a1a1a;
+  transition: all 0.2s ease;
+}
+
+.form-group select:focus,
+.form-group input[type="text"]:focus {
+  outline: none;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.form-group select:disabled {
+  background: #f8f9fa;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-group select.error,
+.form-group input.error {
+  border-color: #dc3545;
+}
+
+.error-message {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #dc3545;
+}
+
+/* Radio Group */
+.radio-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.radio-option {
+  flex: 1;
+  min-width: 150px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.radio-option:hover {
+  border-color: #adb5bd;
+  background: #f8f9fa;
+}
+
+.radio-option.selected {
+  border-color: #000;
+  background: #f8f9fa;
+}
+
+.radio-option input[type="radio"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.radio-option span {
+  font-size: 14px;
+  color: #1a1a1a;
+  font-weight: 500;
+}
+
+/* Error Box */
+.error-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  color: #856404;
+}
+
+.error-box svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.error-box span {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Calculation Box */
+.calculation-box {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.calc-row.separator {
+  border-top: 1px solid #dee2e6;
+  margin-top: 8px;
+  padding-top: 16px;
+}
+
+.calc-row.total {
+  border-top: 2px solid #000;
+  margin-top: 12px;
+  padding-top: 16px;
+}
+
+.calc-label {
+  font-size: 14px;
+  color: #495057;
+}
+
+.calc-value {
+  font-size: 16px;
+  color: #1a1a1a;
+}
+
+.calc-value.bold {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.calc-row.discount .calc-value {
+  color: #28a745;
+}
+
+.calc-row.surcharge .calc-value {
+  color: #dc3545;
+}
+
+.calc-row.entry .calc-value {
+  color: #007bff;
+}
+
+/* Parcelas */
+.calc-parcelas {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #dee2e6;
+}
+
+.calc-parcelas > .calc-label {
+  display: block;
+  margin-bottom: 12px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.parcelas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.parcela-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.parcela-numero {
+  font-size: 13px;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.parcela-valor {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  text-align: right;
+}
+
+.parcela-venc {
+  font-size: 12px;
+  color: #6c757d;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .payment-policy {
+    gap: 16px;
+  }
+
+  .payment-section {
+    padding: 16px;
+  }
+
+  .payment-section h3 {
+    font-size: 16px;
+    margin-bottom: 16px;
+  }
+
+  .radio-group {
+    flex-direction: column;
+  }
+
+  .radio-option {
+    min-width: 100%;
+  }
+
+  .parcela-item {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .parcela-valor,
+  .parcela-venc {
+    text-align: left;
+  }
+}
+

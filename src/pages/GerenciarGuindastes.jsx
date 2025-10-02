@@ -204,17 +204,35 @@ const GerenciarGuindastes = () => {
         nao_incluido: formData.nao_incluido || '',
         imagens_adicionais: formData.imagens_adicionais || []
       };
+      
+      console.log('📝 Dados a serem salvos:', {
+        ...guindasteData,
+        descricao_length: guindasteData.descricao?.length,
+        nao_incluido_length: guindasteData.nao_incluido?.length
+      });
+      
       if (editingGuindaste) {
-        console.log('Atualizando guindaste id=', editingGuindaste?.id, 'payload=', guindasteData);
-        await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        console.log('✏️ Atualizando guindaste ID:', editingGuindaste?.id);
+        const resultado = await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        console.log('✅ Guindaste atualizado com sucesso:', resultado);
       } else {
-        await db.createGuindaste(guindasteData);
+        console.log('➕ Criando novo guindaste');
+        const resultado = await db.createGuindaste(guindasteData);
+        console.log('✅ Guindaste criado com sucesso:', resultado);
       }
+      
       await loadData(page);
       handleCloseModal();
+      alert('Guindaste salvo com sucesso!');
     } catch (error) {
-      console.error('Erro ao salvar guindaste:', error);
-      alert(`Erro ao salvar guindaste: ${error.message || 'Erro desconhecido'}`);
+      console.error('❌ ERRO DETALHADO ao salvar guindaste:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        full_error: error
+      });
+      alert(`Erro ao salvar guindaste:\n\n${error.message}\n\nCódigo: ${error.code || 'N/A'}\n\nDetalhes: ${error.details || 'Verifique o console para mais informações'}`);
     }
   };
 

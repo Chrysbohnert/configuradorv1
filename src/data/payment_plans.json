@@ -1,0 +1,440 @@
+[
+  {
+    "audience": "revenda",
+    "order": 0,
+    "description": "À Vista",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+    {
+    "audience": "revenda",
+    "order": 1,
+    "description": "7 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+
+  {
+    "audience": "revenda",
+    "order": 1,
+    "description": "15 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+
+  {
+    "audience": "revenda",
+    "order": 2,
+    "description": "30 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+  {
+    "audience": "revenda",
+    "order": 2,
+    "description": "45 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 3,
+    "description": "15/30 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+  {
+    "audience": "revenda",
+    "order": 3,
+    "description": "30/45 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 3,
+    "description": "30/60 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 3,
+    "description": "45/60 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 4,
+    "description": "15/30/45 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 4,
+    "description": "30/45/60 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 4,
+    "description": "30/60/90 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.00
+  },
+  {
+    "audience": "revenda",
+    "order": 4,
+    "description": "45/60/75 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.00
+  },
+  {
+    "audience": "revenda",
+    "order": 5,
+    "description": "15/30/45/60 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.01
+  },
+  {
+    "audience": "revenda",
+    "order": 5,
+    "description": "4x - 30/60/90/120 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "revenda",
+    "order": 5,
+    "description": "30/45/60/75/90/105/120 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 1,
+    "description": "7 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+  {
+    "audience": "cliente",
+    "order": 1,
+    "description": "15 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.03
+  },
+  {
+    "audience": "cliente",
+    "order": 2,
+    "description": "30 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "surcharge_percent": 0.03
+  },
+  {
+    "audience": "cliente",
+    "order": 50,
+    "description": "7 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.03,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 51,
+    "description": "15 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.03,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 52,
+    "description": "30 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.03,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 53,
+    "description": "45 DD",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 54,
+    "description": "15/30 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.03,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 55,
+    "description": "30/45 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 56,
+    "description": "30/60 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 57,
+    "description": "45/60 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 58,
+    "description": "15/30/45 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 59,
+    "description": "30/45/60 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 60,
+    "description": "15/30/45/60 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.01,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 11,
+    "description": "15/30/45 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 13,
+    "description": "30/45/60 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 10,
+    "description": "30/60/90 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 15,
+    "description": "45/60/75 DD",
+    "installments": 3,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 14,
+    "description": "15/30/45/60 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 12,
+    "description": "30/60/90/120 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 17,
+    "description": "45/60/75/90 DD",
+    "installments": 4,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 18,
+    "description": "30/45/60/75/90 DD",
+    "installments": 5,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 19,
+    "description": "15/30/45/60/75/90 DD",
+    "installments": 6,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 20,
+    "description": "30/60/90/120/150/180 DD",
+    "installments": 6,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.04
+  },
+  {
+    "audience": "cliente",
+    "order": 16,
+    "description": "30/45/60/75/90/105/120 DD",
+    "installments": 7,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 21,
+    "description": "15/30/45/60/75/90/105/120 DD",
+    "installments": 8,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
+    "order": 22,
+    "description": "15/30/45/60/75/90/105/120/135/150 DD",
+    "installments": 10,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.04
+  }
+]
+

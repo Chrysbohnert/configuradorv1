@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import PDFGenerator from '../components/PDFGenerator';
+import PaymentPolicy from '../features/payment/PaymentPolicy';
 
 import { db } from '../config/supabase';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
@@ -51,32 +52,49 @@ const NovoPedido = () => {
 
   // Verificar se há um guindaste selecionado vindo da tela de detalhes
   useEffect(() => {
-    if (location.state?.guindasteSelecionado) {
-      const guindaste = location.state.guindasteSelecionado;
-      setGuindastesSelecionados([guindaste]);
-      
-      // Adicionar ao carrinho se não estiver
-      const produto = {
-        id: guindaste.id,
-        nome: guindaste.subgrupo,
-        modelo: guindaste.modelo,
-        codigo_produto: guindaste.codigo_referencia,
-        grafico_carga_url: guindaste.grafico_carga_url,
-        preco: guindaste.preco || 0,
-        tipo: 'guindaste'
-      };
-      
-      adicionarAoCarrinho(produto, 'guindaste');
-      
-      // Definir step correto
-      if (location.state.step) {
-        setCurrentStep(location.state.step);
+    const processarGuindasteSelecionado = async () => {
+      if (location.state?.guindasteSelecionado) {
+        const guindaste = location.state.guindasteSelecionado;
+        setGuindastesSelecionados([guindaste]);
+        
+        // Buscar preço do guindaste baseado na região do vendedor
+        let precoGuindaste = guindaste.preco || 0;
+        if (!precoGuindaste && user?.regiao) {
+          try {
+            const regiaoVendedor = user.regiao || 'sudeste';
+            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
+          } catch (error) {
+            console.error('Erro ao buscar preço do guindaste:', error);
+          }
+        }
+        
+        // Adicionar ao carrinho se não estiver
+        const produto = {
+          id: guindaste.id,
+          nome: guindaste.subgrupo,
+          modelo: guindaste.modelo,
+          codigo_produto: guindaste.codigo_referencia,
+          grafico_carga_url: guindaste.grafico_carga_url,
+          preco: precoGuindaste,
+          tipo: 'guindaste'
+        };
+        
+        adicionarAoCarrinho(produto, 'guindaste');
+        
+        // Definir step correto
+        if (location.state.step) {
+          setCurrentStep(location.state.step);
+        }
+        
+        // Limpar o estado da navegação
+        navigate(location.pathname, { replace: true });
       }
-      
-      // Limpar o estado da navegação
-      navigate(location.pathname, { replace: true });
+    };
+    
+    if (user) {
+      processarGuindasteSelecionado();
     }
-  }, [location.state, navigate]);
+  }, [location.state, navigate, user]);
 
   const loadData = async () => {
     try {
@@ -175,7 +193,7 @@ const NovoPedido = () => {
   const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
 
   // Função para selecionar guindaste
-  const handleSelecionarGuindaste = (guindaste) => {
+  const handleSelecionarGuindaste = async (guindaste) => {
     // Verificar se o guindaste já está selecionado
     const jaSelecionado = guindastesSelecionados.find(g => g.id === guindaste.id);
     
@@ -184,6 +202,20 @@ const NovoPedido = () => {
       setGuindastesSelecionados(prev => prev.filter(g => g.id !== guindaste.id));
       removerItemPorIndex(carrinho.findIndex(item => item.id === guindaste.id));
     } else {
+      // Buscar preço do guindaste baseado na região do vendedor
+      let precoGuindaste = 0;
+      try {
+        const regiaoVendedor = user?.regiao || 'sudeste'; // Default: sudeste
+        precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
+        
+        if (!precoGuindaste || precoGuindaste === 0) {
+          alert('Atenção: Este guindaste não possui preço definido para a sua região. Por favor, contacte o administrador.');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar preço do guindaste:', error);
+        alert('Erro ao buscar preço do guindaste. Verifique com o administrador.');
+      }
+      
       // Adicionar se não estiver selecionado
       setGuindastesSelecionados(prev => [...prev, guindaste]);
       
@@ -193,7 +225,7 @@ const NovoPedido = () => {
         modelo: guindaste.modelo,
         codigo_produto: guindaste.codigo_referencia,
         grafico_carga_url: guindaste.grafico_carga_url,
-        preco: guindaste.preco || 0,
+        preco: precoGuindaste,
         tipo: 'guindaste'
       };
       
@@ -203,7 +235,7 @@ const NovoPedido = () => {
       setTimeout(() => {
         navigate('/detalhes-guindaste', { 
           state: { 
-            guindaste: guindaste,
+            guindaste: { ...guindaste, preco: precoGuindaste },
             returnTo: '/novo-pedido',
             step: 2
           } 
@@ -456,10 +488,9 @@ const NovoPedido = () => {
               <h2>Política de Pagamento</h2>
               <p>Selecione a forma de pagamento e visualize os descontos</p>
             </div>
-            <PoliticaPagamento 
-              carrinho={carrinho}
-              clienteData={clienteData}
-              onPagamentoChange={setPagamentoData}
+            <PaymentPolicy 
+              precoBase={getTotalCarrinho()}
+              onPaymentComputed={setPagamentoData}
               errors={validationErrors}
             />
           </div>
@@ -539,7 +570,10 @@ const NovoPedido = () => {
         if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
         if (!clienteData.email) errors.email = 'Email é obrigatório';
         if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
-        if (!clienteData.inscricao_estadual) errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
+        if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
+          errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        }
         if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
         break;
       case 4:
@@ -572,7 +606,7 @@ const NovoPedido = () => {
                clienteData.telefone && 
                clienteData.email && 
                clienteData.documento && 
-               clienteData.inscricao_estadual && 
+               clienteData.inscricao_estadual && // Pode ser "ISENTO" ou um número
                clienteData.endereco;
       case 4:
         return caminhaoData.tipo && 
@@ -837,222 +871,7 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
   );
 };
 
-// Componente Política de Pagamento
-const PoliticaPagamento = ({ carrinho, onPagamentoChange, errors = {} }) => {
-  const [formData, setFormData] = useState({
-    tipoPagamento: '',
-    prazoPagamento: '',
-    tipoCliente: 'revenda', // revenda ou cnpj_cpf
-    localInstalacao: '',
-    tipoInstalacao: ''
-  });
-
-  // Calcular totais
-  const totalGuindastes = carrinho.filter(item => item.tipo === 'guindaste').length;
-  const guindastesGSI = carrinho.filter(item => item.tipo === 'guindaste' && item.modelo?.includes('GSI')).length;
-  const guindastesGSE = carrinho.filter(item => item.tipo === 'guindaste' && item.modelo?.includes('GSE')).length;
-  const valorTotal = carrinho.reduce((total, item) => total + (parseFloat(item.preco) || 0), 0);
-
-  // Calcular desconto baseado na política
-  const calcularDesconto = () => {
-    let desconto = 0;
-    
-    if (formData.tipoPagamento === 'revenda_gsi') {
-      if (guindastesGSI === 1) desconto = 12;
-      else if (guindastesGSI === 2) desconto = 14;
-      else if (guindastesGSI >= 3) desconto = 15;
-    } else if (formData.tipoPagamento === 'cnpj_cpf_gse') {
-      desconto = 3;
-    }
-    
-    return desconto;
-  };
-
-  // Calcular acréscimo baseado no prazo
-  const calcularAcrescimo = () => {
-    let acrescimo = 0;
-    
-    if (formData.prazoPagamento === '30_dias') {
-      if (formData.tipoPagamento === 'revenda_gsi') acrescimo = 3;
-      else if (formData.tipoPagamento === 'cnpj_cpf_gse') acrescimo = 3;
-    } else if (formData.prazoPagamento === '60_dias') {
-      if (formData.tipoPagamento === 'revenda_gsi') acrescimo = 1;
-      else if (formData.tipoPagamento === 'cnpj_cpf_gse') acrescimo = 1;
-    } else if (formData.prazoPagamento === '120_dias_interno') {
-      acrescimo = 0; // Sem acréscimo até 120 dias
-    } else if (formData.prazoPagamento === '90_dias_cnpj') {
-      acrescimo = 0; // Sem acréscimo até 90 dias
-    }
-    
-    return acrescimo;
-  };
-
-  const desconto = calcularDesconto();
-  const acrescimo = calcularAcrescimo();
-  const valorDesconto = (valorTotal * desconto) / 100;
-  const valorAcrescimo = (valorTotal * acrescimo) / 100;
-  const valorFinal = valorTotal - valorDesconto + valorAcrescimo;
-
-  const handleChange = (field, value) => {
-    const newData = { ...formData, [field]: value };
-    setFormData(newData);
-    
-    // Calcular desconto baseado na nova seleção
-    let novoDesconto = 0;
-    if (newData.tipoPagamento === 'revenda_gsi') {
-      if (guindastesGSI === 1) novoDesconto = 12;
-      else if (guindastesGSI === 2) novoDesconto = 14;
-      else if (guindastesGSI >= 3) novoDesconto = 15;
-    } else if (newData.tipoPagamento === 'cnpj_cpf_gse') {
-      novoDesconto = 3;
-    }
-    
-    // Calcular acréscimo baseado na nova seleção
-    let novoAcrescimo = 0;
-    if (newData.prazoPagamento === '30_dias') {
-      if (newData.tipoPagamento === 'revenda_gsi') novoAcrescimo = 3;
-      else if (newData.tipoPagamento === 'cnpj_cpf_gse') novoAcrescimo = 3;
-    } else if (newData.prazoPagamento === '60_dias') {
-      if (newData.tipoPagamento === 'revenda_gsi') novoAcrescimo = 1;
-      else if (newData.tipoPagamento === 'cnpj_cpf_gse') novoAcrescimo = 1;
-    }
-    
-    const novoValorFinal = valorTotal - ((valorTotal * novoDesconto) / 100) + ((valorTotal * novoAcrescimo) / 100);
-    
-    // Atualizar dados de pagamento
-    const dadosPagamento = {
-      ...newData,
-      desconto: novoDesconto,
-      acrescimo: novoAcrescimo,
-      valorFinal: novoValorFinal,
-      localInstalacao: newData.localInstalacao,
-      tipoInstalacao: newData.tipoInstalacao
-    };
-    
-    console.log('Dados de pagamento sendo enviados:', dadosPagamento);
-    onPagamentoChange(dadosPagamento);
-  };
-
-  return (
-    <div className="politica-pagamento">
-      <div className="resumo-carrinho">
-        <h3>Resumo do Carrinho</h3>
-        <div className="resumo-info">
-          <p><strong>Total de Guindastes:</strong> {totalGuindastes}</p>
-          <p><strong>Valor Total:</strong> R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-        </div>
-      </div>
-
-      <div className="politica-opcoes">
-        <h3>Política de Pagamento</h3>
-        
-        <div className="form-group">
-          <label>Tipo de Cliente e Pagamento</label>
-          <select
-            value={formData.tipoPagamento}
-            onChange={(e) => handleChange('tipoPagamento', e.target.value)}
-            className={errors.tipoPagamento ? 'error' : ''}
-          >
-            <option value="">Selecione a opção</option>
-            <option value="revenda_gsi">Revenda - Guindastes GSI</option>
-            <option value="cnpj_cpf_gse">CNPJ/CPF - Guindastes GSE</option>
-            <option value="parcelamento_interno">Parcelamento Interno - Revenda</option>
-            <option value="parcelamento_cnpj">Parcelamento - CNPJ/CPF</option>
-          </select>
-          {errors.tipoPagamento && <span className="error-message">{errors.tipoPagamento}</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Prazo de Pagamento</label>
-          <select
-            value={formData.prazoPagamento}
-            onChange={(e) => handleChange('prazoPagamento', e.target.value)}
-            className={errors.prazoPagamento ? 'error' : ''}
-          >
-            <option value="">Selecione o prazo</option>
-            {formData.tipoPagamento === 'revenda_gsi' && (
-              <>
-                <option value="a_vista">À Vista</option>
-                <option value="30_dias">Até 30 dias (+3%)</option>
-                <option value="60_dias">Até 60 dias (+1%)</option>
-              </>
-            )}
-            {formData.tipoPagamento === 'cnpj_cpf_gse' && (
-              <>
-                <option value="a_vista">À Vista</option>
-                <option value="30_dias">Até 30 dias (+3%)</option>
-                <option value="60_dias">Até 60 dias (+1%)</option>
-              </>
-            )}
-            {formData.tipoPagamento === 'parcelamento_interno' && (
-              <>
-                <option value="120_dias_interno">Até 120 dias (sem acréscimo)</option>
-                <option value="mais_120_dias">Após 120 dias (+2% ao mês)</option>
-              </>
-            )}
-            {formData.tipoPagamento === 'parcelamento_cnpj' && (
-              <>
-                <option value="90_dias_cnpj">Até 90 dias (sem acréscimo)</option>
-                <option value="mais_90_dias">Após 90 dias (+2% ao mês)</option>
-              </>
-            )}
-          </select>
-          {errors.prazoPagamento && <span className="error-message">{errors.prazoPagamento}</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Local de Instalação *</label>
-          <input
-            type="text"
-            value={formData.localInstalacao}
-            onChange={(e) => handleChange('localInstalacao', e.target.value)}
-            placeholder="Em qual mecanica o guindaste será instalado?"
-            className={errors.localInstalacao ? 'error' : ''}
-          />
-          {errors.localInstalacao && <span className="error-message">{errors.localInstalacao}</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Tipo de Instalação *</label>
-          <select
-            value={formData.tipoInstalacao}
-            onChange={(e) => handleChange('tipoInstalacao', e.target.value)}
-            className={errors.tipoInstalacao ? 'error' : ''}
-          >
-            <option value="">Selecione o tipo de instalação</option>
-            <option value="cliente">Por conta do cliente</option>
-            <option value="fabrica">Por conta da fábrica</option>
-          </select>
-          {errors.tipoInstalacao && <span className="error-message">{errors.tipoInstalacao}</span>}
-        </div>
-      </div>
-
-      <div className="calculo-final">
-        <h3>Cálculo Final</h3>
-        <div className="calculo-item">
-          <span>Valor Total:</span>
-          <span>R$ {valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-        </div>
-        {desconto > 0 && (
-          <div className="calculo-item desconto">
-            <span>Desconto ({desconto}%):</span>
-            <span>- R$ {valorDesconto.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-          </div>
-        )}
-        {acrescimo > 0 && (
-          <div className="calculo-item acrescimo">
-            <span>Acréscimo ({acrescimo}%):</span>
-            <span>+ R$ {valorAcrescimo.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-          </div>
-        )}
-        <div className="calculo-item total">
-          <span><strong>Valor Final:</strong></span>
-          <span><strong>R$ {valorFinal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong></span>
-        </div>
-      </div>
-    </div>
-  );
-};
+// Componente Política de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
 
 // Componente Form do Cliente
 const ClienteForm = ({ formData, setFormData, errors = {} }) => {
@@ -1087,6 +906,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const [cidadesUF, setCidadesUF] = React.useState([]);
   const [loadingCidades, setLoadingCidades] = React.useState(false);
   const [manualEndereco, setManualEndereco] = React.useState(false);
+  const [isentoIE, setIsentoIE] = React.useState(false);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -1222,13 +1042,34 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
         </div>
 
         <div className="form-group">
-          <label>Inscrição Estadual *</label>
+          <label>Inscrição Estadual {!isentoIE && '*'}</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <input
+              type="checkbox"
+              id="isentoIE"
+              checked={isentoIE}
+              onChange={(e) => {
+                setIsentoIE(e.target.checked);
+                if (e.target.checked) {
+                  handleChange('inscricao_estadual', 'ISENTO');
+                } else {
+                  handleChange('inscricao_estadual', '');
+                }
+              }}
+              style={{ width: 'auto', margin: '0' }}
+            />
+            <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
+              Isento de Inscrição Estadual
+            </label>
+          </div>
           <input
             type="text"
             value={formData.inscricao_estadual || ''}
             onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
-            placeholder="00000000000000"
+            placeholder={isentoIE ? "ISENTO" : "00000000000000"}
             className={errors.inscricao_estadual ? 'error' : ''}
+            disabled={isentoIE}
+            style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
           />
           {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
         </div>
@@ -1762,6 +1603,37 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0))}
             </span>
           </div>
+          {/* Mostrar campos adicionais para cliente */}
+          {pagamentoData.tipoCliente === 'cliente' && pagamentoData.percentualEntrada > 0 && (
+            <>
+              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                <span className="label">Entrada Total ({pagamentoData.percentualEntrada}%):</span>
+                <span className="value" style={{ fontWeight: 'bold' }}>
+                  {formatCurrency(pagamentoData.entradaTotal || 0)}
+                </span>
+              </div>
+              {pagamentoData.valorSinal > 0 && (
+                <>
+                  <div className="data-row" style={{ fontSize: '0.95em', color: '#28a745' }}>
+                    <span className="label">↳ Sinal (já pago):</span>
+                    <span className="value">- {formatCurrency(pagamentoData.valorSinal)}</span>
+                  </div>
+                  <div className="data-row" style={{ fontSize: '0.95em' }}>
+                    <span className="label">↳ Falta pagar de entrada:</span>
+                    <span className="value" style={{ fontWeight: 'bold' }}>
+                      {formatCurrency(pagamentoData.faltaEntrada || 0)}
+                    </span>
+                  </div>
+                </>
+              )}
+              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #007bff' }}>
+                <span className="label" style={{ fontWeight: 'bold', fontSize: '1.1em' }}>Saldo a Pagar (após entrada):</span>
+                <span className="value" style={{ fontWeight: 'bold', color: '#007bff', fontSize: '1.1em' }}>
+                  {formatCurrency(pagamentoData.saldoAPagar || pagamentoData.valorFinal || 0)}
+                </span>
+              </div>
+            </>
+          )}
           <div className="data-row">
             <span className="label">Local de Instalação:</span>
             <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
