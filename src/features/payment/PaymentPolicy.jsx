@@ -25,6 +25,7 @@ const PaymentPolicy = ({
   const [valorSinal, setValorSinal] = useState('');
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50'
   const [formaEntrada, setFormaEntrada] = useState(''); // Forma de pagamento da entrada
+  const [descontoAdicional, setDescontoAdicional] = useState(0); // Desconto adicional do vendedor (0-3%)
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
 
@@ -76,7 +77,39 @@ const PaymentPolicy = ({
         dataEmissaoNF: new Date()
       });
 
-      setCalculoAtual(resultado);
+      // Aplicar desconto adicional do vendedor (sobre o valor ajustado)
+      const descontoAdicionalValor = resultado.valorAjustado * (descontoAdicional / 100);
+      const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
+
+      // Recalcular parcelas com o valor final (com desconto adicional)
+      const saldoComDesconto = valorFinalComDescontoAdicional - resultado.entrada;
+      const numParcelas = resultado.parcelas.length;
+      const valorParcela = saldoComDesconto / numParcelas;
+      
+      const parcelasAtualizadas = [];
+      let somaAcumulada = 0;
+      
+      for (let i = 0; i < numParcelas; i++) {
+        const isUltima = i === numParcelas - 1;
+        const valor = isUltima 
+          ? Math.round((saldoComDesconto - somaAcumulada) * 100) / 100
+          : Math.round(valorParcela * 100) / 100;
+        
+        somaAcumulada += valor;
+        
+        parcelasAtualizadas.push({
+          numero: i + 1,
+          valor
+        });
+      }
+
+      setCalculoAtual({
+        ...resultado,
+        descontoAdicionalValor,
+        valorFinalComDescontoAdicional,
+        parcelas: parcelasAtualizadas,
+        saldo: saldoComDesconto
+      });
       setErroCalculo('');
 
       // Notificar o componente pai
@@ -86,10 +119,10 @@ const PaymentPolicy = ({
         const valorSinalNum = parseFloat(valorSinal) || 0;
         const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
         const entradaTotal = tipoCliente === 'cliente' && percentualEntradaNum > 0 
-          ? (resultado.valorAjustado * percentualEntradaNum / 100) 
+          ? (valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
           : 0;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = resultado.total - entradaTotal; // Saldo após pagar a entrada completa
+        const saldo = valorFinalComDescontoAdicional - entradaTotal; // Saldo após pagar a entrada completa
         
         onPaymentComputed({
           ...resultado,
@@ -103,12 +136,16 @@ const PaymentPolicy = ({
           faltaEntrada: Math.max(0, faltaEntrada),
           saldoAPagar: saldo,
           formaEntrada: formaEntrada, // Forma de pagamento da entrada
+          descontoAdicional: descontoAdicional, // Percentual do desconto adicional
+          descontoAdicionalValor: descontoAdicionalValor, // Valor do desconto adicional
+          parcelas: parcelasAtualizadas, // Parcelas recalculadas com desconto adicional
+          saldo: saldoComDesconto, // Saldo atualizado
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
           desconto: plan.discount_percent ? (plan.discount_percent * 100) : 0,
           acrescimo: plan.surcharge_percent ? (plan.surcharge_percent * 100) : 0,
-          valorFinal: resultado.total,
+          valorFinal: valorFinalComDescontoAdicional, // Valor final com desconto adicional aplicado
           tipoInstalacao: pagamentoPorConta
         });
       }
@@ -125,7 +162,8 @@ const PaymentPolicy = ({
         onPaymentComputed(null);
       }
     }
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, onPaymentComputed, onPlanSelected]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -249,6 +287,31 @@ const PaymentPolicy = ({
             <span className="error-message">{errors.prazoPagamento}</span>
           )}
         </div>
+
+        {/* Campo de Desconto Adicional do Vendedor */}
+        {prazoSelecionado && (
+          <div className="form-group">
+            <label htmlFor="descontoAdicional">
+              Desconto Adicional do Vendedor
+            </label>
+            <select
+              id="descontoAdicional"
+              value={descontoAdicional}
+              onChange={(e) => setDescontoAdicional(parseFloat(e.target.value))}
+            >
+              <option value="0">Sem desconto adicional</option>
+              <option value="0.5">0,5%</option>
+              <option value="1">1%</option>
+              <option value="1.5">1,5%</option>
+              <option value="2">2%</option>
+              <option value="2.5">2,5%</option>
+              <option value="3">3%</option>
+            </select>
+            <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+              Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)
+            </small>
+          </div>
+        )}
       </div>
 
       {/* Mensagem de Erro */}
@@ -270,10 +333,10 @@ const PaymentPolicy = ({
         const valorSinalNum = parseFloat(valorSinal) || 0;
         const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
         const entradaTotal = tipoCliente === 'cliente' && percentualEntradaNum > 0 
-          ? (calculoAtual.valorAjustado * percentualEntradaNum / 100) 
+          ? (calculoAtual.valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
           : 0;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = calculoAtual.total - entradaTotal; // Saldo após pagar a entrada completa
+        const saldo = calculoAtual.valorFinalComDescontoAdicional - entradaTotal; // Saldo após pagar a entrada completa
         
         return (
           <div className="payment-section">
@@ -287,7 +350,7 @@ const PaymentPolicy = ({
 
               {calculoAtual.descontoValor > 0 && (
                 <div className="calc-row discount">
-                  <span className="calc-label">Desconto:</span>
+                  <span className="calc-label">Condições de pagamento:</span>
                   <span className="calc-value">- {formatCurrency(calculoAtual.descontoValor)}</span>
                 </div>
               )}
@@ -299,9 +362,16 @@ const PaymentPolicy = ({
                 </div>
               )}
 
+              {descontoAdicional > 0 && calculoAtual.descontoAdicionalValor > 0 && (
+                <div className="calc-row discount">
+                  <span className="calc-label">Desconto Adicional do Vendedor ({descontoAdicional}%):</span>
+                  <span className="calc-value">- {formatCurrency(calculoAtual.descontoAdicionalValor)}</span>
+                </div>
+              )}
+
               <div className="calc-row separator">
                 <span className="calc-label">Valor Ajustado:</span>
-                <span className="calc-value bold">{formatCurrency(calculoAtual.valorAjustado)}</span>
+                <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComDescontoAdicional)}</span>
               </div>
 
               {/* Mostrar valores de entrada (apenas para cliente) */}
@@ -357,7 +427,6 @@ const PaymentPolicy = ({
                       <div key={parcela.numero} className="parcela-item">
                         <span className="parcela-numero">{parcela.numero}ª parcela:</span>
                         <span className="parcela-valor">{formatCurrency(parcela.valor)}</span>
-                        <span className="parcela-venc">Venc.: {parcela.vencimentoStr}</span>
                       </div>
                     ))}
                   </div>
@@ -366,7 +435,7 @@ const PaymentPolicy = ({
 
               <div className="calc-row total">
                 <span className="calc-label">Total:</span>
-                <span className="calc-value bold">{formatCurrency(calculoAtual.total)}</span>
+                <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComDescontoAdicional)}</span>
               </div>
 
               {/* Mostrar saldo restante (apenas para cliente com entrada) */}

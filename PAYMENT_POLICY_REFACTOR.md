@@ -306,3 +306,5 @@ Em caso de dúvidas ou problemas:
 **Data**: Outubro 2025  
 **Autor**: Sistema de Configuração de Guindastes
 
+
+

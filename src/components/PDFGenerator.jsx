@@ -129,37 +129,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           </div>
         </div>
 
-        ${pedidoData.guindastes?.map(guindaste => {
-          let guindasteInfo = `
-            <div style="margin-bottom: 25px; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb;">
-              <h3 style="color:rgb(0, 0, 0); font-size: 22px; margin-bottom: 15px;">${guindaste.nome}</h3>
-              <div style="display: flex; gap: 20px; margin-bottom: 15px;">
-                <div><strong>Modelo:</strong> ${guindaste.modelo}</div>
-                <div><strong>Código:</strong> ${guindaste.codigo_produto}</div>
-              </div>
-          `;
-          
-          if (guindaste.descricao) {
-            guindasteInfo += `
-              <div style="margin-bottom: 15px;">
-                <strong>Descrição:</strong> ${guindaste.descricao}
-              </div>
-            `;
-          }
-          
-          if (guindaste.nao_incluido) {
-            guindasteInfo += `
-              <div style="margin-bottom: 15px; padding: 10px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
-                <strong style="color: #92400e;">⚠️ Não está incluído:</strong> 
-                <span style="color: #92400e;">${guindaste.nao_incluido}</span>
-              </div>
-            `;
-          }
-          
-          guindasteInfo += `</div>`;
-          return guindasteInfo;
-        }).join('') || ''}
-
         <div style="margin-bottom: 30px;">
           <h3 style="color: #495057; font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
@@ -261,6 +230,40 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               `).join('')}
             </tbody>
           </table>
+          
+          ${(() => {
+            const guindastesComDetalhes = (pedidoData.guindastes || []).filter(g => g.descricao || g.nao_incluido);
+            if (guindastesComDetalhes.length === 0) return '';
+            
+            return `
+              <div style="margin-top: 20px;">
+                <h4 style="color: #374151; font-size: 20px; margin-bottom: 15px;">Detalhes dos Equipamentos</h4>
+                ${guindastesComDetalhes.map(guindaste => `
+                  <div style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
+                    <h5 style="color: #1f2937; font-size: 18px; margin-bottom: 12px;">${guindaste.nome}</h5>
+                    ${guindaste.modelo ? `
+                      <div style="margin-bottom: 10px;">
+                        <strong style="color: #374151; font-size: 16px;">Modelo:</strong>
+                        <span style="color: #4b5563; font-size: 16px;"> ${guindaste.modelo}</span>
+                      </div>
+                    ` : ''}
+                    ${guindaste.descricao ? `
+                      <div style="margin-bottom: 10px;">
+                        <strong style="color: #374151; font-size: 16px;">Descrição Técnica:</strong>
+                        <div style="margin-top: 5px; color: #4b5563; font-size: 15px; line-height: 1.6;">${guindaste.descricao}</div>
+                      </div>
+                    ` : ''}
+                    ${guindaste.nao_incluido ? `
+                      <div style="padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; margin-top: 10px;">
+                        <strong style="color: #92400e; font-size: 16px;">⚠️ Não está incluído neste equipamento:</strong>
+                        <div style="margin-top: 5px; color: #92400e; font-size: 15px; line-height: 1.6;">${guindaste.nao_incluido}</div>
+                      </div>
+                    ` : ''}
+                  </div>
+                `).join('')}
+              </div>
+            `;
+          })()}
           
           ${(() => {
             const opcionais = pedidoData.carrinho.filter(i => i.tipo === 'opcional');

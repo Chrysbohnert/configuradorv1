@@ -157,10 +157,12 @@ const Historico = () => {
               
               <div className="pedido-info">
                 <div className="pedido-header">
-                  <h3 className="cliente-name">{pedido.cliente?.nome || 'Cliente não informado'}</h3>
+                  <div>
+                    <h3 className="cliente-name">{pedido.cliente?.nome || 'Cliente não informado'}</h3>
+                    <div className="pedido-numero">Pedido: {pedido.numero_pedido}</div>
+                  </div>
                   <div 
-                    className="pedido-status"
-                    style={{ color: getStatusColor(pedido.status) }}
+                    className={`pedido-status status-${pedido.status}`}
                   >
                     {pedido.status === 'finalizado' ? 'Finalizado' : 
                      pedido.status === 'em_andamento' ? 'Em Andamento' : 
@@ -169,26 +171,25 @@ const Historico = () => {
                 </div>
                 
                 <div className="pedido-details">
-                  <div className="detail-item">
-                    <span className="detail-label">Número:</span>
-                    <span className="detail-value">{pedido.numero_pedido}</span>
-                  </div>
-                  
-                  <div className="detail-item">
-                    <span className="detail-label">Preço:</span>
+                  <div className="detail-item detail-price">
+                    <span className="detail-label">Valor Total</span>
                     <span className="detail-value price">{formatCurrency(pedido.valor_total)}</span>
                   </div>
                   
                   <div className="detail-item">
-                    <span className="detail-label">Data:</span>
+                    <span className="detail-label">Data de Criação</span>
                     <span className="detail-value">
-                      {new Date(pedido.created_at).toLocaleDateString('pt-BR')}
+                      {new Date(pedido.created_at).toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric'
+                      })}
                     </span>
                   </div>
                   
                   {pedido.vendedor && (
                     <div className="detail-item">
-                      <span className="detail-label">Vendedor:</span>
+                      <span className="detail-label">Vendedor</span>
                       <span className="detail-value">{pedido.vendedor.nome}</span>
                     </div>
                   )}

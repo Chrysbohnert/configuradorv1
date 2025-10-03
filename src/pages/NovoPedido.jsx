@@ -531,6 +531,7 @@ const NovoPedido = () => {
               caminhaoData={caminhaoData}
               pagamentoData={pagamentoData}
               user={user}
+              guindastes={guindastes}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
             />
@@ -797,7 +798,6 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
         </div>
         <div className="guindaste-info">
           <h3>{guindaste.subgrupo}</h3>
-          <p className="modelo">Modelo: {guindaste.modelo}</p>
           <span className="categoria">{guindaste.Grupo}</span>
         </div>
         <div className="price">Código: {guindaste.codigo_referencia}</div>
@@ -806,11 +806,11 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
       <div className="card-body">
         <div className="specs">
           <div className="spec">
-            <span className="spec-label">Peso:</span>
+            <span className="spec-label">Configuração de lanças:</span>
             <span className="spec-value">{guindaste.peso_kg} kg</span>
           </div>
           <div className="spec">
-            <span className="spec-label">Configuração:</span>
+            <span className="spec-label">Opcionais:</span>
             <span className="spec-value">
               {configuracoes.length > 0 ? (
                 <div className="configuracoes-lista">
@@ -1306,7 +1306,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
   const handlePDFGenerated = async (fileName) => {
@@ -1344,7 +1344,30 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       // 1. Criar cliente
       console.log('1️⃣ Criando cliente...');
-      const cliente = await db.createCliente(clienteData);
+      
+      // Montar endereço completo a partir dos campos separados
+      const enderecoCompleto = (() => {
+        const c = clienteData;
+        const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
+        const bairro = c.bairro ? ` - ${c.bairro}` : '';
+        const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
+        const cep = c.cep ? ` - CEP: ${c.cep}` : '';
+        return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'Não informado';
+      })();
+      
+      // Filtrar apenas campos que existem na tabela clientes
+      const clienteDataToSave = {
+        nome: clienteData.nome,
+        telefone: clienteData.telefone,
+        email: clienteData.email,
+        documento: clienteData.documento,
+        inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
+        endereco: enderecoCompleto,
+        observacoes: clienteData.observacoes || null
+      };
+      
+      console.log('📋 Dados do cliente para salvar:', clienteDataToSave);
+      const cliente = await db.createCliente(clienteDataToSave);
       console.log('✅ Cliente criado:', cliente);
       
       // 2. Criar caminhão
@@ -1445,12 +1468,28 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     }
   };
 
+  // Buscar dados completos dos guindastes do carrinho
+  const guindastesCompletos = carrinho
+    .filter(item => item.tipo === 'guindaste')
+    .map(item => {
+      // Buscar guindaste completo da lista carregada
+      const guindasteCompleto = guindastes.find(g => g.id === item.id);
+      return {
+        nome: item.nome,
+        modelo: item.modelo || guindasteCompleto?.modelo,
+        codigo_produto: item.codigo_produto,
+        descricao: guindasteCompleto?.descricao || '',
+        nao_incluido: guindasteCompleto?.nao_incluido || ''
+      };
+    });
+
   const pedidoData = {
     carrinho,
     clienteData,
     caminhaoData,
     pagamentoData,
-    vendedor: user?.nome || 'Não informado'
+    vendedor: user?.nome || 'Não informado',
+    guindastes: guindastesCompletos
   };
 
   return (

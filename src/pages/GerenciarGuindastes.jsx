@@ -189,50 +189,43 @@ const GerenciarGuindastes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validação de campos obrigatórios
       if (!formData.subgrupo || !formData.modelo || !formData.peso_kg || !formData.configuração) {
-        alert('Por favor, preencha todos os campos obrigatórios.');
+        alert('Por favor, preencha todos os campos obrigatórios: Subgrupo, Modelo, Configuração de lanças e Configuração.');
         return;
       }
+      
+      // Validação do peso
+      const pesoNumerico = parseInt(formData.peso_kg);
+      if (isNaN(pesoNumerico) || pesoNumerico <= 0) {
+        alert('Por favor, insira um valor válido para Configuração de lanças (kg).');
+        return;
+      }
+      
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
-        peso_kg: parseInt(formData.peso_kg) || 0,
-        configuração: formData.configuração,
+        peso_kg: pesoNumerico,
+        configuração: formData.configuração.trim(),
         tem_contr: formData.tem_contr,
-        imagem_url: formData.imagem_url || '',
-        descricao: formData.descricao || '',
-        nao_incluido: formData.nao_incluido || '',
+        imagem_url: formData.imagem_url?.trim() || null,
+        descricao: formData.descricao?.trim() || null,
+        nao_incluido: formData.nao_incluido?.trim() || null,
         imagens_adicionais: formData.imagens_adicionais || []
       };
       
-      console.log('📝 Dados a serem salvos:', {
-        ...guindasteData,
-        descricao_length: guindasteData.descricao?.length,
-        nao_incluido_length: guindasteData.nao_incluido?.length
-      });
-      
       if (editingGuindaste) {
-        console.log('✏️ Atualizando guindaste ID:', editingGuindaste?.id);
-        const resultado = await db.updateGuindaste(editingGuindaste.id, guindasteData);
-        console.log('✅ Guindaste atualizado com sucesso:', resultado);
+        await db.updateGuindaste(editingGuindaste.id, guindasteData);
       } else {
-        console.log('➕ Criando novo guindaste');
-        const resultado = await db.createGuindaste(guindasteData);
-        console.log('✅ Guindaste criado com sucesso:', resultado);
+        await db.createGuindaste(guindasteData);
       }
       
       await loadData(page);
       handleCloseModal();
       alert('Guindaste salvo com sucesso!');
     } catch (error) {
-      console.error('❌ ERRO DETALHADO ao salvar guindaste:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        full_error: error
-      });
-      alert(`Erro ao salvar guindaste:\n\n${error.message}\n\nCódigo: ${error.code || 'N/A'}\n\nDetalhes: ${error.details || 'Verifique o console para mais informações'}`);
+      console.error('Erro ao salvar guindaste:', error);
+      alert(`Erro ao salvar guindaste: ${error.message}`);
     }
   };
 
@@ -395,7 +388,7 @@ const GerenciarGuindastes = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Peso (kg)</label>
+                  <label>Configuração de lanças (kg)</label>
                   <input
                     type="text"
                     value={formData.peso_kg}

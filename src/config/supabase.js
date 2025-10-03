@@ -94,7 +94,7 @@ class DatabaseService {
 
     let query = supabase
       .from('guindastes')
-      .select('id, subgrupo, modelo, imagem_url, grafico_carga_url, peso_kg, codigo_referencia, updated_at', { count: 'exact' })
+      .select('id, subgrupo, modelo, imagem_url, grafico_carga_url, peso_kg, codigo_referencia, configuração, tem_contr, descricao, nao_incluido, imagens_adicionais, updated_at', { count: 'exact' })
       .order('subgrupo');
 
     if (search && search.trim()) {
@@ -119,22 +119,32 @@ class DatabaseService {
   }
 
   async updateGuindaste(id, guindasteData) {
-    // Estratégia à prova de 406: não pedir objeto único no retorno
-    const { data, error } = await supabase
-      .from('guindastes')
-      .update(guindasteData)
-      .eq('id', Number(id))
-      .select('id'); // retorna array (possivelmente vazio)
-    if (error) throw error;
-    if (!data || data.length === 0) throw new Error('Registro não encontrado para atualização.');
-    // Buscar registro atualizado apenas se necessário
-    const { data: row, error: fetchError } = await supabase
-      .from('guindastes')
-      .select('*')
-      .eq('id', Number(id))
-      .single();
-    if (fetchError) throw fetchError;
-    return row;
+    try {
+      // Fazer update direto
+      const { error: updateError } = await supabase
+        .from('guindastes')
+        .update(guindasteData)
+        .eq('id', Number(id));
+      
+      if (updateError) throw updateError;
+      
+      // Buscar o registro atualizado para retornar
+      const { data: updatedData, error: fetchError } = await supabase
+        .from('guindastes')
+        .select('*')
+        .eq('id', Number(id))
+        .single();
+      
+      if (fetchError) {
+        // Update funcionou, mas busca falhou - não é crítico
+        return null;
+      }
+      
+      return updatedData;
+    } catch (err) {
+      console.error('Erro ao atualizar guindaste:', err);
+      throw err;
+    }
   }
 
   async deleteGuindaste(id) {
@@ -395,14 +405,17 @@ class DatabaseService {
       .select('preco')
       .eq('guindaste_id', guindasteId)
       .eq('regiao', regiao)
-      .single();
+      .limit(1);
     
     if (error) {
-      // Se não encontrar preço específico, retornar 0
-      if (error.code === 'PGRST116') return 0;
-      throw error;
+      console.error('Erro ao buscar preço por região:', error);
+      return 0;
     }
-    return data?.preco || 0;
+    
+    // Se não encontrar preço ou array vazio, retornar 0
+    if (!data || data.length === 0) return 0;
+    
+    return data[0]?.preco || 0;
   }
 
   // ===== GRÁFICOS DE CARGA =====
@@ -589,6 +602,122 @@ class DatabaseService {
 
 // Instância única do serviço
 export const db = new DatabaseService();
+
+// ========================================
+// FUNÇÕES DE DEBUG (apenas em desenvolvimento)
+// ========================================
+if (typeof window !== 'undefined' && import.meta.env.DEV) {
+  console.log('🔧 Funções de debug carregadas (modo desenvolvimento)');
+  
+  // Função de teste para verificar campos da tabela guindastes
+  window.testGuindastesFields = async (guindasteId = 36) => {
+    try {
+      console.log('🔍 Testando campos da tabela guindastes...');
+      console.log('📌 Buscando guindaste ID:', guindasteId);
+      
+      // Buscar registro específico
+      const { data, error } = await supabase
+        .from('guindastes')
+        .select('*')
+        .eq('id', guindasteId)
+        .single();
+      
+      if (error) {
+        console.error('❌ Erro ao buscar guindaste:', error);
+        return;
+      }
+      
+      console.log('✅ Registro encontrado:', data);
+      console.log('📋 Todos os campos:', Object.keys(data));
+      console.log('📝 Campo descricao:', data.descricao);
+      console.log('⚠️ Campo nao_incluido:', data.nao_incluido);
+      
+      // Verificar se os campos existem
+      if ('descricao' in data) {
+        console.log('✅ Campo "descricao" existe na tabela');
+      } else {
+        console.error('❌ Campo "descricao" NÃO existe na tabela!');
+      }
+      
+      if ('nao_incluido' in data) {
+        console.log('✅ Campo "nao_incluido" existe na tabela');
+      } else {
+        console.error('❌ Campo "nao_incluido" NÃO existe na tabela!');
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('❌ Erro no teste:', error);
+    }
+  };
+  
+  // Função para testar update direto
+  window.testUpdateDescricao = async (guindasteId = 36) => {
+    try {
+      console.log('🧪 Testando update dos campos descricao e nao_incluido...');
+      console.log('📌 ID do guindaste:', guindasteId);
+      
+      const testeDescricao = `Teste de descrição - ${new Date().toLocaleTimeString()}`;
+      const testeNaoIncluido = `Teste não incluído - ${new Date().toLocaleTimeString()}`;
+      
+      console.log('📝 Tentando salvar:');
+      console.log('   - descricao:', testeDescricao);
+      console.log('   - nao_incluido:', testeNaoIncluido);
+      
+      // Tentar fazer update
+      const { data, error } = await supabase
+        .from('guindastes')
+        .update({
+          descricao: testeDescricao,
+          nao_incluido: testeNaoIncluido
+        })
+        .eq('id', guindasteId)
+        .select();
+      
+      if (error) {
+        console.error('❌ ERRO no update:', error);
+        console.error('   - Message:', error.message);
+        console.error('   - Code:', error.code);
+        console.error('   - Details:', error.details);
+        console.error('   - Hint:', error.hint);
+        return;
+      }
+      
+      console.log('✅ Update executado sem erro');
+      console.log('📦 Data retornada:', data);
+      
+      // Buscar novamente para confirmar
+      const { data: verificacao, error: errorVerif } = await supabase
+        .from('guindastes')
+        .select('id, descricao, nao_incluido')
+        .eq('id', guindasteId)
+        .single();
+      
+      if (errorVerif) {
+        console.error('❌ Erro ao verificar:', errorVerif);
+        return;
+      }
+      
+      console.log('🔍 Verificação após update:');
+      console.log('   - descricao salva:', verificacao.descricao);
+      console.log('   - nao_incluido salvo:', verificacao.nao_incluido);
+      
+      if (verificacao.descricao === testeDescricao && verificacao.nao_incluido === testeNaoIncluido) {
+        console.log('✅ ✅ ✅ SUCESSO! Os dados foram salvos corretamente!');
+      } else {
+        console.error('❌ ❌ ❌ PROBLEMA! Os dados NÃO foram salvos!');
+        console.error('📋 POSSÍVEIS CAUSAS:');
+        console.error('   1. RLS (Row Level Security) bloqueando o update');
+        console.error('   2. Trigger no banco limpando os campos');
+        console.error('   3. Política de segurança no Supabase');
+      }
+      
+      return verificacao;
+    } catch (error) {
+      console.error('❌ Erro no teste:', error);
+    }
+  };
+}
 
 // Função de teste para verificar buckets (disponível no console do navegador)
 if (typeof window !== 'undefined') {
