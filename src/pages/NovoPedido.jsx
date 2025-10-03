@@ -28,6 +28,7 @@ const NovoPedido = () => {
     localInstalacao: '',
     tipoInstalacao: ''
   });
+  const [clienteTemIE, setClienteTemIE] = useState(true);
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
@@ -57,16 +58,30 @@ const NovoPedido = () => {
         const guindaste = location.state.guindasteSelecionado;
         setGuindastesSelecionados([guindaste]);
         
-        // Buscar preço do guindaste baseado na região do vendedor
-        let precoGuindaste = guindaste.preco || 0;
-        if (!precoGuindaste && user?.regiao) {
-          try {
-            const regiaoVendedor = user.regiao || 'sudeste';
-            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
-          } catch (error) {
-            console.error('Erro ao buscar preço do guindaste:', error);
+      // Buscar preço do guindaste baseado na região do vendedor
+      let precoGuindaste = guindaste.preco || 0;
+      if (!precoGuindaste && user?.regiao) {
+        try {
+          let regiaoVendedor = user.regiao || 'sul-sudeste';
+          
+          // Para região Rio Grande do Sul, verificar se tem IE ou não
+          if (regiaoVendedor === 'rio grande do sul') {
+            regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
+          } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
+            // Unificar Norte e Nordeste
+            regiaoVendedor = 'norte-nordeste';
+          } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
+            // Unificar Sul e Sudeste
+            regiaoVendedor = 'sul-sudeste';
+          } else if (regiaoVendedor === 'centro-oeste') {
+            regiaoVendedor = 'centro-oeste';
           }
+          
+          precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
+        } catch (error) {
+          console.error('Erro ao buscar preço do guindaste:', error);
         }
+      }
         
         // Adicionar ao carrinho se não estiver
         const produto = {
@@ -95,6 +110,42 @@ const NovoPedido = () => {
       processarGuindasteSelecionado();
     }
   }, [location.state, navigate, user]);
+
+  // Efeito para atualizar preços quando mudar a seleção de IE (apenas para vendedores do RS)
+  useEffect(() => {
+    if (!user || user.regiao !== 'rio grande do sul') return;
+    if (carrinho.length === 0) return;
+
+    const atualizarPrecosCarrinho = async () => {
+      const carrinhoAtualizado = [];
+      
+      for (const item of carrinho) {
+        if (item.tipo === 'guindaste') {
+          // Recalcular preço do guindaste
+          try {
+            const regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
+            const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
+            
+            carrinhoAtualizado.push({
+              ...item,
+              preco: novoPreco || 0
+            });
+          } catch (error) {
+            console.error('Erro ao atualizar preço:', error);
+            carrinhoAtualizado.push(item);
+          }
+        } else {
+          carrinhoAtualizado.push(item);
+        }
+      }
+      
+      setCarrinho(carrinhoAtualizado);
+      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+    };
+
+    atualizarPrecosCarrinho();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clienteTemIE, user]);
 
   const loadData = async () => {
     try {
@@ -205,7 +256,21 @@ const NovoPedido = () => {
       // Buscar preço do guindaste baseado na região do vendedor
       let precoGuindaste = 0;
       try {
-        const regiaoVendedor = user?.regiao || 'sudeste'; // Default: sudeste
+        let regiaoVendedor = user?.regiao || 'sul-sudeste'; // Default: sul-sudeste
+        
+        // Para região Rio Grande do Sul, verificar se tem IE ou não
+        if (regiaoVendedor === 'rio grande do sul') {
+          regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
+        } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
+          // Unificar Norte e Nordeste
+          regiaoVendedor = 'norte-nordeste';
+        } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
+          // Unificar Sul e Sudeste
+          regiaoVendedor = 'sul-sudeste';
+        } else if (regiaoVendedor === 'centro-oeste') {
+          regiaoVendedor = 'centro-oeste';
+        }
+        
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
         
         if (!precoGuindaste || precoGuindaste === 0) {
@@ -488,10 +553,14 @@ const NovoPedido = () => {
               <h2>Política de Pagamento</h2>
               <p>Selecione a forma de pagamento e visualize os descontos</p>
             </div>
+            
             <PaymentPolicy 
               precoBase={getTotalCarrinho()}
               onPaymentComputed={setPagamentoData}
               errors={validationErrors}
+              user={user}
+              clienteTemIE={clienteTemIE}
+              onClienteIEChange={setClienteTemIE}
             />
           </div>
         );

@@ -11,12 +11,18 @@ import './PaymentPolicy.css';
  * @param {Function} props.onPaymentComputed - Callback quando o cálculo é feito
  * @param {Function} props.onPlanSelected - Callback quando um plano é selecionado
  * @param {Object} props.errors - Erros de validação
+ * @param {Object} props.user - Dados do usuário logado
+ * @param {boolean} props.clienteTemIE - Se o cliente tem Inscrição Estadual
+ * @param {Function} props.onClienteIEChange - Callback para mudar o estado de IE
  */
 const PaymentPolicy = ({ 
   precoBase = 0, 
   onPaymentComputed, 
   onPlanSelected,
-  errors = {} 
+  errors = {},
+  user = null,
+  clienteTemIE = true,
+  onClienteIEChange
 }) => {
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
@@ -183,18 +189,6 @@ const PaymentPolicy = ({
 
   return (
     <div className="payment-policy">
-      {/* Resumo do Carrinho */}
-      <div className="payment-section">
-        <h3>Resumo do Pedido</h3>
-        <div className="summary-box">
-          <div className="summary-row">
-            <span className="summary-label">Valor Total do Carrinho:</span>
-            <span className="summary-value">{formatCurrency(precoBase)}</span>
-          </div>
-        </div>
-      </div>
-      
-
       {/* Seleção de Tipo de Cliente e Prazo */}
       <div className="payment-section">
         <h3>Política de Pagamento</h3>
@@ -218,10 +212,128 @@ const PaymentPolicy = ({
           )}
         </div>
 
-        {/* Campos de sinal e entrada apenas para "cliente" */}
-        {tipoCliente === 'cliente' && (
-          <>
-            {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
+        {/* Campo de IE - apenas para vendedores do Rio Grande do Sul quando selecionar Cliente */}
+        {tipoCliente === 'cliente' && user?.regiao === 'rio grande do sul' && (
+          <div className="form-group" style={{ marginTop: '10px' }}>
+            <label htmlFor="clienteIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+              Cliente possui Inscrição Estadual? <span style={{ color: '#dc3545' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <label 
+                onClick={() => onClienteIEChange && onClienteIEChange(true)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px', 
+                  cursor: 'pointer', 
+                  padding: '10px 20px', 
+                  background: clienteTemIE ? '#007bff' : '#ffffff', 
+                  color: clienteTemIE ? '#ffffff' : '#495057', 
+                  borderRadius: '6px', 
+                  border: clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: clienteTemIE ? '600' : '500',
+                  flex: '1',
+                  boxShadow: clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#007bff';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name="clienteIE" 
+                  checked={clienteTemIE} 
+                  onChange={() => {}}
+                  style={{ 
+                    cursor: 'pointer',
+                    accentColor: '#007bff',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <span>Com IE</span>
+              </label>
+              <label 
+                onClick={() => onClienteIEChange && onClienteIEChange(false)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px', 
+                  cursor: 'pointer', 
+                  padding: '10px 20px', 
+                  background: !clienteTemIE ? '#007bff' : '#ffffff', 
+                  color: !clienteTemIE ? '#ffffff' : '#495057', 
+                  borderRadius: '6px', 
+                  border: !clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: !clienteTemIE ? '600' : '500',
+                  flex: '1',
+                  boxShadow: !clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#007bff';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name="clienteIE" 
+                  checked={!clienteTemIE} 
+                  onChange={() => {}}
+                  style={{ 
+                    cursor: 'pointer',
+                    accentColor: '#007bff',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <span>Sem IE</span>
+              </label>
+            </div>
+          </div>
+        )}
+      
+      {/* Resumo do Carrinho - só aparece depois de selecionar Revenda ou Cliente */}
+      {tipoCliente && (
+        <div style={{ marginTop: '20px' }}>
+          <h3>Resumo do Pedido</h3>
+          <div className="summary-box">
+            <div className="summary-row">
+              <span className="summary-label">Valor Total do Carrinho:</span>
+              <span className="summary-value">{formatCurrency(precoBase)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Campos de sinal e entrada apenas para "cliente" */}
+      {tipoCliente === 'cliente' && (
+        <>
+          {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
             {prazoSelecionado !== 'À Vista' && (
               <div className="form-group">
                 <label htmlFor="valorSinal">
@@ -258,9 +370,9 @@ const PaymentPolicy = ({
               </small>
             </div>
           </>
-        )}
+      )}
 
-        <div className="form-group">
+      <div className="form-group">
           <label htmlFor="prazoPagamento">
             Prazo de Pagamento *
           </label>
@@ -286,10 +398,10 @@ const PaymentPolicy = ({
           {errors.prazoPagamento && (
             <span className="error-message">{errors.prazoPagamento}</span>
           )}
-        </div>
+      </div>
 
-        {/* Campo de Desconto Adicional do Vendedor */}
-        {prazoSelecionado && (
+      {/* Campo de Desconto Adicional do Vendedor */}
+      {prazoSelecionado && (
           <div className="form-group">
             <label htmlFor="descontoAdicional">
               Desconto Adicional do Vendedor
@@ -311,8 +423,8 @@ const PaymentPolicy = ({
               Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)
             </small>
           </div>
-        )}
-      </div>
+      )}
+    </div>
 
       {/* Mensagem de Erro */}
       {erroCalculo && (

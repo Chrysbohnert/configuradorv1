@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../config/supabase';
 
 const regioes = [
-  { id: 'norte', nome: 'Norte' },
-  { id: 'nordeste', nome: 'Nordeste' },
-  { id: 'sudeste', nome: 'Sudeste' },
-  { id: 'sul', nome: 'Sul' },
-  { id: 'centro-oeste', nome: 'Centro-Oeste' },
+  { id: 'norte-nordeste', nome: 'Norte-Nordeste' },
+  { id: 'centro-oeste', nome: 'Centro Oeste' },
+  { id: 'sul-sudeste', nome: 'Sul-Sudeste' },
+  { id: 'rs-com-ie', nome: 'RS com Inscrição Estadual' },
+  { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual' },
 ];
 
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {

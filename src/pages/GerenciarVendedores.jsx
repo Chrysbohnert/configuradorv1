@@ -338,6 +338,7 @@ const GerenciarVendedores = () => {
                   <option value="sudeste">Sudeste</option>
                   <option value="sul">Sul</option>
                   <option value="centro-oeste">Centro-Oeste</option>
+                  <option value="rio grande do sul">Rio Grande do Sul</option>
                 </select>
               </div>
               
