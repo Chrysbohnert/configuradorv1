@@ -32,6 +32,7 @@ const PaymentPolicy = ({
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50'
   const [formaEntrada, setFormaEntrada] = useState(''); // Forma de pagamento da entrada
   const [descontoAdicional, setDescontoAdicional] = useState(0); // Desconto adicional do vendedor (0-3%)
+  const [tipoFrete, setTipoFrete] = useState(''); // 'cif' | 'fob'
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
 
@@ -146,6 +147,7 @@ const PaymentPolicy = ({
           descontoAdicionalValor: descontoAdicionalValor, // Valor do desconto adicional
           parcelas: parcelasAtualizadas, // Parcelas recalculadas com desconto adicional
           saldo: saldoComDesconto, // Saldo atualizado
+          tipoFrete: tipoFrete, // Tipo de frete (CIF ou FOB)
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
@@ -169,7 +171,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -612,6 +614,114 @@ const PaymentPolicy = ({
           {errors.tipoInstalacao && (
             <span className="error-message">{errors.tipoInstalacao}</span>
           )}
+        </div>
+
+        <div className="form-group" style={{ marginTop: '10px' }}>
+          <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+            Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
+          </label>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <label 
+              onClick={() => setTipoFrete('cif')}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px', 
+                cursor: 'pointer', 
+                padding: '10px 20px', 
+                background: tipoFrete === 'cif' ? '#28a745' : '#ffffff', 
+                color: tipoFrete === 'cif' ? '#ffffff' : '#495057', 
+                borderRadius: '6px', 
+                border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da', 
+                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                fontWeight: tipoFrete === 'cif' ? '600' : '500',
+                flex: '1',
+                boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                userSelect: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (tipoFrete !== 'cif') {
+                  e.currentTarget.style.borderColor = '#28a745';
+                  e.currentTarget.style.background = '#f8f9fa';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (tipoFrete !== 'cif') {
+                  e.currentTarget.style.borderColor = '#ced4da';
+                  e.currentTarget.style.background = '#ffffff';
+                }
+              }}
+            >
+              <input 
+                type="radio" 
+                name="tipoFrete" 
+                checked={tipoFrete === 'cif'} 
+                onChange={() => {}}
+                style={{ 
+                  cursor: 'pointer',
+                  accentColor: '#28a745',
+                  width: '16px',
+                  height: '16px'
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span style={{ fontWeight: '600' }}>CIF</span>
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
+              </div>
+            </label>
+            <label 
+              onClick={() => setTipoFrete('fob')}
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                gap: '8px', 
+                cursor: 'pointer', 
+                padding: '10px 20px', 
+                background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff', 
+                color: tipoFrete === 'fob' ? '#ffffff' : '#495057', 
+                borderRadius: '6px', 
+                border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da', 
+                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                fontWeight: tipoFrete === 'fob' ? '600' : '500',
+                flex: '1',
+                boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                userSelect: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (tipoFrete !== 'fob') {
+                  e.currentTarget.style.borderColor = '#dc3545';
+                  e.currentTarget.style.background = '#f8f9fa';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (tipoFrete !== 'fob') {
+                  e.currentTarget.style.borderColor = '#ced4da';
+                  e.currentTarget.style.background = '#ffffff';
+                }
+              }}
+            >
+              <input 
+                type="radio" 
+                name="tipoFrete" 
+                checked={tipoFrete === 'fob'} 
+                onChange={() => {}}
+                style={{ 
+                  cursor: 'pointer',
+                  accentColor: '#dc3545',
+                  width: '16px',
+                  height: '16px'
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span style={{ fontWeight: '600' }}>FOB</span>
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
