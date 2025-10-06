@@ -5,6 +5,7 @@ import { db, supabase } from '../config/supabase';
 import { verifyPassword } from '../utils/passwordHash';
 import { showError } from '../utils/errorHandler';
 import { debugLogin } from '../utils/debugAuth';
+import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -36,6 +37,19 @@ const Login = () => {
         return;
       }
 
+      // Verificar rate limiting
+      const clientIP = getClientIP();
+      const rateLimitCheck = checkLoginLimit(clientIP, email);
+      
+      if (!rateLimitCheck.allowed) {
+        const resetTime = new Date(rateLimitCheck.resetTime);
+        const timeRemaining = Math.ceil((rateLimitCheck.resetTime - Date.now()) / 60000);
+        
+        setError(`Muitas tentativas de login. Tente novamente em ${timeRemaining} minutos.`);
+        setIsLoading(false);
+        return;
+      }
+
       // Primeiro, fazer login no Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: email,
@@ -58,12 +72,22 @@ const Login = () => {
           localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
           
           if (debugResult.user.tipo === 'admin') {
+            // Registrar tentativa bem-sucedida
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, true);
             navigate('/dashboard-admin');
           } else {
+            // Registrar tentativa bem-sucedida
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, true);
             navigate('/dashboard');
           }
         } else {
           console.log('❌ Fallback falhou:', debugResult);
+          
+          // Registrar tentativa falhada
+          const clientIP = getClientIP();
+          recordLoginAttempt(clientIP, email, false);
           
           if (!debugResult.user) {
             setError('Email não encontrado no sistema');
@@ -99,8 +123,14 @@ const Login = () => {
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
 
           if (user.tipo === 'admin') {
+            // Registrar tentativa bem-sucedida
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, true);
             navigate('/dashboard-admin');
           } else {
+            // Registrar tentativa bem-sucedida
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, true);
             navigate('/dashboard');
           }
         } else {
@@ -110,6 +140,10 @@ const Login = () => {
     } catch (error) {
       const errorInfo = showError(error, 'Login');
       setError(errorInfo.message);
+      
+      // Registrar tentativa falhada
+      const clientIP = getClientIP();
+      recordLoginAttempt(clientIP, formData.email, false);
     } finally {
       setIsLoading(false);
     }
