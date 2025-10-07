@@ -241,7 +241,117 @@ const PaymentPolicy = ({
           )}
         </div>
 
+        {/* Campo de IE do Cliente - apenas para vendedores do Rio Grande do Sul quando selecionar Cliente */}
+        {/* IMPORTANTE: Este campo afeta o PREÇO BASE do guindaste (rs-com-ie vs rs-sem-ie) */}
+        {tipoCliente === 'cliente' && user?.regiao === 'rio grande do sul' && (
+          <div className="form-group" style={{ marginTop: '10px' }}>
+            <label htmlFor="clienteIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+              Cliente possui Inscrição Estadual? <span style={{ color: '#dc3545' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <label 
+                onClick={() => onClienteIEChange && onClienteIEChange(true)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px', 
+                  cursor: 'pointer', 
+                  padding: '10px 20px', 
+                  background: clienteTemIE ? '#007bff' : '#ffffff', 
+                  color: clienteTemIE ? '#ffffff' : '#495057', 
+                  borderRadius: '6px', 
+                  border: clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: clienteTemIE ? '600' : '500',
+                  flex: '1',
+                  boxShadow: clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (!clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#007bff';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name="clienteIE" 
+                  checked={clienteTemIE} 
+                  onChange={() => {}}
+                  style={{ 
+                    cursor: 'pointer',
+                    accentColor: '#007bff',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <span>Com IE</span>
+              </label>
+              <label 
+                onClick={() => onClienteIEChange && onClienteIEChange(false)}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  gap: '8px', 
+                  cursor: 'pointer', 
+                  padding: '10px 20px', 
+                  background: !clienteTemIE ? '#007bff' : '#ffffff', 
+                  color: !clienteTemIE ? '#ffffff' : '#495057', 
+                  borderRadius: '6px', 
+                  border: !clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: !clienteTemIE ? '600' : '500',
+                  flex: '1',
+                  boxShadow: !clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#007bff';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (clienteTemIE) {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input 
+                  type="radio" 
+                  name="clienteIE" 
+                  checked={!clienteTemIE} 
+                  onChange={() => {}}
+                  style={{ 
+                    cursor: 'pointer',
+                    accentColor: '#007bff',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <span>Sem IE</span>
+              </label>
+            </div>
+            <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+              ⚠️ Importante: Este campo afeta o preço base do guindaste
+            </small>
+          </div>
+        )}
+
         {/* Participação de Revenda - apenas para Cliente */}
+        {/* IMPORTANTE: Este campo afeta o DESCONTO do vendedor */}
         {tipoCliente === 'cliente' && (
           <>
             <div className="form-group" style={{ marginTop: '15px' }}>
