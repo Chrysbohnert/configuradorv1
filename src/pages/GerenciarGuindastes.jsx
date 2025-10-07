@@ -28,7 +28,9 @@ const GerenciarGuindastes = () => {
     imagem_url: '',
     descricao: '',
     nao_incluido: '',
-    imagens_adicionais: []
+    imagens_adicionais: [],
+    finame: '',
+    ncm: ''
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
@@ -137,7 +139,9 @@ const GerenciarGuindastes = () => {
       imagem_url: item.imagem_url || '',
       descricao: item.descricao || '',
       nao_incluido: item.nao_incluido || '',
-      imagens_adicionais: item.imagens_adicionais || []
+      imagens_adicionais: item.imagens_adicionais || [],
+      finame: item.finame || '',
+      ncm: item.ncm || ''
     });
     setShowModal(true);
   };
@@ -166,7 +170,9 @@ const GerenciarGuindastes = () => {
       imagem_url: '',
       descricao: '',
       nao_incluido: '',
-      imagens_adicionais: []
+      imagens_adicionais: [],
+      finame: '',
+      ncm: ''
     });
   };
 
@@ -181,7 +187,9 @@ const GerenciarGuindastes = () => {
       imagem_url: '',
       descricao: '',
       nao_incluido: '',
-      imagens_adicionais: []
+      imagens_adicionais: [],
+      finame: '',
+      ncm: ''
     });
     setShowModal(true);
   };
@@ -478,6 +486,56 @@ const GerenciarGuindastes = () => {
                 <small style={{ color: '#6c757d', fontSize: '12px' }}>
                   Itens que NÃO estão incluídos na proposta para evitar mal-entendidos
                 </small>
+              </div>
+
+              {/* Campos FINAME e NCM */}
+              <div style={{ 
+                background: '#fff3cd', 
+                border: '2px solid #ffc107', 
+                borderRadius: '8px', 
+                padding: '15px', 
+                marginBottom: '20px'
+              }}>
+                <h4 style={{ color: '#856404', marginTop: '0', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '20px' }}>⚠️</span>
+                  Informações Obrigatórias para Financiamento
+                </h4>
+                
+                <div className="form-row">
+                  <div className="form-group">
+                    <label style={{ fontWeight: 'bold', color: '#856404' }}>
+                      Código FINAME *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.finame}
+                      onChange={e => handleInputChange('finame', e.target.value)}
+                      placeholder="Ex: 03795187"
+                      required
+                      style={{ borderColor: '#ffc107' }}
+                    />
+                    <small style={{ color: '#856404', fontSize: '12px', fontWeight: '500' }}>
+                      Código obrigatório para financiamento FINAME
+                    </small>
+                  </div>
+                  
+                  <div className="form-group">
+                    <label style={{ fontWeight: 'bold', color: '#856404' }}>
+                      Código NCM *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.ncm}
+                      onChange={e => handleInputChange('ncm', e.target.value)}
+                      placeholder="Ex: 8436.80.00"
+                      required
+                      style={{ borderColor: '#ffc107' }}
+                    />
+                    <small style={{ color: '#856404', fontSize: '12px', fontWeight: '500' }}>
+                      Nomenclatura Comum do Mercosul (obrigatório)
+                    </small>
+                  </div>
+                </div>
               </div>
 
               <div className="form-group">

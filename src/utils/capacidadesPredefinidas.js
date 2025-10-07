@@ -11,10 +11,7 @@ export const CAPACIDADES_PREDEFINIDAS = [
   { valor: '12.8', label: '12.8 Ton', descricao: 'Capacidade 12.8 toneladas', popular: false },
   { valor: '13.0', label: '13.0 Ton', descricao: 'Capacidade 13.0 toneladas', popular: false },
   { valor: '15.0', label: '15.0 Ton', descricao: 'Capacidade 15.0 toneladas', popular: false },
-  { valor: '15.8', label: '15.8 Ton', descricao: 'Capacidade 15.8 toneladas', popular: false },
-  { valor: '18.0', label: '18.0 Ton', descricao: 'Capacidade 18.0 toneladas', popular: false },
-  { valor: '20.0', label: '20.0 Ton', descricao: 'Capacidade 20.0 toneladas', popular: false },
-  { valor: '25.0', label: '25.0 Ton', descricao: 'Capacidade 25.0 toneladas', popular: false }
+  { valor: '15.8', label: '15.8 Ton', descricao: 'Capacidade 15.8 toneladas', popular: false }
 ];
 
 // Modelos pré-definidos por capacidade
@@ -47,18 +44,6 @@ export const MODELOS_POR_CAPACIDADE = {
   '15.8': [
     { modelo: 'GSI 15.8', descricao: 'Guindaste GSI 15.8 toneladas' },
     { modelo: 'GSE 15.8', descricao: 'Guindaste GSE 15.8 toneladas' }
-  ],
-  '18.0': [
-    { modelo: 'GSI 18.0', descricao: 'Guindaste GSI 18.0 toneladas' },
-    { modelo: 'GSE 18.0', descricao: 'Guindaste GSE 18.0 toneladas' }
-  ],
-  '20.0': [
-    { modelo: 'GSI 20.0', descricao: 'Guindaste GSI 20.0 toneladas' },
-    { modelo: 'GSE 20.0', descricao: 'Guindaste GSE 20.0 toneladas' }
-  ],
-  '25.0': [
-    { modelo: 'GSI 25.0', descricao: 'Guindaste GSI 25.0 toneladas' },
-    { modelo: 'GSE 25.0', descricao: 'Guindaste GSE 25.0 toneladas' }
   ]
 };
 
