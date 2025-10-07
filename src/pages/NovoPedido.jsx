@@ -628,11 +628,17 @@ const NovoPedido = () => {
         if (!pagamentoData.prazoPagamento) {
           errors.prazoPagamento = 'Selecione o prazo de pagamento';
         }
-        if (!pagamentoData.localInstalacao) {
-          errors.localInstalacao = 'Informe o local de instalação';
+        // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
+        if (pagamentoData.tipoPagamento === 'cliente') {
+          if (!pagamentoData.localInstalacao) {
+            errors.localInstalacao = 'Informe o local de instalação';
+          }
+          if (!pagamentoData.tipoInstalacao) {
+            errors.tipoInstalacao = 'Selecione o tipo de instalação';
+          }
         }
-        if (!pagamentoData.tipoInstalacao) {
-          errors.tipoInstalacao = 'Selecione o tipo de instalação';
+        if (!pagamentoData.tipoFrete) {
+          errors.tipoFrete = 'Selecione o tipo de frete';
         }
         break;
       case 3:
@@ -667,10 +673,18 @@ const NovoPedido = () => {
       case 1:
         return guindastesSelecionados.length > 0;
       case 2:
+        // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete são obrigatórios
+        if (pagamentoData.tipoPagamento === 'revenda') {
+          return pagamentoData.tipoPagamento && 
+                 pagamentoData.prazoPagamento && 
+                 pagamentoData.tipoFrete;
+        }
+        // Para cliente, todos os campos são obrigatórios
         return pagamentoData.tipoPagamento && 
                pagamentoData.prazoPagamento && 
                pagamentoData.localInstalacao && 
-               pagamentoData.tipoInstalacao;
+               pagamentoData.tipoInstalacao &&
+               pagamentoData.tipoFrete;
       case 3:
         return clienteData.nome && 
                clienteData.telefone && 
@@ -1750,18 +1764,55 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               </div>
             </>
           )}
-          <div className="data-row">
-            <span className="label">Local de Instalação:</span>
-            <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Tipo de Instalação:</span>
-            <span className="value">
-              {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
-              {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
-              {!pagamentoData.tipoInstalacao && 'Não informado'}
-            </span>
-          </div>
+          {/* Campos Local de Instalação e Tipo de Instalação apenas para cliente */}
+          {pagamentoData.tipoCliente === 'cliente' && (
+            <>
+              <div className="data-row">
+                <span className="label">Local de Instalação:</span>
+                <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+              </div>
+              <div className="data-row">
+                <span className="label">Tipo de Instalação:</span>
+                <span className="value">
+                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
+                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {!pagamentoData.tipoInstalacao && 'Não informado'}
+                </span>
+              </div>
+              
+              {/* Informações sobre Participação de Revenda */}
+              {pagamentoData.participacaoRevenda && (
+                <>
+                  <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                    <span className="label">Participação de Revenda:</span>
+                    <span className="value" style={{ fontWeight: 'bold', color: pagamentoData.participacaoRevenda === 'sim' ? '#28a745' : '#dc3545' }}>
+                      {pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}
+                    </span>
+                  </div>
+                  
+                  {pagamentoData.participacaoRevenda === 'sim' && pagamentoData.revendaTemIE && (
+                    <>
+                      <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '10px' }}>
+                        <span className="label">↳ Revenda possui IE:</span>
+                        <span className="value" style={{ color: pagamentoData.revendaTemIE === 'sim' ? '#007bff' : '#ffc107' }}>
+                          {pagamentoData.revendaTemIE === 'sim' ? 'Sim (Com IE)' : 'Não (Sem IE)'}
+                        </span>
+                      </div>
+                      
+                      {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
+                        <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '20px', color: '#28a745' }}>
+                          <span className="label">↳ Desconto Revenda:</span>
+                          <span className="value" style={{ fontWeight: 'bold' }}>
+                            {pagamentoData.descontoRevendaIE}%
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 

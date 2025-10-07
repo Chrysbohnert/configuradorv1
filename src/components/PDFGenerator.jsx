@@ -418,16 +418,56 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               <strong style="color: #007bff;">Saldo a Pagar (após entrada):</strong> <span style="color: #007bff;">${formatCurrency(pedidoData.pagamentoData.saldoAPagar || pedidoData.pagamentoData.valorFinal || 0)}</span>
             </div>
             ` : ''}
+            ${pedidoData.pagamentoData?.tipoCliente === 'cliente' ? `
             <div style="margin-bottom: 10px;">
               <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>
-            <div>
+            <div style="margin-bottom: 10px;">
               <strong>Tipo de Instalação:</strong> ${
                 pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
                 pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
                 'Não informado'
               }
             </div>
+            ` : ''}
+            ${pedidoData.pagamentoData?.tipoFrete ? `
+            <div style="margin-bottom: 10px;">
+              <strong>Tipo de Frete:</strong> 
+              <span style="color: ${pedidoData.pagamentoData.tipoFrete === 'cif' ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                ${pedidoData.pagamentoData.tipoFrete === 'cif' ? 'CIF (Fábrica paga)' : 'FOB (Cliente paga)'}
+              </span>
+            </div>
+            ` : ''}
+            ${pedidoData.pagamentoData?.participacaoRevenda ? `
+            <div style="margin-top: 10px; padding: 10px; background: ${pedidoData.pagamentoData.participacaoRevenda === 'sim' ? '#d4edda' : '#f8d7da'}; border-left: 3px solid ${pedidoData.pagamentoData.participacaoRevenda === 'sim' ? '#28a745' : '#dc3545'}; border-radius: 4px;">
+              <strong>Participação de Revenda:</strong> 
+              <span style="color: ${pedidoData.pagamentoData.participacaoRevenda === 'sim' ? '#155724' : '#721c24'}; font-weight: bold;">
+                ${pedidoData.pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}
+              </span>
+              ${pedidoData.pagamentoData.participacaoRevenda === 'sim' && pedidoData.pagamentoData.revendaTemIE ? `
+                <div style="margin-top: 8px; margin-left: 15px; font-size: 16px;">
+                  <strong>↳ Revenda possui IE:</strong> 
+                  <span style="color: ${pedidoData.pagamentoData.revendaTemIE === 'sim' ? '#007bff' : '#ffc107'}; font-weight: bold;">
+                    ${pedidoData.pagamentoData.revendaTemIE === 'sim' ? 'Sim (Com IE)' : 'Não (Sem IE)'}
+                  </span>
+                </div>
+                ${pedidoData.pagamentoData.revendaTemIE === 'sim' && pedidoData.pagamentoData.descontoRevendaIE > 0 ? `
+                  <div style="margin-top: 5px; margin-left: 30px; font-size: 16px; color: #28a745;">
+                    <strong>↳ Desconto Revenda:</strong> 
+                    <span style="font-weight: bold;">${pedidoData.pagamentoData.descontoRevendaIE}%</span>
+                  </div>
+                ` : ''}
+              ` : ''}
+            </div>
+            ` : ''}
+            ${pedidoData.clienteData?.inscricao_estadual && (pedidoData.clienteData.inscricao_estadual === 'ISENTO' || pedidoData.clienteData.inscricao_estadual !== 'ISENTO') ? `
+            <div style="margin-top: 10px; padding: 10px; background: #e7f3ff; border-left: 3px solid #007bff; border-radius: 4px;">
+              <strong>Inscrição Estadual do Cliente:</strong> 
+              <span style="${pedidoData.clienteData.inscricao_estadual === 'ISENTO' ? 'color: #dc3545;' : 'color: #28a745;'}">
+                ${pedidoData.clienteData.inscricao_estadual === 'ISENTO' ? 'Isento de IE' : pedidoData.clienteData.inscricao_estadual}
+              </span>
+            </div>
+            ` : ''}
           </div>
         </div>
       `;

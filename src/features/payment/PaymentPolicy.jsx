@@ -35,6 +35,11 @@ const PaymentPolicy = ({
   const [tipoFrete, setTipoFrete] = useState(''); // 'cif' | 'fob'
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
+  
+  // Estados para Participação de Revenda (apenas para Cliente)
+  const [participacaoRevenda, setParticipacaoRevenda] = useState(''); // 'sim' | 'nao'
+  const [revendaTemIE, setRevendaTemIE] = useState(''); // 'sim' | 'nao' (se participacaoRevenda === 'sim')
+  const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // 1-5% (se revendaTemIE === 'sim')
 
   // Lista de planos disponíveis baseado no tipo de cliente e percentual de entrada
   const planosDisponiveis = useMemo(() => {
@@ -84,8 +89,22 @@ const PaymentPolicy = ({
         dataEmissaoNF: new Date()
       });
 
+      // Determinar qual desconto aplicar
+      // Se for cliente com participação de revenda COM IE, usar descontoRevendaIE
+      // Se for cliente com participação de revenda SEM IE, não aplicar desconto adicional
+      // Caso contrário, usar descontoAdicional normal
+      let descontoFinal = 0;
+      if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
+        if (revendaTemIE === 'sim') {
+          descontoFinal = descontoRevendaIE; // 1-5%
+        }
+        // Se revendaTemIE === 'nao', descontoFinal permanece 0
+      } else {
+        descontoFinal = descontoAdicional; // 0-3% (desconto normal do vendedor)
+      }
+
       // Aplicar desconto adicional do vendedor (sobre o valor ajustado)
-      const descontoAdicionalValor = resultado.valorAjustado * (descontoAdicional / 100);
+      const descontoAdicionalValor = resultado.valorAjustado * (descontoFinal / 100);
       const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
 
       // Recalcular parcelas com o valor final (com desconto adicional)
@@ -143,11 +162,15 @@ const PaymentPolicy = ({
           faltaEntrada: Math.max(0, faltaEntrada),
           saldoAPagar: saldo,
           formaEntrada: formaEntrada, // Forma de pagamento da entrada
-          descontoAdicional: descontoAdicional, // Percentual do desconto adicional
+          descontoAdicional: descontoFinal, // Percentual do desconto aplicado (pode ser descontoAdicional ou descontoRevendaIE)
           descontoAdicionalValor: descontoAdicionalValor, // Valor do desconto adicional
           parcelas: parcelasAtualizadas, // Parcelas recalculadas com desconto adicional
           saldo: saldoComDesconto, // Saldo atualizado
           tipoFrete: tipoFrete, // Tipo de frete (CIF ou FOB)
+          // Informações sobre participação de revenda
+          participacaoRevenda: participacaoRevenda, // 'sim' | 'nao'
+          revendaTemIE: revendaTemIE, // 'sim' | 'nao'
+          descontoRevendaIE: descontoRevendaIE, // 1-5%
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
@@ -171,7 +194,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -179,6 +202,10 @@ const PaymentPolicy = ({
     setPrazoSelecionado(''); // Limpar seleção de prazo
     setCalculoAtual(null);
     setErroCalculo('');
+    // Resetar estados de participação de revenda
+    setParticipacaoRevenda('');
+    setRevendaTemIE('');
+    setDescontoRevendaIE(0);
   };
 
   // Resetar prazo quando mudar percentual de entrada
@@ -214,109 +241,225 @@ const PaymentPolicy = ({
           )}
         </div>
 
-        {/* Campo de IE - apenas para vendedores do Rio Grande do Sul quando selecionar Cliente */}
-        {tipoCliente === 'cliente' && user?.regiao === 'rio grande do sul' && (
-          <div className="form-group" style={{ marginTop: '10px' }}>
-            <label htmlFor="clienteIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-              Cliente possui Inscrição Estadual? <span style={{ color: '#dc3545' }}>*</span>
-            </label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <label 
-                onClick={() => onClienteIEChange && onClienteIEChange(true)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  gap: '8px', 
-                  cursor: 'pointer', 
-                  padding: '10px 20px', 
-                  background: clienteTemIE ? '#007bff' : '#ffffff', 
-                  color: clienteTemIE ? '#ffffff' : '#495057', 
-                  borderRadius: '6px', 
-                  border: clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: clienteTemIE ? '600' : '500',
-                  flex: '1',
-                  boxShadow: clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (!clienteTemIE) {
-                    e.currentTarget.style.borderColor = '#007bff';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!clienteTemIE) {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input 
-                  type="radio" 
-                  name="clienteIE" 
-                  checked={clienteTemIE} 
-                  onChange={() => {}}
-                  style={{ 
-                    cursor: 'pointer',
-                    accentColor: '#007bff',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <span>Com IE</span>
+        {/* Participação de Revenda - apenas para Cliente */}
+        {tipoCliente === 'cliente' && (
+          <>
+            <div className="form-group" style={{ marginTop: '15px' }}>
+              <label htmlFor="participacaoRevenda" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                Há Participação de Revenda? <span style={{ color: '#dc3545' }}>*</span>
               </label>
-              <label 
-                onClick={() => onClienteIEChange && onClienteIEChange(false)}
-                style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center',
-                  gap: '8px', 
-                  cursor: 'pointer', 
-                  padding: '10px 20px', 
-                  background: !clienteTemIE ? '#007bff' : '#ffffff', 
-                  color: !clienteTemIE ? '#ffffff' : '#495057', 
-                  borderRadius: '6px', 
-                  border: !clienteTemIE ? '2px solid #007bff' : '2px solid #ced4da', 
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: !clienteTemIE ? '600' : '500',
-                  flex: '1',
-                  boxShadow: !clienteTemIE ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (clienteTemIE) {
-                    e.currentTarget.style.borderColor = '#007bff';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (clienteTemIE) {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input 
-                  type="radio" 
-                  name="clienteIE" 
-                  checked={!clienteTemIE} 
-                  onChange={() => {}}
-                  style={{ 
-                    cursor: 'pointer',
-                    accentColor: '#007bff',
-                    width: '16px',
-                    height: '16px'
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <label 
+                  onClick={() => {
+                    setParticipacaoRevenda('sim');
+                    // Resetar estados relacionados
+                    setRevendaTemIE('');
+                    setDescontoRevendaIE(0);
                   }}
-                />
-                <span>Sem IE</span>
-              </label>
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '8px', 
+                    cursor: 'pointer', 
+                    padding: '10px 20px', 
+                    background: participacaoRevenda === 'sim' ? '#28a745' : '#ffffff', 
+                    color: participacaoRevenda === 'sim' ? '#ffffff' : '#495057', 
+                    borderRadius: '6px', 
+                    border: participacaoRevenda === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: participacaoRevenda === 'sim' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: participacaoRevenda === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input 
+                    type="radio" 
+                    name="participacaoRevenda" 
+                    checked={participacaoRevenda === 'sim'} 
+                    onChange={() => {}}
+                    style={{ 
+                      cursor: 'pointer',
+                      accentColor: '#28a745',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <span>Sim</span>
+                </label>
+                <label 
+                  onClick={() => {
+                    setParticipacaoRevenda('nao');
+                    // Resetar estados relacionados
+                    setRevendaTemIE('');
+                    setDescontoRevendaIE(0);
+                  }}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '8px', 
+                    cursor: 'pointer', 
+                    padding: '10px 20px', 
+                    background: participacaoRevenda === 'nao' ? '#dc3545' : '#ffffff', 
+                    color: participacaoRevenda === 'nao' ? '#ffffff' : '#495057', 
+                    borderRadius: '6px', 
+                    border: participacaoRevenda === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: participacaoRevenda === 'nao' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: participacaoRevenda === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input 
+                    type="radio" 
+                    name="participacaoRevenda" 
+                    checked={participacaoRevenda === 'nao'} 
+                    onChange={() => {}}
+                    style={{ 
+                      cursor: 'pointer',
+                      accentColor: '#dc3545',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <span>Não</span>
+                </label>
+              </div>
             </div>
-          </div>
+
+            {/* Se houver participação de revenda, perguntar se tem IE */}
+            {participacaoRevenda === 'sim' && (
+              <div className="form-group" style={{ marginTop: '12px', marginLeft: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '1px solid #dee2e6' }}>
+                <label htmlFor="revendaTemIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                  Revenda possui Inscrição Estadual? <span style={{ color: '#dc3545' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <label 
+                    onClick={() => {
+                      setRevendaTemIE('sim');
+                      setDescontoRevendaIE(1); // Default: 1%
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '8px', 
+                      cursor: 'pointer', 
+                      padding: '10px 20px', 
+                      background: revendaTemIE === 'sim' ? '#007bff' : '#ffffff', 
+                      color: revendaTemIE === 'sim' ? '#ffffff' : '#495057', 
+                      borderRadius: '6px', 
+                      border: revendaTemIE === 'sim' ? '2px solid #007bff' : '2px solid #ced4da', 
+                      transition: 'all 0.2s ease',
+                      fontSize: '14px',
+                      fontWeight: revendaTemIE === 'sim' ? '600' : '500',
+                      flex: '1',
+                      boxShadow: revendaTemIE === 'sim' ? '0 2px 8px rgba(0, 123, 255, 0.3)' : 'none',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="revendaTemIE" 
+                      checked={revendaTemIE === 'sim'} 
+                      onChange={() => {}}
+                      style={{ 
+                        cursor: 'pointer',
+                        accentColor: '#007bff',
+                        width: '16px',
+                        height: '16px'
+                      }}
+                    />
+                    <span>Sim (Com IE)</span>
+                  </label>
+                  <label 
+                    onClick={() => {
+                      setRevendaTemIE('nao');
+                      setDescontoRevendaIE(0); // Sem desconto
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '8px', 
+                      cursor: 'pointer', 
+                      padding: '10px 20px', 
+                      background: revendaTemIE === 'nao' ? '#ffc107' : '#ffffff', 
+                      color: revendaTemIE === 'nao' ? '#000000' : '#495057', 
+                      borderRadius: '6px', 
+                      border: revendaTemIE === 'nao' ? '2px solid #ffc107' : '2px solid #ced4da', 
+                      transition: 'all 0.2s ease',
+                      fontSize: '14px',
+                      fontWeight: revendaTemIE === 'nao' ? '600' : '500',
+                      flex: '1',
+                      boxShadow: revendaTemIE === 'nao' ? '0 2px 8px rgba(255, 193, 7, 0.3)' : 'none',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="revendaTemIE" 
+                      checked={revendaTemIE === 'nao'} 
+                      onChange={() => {}}
+                      style={{ 
+                        cursor: 'pointer',
+                        accentColor: '#ffc107',
+                        width: '16px',
+                        height: '16px'
+                      }}
+                    />
+                    <span>Não (Sem IE)</span>
+                  </label>
+                </div>
+
+                {/* Se revenda tem IE, mostrar seletor de desconto de 1% a 5% */}
+                {revendaTemIE === 'sim' && (
+                  <div className="form-group" style={{ marginTop: '12px' }}>
+                    <label htmlFor="descontoRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                      Desconto da Revenda (1% a 5%) <span style={{ color: '#dc3545' }}>*</span>
+                    </label>
+                    <select
+                      id="descontoRevendaIE"
+                      value={descontoRevendaIE}
+                      onChange={(e) => setDescontoRevendaIE(parseFloat(e.target.value))}
+                      style={{ 
+                        width: '100%', 
+                        padding: '10px', 
+                        fontSize: '14px', 
+                        borderRadius: '6px', 
+                        border: '2px solid #ced4da',
+                        background: '#ffffff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="1">1%</option>
+                      <option value="2">2%</option>
+                      <option value="3">3%</option>
+                      <option value="4">4%</option>
+                      <option value="5">5%</option>
+                    </select>
+                    <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
+                      Desconto aplicado sobre o valor total do pedido
+                    </small>
+                  </div>
+                )}
+
+                {/* Se revenda não tem IE, mostrar aviso de sem desconto */}
+                {revendaTemIE === 'nao' && (
+                  <div style={{ marginTop: '12px', padding: '10px', background: '#fff3cd', borderRadius: '6px', border: '1px solid #ffc107' }}>
+                    <small style={{ color: '#856404', fontSize: '0.875em', fontWeight: '500' }}>
+                      ⚠️ Revenda sem IE: Não há desconto adicional do vendedor
+                    </small>
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
       
       {/* Resumo do Carrinho - só aparece depois de selecionar Revenda ou Cliente */}
@@ -403,7 +546,17 @@ const PaymentPolicy = ({
       </div>
 
       {/* Campo de Desconto Adicional do Vendedor */}
+      {/* Só aparece quando:
+          1. Tipo for revenda (sempre) - até 12%
+          2. Tipo for cliente SEM participação de revenda - até 3%
+          3. Tipo for cliente COM participação de revenda mas SEM IE - até 3%
+          NÃO aparece quando for cliente com participação de revenda COM IE
+      */}
       {prazoSelecionado && (
+        tipoCliente === 'revenda' || 
+        (tipoCliente === 'cliente' && participacaoRevenda === 'nao') ||
+        (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'nao')
+      ) && (
           <div className="form-group">
             <label htmlFor="descontoAdicional">
               Desconto Adicional do Vendedor
@@ -414,15 +567,39 @@ const PaymentPolicy = ({
               onChange={(e) => setDescontoAdicional(parseFloat(e.target.value))}
             >
               <option value="0">Sem desconto adicional</option>
-              <option value="0.5">0,5%</option>
-              <option value="1">1%</option>
-              <option value="1.5">1,5%</option>
-              <option value="2">2%</option>
-              <option value="2.5">2,5%</option>
-              <option value="3">3%</option>
+              {tipoCliente === 'revenda' ? (
+                // Para revenda: de 1% a 12%
+                <>
+                  <option value="1">1%</option>
+                  <option value="2">2%</option>
+                  <option value="3">3%</option>
+                  <option value="4">4%</option>
+                  <option value="5">5%</option>
+                  <option value="6">6%</option>
+                  <option value="7">7%</option>
+                  <option value="8">8%</option>
+                  <option value="9">9%</option>
+                  <option value="10">10%</option>
+                  <option value="11">11%</option>
+                  <option value="12">12%</option>
+                </>
+              ) : (
+                // Para cliente: de 0.5% a 3%
+                <>
+                  <option value="0.5">0,5%</option>
+                  <option value="1">1%</option>
+                  <option value="1.5">1,5%</option>
+                  <option value="2">2%</option>
+                  <option value="2.5">2,5%</option>
+                  <option value="3">3%</option>
+                </>
+              )}
             </select>
             <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
-              Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)
+              {tipoCliente === 'revenda' 
+                ? 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
+                : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
+              }
             </small>
           </div>
       )}
@@ -476,9 +653,13 @@ const PaymentPolicy = ({
                 </div>
               )}
 
-              {descontoAdicional > 0 && calculoAtual.descontoAdicionalValor > 0 && (
+              {calculoAtual.descontoAdicionalValor > 0 && (
                 <div className="calc-row discount">
-                  <span className="calc-label">Desconto Adicional do Vendedor ({descontoAdicional}%):</span>
+                  <span className="calc-label">
+                    {tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim' 
+                      ? `Desconto Revenda com IE (${descontoRevendaIE}%):` 
+                      : `Desconto Adicional do Vendedor (${descontoAdicional}%):`}
+                  </span>
                   <span className="calc-value">- {formatCurrency(calculoAtual.descontoAdicionalValor)}</span>
                 </div>
               )}
@@ -570,52 +751,58 @@ const PaymentPolicy = ({
       <div className="payment-section">
         <h3>Informações Adicionais</h3>
         
-        <div className="form-group">
-          <label htmlFor="localInstalacao">
-            Local de Instalação *
-          </label>
-          <input
-            id="localInstalacao"
-            type="text"
-            value={localInstalacao}
-            onChange={(e) => setLocalInstalacao(e.target.value)}
-            placeholder="Em qual mecânica o guindaste será instalado?"
-            className={errors.localInstalacao ? 'error' : ''}
-          />
-          {errors.localInstalacao && (
-            <span className="error-message">{errors.localInstalacao}</span>
-          )}
-        </div>
-
-        <div className="form-group">
-          <label>Pagamento por conta de: *</label>
-          <div className="radio-group">
-            <label className={`radio-option ${pagamentoPorConta === 'cliente' ? 'selected' : ''}`}>
+        {/* Campos apenas para Cliente (não aparecem para Revenda) */}
+        {tipoCliente === 'cliente' && (
+          <>
+            <div className="form-group">
+              <label htmlFor="localInstalacao">
+                Local de Instalação *
+              </label>
               <input
-                type="radio"
-                name="pagamentoPorConta"
-                value="cliente"
-                checked={pagamentoPorConta === 'cliente'}
-                onChange={(e) => setPagamentoPorConta(e.target.value)}
+                id="localInstalacao"
+                type="text"
+                value={localInstalacao}
+                onChange={(e) => setLocalInstalacao(e.target.value)}
+                placeholder="Em qual mecânica o guindaste será instalado?"
+                className={errors.localInstalacao ? 'error' : ''}
               />
-              <span>Cliente</span>
-            </label>
-            <label className={`radio-option ${pagamentoPorConta === 'fabrica' ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="pagamentoPorConta"
-                value="fabrica"
-                checked={pagamentoPorConta === 'fabrica'}
-                onChange={(e) => setPagamentoPorConta(e.target.value)}
-              />
-              <span>Fábrica</span>
-            </label>
-          </div>
-          {errors.tipoInstalacao && (
-            <span className="error-message">{errors.tipoInstalacao}</span>
-          )}
-        </div>
+              {errors.localInstalacao && (
+                <span className="error-message">{errors.localInstalacao}</span>
+              )}
+            </div>
 
+            <div className="form-group">
+              <label>Pagamento por conta de: *</label>
+              <div className="radio-group">
+                <label className={`radio-option ${pagamentoPorConta === 'cliente' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="pagamentoPorConta"
+                    value="cliente"
+                    checked={pagamentoPorConta === 'cliente'}
+                    onChange={(e) => setPagamentoPorConta(e.target.value)}
+                  />
+                  <span>Cliente</span>
+                </label>
+                <label className={`radio-option ${pagamentoPorConta === 'fabrica' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="pagamentoPorConta"
+                    value="fabrica"
+                    checked={pagamentoPorConta === 'fabrica'}
+                    onChange={(e) => setPagamentoPorConta(e.target.value)}
+                  />
+                  <span>Fábrica</span>
+                </label>
+              </div>
+              {errors.tipoInstalacao && (
+                <span className="error-message">{errors.tipoInstalacao}</span>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* Tipo de Frete - aparece para todos */}
         <div className="form-group" style={{ marginTop: '10px' }}>
           <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
             Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
