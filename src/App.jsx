@@ -1,21 +1,26 @@
-import React from 'react';
+import React, { lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Login from './pages/Login';
-import DashboardVendedor from './pages/DashboardVendedor';
-import DashboardAdmin from './pages/DashboardAdmin';
-import NovoPedido from './pages/NovoPedido';
-import Historico from './pages/Historico';
-import Support from './pages/Support';
-import GerenciarVendedores from './pages/GerenciarVendedores';
-import GerenciarGuindastes from './pages/GerenciarGuindastes';
-import RelatorioCompleto from './pages/RelatorioCompleto';
-import AlterarSenha from './pages/AlterarSenha';
-import GraficosCarga from './pages/GraficosCarga';
-import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
-import DetalhesGuindaste from './pages/DetalhesGuindaste';
-import Logistica from './pages/Logistica';
-import ProntaEntrega from './pages/ProntaEntrega';
 import ProtectedRoute from './components/ProtectedRoute';
+import LazyRoute from './components/LazyRoute';
+
+// Componente público (não lazy)
+import Login from './pages/Login';
+
+// Componentes lazy (carregados sob demanda)
+const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
+const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'));
+const NovoPedido = lazy(() => import('./pages/NovoPedido'));
+const Historico = lazy(() => import('./pages/Historico'));
+const Support = lazy(() => import('./pages/Support'));
+const GerenciarVendedores = lazy(() => import('./pages/GerenciarVendedores'));
+const GerenciarGuindastes = lazy(() => import('./pages/GerenciarGuindastes'));
+const RelatorioCompleto = lazy(() => import('./pages/RelatorioCompleto'));
+const AlterarSenha = lazy(() => import('./pages/AlterarSenha'));
+const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
+const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga'));
+const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
+const Logistica = lazy(() => import('./pages/Logistica'));
+const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
 
 // Carregar scripts de migração em desenvolvimento
 if (import.meta.env.DEV) {
@@ -33,80 +38,110 @@ function App() {
           {/* Rotas do Vendedor */}
           <Route path="/dashboard" element={
             <ProtectedRoute>
-              <DashboardVendedor />
+              <LazyRoute loadingMessage="Carregando Dashboard...">
+                <DashboardVendedor />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/novo-pedido" element={
             <ProtectedRoute>
-              <NovoPedido />
+              <LazyRoute loadingMessage="Carregando Novo Pedido...">
+                <NovoPedido />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/historico" element={
             <ProtectedRoute>
-              <Historico />
+              <LazyRoute loadingMessage="Carregando Histórico...">
+                <Historico />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/pronta-entrega" element={
             <ProtectedRoute>
-              <ProntaEntrega />
+              <LazyRoute loadingMessage="Carregando Pronta Entrega...">
+                <ProntaEntrega />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
           {/* Rotas do Admin */}
           <Route path="/dashboard-admin" element={
             <ProtectedRoute requireAdmin={true}>
-              <DashboardAdmin />
+              <LazyRoute loadingMessage="Carregando Dashboard Admin...">
+                <DashboardAdmin />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/logistica" element={
             <ProtectedRoute requireAdmin={true}>
-              <Logistica />
+              <LazyRoute loadingMessage="Carregando Logística...">
+                <Logistica />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/gerenciar-vendedores" element={
             <ProtectedRoute requireAdmin={true}>
-              <GerenciarVendedores />
+              <LazyRoute loadingMessage="Carregando Gerenciar Vendedores...">
+                <GerenciarVendedores />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/gerenciar-guindastes" element={
             <ProtectedRoute requireAdmin={true}>
-              <GerenciarGuindastes />
+              <LazyRoute loadingMessage="Carregando Gerenciar Guindastes...">
+                <GerenciarGuindastes />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           <Route path="/relatorio-completo" element={
             <ProtectedRoute requireAdmin={true}>
-              <RelatorioCompleto />
+              <LazyRoute loadingMessage="Carregando Relatório...">
+                <RelatorioCompleto />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
           {/* Rota de Suporte */}
-          <Route path="/suporte" element={<Support />} />
+          <Route path="/suporte" element={
+            <LazyRoute loadingMessage="Carregando Suporte...">
+              <Support />
+            </LazyRoute>
+          } />
           
           {/* Rota de Alterar Senha */}
           <Route path="/alterar-senha" element={
             <ProtectedRoute>
-              <AlterarSenha />
+              <LazyRoute loadingMessage="Carregando Alterar Senha...">
+                <AlterarSenha />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
           {/* Rota de Gráficos de Carga */}
           <Route path="/graficos-carga" element={
             <ProtectedRoute>
-              <GraficosCarga />
+              <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
+                <GraficosCarga />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
           {/* Rota de Gerenciar Gráficos de Carga */}
           <Route path="/gerenciar-graficos-carga" element={
             <ProtectedRoute requireAdmin={true}>
-              <GerenciarGraficosCarga />
+              <LazyRoute loadingMessage="Carregando Gerenciar Gráficos...">
+                <GerenciarGraficosCarga />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
           {/* Rota de Detalhes do Guindaste */}
           <Route path="/detalhes-guindaste" element={
             <ProtectedRoute>
-              <DetalhesGuindaste />
+              <LazyRoute loadingMessage="Carregando Detalhes do Guindaste...">
+                <DetalhesGuindaste />
+              </LazyRoute>
             </ProtectedRoute>
           } />
           
