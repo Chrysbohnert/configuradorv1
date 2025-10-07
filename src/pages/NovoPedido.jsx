@@ -64,14 +64,12 @@ const NovoPedido = () => {
         try {
           let regiaoVendedor = user.regiao || 'sul-sudeste';
           
-          // Para região Rio Grande do Sul, verificar se tem IE ou não
+          // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
           if (regiaoVendedor === 'rio grande do sul') {
             regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
           } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
-            // Unificar Norte e Nordeste
             regiaoVendedor = 'norte-nordeste';
           } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
-            // Unificar Sul e Sudeste
             regiaoVendedor = 'sul-sudeste';
           } else if (regiaoVendedor === 'centro-oeste') {
             regiaoVendedor = 'centro-oeste';
@@ -121,14 +119,26 @@ const NovoPedido = () => {
       
       for (const item of carrinho) {
         if (item.tipo === 'guindaste') {
-          // Recalcular preço do guindaste
+          // Recalcular preço do guindaste baseado na região e IE
           try {
-            const regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
+            let regiaoVendedor = user?.regiao || 'sul-sudeste';
+            
+            // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
+            if (regiaoVendedor === 'rio grande do sul') {
+              regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
+            } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
+              regiaoVendedor = 'norte-nordeste';
+            } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
+              regiaoVendedor = 'sul-sudeste';
+            } else if (regiaoVendedor === 'centro-oeste') {
+              regiaoVendedor = 'centro-oeste';
+            }
+            
             const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
             
             carrinhoAtualizado.push({
               ...item,
-              preco: novoPreco || 0
+              preco: novoPreco || item.preco || 0
             });
           } catch (error) {
             console.error('Erro ao atualizar preço:', error);
@@ -258,14 +268,12 @@ const NovoPedido = () => {
       try {
         let regiaoVendedor = user?.regiao || 'sul-sudeste'; // Default: sul-sudeste
         
-        // Para região Rio Grande do Sul, verificar se tem IE ou não
+        // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
         if (regiaoVendedor === 'rio grande do sul') {
           regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
         } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
-          // Unificar Norte e Nordeste
           regiaoVendedor = 'norte-nordeste';
         } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
-          // Unificar Sul e Sudeste
           regiaoVendedor = 'sul-sudeste';
         } else if (regiaoVendedor === 'centro-oeste') {
           regiaoVendedor = 'centro-oeste';
@@ -636,6 +644,14 @@ const NovoPedido = () => {
           if (!pagamentoData.tipoInstalacao) {
             errors.tipoInstalacao = 'Selecione o tipo de instalação';
           }
+          // Participação de revenda é obrigatória para cliente
+          if (!pagamentoData.participacaoRevenda) {
+            errors.participacaoRevenda = 'Selecione se há participação de revenda';
+          }
+          // Se respondeu participação, IE é obrigatória
+          if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
+            errors.revendaTemIE = 'Selecione se possui Inscrição Estadual';
+          }
         }
         if (!pagamentoData.tipoFrete) {
           errors.tipoFrete = 'Selecione o tipo de frete';
@@ -679,12 +695,14 @@ const NovoPedido = () => {
                  pagamentoData.prazoPagamento && 
                  pagamentoData.tipoFrete;
         }
-        // Para cliente, todos os campos são obrigatórios
+        // Para cliente, todos os campos são obrigatórios, incluindo participação e IE
         return pagamentoData.tipoPagamento && 
                pagamentoData.prazoPagamento && 
                pagamentoData.localInstalacao && 
                pagamentoData.tipoInstalacao &&
-               pagamentoData.tipoFrete;
+               pagamentoData.tipoFrete &&
+               pagamentoData.participacaoRevenda &&
+               pagamentoData.revendaTemIE;
       case 3:
         return clienteData.nome && 
                clienteData.telefone && 
@@ -822,31 +840,31 @@ const NovoPedido = () => {
   );
 };
 
-// Função para extrair configurações do título do guindaste
+// Função para extrair configurações do título do guindaste com ícones
 const extrairConfiguracoes = (subgrupo) => {
   const configuracoes = [];
   
   // Extrair configurações do título (mais específico para evitar falsos positivos)
   if (subgrupo.includes(' CR') || subgrupo.includes('CR ') || subgrupo.includes('CR/')) {
-    configuracoes.push('CR - Controle Remoto');
+    configuracoes.push({ icon: '🎮', text: 'CR - Controle Remoto' });
   }
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
-    configuracoes.push('EH - Extensiva Hidráulica');
+    configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
   }
   if (subgrupo.includes(' ECL') || subgrupo.includes('ECL ') || subgrupo.includes('/ECL')) {
-    configuracoes.push('ECL - Extensiva Cilindro Lateral');
+    configuracoes.push({ icon: '🔧', text: 'ECL - Extensiva Cilindro Lateral' });
   }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
-    configuracoes.push('ECS - Extensiva Cilindro Superior');
+    configuracoes.push({ icon: '🔩', text: 'ECS - Extensiva Cilindro Superior' });
   }
   if (subgrupo.includes(' P') || subgrupo.includes('P ') || subgrupo.includes('/P')) {
-    configuracoes.push('P - Preparação p/ Perfuratriz');
+    configuracoes.push({ icon: '🔨', text: 'P - Preparação p/ Perfuratriz' });
   }
   if (subgrupo.includes(' GR') || subgrupo.includes('GR ') || subgrupo.includes('/GR')) {
-    configuracoes.push('GR - Preparação p/ Garra e Rotator');
+    configuracoes.push({ icon: '🦾', text: 'GR - Preparação p/ Garra e Rotator' });
   }
   if (subgrupo.includes('Caminhão 3/4')) {
-    configuracoes.push('Caminhão 3/4');
+    configuracoes.push({ icon: '🚛', text: 'Caminhão 3/4' });
   }
   
   return configuracoes;
@@ -880,7 +898,25 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
           </div>
         </div>
         <div className="guindaste-info">
-          <h3>{guindaste.subgrupo}</h3>
+          <h3>
+            {guindaste.subgrupo}
+            {configuracoes.length > 0 && (
+              <span style={{ marginLeft: '10px', display: 'inline-flex', gap: '8px' }}>
+                {configuracoes.map((config, idx) => (
+                  <span 
+                    key={idx} 
+                    title={config.text}
+                    style={{ 
+                      fontSize: '24px',
+                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))'
+                    }}
+                  >
+                    {config.icon}
+                  </span>
+                ))}
+              </span>
+            )}
+          </h3>
           <span className="categoria">{guindaste.Grupo}</span>
         </div>
         <div className="price">Código: {guindaste.codigo_referencia}</div>
@@ -889,8 +925,8 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
       <div className="card-body">
         <div className="specs">
           <div className="spec">
-            <span className="spec-label">Configuração de lanças:</span>
-            <span className="spec-value">{guindaste.peso_kg} kg</span>
+            <span className="spec-label">Configuração de Lanças:</span>
+            <span className="spec-value">{guindaste.peso_kg || 'N/A'}</span>
           </div>
           <div className="spec">
             <span className="spec-label">Opcionais:</span>
@@ -899,7 +935,10 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
                 <div className="configuracoes-lista">
                   {configuracoes.map((config, idx) => (
                     <div key={idx} className="config-item">
-                      {config}
+                      <span className="config-icon" style={{ fontSize: '22px', marginRight: '8px' }}>
+                        {config.icon}
+                      </span>
+                      <span>{config.text}</span>
                     </div>
                   ))}
                 </div>
@@ -1801,7 +1840,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
                       
                       {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
                         <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '20px', color: '#28a745' }}>
-                          <span className="label">↳ Desconto Revenda:</span>
+                          <span className="label">↳ Desconto do Vendedor:</span>
                           <span className="value" style={{ fontWeight: 'bold' }}>
                             {pagamentoData.descontoRevendaIE}%
                           </span>

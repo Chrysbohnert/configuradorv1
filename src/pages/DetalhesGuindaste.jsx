@@ -76,7 +76,7 @@ const DetalhesGuindaste = () => {
           <h2>{guindaste.subgrupo}</h2>
           <div className="guindaste-meta">
             <span className="modelo">Modelo: {guindaste.modelo}</span>
-            <span className="peso">Peso: {guindaste.peso_kg} kg</span>
+            <span className="peso">Configuração de Lanças: {guindaste.peso_kg || 'N/A'}</span>
             <span className="configuracao">{guindaste.configuração}</span>
           </div>
         </div>
