@@ -181,22 +181,10 @@ const NovoPedido = () => {
     { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
   ];
 
-  // Funções para extrair capacidades e modelos dos guindastes
+  // Capacidades hardcoded para carregamento instantâneo
   const getCapacidadesUnicas = () => {
-    const capacidades = new Set();
-    
-    guindastes.forEach(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      
-      // Extrair apenas o número (6.5, 8.0, 10.8, etc.)
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) {
-        capacidades.add(match[1]);
-      }
-    });
-    
-    return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
+    // Capacidades baseadas nos dados reais do sistema
+    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8', '18.0', '20.0', '25.0'];
   };
 
   const getModelosPorCapacidade = (capacidade) => {
