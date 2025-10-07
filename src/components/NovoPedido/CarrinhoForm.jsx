@@ -155,7 +155,7 @@ const CarrinhoForm = ({
               <h4>{guindaste.subgrupo}</h4>
               <p><strong>Modelo:</strong> {guindaste.modelo}</p>
               <p><strong>Capacidade:</strong> {guindaste.capacidade}</p>
-              <p><strong>Peso:</strong> {guindaste.peso_kg ? `${guindaste.peso_kg} kg` : 'N/A'}</p>
+              <p><strong>Configuração de Lanças:</strong> {guindaste.peso_kg || 'N/A'}</p>
               <p><strong>Preço:</strong> {formatCurrency(guindaste.preco || 0)}</p>
               
               {guindaste.descricao && (

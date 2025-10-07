@@ -195,17 +195,17 @@ const GerenciarGuindastes = () => {
         return;
       }
       
-      // Validação do peso
-      const pesoNumerico = parseInt(formData.peso_kg);
-      if (isNaN(pesoNumerico) || pesoNumerico <= 0) {
-        alert('Por favor, insira um valor válido para Configuração de lanças (kg).');
+      // Converter peso_kg para string e validar
+      const configuracaoLancas = String(formData.peso_kg).trim();
+      if (!configuracaoLancas) {
+        alert('Por favor, insira a configuração de lanças (ex: 3h1m, 4h2m).');
         return;
       }
       
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
-        peso_kg: pesoNumerico,
+        peso_kg: configuracaoLancas, // Agora é texto (ex: "3h1m")
         configuração: formData.configuração.trim(),
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url?.trim() || null,
@@ -388,13 +388,17 @@ const GerenciarGuindastes = () => {
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Configuração de lanças (kg)</label>
+                  <label>Configuração de Lanças</label>
                   <input
                     type="text"
                     value={formData.peso_kg}
                     onChange={e => handleInputChange('peso_kg', e.target.value)}
+                    placeholder="Ex: 3h1m, 4h2m, etc"
                     required
                   />
+                  <small style={{ display: 'block', marginTop: '4px', color: '#6c757d', fontSize: '0.875em' }}>
+                    Informe a configuração das lanças (ex: 3h1m = 3 hidráulicas + 1 manual)
+                  </small>
                 </div>
                 <div className="form-group">
                   <label>Tem Controle Remoto</label>

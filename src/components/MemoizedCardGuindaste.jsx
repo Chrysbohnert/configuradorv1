@@ -63,7 +63,7 @@ const MemoizedCardGuindaste = memo(({ guindaste, onAddToCart, onRemoveFromCart, 
           </p>
           {guindaste.peso_kg && (
             <p className="text-sm text-gray-600">
-              <span className="font-medium">Peso:</span> {guindaste.peso_kg} kg
+              <span className="font-medium">Configuração de Lanças:</span> {guindaste.peso_kg}
             </p>
           )}
           <p className="text-sm text-gray-600">
