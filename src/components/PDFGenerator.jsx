@@ -232,10 +232,49 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           </table>
           
           ${(() => {
-            const guindastesComDetalhes = (pedidoData.guindastes || []).filter(g => g.descricao || g.nao_incluido);
-            if (guindastesComDetalhes.length === 0) return '';
+            const guindastes = pedidoData.carrinho.filter(item => item.tipo === 'guindaste');
+            const guindastesCompletos = guindastes.map(item => {
+              const guindasteCompleto = (pedidoData.guindastes || []).find(g => g.nome === item.nome);
+              return {
+                ...item,
+                ...guindasteCompleto
+              };
+            });
             
-            return `
+            // Seção de FINAME e NCM (destacada)
+            const guindasteComCodigos = guindastesCompletos.find(g => g.finame || g.ncm);
+            const codigosSection = guindasteComCodigos ? `
+              <div style="margin-top: 20px; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 3px solid #f59e0b; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h4 style="color: #92400e; font-size: 22px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                  <span style="font-size: 28px;">📋</span>
+                  INFORMAÇÕES PARA FINANCIAMENTO
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                  ${guindasteComCodigos.finame ? `
+                    <div style="padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                      <div style="font-size: 14px; color: #92400e; font-weight: 600; margin-bottom: 5px;">CÓDIGO FINAME</div>
+                      <div style="font-size: 24px; color: #1f2937; font-weight: bold; letter-spacing: 1px;">${guindasteComCodigos.finame}</div>
+                    </div>
+                  ` : ''}
+                  ${guindasteComCodigos.ncm ? `
+                    <div style="padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                      <div style="font-size: 14px; color: #92400e; font-weight: 600; margin-bottom: 5px;">CÓDIGO NCM</div>
+                      <div style="font-size: 24px; color: #1f2937; font-weight: bold; letter-spacing: 1px;">${guindasteComCodigos.ncm}</div>
+                    </div>
+                  ` : ''}
+                </div>
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.6); border-radius: 6px;">
+                  <small style="color: #92400e; font-size: 13px; line-height: 1.5;">
+                    <strong>Importante:</strong> Estes códigos são fundamentais para processos de financiamento e documentação fiscal. 
+                    Mantenha-os sempre disponíveis para consulta.
+                  </small>
+                </div>
+              </div>
+            ` : '';
+            
+            // Seção de detalhes dos equipamentos
+            const guindastesComDetalhes = guindastesCompletos.filter(g => g.descricao || g.nao_incluido);
+            const detalhesSection = guindastesComDetalhes.length > 0 ? `
               <div style="margin-top: 20px;">
                 <h4 style="color: #374151; font-size: 20px; margin-bottom: 15px;">Detalhes dos Equipamentos</h4>
                 ${guindastesComDetalhes.map(guindaste => `
@@ -262,7 +301,9 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                   </div>
                 `).join('')}
               </div>
-            `;
+            ` : '';
+            
+            return codigosSection + detalhesSection;
           })()}
           
           ${(() => {
@@ -340,6 +381,49 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             ` : ''}
           </div>
         </div>
+
+        ${(() => {
+          const temMedidas = pedidoData.caminhaoData.medidaA || pedidoData.caminhaoData.medidaB || 
+                            pedidoData.caminhaoData.medidaC || pedidoData.caminhaoData.medidaD;
+          if (!temMedidas) return '';
+          
+          return `
+            <div style="margin-bottom: 30px;">
+              <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">ESTUDO VEICULAR - MEDIDAS</h3>
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                  <img src="/estudoveicular.png" alt="Estudo Veicular" style="max-width: 500px; width: 100%; height: auto; border: 2px solid #dee2e6; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                  ${pedidoData.caminhaoData.medidaA ? `
+                    <div style="padding: 10px; background: white; border-radius: 6px;">
+                      <strong style="font-size: 18px;">Medida A:</strong> 
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaA} mm</span>
+                    </div>
+                  ` : ''}
+                  ${pedidoData.caminhaoData.medidaB ? `
+                    <div style="padding: 10px; background: white; border-radius: 6px;">
+                      <strong style="font-size: 18px;">Medida B:</strong> 
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaB} mm</span>
+                    </div>
+                  ` : ''}
+                  ${pedidoData.caminhaoData.medidaC ? `
+                    <div style="padding: 10px; background: white; border-radius: 6px;">
+                      <strong style="font-size: 18px;">Medida C:</strong> 
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaC} mm</span>
+                    </div>
+                  ` : ''}
+                  ${pedidoData.caminhaoData.medidaD ? `
+                    <div style="padding: 10px; background: white; border-radius: 6px;">
+                      <strong style="font-size: 18px;">Medida D:</strong> 
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaD} mm</span>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            </div>
+          `;
+        })()}
       `;
 
       document.body.appendChild(headerElement);
@@ -655,6 +739,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       try {
         // Carregar lista de PDFs de gráficos cadastrados
         const graficosCadastrados = await db.getGraficosCarga();
+        console.log('📊 Gráficos cadastrados no banco:', graficosCadastrados?.length || 0);
+        
         // Helpers de normalização para casar variações de nome (CR/EH etc.)
         // Indexar PDFs cadastrados por chaves normalizadas (nome e modelo)
         const indexPdfPorChave = new Map();
@@ -666,22 +752,68 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           for (const key of candidatos) {
             if (g.arquivo_url && !indexPdfPorChave.has(key)) {
               indexPdfPorChave.set(key, g.arquivo_url);
+              console.log(`   ✅ Indexado: "${key}" -> ${g.arquivo_url.substring(0, 50)}...`);
             }
           }
         }
+        
+        console.log(`📋 Total de chaves indexadas: ${indexPdfPorChave.size}`);
 
         // Extrair modelos únicos dos itens 'guindaste' do carrinho e normalizar
         const itensGuindaste = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
-        const modelosUnicos = Array.from(new Set(
-          itensGuindaste.map(i => buildGraficoKey(i.modelo || i.nome || '')).filter(Boolean)
-        ));
+        console.log('🚛 Itens guindaste no carrinho:', itensGuindaste.length);
+        
+        // Para cada item, tentar várias fontes de informação do modelo
+        const modelosParaBuscar = [];
+        itensGuindaste.forEach(item => {
+          console.log(`   🔍 Analisando item:`, {
+            nome: item.nome,
+            modelo: item.modelo,
+            subgrupo: item.subgrupo,
+            codigo_produto: item.codigo_produto
+          });
+          
+          // Tentar extrair modelo de várias formas
+          const fontes = [
+            item.modelo,           // Campo modelo direto
+            item.nome,             // Nome do item
+            item.subgrupo,         // Subgrupo (mais completo)
+            item.codigo_produto,   // Código do produto
+          ];
+          
+          // Adicionar todas as variações normalizadas
+          fontes.forEach(fonte => {
+            if (fonte) {
+              const chaveNormalizada = buildGraficoKey(fonte);
+              if (chaveNormalizada) {
+                modelosParaBuscar.push({
+                  original: fonte,
+                  normalizado: chaveNormalizada,
+                  item: item
+                });
+                console.log(`      ➜ Chave gerada: "${chaveNormalizada}" de "${fonte}"`);
+              }
+            }
+          });
+        });
+        
+        // Remover duplicatas mantendo a ordem
+        const modelosUnicos = Array.from(new Set(modelosParaBuscar.map(m => m.normalizado)));
+        console.log(`🎯 Modelos únicos a buscar: ${modelosUnicos.length}`, modelosUnicos);
 
         // Resolver URL de PDF para cada modelo com fallbacks inteligentes
         const modeloParaPdf = new Map();
         for (const key of modelosUnicos) {
           const url = resolveGraficoUrl(indexPdfPorChave, key);
-          if (url) modeloParaPdf.set(key, url);
+          if (url) {
+            modeloParaPdf.set(key, url);
+            console.log(`   ✅ Match encontrado: "${key}" -> ${url.substring(0, 50)}...`);
+          } else {
+            console.warn(`   ⚠️ Nenhum gráfico encontrado para: "${key}"`);
+          }
         }
+        
+        console.log(`📈 Total de PDFs a incluir: ${modeloParaPdf.size}`);
 
         if (modeloParaPdf.size > 0) {
           for (const [modelo, pdfUrl] of modeloParaPdf.entries()) {

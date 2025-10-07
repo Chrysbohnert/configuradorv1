@@ -184,7 +184,7 @@ const NovoPedido = () => {
   // Capacidades hardcoded para carregamento instantâneo
   const getCapacidadesUnicas = () => {
     // Capacidades baseadas nos dados reais do sistema
-    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8', '18.0', '20.0', '25.0'];
+    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8'];
   };
 
   const getModelosPorCapacidade = (capacidade) => {
@@ -1410,6 +1410,87 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
             rows="3"
           />
         </div>
+
+        {/* Seção de Estudo Veicular com Imagem e Medidas */}
+        <div className="form-group full-width" style={{ marginTop: '30px' }}>
+          <h3 style={{ color: '#495057', fontSize: '20px', marginBottom: '15px', borderBottom: '2px solid #dee2e6', paddingBottom: '10px' }}>
+            Estudo Veicular - Medidas
+          </h3>
+          
+          <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            {/* Imagem do Estudo Veicular */}
+            <div style={{ flex: '1', minWidth: '300px', textAlign: 'center' }}>
+              <img 
+                src="/estudoveicular.png" 
+                alt="Estudo Veicular" 
+                style={{ 
+                  width: '100%', 
+                  maxWidth: '500px', 
+                  height: 'auto', 
+                  border: '2px solid #dee2e6',
+                  borderRadius: '8px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                }}
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <div style={{ display: 'none', padding: '20px', background: '#f8f9fa', border: '2px dashed #dee2e6', borderRadius: '8px' }}>
+                <p style={{ color: '#6c757d', margin: '0' }}>Imagem não disponível</p>
+              </div>
+            </div>
+
+            {/* Campos de Medidas */}
+            <div style={{ flex: '1', minWidth: '300px' }}>
+              <p style={{ marginBottom: '15px', color: '#6c757d', fontSize: '14px' }}>
+                Preencha as medidas conforme indicado na imagem, Caminhão 1 Guindaste GSI Interno, caminhão 2 GUindaste GSE Externo:
+              </p>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                <div className="form-group">
+                  <label>Medida A (mm)</label>
+                  <input
+                    type="text"
+                    value={formData.medidaA || ''}
+                    onChange={(e) => handleChange('medidaA', e.target.value)}
+                    placeholder="Ex: 150"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Medida B (mm)</label>
+                  <input
+                    type="text"
+                    value={formData.medidaB || ''}
+                    onChange={(e) => handleChange('medidaB', e.target.value)}
+                    placeholder="Ex: 200"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Medida C (mm)</label>
+                  <input
+                    type="text"
+                    value={formData.medidaC || ''}
+                    onChange={(e) => handleChange('medidaC', e.target.value)}
+                    placeholder="Ex: 350"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Medida D (mm)</label>
+                  <input
+                    type="text"
+                    value={formData.medidaD || ''}
+                    onChange={(e) => handleChange('medidaD', e.target.value)}
+                    placeholder="Ex: 400"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1704,6 +1785,40 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               <span className="label">Observações:</span>
               <span className="value">{caminhaoData.observacoes}</span>
             </div>
+          )}
+          
+          {/* Mostrar medidas do estudo veicular se alguma foi preenchida */}
+          {(caminhaoData.medidaA || caminhaoData.medidaB || caminhaoData.medidaC || caminhaoData.medidaD) && (
+            <>
+              <div className="data-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                <span className="label" style={{ fontWeight: 'bold' }}>Medidas do Veículo:</span>
+                <span className="value"></span>
+              </div>
+              {caminhaoData.medidaA && (
+                <div className="data-row">
+                  <span className="label">Medida A:</span>
+                  <span className="value">{caminhaoData.medidaA} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaB && (
+                <div className="data-row">
+                  <span className="label">Medida B:</span>
+                  <span className="value">{caminhaoData.medidaB} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaC && (
+                <div className="data-row">
+                  <span className="label">Medida C:</span>
+                  <span className="value">{caminhaoData.medidaC} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaD && (
+                <div className="data-row">
+                  <span className="label">Medida D:</span>
+                  <span className="value">{caminhaoData.medidaD} mm</span>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>

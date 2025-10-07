@@ -41,7 +41,15 @@ export function getPlanByDescription(description, audience) {
  * @returns {string}
  */
 export function getPlanLabel(plan) {
-  let label = plan.description;
+  // Adicionar número de parcelas no início, exceto para "À Vista"
+  let label = '';
+  // Verificar se a descrição já não começa com "Nx -" para não duplicar
+  const jaTemParcelas = /^\d+x\s*-/.test(plan.description);
+  if (plan.description !== 'À Vista' && plan.installments && !jaTemParcelas) {
+    label = `${plan.installments}x - `;
+  }
+  label += plan.description;
+  
   const hints = [];
 
   if (plan.discount_percent) {
