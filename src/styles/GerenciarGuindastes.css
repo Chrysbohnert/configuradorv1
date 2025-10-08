@@ -127,131 +127,305 @@
   height: 16px;
 }
 
-/* Guindastes Grid */
+/* Cards dos Guindastes */
 .guindastes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  margin-top: 32px;
 }
 
 .guindaste-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  background: var(--empresa-branco);
+  border: 1px solid var(--empresa-cinza-muito-claro);
+  border-radius: 12px;
+  padding: 32px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.guindaste-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--empresa-cinza-escuro);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .guindaste-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-  border-color: #000000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border-color: var(--empresa-cinza-claro);
+}
+
+.guindaste-card:hover::before {
+  opacity: 1;
 }
 
 .guindaste-header {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 /* Imagem do Guindaste */
 .guindaste-image {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   flex-shrink: 0;
 }
 
-.guindaste-thumbnail {
-  width: 100%;
-  height: 100%;
+.guindaste-image img {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
   object-fit: cover;
-  border-radius: 12px;
-  border: 2px solid #e9ecef;
-  transition: all 0.3s ease;
+  border: 1px solid var(--empresa-cinza-muito-claro);
+  background: var(--empresa-cinza-muito-claro);
+}
+
+.guindaste-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .guindaste-thumbnail:hover {
   transform: scale(1.05);
-  border-color: #000000;
+  border-color: var(--empresa-cinza-claro);
 }
 
 .guindaste-icon {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #000000 0%, #000000 100%);
-  border-radius: 12px;
+  width: 80px;
+  height: 80px;
+  background: var(--empresa-cinza-muito-claro);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  font-size: 32px;
+  color: var(--empresa-cinza-claro);
+  border: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .guindaste-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .guindaste-info {
   flex: 1;
+  min-width: 0;
 }
 
 .guindaste-info h3 {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
-  color: #000000;
-  margin-bottom: 4px;
+  color: var(--empresa-cinza-escuro);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
 }
 
 .guindaste-info p {
   font-size: 14px;
-  color: #000000;
+  color: var(--empresa-cinza-claro);
+  font-weight: 500;
+  background: var(--empresa-cinza-muito-claro);
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  margin: 0;
+  border: 1px solid transparent;
 }
 
 .guindaste-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .action-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #dee2e6;
-  background: white;
-  border-radius: 8px;
+  flex: 1;
+  height: 48px;
+  border: 2px solid transparent;
+  background: var(--empresa-branco);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s ease;
-  color: #000000;
+  font-size: 14px;
+  font-weight: 600;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.action-btn:hover::before {
+  transform: translateX(100%);
 }
 
 .action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
+.action-btn:active {
+  transform: translateY(0);
+}
+
+/* Botão de Editar */
 .edit-btn {
-  color: #000000;
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border-color: #3b82f6;
 }
 
 .edit-btn:hover {
-  background: #474f55;
-  border-color: #7a8289;
-  color: #000000;
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
+/* Botão de Excluir */
 .delete-btn {
-  color: #000000;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-color: #ef4444;
 }
 
 .delete-btn:hover {
-  background: #ffebee;
-  border-color: #50403f;
-  color: #3f3030;
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Botão de Preços */
+.price-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: #10b981;
+}
+
+.price-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Ícones com melhor visibilidade */
+.edit-btn::after {
+  content: "✏️";
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.delete-btn::after {
+  content: "🗑️";
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.price-btn::after {
+  content: "💰";
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.guindaste-info h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--empresa-cinza-escuro);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.guindaste-info p {
+  font-size: 14px;
+  color: var(--empresa-cinza-claro);
+  font-weight: 500;
+  background: var(--empresa-branco);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  margin: 0;
+  border: 1px solid var(--empresa-cinza-muito-claro);
+}
+
+.guindaste-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--empresa-cinza-muito-claro);
+  background: var(--empresa-branco);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--empresa-cinza-claro);
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+}
+
+.edit-btn {
+  color: var(--empresa-azul);
+  border-color: var(--empresa-azul);
+}
+
+.edit-btn:hover {
+  background: var(--empresa-azul);
+  color: var(--empresa-branco);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+}
+
+.delete-btn {
+  color: var(--empresa-vermelho);
+  border-color: var(--empresa-vermelho);
+}
+
+.delete-btn:hover {
+  background: var(--empresa-vermelho);
+  color: var(--empresa-branco);
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
 }
 
 .action-btn {
@@ -632,6 +806,278 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Paginação */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.page-info {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.page-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.page-btn.primary {
+  background: #111827;
+  color: #ffffff;
+}
+
+.page-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.page-btn.ghost {
+  background: #ffffff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.page-btn.ghost:hover {
+  background: #f9fafb;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Modal de Confirmação de Exclusão */
+.delete-confirm-btn {
+  background: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+.delete-confirm-btn:hover {
+  background: #c82333 !important;
+  border-color: #bd2130 !important;
+}
+
+/* Estilos do Formulário Melhorado */
+.guindaste-form-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Bloquear scroll do body quando modal estiver aberto */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* Container da imagem no modal */
+.imagens-adicionais-container {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.imagens-adicionais-container img {
+  max-width: 200px !important;
+  max-height: 200px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* Preview de imagens no modal */
+.imagens-preview img {
+  max-width: 150px !important;
+  max-height: 150px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* Garantir que todas as imagens no modal respeitem o tamanho */
+.guindaste-form-modal img {
+  max-width: 200px !important;
+  max-height: 200px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.modal-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 400;
+}
+
+.modal-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Seções do Formulário */
+.form-section {
+  margin-bottom: 32px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #495057;
+  margin: 0;
+}
+
+.section-divider {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, #dee2e6 0%, transparent 100%);
+}
+
+/* Labels com ícones */
+.label-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* Inputs melhorados */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Help text melhorado */
+.form-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.form-help.success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Seção Financeira */
+.financial-section {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 2px solid #ffc107;
+}
+
+.financial-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.warning-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.warning-text strong {
+  color: #856404;
+  font-size: 16px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.warning-text p {
+  color: #856404;
+  font-size: 14px;
+  margin: 0;
+}
+
+.financial-label {
+  font-weight: 700;
+  color: #856404;
+}
+
+.financial-input {
+  border-color: #ffc107;
+}
+
+.financial-input:focus {
+  border-color: #856404;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
+.financial-help {
+  color: #856404;
+  font-weight: 500;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .gerenciar-guindastes-content {
@@ -849,6 +1295,34 @@ textarea:focus {
   border: 1px solid #e9ecef;
 }
 
+.capacity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  border: 2px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  border-color: #000000;
+}
+
+.chip.active {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
 .filtro-capacidade {
   display: flex;
   align-items: center;
@@ -900,6 +1374,35 @@ textarea:focus {
   border: 1px solid #e9ecef;
 }
 
+/* Seções por capacidade */
+.capacity-section {
+  margin-top: 28px;
+}
+
+.capacity-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.capacity-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.capacity-count {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Responsive para o filtro */
 @media (max-width: 768px) {
   .filtro-container {
@@ -915,4 +1418,4 @@ textarea:focus {
   .filtro-select {
     min-width: 200px;
   }
-} 
+}

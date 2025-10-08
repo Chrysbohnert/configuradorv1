@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import '../styles/ImageUpload.css';
 
 const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
   const [uploading, setUploading] = useState(false);
@@ -53,54 +54,71 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
   };
 
   return (
-    <div className="space-y-4">
-      <label className="block text-sm font-medium text-gray-700">
+    <div className="image-upload-container">
+      <label className="image-upload-label">
         {label}
       </label>
       
       {/* Preview da imagem */}
       {preview && (
-        <div className="relative">
-          <img
-            src={preview}
-            alt="Preview"
-            className="w-32 h-32 object-cover rounded-lg border-2 border-gray-200"
-          />
-          <button
-            type="button"
-            onClick={removeImage}
-            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600"
-          >
-            ×
-          </button>
+        <div className="image-preview-container">
+          <div className="image-preview-wrapper">
+            <img
+              src={preview}
+              alt="Preview"
+              className="image-preview"
+            />
+            <button
+              type="button"
+              onClick={removeImage}
+              className="remove-image-btn"
+              title="Remover imagem"
+            >
+              <span>×</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Upload */}
-      <div className="flex items-center space-x-4">
-        <label className="cursor-pointer bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-          {uploading ? 'Enviando...' : 'Escolher Imagem'}
+      {/* Upload Area */}
+      <div className="upload-area">
+        <div className="upload-content">
+          <div className="upload-icon">📷</div>
+          <div className="upload-text">
+            <span className="upload-title">Escolher Imagem</span>
+            <span className="upload-subtitle">Clique para selecionar um arquivo</span>
+          </div>
           <input
             type="file"
             accept="image/*"
             onChange={handleImageUpload}
-            className="hidden"
+            className="upload-input"
             disabled={uploading}
           />
-        </label>
+        </div>
         
         {uploading && (
-          <div className="text-sm text-gray-500">
-            ⏳ Enviando imagem...
+          <div className="upload-loading">
+            <div className="loading-spinner"></div>
+            <span>Enviando imagem...</span>
           </div>
         )}
       </div>
 
       {/* Informações */}
-      <div className="text-xs text-gray-500">
-        <p>• Formatos aceitos: JPG, PNG, GIF</p>
-        <p>• Tamanho máximo: 5MB</p>
-        <p>• Dimensão recomendada: 400x400px</p>
+      <div className="upload-info">
+        <div className="info-item">
+          <span className="info-icon">📁</span>
+          <span>Formatos: JPG, PNG, GIF</span>
+        </div>
+        <div className="info-item">
+          <span className="info-icon">📏</span>
+          <span>Máximo: 5MB</span>
+        </div>
+        <div className="info-item">
+          <span className="info-icon">🖼️</span>
+          <span>Recomendado: 400x400px</span>
+        </div>
       </div>
     </div>
   );
