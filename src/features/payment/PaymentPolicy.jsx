@@ -14,6 +14,7 @@ import './PaymentPolicy.css';
  * @param {Object} props.user - Dados do usuário logado
  * @param {boolean} props.clienteTemIE - Se o cliente tem Inscrição Estadual
  * @param {Function} props.onClienteIEChange - Callback para mudar o estado de IE
+ * @param {Array} props.carrinho - Itens do carrinho para verificar modelos GSE
  */
 const PaymentPolicy = ({ 
   precoBase = 0, 
@@ -22,7 +23,8 @@ const PaymentPolicy = ({
   errors = {},
   user = null,
   clienteTemIE = true,
-  onClienteIEChange
+  onClienteIEChange,
+  carrinho = []
 }) => {
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
@@ -35,11 +37,92 @@ const PaymentPolicy = ({
   const [tipoFrete, setTipoFrete] = useState(''); // 'cif' | 'fob'
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
+
+  // Lista de oficinas do Rio Grande do Sul
+  const oficinasRS = [
+    { nome: 'Agiltec', cidade: 'Santa Rosa', uf: 'RS' },
+    { nome: 'Rodokurtz', cidade: 'Pelotas', uf: 'RS' },
+    { nome: 'Hidroen Guindastes', cidade: 'São José do Inhacorá', uf: 'RS' },
+    { nome: 'Trevisan', cidade: 'Santa Maria', uf: 'RS' },
+    { nome: 'Berto', cidade: 'Canoas', uf: 'RS' },
+    { nome: 'Guindas Move', cidade: 'Alvorada', uf: 'RS' },
+    { nome: 'Salex', cidade: 'Nova Prata', uf: 'RS' },
+    { nome: 'Guindasmap', cidade: 'Santo Antônio da Patrulha', uf: 'RS' },
+    { nome: 'VRC Manutenções', cidade: 'Caxias do Sul', uf: 'RS' },
+    { nome: 'BGS Implementos', cidade: 'Erechim', uf: 'RS' },
+    { nome: 'R.D.P. Soluções Hidráulicas', cidade: 'Não-Me-Toque', uf: 'RS' },
+    { nome: 'KM Prestação de Serviço Mecânico', cidade: 'Carazinho', uf: 'RS' },
+    { nome: 'Mecânica Acosta', cidade: 'Alegrete', uf: 'RS' },
+    { nome: 'KIST Oficina de Furgões', cidade: 'Santo Ângelo', uf: 'RS' },
+    { nome: 'Henz & Cassola Comércio', cidade: 'Cândido Godói', uf: 'RS' }
+  ];
+
+  // Filtrar oficinas baseado na região do vendedor
+  const oficinasDisponiveis = oficinasRS.filter(oficina => {
+    // Se o vendedor for do Rio Grande do Sul, mostrar todas as oficinas RS
+    if (user?.regiao === 'rio grande do sul') {
+      return oficina.uf === 'RS';
+    }
+    // Para outras regiões, pode ser necessário adicionar lógica futura
+    return false; // Por enquanto, só mostra para vendedores do RS
+  });
   
   // Estados para Participação de Revenda (apenas para Cliente)
   const [participacaoRevenda, setParticipacaoRevenda] = useState(''); // 'sim' | 'nao'
   const [revendaTemIE, setRevendaTemIE] = useState(''); // 'sim' | 'nao' (se participacaoRevenda === 'sim')
-  const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // Desconto do vendedor: 1-5% (se cliente COM participação de revenda COM IE)
+  const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // Desconto do vendedor: 1-5% (se cliente COM participação de revenda - Produtor rural)
+
+  // Verificar se há guindastes GSE no carrinho
+  const temGuindasteGSE = useMemo(() => {
+    return carrinho.some(item => {
+      // Verificar se o modelo, subgrupo ou nome contém "GSE"
+      const modelo = (item.modelo || '').toUpperCase();
+      const subgrupo = (item.subgrupo || '').toUpperCase();
+      const nome = (item.nome || '').toUpperCase();
+      
+      return modelo.includes('GSE') || subgrupo.includes('GSE') || nome.includes('GSE');
+    });
+  }, [carrinho]);
+
+  // Verificar se há guindastes GSI no carrinho e contar quantos
+  const { temGuindasteGSI, quantidadeGSI } = useMemo(() => {
+    let quantidade = 0;
+    
+    carrinho.forEach(item => {
+      // Verificar se o modelo, subgrupo ou nome contém "GSI"
+      const modelo = (item.modelo || '').toUpperCase();
+      const subgrupo = (item.subgrupo || '').toUpperCase();
+      const nome = (item.nome || '').toUpperCase();
+      
+      const temGSI = modelo.includes('GSI') || subgrupo.includes('GSI') || nome.includes('GSI');
+      
+      if (temGSI) {
+        quantidade++;
+      }
+    });
+    
+    return {
+      temGuindasteGSI: quantidade > 0,
+      quantidadeGSI: quantidade
+    };
+  }, [carrinho]);
+
+  // Determinar o limite máximo de desconto para revenda
+  // Se tem GSE: máximo 3%
+  // Se tem GSI: 
+  //   - 1 unidade: até 12%
+  //   - 2 unidades: até 14%
+  //   - 3+ unidades: até 15%
+  // Se não tem GSE/GSI: máximo 12%
+  const maxDescontoRevenda = useMemo(() => {
+    if (temGuindasteGSE) return 3;
+    if (temGuindasteGSI) {
+      if (quantidadeGSI >= 3) return 15;
+      if (quantidadeGSI === 2) return 14;
+      return 12; // 1 unidade
+    }
+    return 12;
+  }, [temGuindasteGSE, temGuindasteGSI, quantidadeGSI]);
 
   // Lista de planos disponíveis baseado no tipo de cliente e percentual de entrada
   const planosDisponiveis = useMemo(() => {
@@ -60,6 +143,36 @@ const PaymentPolicy = ({
     // Para revenda ou cliente sem percentual, mostrar planos que não exigem percentual específico
     return todosPlanos.filter(plan => !plan.entry_percent_required);
   }, [tipoCliente, percentualEntrada]);
+
+  // Resetar desconto adicional se exceder o limite (por exemplo, se GSE for adicionado ao carrinho)
+  // MAS permitir 14% e 15% manualmente para GSI (pois o sistema ainda não permite múltiplos itens)
+  useEffect(() => {
+    if (tipoCliente === 'revenda' && descontoAdicional > maxDescontoRevenda) {
+      // Se for GSI, permitir até 15% (seleção manual do vendedor)
+      const limiteReal = temGuindasteGSI ? 15 : maxDescontoRevenda;
+      if (descontoAdicional > limiteReal) {
+        setDescontoAdicional(0);
+      }
+    }
+  }, [tipoCliente, maxDescontoRevenda, descontoAdicional, temGuindasteGSI]);
+
+  // Forçar "Produtor rural" quando for Cliente + Participação de Revenda + GSI
+  useEffect(() => {
+    if (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && temGuindasteGSI && revendaTemIE !== 'sim') {
+      setRevendaTemIE('sim');
+      if (onClienteIEChange) {
+        onClienteIEChange(true);
+      }
+      setDescontoRevendaIE(1); // Default: 1%
+    }
+  }, [tipoCliente, participacaoRevenda, temGuindasteGSI, revendaTemIE, onClienteIEChange]);
+
+  // Zerar desconto do vendedor quando houver GSE (Cliente + Participação de Revenda + Produtor rural)
+  useEffect(() => {
+    if (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && descontoRevendaIE > 0) {
+      setDescontoRevendaIE(0);
+    }
+  }, [tipoCliente, participacaoRevenda, revendaTemIE, temGuindasteGSE, descontoRevendaIE]);
 
   // Efeito para recalcular quando mudar o tipo, prazo ou preço base
   useEffect(() => {
@@ -90,26 +203,34 @@ const PaymentPolicy = ({
       });
 
       // Determinar qual desconto o VENDEDOR pode aplicar:
-      // - Cliente COM participação de revenda COM IE → vendedor pode dar 1-5%
-      // - Cliente COM participação de revenda SEM IE → vendedor NÃO pode dar desconto
+      // - Cliente COM participação de revenda - Produtor rural → vendedor pode dar 1-5% (MAS NÃO se houver GSE)
+      // - Cliente COM participação de revenda - Rodoviário → vendedor NÃO pode dar desconto
       // - Cliente SEM participação de revenda → vendedor pode dar 0-3%
-      // - Revenda → vendedor pode dar 0-12%
+      // - Revenda → vendedor pode dar 0-12% (ou até 15% para GSI com múltiplas unidades)
       let descontoFinal = 0;
       if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
-        if (revendaTemIE === 'sim') {
-          descontoFinal = descontoRevendaIE; // Vendedor aplica: 1-5%
+        if (revendaTemIE === 'sim' && !temGuindasteGSE) {
+          descontoFinal = descontoRevendaIE; // Vendedor aplica: 1-5% (apenas se NÃO houver GSE)
         }
-        // Se revendaTemIE === 'nao', vendedor não pode dar desconto (descontoFinal permanece 0)
+        // Se for Rodoviário OU se houver GSE, vendedor não pode dar desconto (descontoFinal permanece 0)
       } else {
-        descontoFinal = descontoAdicional; // Vendedor aplica: 0-3% (cliente) ou 0-12% (revenda)
+        descontoFinal = descontoAdicional; // Vendedor aplica: 0-3% (cliente) ou 0-15% (revenda com GSI)
       }
 
-      // Aplicar desconto adicional do vendedor (sobre o valor ajustado)
-      const descontoAdicionalValor = resultado.valorAjustado * (descontoFinal / 100);
+      // Aplicar desconto adicional do vendedor (sobre o PREÇO BASE, não sobre o valor ajustado)
+      const descontoAdicionalValor = precoBase * (descontoFinal / 100);
       const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
 
-      // Recalcular parcelas com o valor final (com desconto adicional)
-      const saldoComDesconto = valorFinalComDescontoAdicional - resultado.entrada;
+      // Para Cliente: calcular entrada baseada no percentual (30% ou 50%)
+      // Para Revenda: usar a entrada do plano
+      const valorSinalNum = parseFloat(valorSinal) || 0;
+      const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
+      const entradaParaCalculo = tipoCliente === 'cliente' && percentualEntradaNum > 0 
+        ? (valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
+        : resultado.entrada;
+
+      // Recalcular parcelas com o valor final (com desconto adicional) e entrada correta
+      const saldoComDesconto = valorFinalComDescontoAdicional - entradaParaCalculo;
       const numParcelas = resultado.parcelas.length;
       const valorParcela = saldoComDesconto / numParcelas;
       
@@ -143,13 +264,9 @@ const PaymentPolicy = ({
       if (onPaymentComputed) {
         // Calcular valores de entrada e saldo (apenas para cliente)
         // O sinal FAZ PARTE da entrada total
-        const valorSinalNum = parseFloat(valorSinal) || 0;
-        const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
-        const entradaTotal = tipoCliente === 'cliente' && percentualEntradaNum > 0 
-          ? (valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
-          : 0;
+        const entradaTotal = entradaParaCalculo;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = valorFinalComDescontoAdicional - entradaTotal; // Saldo após pagar a entrada completa
+        const saldo = saldoComDesconto; // Saldo após pagar a entrada completa
         
         onPaymentComputed({
           ...resultado,
@@ -195,7 +312,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -337,11 +454,17 @@ const PaymentPolicy = ({
             {participacaoRevenda && (
               <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
                 <label htmlFor="clienteRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                  {participacaoRevenda === 'sim' ? 'Revenda possui Inscrição Estadual?' : 'Cliente possui Inscrição Estadual?'} <span style={{ color: '#dc3545' }}>*</span>
+                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'Tipo de Cliente:'} <span style={{ color: '#dc3545' }}>*</span>
                 </label>
                 <small style={{ display: 'block', marginBottom: '10px', color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
                   ⚠️ IMPORTANTE: Este campo afeta o PREÇO BASE do equipamento
                 </small>
+                {/* Mensagem especial para GSI */}
+                {participacaoRevenda === 'sim' && temGuindasteGSI && (
+                  <small style={{ display: 'block', marginBottom: '10px', color: '#28a745', fontSize: '0.875em', fontWeight: '600', background: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #28a745' }}>
+                    ✓ Guindastes GSI detectados - Apenas "Produtor rural" disponível
+                  </small>
+                )}
                 <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                   <label 
                     onClick={() => {
@@ -350,7 +473,7 @@ const PaymentPolicy = ({
                       if (onClienteIEChange) {
                         onClienteIEChange(true);
                       }
-                      // Se houver participação de revenda COM IE, o vendedor pode aplicar desconto de 1-5%
+                      // Se houver participação de revenda - Produtor rural, o vendedor pode aplicar desconto de 1-5%
                       if (participacaoRevenda === 'sim') {
                         setDescontoRevendaIE(1); // Default: 1%
                       }
@@ -369,7 +492,7 @@ const PaymentPolicy = ({
                       transition: 'all 0.2s ease',
                       fontSize: '14px',
                       fontWeight: revendaTemIE === 'sim' ? '600' : '500',
-                      flex: '1',
+                      flex: participacaoRevenda === 'sim' && temGuindasteGSI ? '1 1 100%' : '1',
                       boxShadow: revendaTemIE === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
                       userSelect: 'none'
                     }}
@@ -386,18 +509,20 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>✓ Com IE</span>
+                    <span>🚜 Produtor rural</span>
                   </label>
-                  <label 
-                    onClick={() => {
-                      setRevendaTemIE('nao');
-                      // Atualizar estado do componente pai (para recalcular preços no carrinho)
-                      if (onClienteIEChange) {
-                        onClienteIEChange(false);
-                      }
-                      // SEM IE = vendedor NÃO pode aplicar desconto (se houver participação de revenda)
-                      setDescontoRevendaIE(0);
-                    }}
+                  {/* Esconder "Rodoviário" quando for Cliente + Participação de Revenda + GSI */}
+                  {!(participacaoRevenda === 'sim' && temGuindasteGSI) && (
+                    <label 
+                      onClick={() => {
+                        setRevendaTemIE('nao');
+                        // Atualizar estado do componente pai (para recalcular preços no carrinho)
+                        if (onClienteIEChange) {
+                          onClienteIEChange(false);
+                        }
+                        // Rodoviário = vendedor NÃO pode aplicar desconto (se houver participação de revenda)
+                        setDescontoRevendaIE(0);
+                      }}
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -429,12 +554,14 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>✗ Sem IE</span>
+                    <span>🚛 Rodoviário</span>
                   </label>
+                  )}
                 </div>
 
                 {/* Se houver participação de revenda E revenda tem IE, o vendedor pode aplicar desconto de 1% a 5% */}
-                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && (
+                {/* MAS NÃO aparece se houver GSE no carrinho */}
+                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && !temGuindasteGSE && (
                   <div className="form-group" style={{ marginTop: '12px' }}>
                     <label htmlFor="descontoRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
                       Desconto do Vendedor (1% a 5%) <span style={{ color: '#dc3545' }}>*</span>
@@ -461,6 +588,15 @@ const PaymentPolicy = ({
                     </select>
                     <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
                       Desconto que você (vendedor) pode aplicar sobre o valor total do pedido
+                    </small>
+                  </div>
+                )}
+
+                {/* Mensagem informativa quando GSE bloqueia o desconto */}
+                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && (
+                  <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', borderRadius: '6px', border: '1px solid #ffc107' }}>
+                    <small style={{ color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
+                      ⚠️ Guindastes GSE não permitem desconto adicional do vendedor
                     </small>
                   </div>
                 )}
@@ -555,10 +691,10 @@ const PaymentPolicy = ({
 
       {/* Campo de Desconto Adicional do Vendedor */}
       {/* Só aparece quando:
-          1. Tipo for revenda (sempre) - até 12%
+          1. Tipo for revenda (sempre) - até 3% (com GSE) ou 12% (sem GSE)
           2. Tipo for cliente SEM participação de revenda - até 3%
-          3. Tipo for cliente COM participação de revenda mas SEM IE - até 3%
-          NÃO aparece quando for cliente com participação de revenda COM IE
+          3. Tipo for cliente COM participação de revenda mas Rodoviário - até 3%
+          NÃO aparece quando for cliente com participação de revenda - Produtor rural
       */}
       {prazoSelecionado && (
         tipoCliente === 'revenda' || 
@@ -576,21 +712,45 @@ const PaymentPolicy = ({
             >
               <option value="0">Sem desconto adicional</option>
               {tipoCliente === 'revenda' ? (
-                // Para revenda: de 1% a 12%
-                <>
-                  <option value="1">1%</option>
-                  <option value="2">2%</option>
-                  <option value="3">3%</option>
-                  <option value="4">4%</option>
-                  <option value="5">5%</option>
-                  <option value="6">6%</option>
-                  <option value="7">7%</option>
-                  <option value="8">8%</option>
-                  <option value="9">9%</option>
-                  <option value="10">10%</option>
-                  <option value="11">11%</option>
-                  <option value="12">12%</option>
-                </>
+                // Para revenda: limite dinâmico baseado em GSE/GSI
+                maxDescontoRevenda === 3 ? (
+                  // Tem GSE: de 0.5% a 3%
+                  <>
+                    <option value="0.5">0,5%</option>
+                    <option value="1">1%</option>
+                    <option value="1.5">1,5%</option>
+                    <option value="2">2%</option>
+                    <option value="2.5">2,5%</option>
+                    <option value="3">3%</option>
+                  </>
+                ) : (
+                  // Não tem GSE: de 1% até o limite (12%, 14% ou 15% dependendo da quantidade de GSI)
+                  <>
+                    <option value="1">1%</option>
+                    <option value="2">2%</option>
+                    <option value="3">3%</option>
+                    <option value="4">4%</option>
+                    <option value="5">5%</option>
+                    <option value="6">6%</option>
+                    <option value="7">7%</option>
+                    <option value="8">8%</option>
+                    <option value="9">9%</option>
+                    <option value="10">10%</option>
+                    <option value="11">11%</option>
+                    <option value="12">12%</option>
+                    {/* Sempre mostrar 14% e 15% quando houver GSI (independente da quantidade no carrinho) */}
+                    {temGuindasteGSI && (
+                      <>
+                        <option value="14" style={{ fontWeight: 'bold', backgroundColor: '#fff3cd' }}>
+                          ⭐ 14% (2 unidades GSI)
+                        </option>
+                        <option value="15" style={{ fontWeight: 'bold', backgroundColor: '#d4edda' }}>
+                          ⭐⭐ 15% (3+ unidades GSI)
+                        </option>
+                      </>
+                    )}
+                  </>
+                )
               ) : (
                 // Para cliente: de 0.5% a 3%
                 <>
@@ -605,7 +765,11 @@ const PaymentPolicy = ({
             </select>
             <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
               {tipoCliente === 'revenda' 
-                ? 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
+                ? temGuindasteGSE
+                  ? '⚠️ Desconto limitado a 3% devido à presença de guindastes GSE no carrinho'
+                  : temGuindasteGSI
+                    ? 'Desconto especial para GSI: 12% (1 un), ⭐ 14% (2 un), ⭐⭐ 15% (3+ un). Selecione conforme a quantidade vendida.'
+                    : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
                 : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
               }
             </small>
@@ -766,14 +930,24 @@ const PaymentPolicy = ({
               <label htmlFor="localInstalacao">
                 Local de Instalação *
               </label>
-              <input
+              <select
                 id="localInstalacao"
-                type="text"
                 value={localInstalacao}
                 onChange={(e) => setLocalInstalacao(e.target.value)}
-                placeholder="Em qual mecânica o guindaste será instalado?"
                 className={errors.localInstalacao ? 'error' : ''}
-              />
+              >
+                <option value="">
+                  {oficinasDisponiveis.length === 0
+                    ? 'Nenhuma oficina disponível para sua região'
+                    : 'Selecione o local de instalação'
+                  }
+                </option>
+                {oficinasDisponiveis.map((oficina, index) => (
+                  <option key={index} value={`${oficina.nome} - ${oficina.cidade}/${oficina.uf}`}>
+                    {oficina.nome} - {oficina.cidade}/{oficina.uf}
+                  </option>
+                ))}
+              </select>
               {errors.localInstalacao && (
                 <span className="error-message">{errors.localInstalacao}</span>
               )}
