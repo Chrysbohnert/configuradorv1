@@ -3,7 +3,8 @@ import { formatCurrency } from '../utils/formatters';
 
 const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) => {
 
-  const handleCartAction = () => {
+  const handleCartAction = (e) => {
+    e.stopPropagation();
     if (isInCart) {
       onRemoveFromCart(guindaste);
     } else {
@@ -11,110 +12,183 @@ const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) =
     }
   };
 
-  // Imagem padrão para guindastes sem foto
-  const defaultImage = '/header-bg.jpg'; // Imagem do projeto
-
   return (
-    <div className="card cursor-pointer transition-all duration-300 hover:shadow-xl transform hover:-translate-y-1 border-gray-200">
-      {/* Imagem do Guindaste */}
-      <div className="relative mb-4">
-        <div className="w-full h-32 bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+    <div 
+      className="relative bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer border border-gray-100"
+      onClick={() => guindaste.onClick && guindaste.onClick(guindaste)}
+      style={{
+        background: 'linear-gradient(135deg, var(--empresa-branco) 0%, var(--empresa-cinza-muito-claro) 100%)'
+      }}
+    >
+      {/* Header com gradiente */}
+      <div 
+        className="h-2 w-full"
+        style={{
+          background: 'linear-gradient(90deg, var(--empresa-cinza-escuro) 0%, var(--empresa-cinza) 50%, var(--empresa-azul) 100%)'
+        }}
+      />
+
+      {/* Status Badge */}
+      {isInCart && (
+        <div 
+          className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold z-10 shadow-md"
+          style={{
+            backgroundColor: 'var(--empresa-verde)',
+            color: 'var(--empresa-branco)'
+          }}
+        >
+          ✓ No Carrinho
+        </div>
+      )}
+
+      <div className="p-6">
+        {/* Imagem com overlay */}
+        <div className="relative mb-6 h-48 overflow-hidden rounded-lg group-hover:scale-105 transition-transform duration-300">
           <img 
-            src={guindaste.imagem_url || defaultImage} 
+            src={guindaste.imagem_url || '/header-bg.jpg'} 
             alt={guindaste.nome}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            className="w-full h-full object-cover"
             onError={(e) => {
-              e.target.src = defaultImage;
+              e.target.src = '/header-bg.jpg';
             }}
           />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
-        
-        {/* Badge de Status */}
-        {isInCart && (
-          <div className="absolute top-2 right-2 w-6 h-6 bg-empresa-vermelho rounded-full flex items-center justify-center shadow-lg">
-            <span className="text-white text-xs">✓</span>
-          </div>
-        )}
-      </div>
 
-      {/* Informações do Guindaste */}
-      <div className="space-y-3">
-        {/* Botões de editar/remover, se existirem as props */}
-        {(guindaste.onEdit || guindaste.onDelete) && (
-          <div className="flex gap-2 mb-2">
-            {guindaste.onEdit && (
-              <button
-                className="action-btn edit-btn"
-                title="Editar"
-                onClick={e => { e.stopPropagation(); guindaste.onEdit(guindaste); }}
-              >
-                {/* Ícone de lápis */}
-                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                  <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
-                </svg>
-              </button>
-            )}
-            {guindaste.onDelete && (
-              <button
-                className="action-btn delete-btn"
-                title="Remover"
-                onClick={e => { e.stopPropagation(); guindaste.onDelete(guindaste); }}
-              >
-                {/* Ícone de X */}
-                <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
-                  <path d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.89 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.89a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"/>
-                </svg>
-              </button>
-            )}
-          </div>
-        )}
-        {/* Nome e Modelo */}
-        <div>
-          <h3 className="font-semibold text-empresa-cinza text-lg leading-tight">
+        {/* Título e Modelo */}
+        <div className="mb-4">
+          <h3 
+            className="font-bold text-xl mb-2 leading-tight"
+            style={{ color: 'var(--empresa-cinza-escuro)' }}
+          >
             {guindaste.nome}
           </h3>
-          <p className="text-sm text-gray-600 font-medium">
-            {guindaste.modelo}
-          </p>
-        </div>
-
-        {/* Especificações */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Capacidade:</span>
-            <span className="font-semibold text-empresa-cinza">{guindaste.capacidade}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Alcance:</span>
-            <span className="font-semibold text-empresa-cinza">{guindaste.alcance}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Altura:</span>
-            <span className="font-semibold text-empresa-cinza">{guindaste.altura}</span>
+          <div 
+            className="inline-block px-3 py-1 rounded-full text-sm font-medium"
+            style={{
+              backgroundColor: 'var(--empresa-cinza-muito-claro)',
+              color: 'var(--empresa-cinza-claro)'
+            }}
+          >
+            Modelo: {guindaste.modelo}
           </div>
         </div>
 
-        {/* Preço */}
-        <div className="pt-2 border-t border-gray-100">
-          <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-500 uppercase tracking-wide">Preço</span>
-            <span className="text-lg font-bold text-empresa-vermelho">
-              {formatCurrency(guindaste.preco)}
+        {/* Especificações em Grid */}
+        <div className="grid grid-cols-1 gap-3 mb-6">
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'var(--empresa-branco)' }}
+          >
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: 'var(--empresa-azul)' }}
+              />
+              <span 
+                className="text-sm font-medium"
+                style={{ color: 'var(--empresa-cinza-claro)' }}
+              >
+                Capacidade
+              </span>
+            </div>
+            <span 
+              className="font-bold"
+              style={{ color: 'var(--empresa-cinza-escuro)' }}
+            >
+              {guindaste.capacidade}
+            </span>
+          </div>
+
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'var(--empresa-branco)' }}
+          >
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: 'var(--empresa-verde)' }}
+              />
+              <span 
+                className="text-sm font-medium"
+                style={{ color: 'var(--empresa-cinza-claro)' }}
+              >
+                Alcance
+              </span>
+            </div>
+            <span 
+              className="font-bold"
+              style={{ color: 'var(--empresa-cinza-escuro)' }}
+            >
+              {guindaste.alcance}
+            </span>
+          </div>
+
+          <div 
+            className="flex items-center justify-between p-3 rounded-lg"
+            style={{ backgroundColor: 'var(--empresa-branco)' }}
+          >
+            <div className="flex items-center space-x-2">
+              <div 
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: 'var(--empresa-vermelho)' }}
+              />
+              <span 
+                className="text-sm font-medium"
+                style={{ color: 'var(--empresa-cinza-claro)' }}
+              >
+                Altura
+              </span>
+            </div>
+            <span 
+              className="font-bold"
+              style={{ color: 'var(--empresa-cinza-escuro)' }}
+            >
+              {guindaste.altura}
             </span>
           </div>
         </div>
 
-        {/* Botão de Carrinho */}
+        {/* Preço destacado */}
+        <div 
+          className="p-4 rounded-lg mb-4 text-center"
+          style={{
+            background: 'linear-gradient(135deg, var(--empresa-cinza-escuro) 0%, var(--empresa-preto) 100%)'
+          }}
+        >
+          <div 
+            className="text-sm font-medium mb-1"
+            style={{ color: 'var(--empresa-cinza-claro)' }}
+          >
+            Preço
+          </div>
+          <div 
+            className="text-2xl font-bold"
+            style={{ color: 'var(--empresa-branco)' }}
+          >
+            {formatCurrency(guindaste.preco)}
+          </div>
+        </div>
+
+        {/* Botão de Ação */}
         <button
           onClick={handleCartAction}
-          className={`w-full py-2 px-4 rounded-lg font-medium transition-all duration-200 flex items-center justify-center space-x-2 ${
+          className={`w-full py-3 px-6 rounded-lg font-bold text-sm transition-all duration-300 flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:-translate-y-1 ${
             isInCart
-              ? 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
-              : 'bg-empresa-vermelho text-white hover:bg-red-700 shadow-lg'
+              ? 'hover:scale-105'
+              : 'hover:scale-105'
           }`}
+          style={{
+            backgroundColor: isInCart ? 'var(--empresa-vermelho)' : 'var(--empresa-azul)',
+            color: 'var(--empresa-branco)',
+            border: `2px solid ${isInCart ? 'var(--empresa-vermelho)' : 'var(--empresa-azul)'}`
+          }}
         >
-          <span className="text-sm">
-            {isInCart ? '🛒 Remover' : '🛒 Adicionar'}
+          <span className="text-lg">
+            {isInCart ? '🗑️' : '🛒'}
+          </span>
+          <span>
+            {isInCart ? 'Remover do Carrinho' : 'Adicionar ao Carrinho'}
           </span>
         </button>
       </div>
@@ -122,4 +196,4 @@ const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) =
   );
 };
 
-export default CardGuindaste; 
+export default CardGuindaste;
