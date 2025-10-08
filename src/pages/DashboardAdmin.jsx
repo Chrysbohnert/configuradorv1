@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminNavigation from '../components/AdminNavigation';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/Dashboard.css';
@@ -178,6 +179,14 @@ const DashboardAdmin = () => {
     <div className="admin-layout">
       <AdminNavigation user={user} />
       <div className="admin-content">
+        <UnifiedHeader 
+          showBackButton={false}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Dashboard Admin"
+          subtitle="Resumo geral do sistema"
+        />
         <div className="dashboard-container">
           <div className="dashboard-content">
             <div className="dashboard-header">
