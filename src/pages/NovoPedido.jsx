@@ -557,6 +557,7 @@ const NovoPedido = () => {
               user={user}
               clienteTemIE={clienteTemIE}
               onClienteIEChange={setClienteTemIE}
+              carrinho={carrinho}
             />
           </div>
         );
@@ -834,16 +835,16 @@ const extrairConfiguracoes = (subgrupo) => {
   
   // Extrair configurações do título (mais específico para evitar falsos positivos)
   if (subgrupo.includes(' CR') || subgrupo.includes('CR ') || subgrupo.includes('CR/')) {
-    configuracoes.push({ icon: '🎮', text: 'CR - Controle Remoto' });
+    configuracoes.push({ icon: '🕹️', text: 'CR - Controle Remoto' });
   }
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
     configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
   }
   if (subgrupo.includes(' ECL') || subgrupo.includes('ECL ') || subgrupo.includes('/ECL')) {
-    configuracoes.push({ icon: '🔧', text: 'ECL - Extensiva Cilindro Lateral' });
+    configuracoes.push({ icon: '⊓', text: 'ECL - Extensiva Cilindro Lateral' });
   }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
-    configuracoes.push({ icon: '🔩', text: 'ECS - Extensiva Cilindro Superior' });
+    configuracoes.push({ icon: '⊓', text: 'ECS - Extensiva Cilindro Superior' });
   }
   if (subgrupo.includes(' P') || subgrupo.includes('P ') || subgrupo.includes('/P')) {
     configuracoes.push({ icon: '🔨', text: 'P - Preparação p/ Perfuratriz' });
