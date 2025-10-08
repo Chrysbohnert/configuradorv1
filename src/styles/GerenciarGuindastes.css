@@ -127,131 +127,250 @@
   height: 16px;
 }
 
-/* Guindastes Grid */
+/* Cards dos Guindastes */
 .guindastes-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  gap: 32px;
+  margin-top: 32px;
 }
 
 .guindaste-card {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  background: var(--empresa-branco);
+  border: 1px solid var(--empresa-cinza-muito-claro);
+  border-radius: 12px;
+  padding: 32px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.guindaste-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--empresa-cinza-escuro);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .guindaste-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-  border-color: #000000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border-color: var(--empresa-cinza-claro);
+}
+
+.guindaste-card:hover::before {
+  opacity: 1;
 }
 
 .guindaste-header {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 20px;
+  align-items: flex-start;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 /* Imagem do Guindaste */
 .guindaste-image {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   flex-shrink: 0;
 }
 
-.guindaste-thumbnail {
-  width: 100%;
-  height: 100%;
+.guindaste-image img {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
   object-fit: cover;
-  border-radius: 12px;
-  border: 2px solid #e9ecef;
-  transition: all 0.3s ease;
+  border: 1px solid var(--empresa-cinza-muito-claro);
+  background: var(--empresa-cinza-muito-claro);
+}
+
+.guindaste-thumbnail {
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .guindaste-thumbnail:hover {
   transform: scale(1.05);
-  border-color: #000000;
+  border-color: var(--empresa-cinza-claro);
 }
 
 .guindaste-icon {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(135deg, #000000 0%, #000000 100%);
-  border-radius: 12px;
+  width: 80px;
+  height: 80px;
+  background: var(--empresa-cinza-muito-claro);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  font-size: 32px;
+  color: var(--empresa-cinza-claro);
+  border: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .guindaste-icon svg {
-  width: 24px;
-  height: 24px;
+  width: 32px;
+  height: 32px;
 }
 
 .guindaste-info {
   flex: 1;
+  min-width: 0;
 }
 
 .guindaste-info h3 {
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 600;
-  color: #000000;
-  margin-bottom: 4px;
+  color: var(--empresa-cinza-escuro);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
 }
 
 .guindaste-info p {
   font-size: 14px;
-  color: #000000;
+  color: var(--empresa-cinza-claro);
+  font-weight: 500;
+  background: var(--empresa-cinza-muito-claro);
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+  margin: 0;
+  border: 1px solid transparent;
 }
 
 .guindaste-actions {
   display: flex;
-  gap: 8px;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--empresa-cinza-muito-claro);
 }
 
 .action-btn {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #dee2e6;
-  background: white;
+  flex: 1;
+  height: 44px;
+  border: 1px solid var(--empresa-cinza-muito-claro);
+  background: var(--empresa-branco);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  color: #000000;
+  transition: all 0.2s ease;
+  color: var(--empresa-cinza-claro);
+  font-size: 16px;
+  font-weight: 500;
+  gap: 8px;
 }
 
 .action-btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: var(--empresa-cinza-muito-claro);
+  border-color: var(--empresa-cinza-claro);
+  color: var(--empresa-cinza-escuro);
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+/* Ícones mais profissionais usando símbolos Unicode */
+.edit-btn::before {
+  content: "✎";
+  font-size: 16px;
+}
+
+.delete-btn::before {
+  content: "🗑";
+  font-size: 16px;
+}
+
+.price-btn::before {
+  content: "$";
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.guindaste-info h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--empresa-cinza-escuro);
+  margin-bottom: 8px;
+  line-height: 1.3;
+  word-wrap: break-word;
+}
+
+.guindaste-info p {
+  font-size: 14px;
+  color: var(--empresa-cinza-claro);
+  font-weight: 500;
+  background: var(--empresa-branco);
+  padding: 6px 12px;
+  border-radius: 20px;
+  display: inline-block;
+  margin: 0;
+  border: 1px solid var(--empresa-cinza-muito-claro);
+}
+
+.guindaste-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-btn {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--empresa-cinza-muito-claro);
+  background: var(--empresa-branco);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  color: var(--empresa-cinza-claro);
+  font-size: 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.action-btn:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .edit-btn {
-  color: #000000;
+  color: var(--empresa-azul);
+  border-color: var(--empresa-azul);
 }
 
 .edit-btn:hover {
-  background: #474f55;
-  border-color: #7a8289;
-  color: #000000;
+  background: var(--empresa-azul);
+  color: var(--empresa-branco);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
 }
 
 .delete-btn {
-  color: #000000;
+  color: var(--empresa-vermelho);
+  border-color: var(--empresa-vermelho);
 }
 
 .delete-btn:hover {
-  background: #ffebee;
-  border-color: #50403f;
-  color: #3f3030;
+  background: var(--empresa-vermelho);
+  color: var(--empresa-branco);
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.3);
 }
 
 .action-btn {
@@ -632,6 +751,57 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
+/* Paginação */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.page-info {
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.page-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.page-btn.primary {
+  background: #111827;
+  color: #ffffff;
+}
+
+.page-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+}
+
+.page-btn.ghost {
+  background: #ffffff;
+  color: #111827;
+  border-color: #e5e7eb;
+}
+
+.page-btn.ghost:hover {
+  background: #f9fafb;
+}
+
+.page-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
 /* Responsividade */
 @media (max-width: 768px) {
   .gerenciar-guindastes-content {
@@ -849,6 +1019,34 @@ textarea:focus {
   border: 1px solid #e9ecef;
 }
 
+.capacity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip {
+  border: 2px solid #e5e7eb;
+  background: #f9fafb;
+  color: #374151;
+  padding: 8px 14px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.chip:hover {
+  border-color: #000000;
+}
+
+.chip.active {
+  background: #111827;
+  color: white;
+  border-color: #111827;
+}
+
 .filtro-capacidade {
   display: flex;
   align-items: center;
@@ -900,6 +1098,35 @@ textarea:focus {
   border: 1px solid #e9ecef;
 }
 
+/* Seções por capacidade */
+.capacity-section {
+  margin-top: 28px;
+}
+
+.capacity-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.capacity-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.capacity-count {
+  background: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* Responsive para o filtro */
 @media (max-width: 768px) {
   .filtro-container {
@@ -915,4 +1142,4 @@ textarea:focus {
   .filtro-select {
     min-width: 200px;
   }
-} 
+}

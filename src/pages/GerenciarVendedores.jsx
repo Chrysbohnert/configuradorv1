@@ -22,6 +22,7 @@ const GerenciarVendedores = () => {
     tipo: 'vendedor',
     senha: 'vendedor123' // Senha padrão
   });
+  const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, nome: '' });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -151,14 +152,20 @@ const GerenciarVendedores = () => {
   };
 
   // Função para deletar vendedor
-  const handleDeleteVendedor = async (id) => {
-    if (window.confirm('Tem certeza que deseja remover este vendedor?')) {
-      try {
-        await db.deleteUser(id);
-        await loadVendedores();
-        } catch {
-    alert('Erro ao remover vendedor.');
-  }
+  const handleDeleteVendedor = (id) => {
+    const vend = vendedores.find(v => v.id === id);
+    setConfirmDelete({ open: true, id, nome: vend?.nome || '' });
+  };
+
+  const confirmDeleteVendedor = async () => {
+    if (!confirmDelete.id) return;
+    try {
+      await db.deleteUser(confirmDelete.id);
+      await loadVendedores();
+      setConfirmDelete({ open: false, id: null, nome: '' });
+    } catch (error) {
+      console.error('Erro ao remover vendedor:', error);
+      alert('Erro ao remover vendedor.');
     }
   };
 
@@ -202,32 +209,88 @@ const GerenciarVendedores = () => {
 
         <div className="vendedores-grid">
           {vendedores.map((vendedor) => (
-            <div key={vendedor.id} className="vendedor-card alinhado">
-              <div className="vendedor-card-content">
-                <div className="vendedor-avatar">
-                  {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+            <div key={vendedor.id} className="vendedor-card-modern">
+              {/* Header do Card com Avatar e Info Principal */}
+              <div className="card-header">
+                <div className="vendedor-avatar-modern">
+                  <div className="avatar-circle">
+                    {vendedor.nome.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </div>
+                  <div className="status-indicator active"></div>
                 </div>
-                <div className="vendedor-info-main">
-                  <h3>{vendedor.nome}</h3>
-                  <p>{vendedor.email}</p>
+                <div className="vendedor-info-principal">
+                  <h3 className="vendedor-nome">{vendedor.nome}</h3>
+                  <p className="vendedor-email">{vendedor.email}</p>
+                  <span className="vendedor-badge">Vendedor</span>
                 </div>
-                <div className="vendedor-info-dados">
-                  <div><span>Telefone:</span> {vendedor.telefone}</div>
-                  <div><span>CPF:</span> {vendedor.cpf}</div>
-                  <div><span>Comissão:</span> {vendedor.comissao}%</div>
+              </div>
+
+              {/* Informações de Contato */}
+              <div className="card-section">
+                <h4 className="section-title">
+                  <svg className="section-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+                  </svg>
+                  Contato
+                </h4>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <span className="info-label">Telefone</span>
+                    <span className="info-value">{vendedor.telefone}</span>
+                  </div>
+                  <div className="info-item">
+                    <span className="info-label">CPF</span>
+                    <span className="info-value">{vendedor.cpf}</span>
+                  </div>
                 </div>
-                <div className="vendedor-info-vendas">
-                  <div><span>Vendas:</span> {vendedor.vendas}</div>
-                  <div><span>Valor Total:</span> R$ {vendedor.valorTotal?.toLocaleString('pt-BR') || 0}</div>
+              </div>
+
+              {/* Performance e Comissão */}
+              <div className="card-section">
+                <h4 className="section-title">
+                  <svg className="section-icon" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+                  </svg>
+                  Performance
+                </h4>
+                <div className="performance-grid">
+                  <div className="performance-item">
+                    <div className="performance-number">{vendedor.vendas}</div>
+                    <div className="performance-label">Vendas</div>
+                  </div>
+                  <div className="performance-item">
+                    <div className="performance-number">R$ {(vendedor.valorTotal || 0).toLocaleString('pt-BR')}</div>
+                    <div className="performance-label">Faturamento</div>
+                  </div>
+                  <div className="performance-item">
+                    <div className="performance-number">{vendedor.comissao}%</div>
+                    <div className="performance-label">Comissão</div>
+                  </div>
                 </div>
-                <div className="vendedor-actions">
-                  <button onClick={() => handleEditVendedor(vendedor)} className="action-btn edit-btn" title="Editar">
-                    ✏️
-                  </button>
-                  <button onClick={() => handleDeleteVendedor(vendedor.id)} className="action-btn delete-btn" title="Remover">
-                    🗑️
-                  </button>
-                </div>
+              </div>
+
+              {/* Ações */}
+              <div className="card-actions">
+                <button 
+                  onClick={() => handleEditVendedor(vendedor)} 
+                  className="action-btn-modern edit-btn-modern" 
+                  title="Editar Vendedor"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                  </svg>
+                  Editar
+                </button>
+                <button 
+                  onClick={() => handleDeleteVendedor(vendedor.id)} 
+                  className="action-btn-modern delete-btn-modern" 
+                  title="Remover Vendedor"
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                  </svg>
+                  Remover
+                </button>
               </div>
             </div>
           ))}
@@ -369,10 +432,32 @@ const GerenciarVendedores = () => {
           </div>
         </div>
       )}
+
+      {confirmDelete.open && (
+        <div className="modal-overlay" onClick={() => setConfirmDelete({ open: false, id: null, nome: '' })}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmar Remoção</h2>
+              <button onClick={() => setConfirmDelete({ open: false, id: null, nome: '' })} className="close-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </div>
+            <div style={{ padding: '0 24px 24px 24px', color: '#374151' }}>
+              Tem certeza que deseja remover o vendedor <strong>{confirmDelete.nome}</strong>? Esta ação não pode ser desfeita.
+            </div>
+            <div className="modal-actions">
+              <button type="button" onClick={() => setConfirmDelete({ open: false, id: null, nome: '' })} className="cancel-btn">Cancelar</button>
+              <button type="button" onClick={confirmDeleteVendedor} className="save-btn" style={{ background: 'linear-gradient(135deg, #dc2626, #ef4444)' }}>Remover</button>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       </div>
     </div>
   );
 };
 
-export default GerenciarVendedores; 
+export default GerenciarVendedores;

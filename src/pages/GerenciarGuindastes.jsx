@@ -35,6 +35,7 @@ const GerenciarGuindastes = () => {
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
+  const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -60,6 +61,25 @@ const GerenciarGuindastes = () => {
       setGuindastes(data);
       setTotal(count || 0);
       setPage(pageToLoad);
+      // Define a capacidade inicial (primeira) apenas na primeira carga
+      if (!hasInitializedFiltro && Array.isArray(data) && data.length > 0) {
+        const capacidades = (() => {
+          const set = new Set();
+          data.forEach(g => {
+            const subgrupo = g.subgrupo || '';
+            const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+            const match = modeloBase.match(/(\d+\.?\d*)/);
+            if (match) set.add(match[1]);
+          });
+          return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
+        })();
+        if (capacidades.length > 0) {
+          const saved = localStorage.getItem('gg_capacidade');
+          const initial = saved && (saved === 'todos' || capacidades.includes(saved)) ? saved : capacidades[0];
+          setFiltroCapacidade(initial);
+          setHasInitializedFiltro(true);
+        }
+      }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
@@ -67,6 +87,13 @@ const GerenciarGuindastes = () => {
       setIsLoading(false);
     }
   };
+
+  // Persistir preferência do usuário
+  useEffect(() => {
+    if (filtroCapacidade) {
+      localStorage.setItem('gg_capacidade', filtroCapacidade);
+    }
+  }, [filtroCapacidade]);
 
   // Função para extrair capacidades únicas dos guindastes
   const getCapacidadesUnicas = () => {
@@ -80,13 +107,19 @@ const GerenciarGuindastes = () => {
     return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
   };
 
+  // Extrai a capacidade (toneladas) de um registro de guindaste
+  const extractCapacidade = (guindaste) => {
+    const subgrupo = guindaste.subgrupo || '';
+    const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+    const match = modeloBase.match(/(\d+\.?\d*)/);
+    return match ? match[1] : null;
+  };
+
   const getGuindastesFiltrados = () => {
     if (filtroCapacidade === 'todos') return guindastes;
     return guindastes.filter(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      return match && match[1] === filtroCapacidade;
+      const cap = extractCapacidade(guindaste);
+      return cap && cap === filtroCapacidade;
     });
   };
 
@@ -291,71 +324,174 @@ const GerenciarGuindastes = () => {
                 </div>
 
                 <div className="filtro-container">
-                  <div className="filtro-capacidade">
-                    <label htmlFor="filtro-capacidade">Filtrar por Capacidade:</label>
-                    <select 
-                      id="filtro-capacidade"
-                      value={filtroCapacidade} 
-                      onChange={(e) => setFiltroCapacidade(e.target.value)}
-                      className="filtro-select"
+                  <div className="capacity-chips">
+                    {getCapacidadesUnicas().map((capacidade) => (
+                      <button
+                        key={capacidade}
+                        type="button"
+                        className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
+                        onClick={() => setFiltroCapacidade(capacidade)}
+                      >
+                        {capacidade} t
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
+                      onClick={() => setFiltroCapacidade('todos')}
                     >
-                      <option value="todos">Todos</option>
-                      {getCapacidadesUnicas().map(capacidade => (
-                        <option key={capacidade} value={capacidade}>
-                          {capacidade} Toneladas
-                        </option>
-                      ))}
-                    </select>
+                      Todos
+                    </button>
                   </div>
                   <div className="filtro-info">
                     <span className="resultado-count">
-                      {getGuindastesFiltrados().length} guindaste(s) nesta página
+                      {getGuindastesFiltrados().length} guindaste(s) listado(s)
                     </span>
                   </div>
                 </div>
 
-                <div className="guindastes-grid">
-                  {getGuindastesFiltrados().map((guindaste) => (
-                    <div key={guindaste.id} className="guindaste-card">
-                      <div className="guindaste-header">
-                        <div className="guindaste-image">
-                          {guindaste.imagem_url ? (
-                            <img 
-                              src={guindaste.imagem_url} 
-                              alt={guindaste.subgrupo}
-                              className="guindaste-thumbnail"
-                              onError={(e) => {
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                              }}
-                            />
-                          ) : null}
-                          <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
-                            <svg viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                            </svg>
+                {filtroCapacidade === 'todos' ? (
+                  getCapacidadesUnicas().map((capacidade) => {
+                    const items = guindastes.filter(g => extractCapacidade(g) === capacidade);
+                    if (items.length === 0) return null;
+                    return (
+                      <section key={capacidade} className="capacity-section">
+                        <div className="capacity-header">
+                          <h3>{capacidade} t</h3>
+                          <span className="capacity-count">{items.length}</span>
+                        </div>
+                        <div className="guindastes-grid">
+                          {items.map((guindaste) => (
+                            <div key={guindaste.id} className="guindaste-card">
+                              <div className="guindaste-header">
+                                <div className="guindaste-image">
+                                  {guindaste.imagem_url ? (
+                                    <img 
+                                      src={guindaste.imagem_url} 
+                                      alt={guindaste.subgrupo}
+                                      className="guindaste-thumbnail"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.nextSibling.style.display = 'flex';
+                                      }}
+                                    />
+                                  ) : null}
+                                  <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                  </div>
+                                </div>
+                                <div className="guindaste-info">
+                                  <h3>{guindaste.subgrupo}</h3>
+                                  <p>Modelo: {guindaste.modelo}</p>
+                                </div>
+                                <div className="guindaste-actions">
+                                  <button
+                                    onClick={() => handleEdit(guindaste)}
+                                    className="action-btn edit-btn"
+                                    title="Editar"
+                                    aria-label="Editar"
+                                  />
+                                  <button
+                                    onClick={() => handleDelete(guindaste.id)}
+                                    className="action-btn delete-btn"
+                                    title="Remover"
+                                    aria-label="Remover"
+                                  />
+                                  <button
+                                    className="action-btn price-btn"
+                                    title="Preços por Região"
+                                    aria-label="Preços por Região"
+                                    onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    );
+                  })
+                ) : (
+                  <section className="capacity-section">
+                    <div className="capacity-header">
+                      <h3>{filtroCapacidade} t</h3>
+                      <span className="capacity-count">{getGuindastesFiltrados().length}</span>
+                    </div>
+                    <div className="guindastes-grid">
+                      {getGuindastesFiltrados().map((guindaste) => (
+                        <div key={guindaste.id} className="guindaste-card">
+                          <div className="guindaste-header">
+                            <div className="guindaste-image">
+                              {guindaste.imagem_url ? (
+                                <img 
+                                  src={guindaste.imagem_url} 
+                                  alt={guindaste.subgrupo}
+                                  className="guindaste-thumbnail"
+                                  onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextSibling.style.display = 'flex';
+                                  }}
+                                />
+                              ) : null}
+                              <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                </svg>
+                              </div>
+                            </div>
+                            <div className="guindaste-info">
+                              <h3>{guindaste.subgrupo}</h3>
+                              <p>Modelo: {guindaste.modelo}</p>
+                            </div>
+                            <div className="guindaste-actions">
+                              <button
+                                onClick={() => handleEdit(guindaste)}
+                                className="action-btn edit-btn"
+                                title="Editar"
+                                aria-label="Editar"
+                              />
+                              <button
+                                onClick={() => handleDelete(guindaste.id)}
+                                className="action-btn delete-btn"
+                                title="Remover"
+                                aria-label="Remover"
+                              />
+                              <button
+                                className="action-btn price-btn"
+                                title="Preços por Região"
+                                aria-label="Preços por Região"
+                                onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                              />
+                            </div>
                           </div>
                         </div>
-                        <div className="guindaste-info">
-                          <h3>{guindaste.subgrupo}</h3>
-                          <p>Modelo: {guindaste.modelo}</p>
-                        </div>
-                        <div className="guindaste-actions">
-                          <button onClick={() => handleEdit(guindaste)} className="action-btn edit-btn" title="Editar">✏️</button>
-                          <button onClick={() => handleDelete(guindaste.id)} className="action-btn delete-btn" title="Remover">🗑️</button>
-                          <button className="action-btn" title="Preços por Região" onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}>💲</button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </section>
+                )}
 
-                {/* Paginação */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 16 }}>
-                  <button className="cancel-btn" disabled={page <= 1} onClick={() => loadData(page - 1)}>Anterior</button>
-                  <div style={{ alignSelf: 'center', color: '#6b7280' }}>Página {page} de {totalPages}</div>
-                  <button className="save-btn" disabled={page >= totalPages} onClick={() => loadData(page + 1)}>Próxima</button>
-                </div>
+                {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
+                {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
+                  <div className="pagination">
+                    <button 
+                      className="page-btn ghost"
+                      disabled={page <= 1}
+                      onClick={() => loadData(page - 1)}
+                    >
+                      Anterior
+                    </button>
+                    <div className="page-info">Página {page} de {totalPages}</div>
+                    <button 
+                      className="page-btn primary"
+                      disabled={page >= totalPages}
+                      onClick={() => loadData(page + 1)}
+                    >
+                      Próxima
+                    </button>
+                  </div>
+                )}
 
               </div>
             )}

@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/AdminNavigation.css';
 
 const AdminNavigation = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
     {
@@ -47,8 +48,17 @@ const AdminNavigation = ({ user }) => {
     navigate('/');
   };
 
+  const onNavigate = (path) => {
+    navigate(path);
+    setIsOpen(false);
+  };
+
   return (
-    <div className="admin-navigation">
+    <>
+    <button className="mobile-toggle" onClick={() => setIsOpen(!isOpen)} aria-label={isOpen ? "Fechar menu" : "Abrir menu"}>
+      {isOpen ? '✕' : '☰'}
+    </button>
+    <div className={`admin-navigation ${isOpen ? 'open' : ''}`}>
       <div className="nav-header">
         <div className="admin-info">
           <div className="admin-avatar">
@@ -66,7 +76,7 @@ const AdminNavigation = ({ user }) => {
           <button
             key={item.path}
             className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-            onClick={() => navigate(item.path)}
+            onClick={() => onNavigate(item.path)}
           >
             <span className="nav-icon">{item.icon}</span>
             <span className="nav-label">{item.label}</span>
@@ -75,12 +85,14 @@ const AdminNavigation = ({ user }) => {
       </nav>
 
       <div className="nav-footer">
-        <button className="logout-button" onClick={handleLogout}>
+        <button className="logout-button" onClick={() => { handleLogout(); setIsOpen(false); }}>
           <span className="logout-icon">🚪</span>
           <span>Sair</span>
         </button>
       </div>
     </div>
+    {isOpen && <div className="nav-overlay" onClick={() => setIsOpen(false)} />}
+    </>
   );
 };
 
