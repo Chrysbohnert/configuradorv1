@@ -261,46 +261,101 @@
 
 .action-btn {
   flex: 1;
-  height: 44px;
-  border: 1px solid var(--empresa-cinza-muito-claro);
+  height: 48px;
+  border: 2px solid transparent;
   background: var(--empresa-branco);
-  border-radius: 8px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
-  color: var(--empresa-cinza-claro);
-  font-size: 16px;
-  font-weight: 500;
+  transition: all 0.3s ease;
+  font-size: 14px;
+  font-weight: 600;
   gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.action-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.2) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s ease;
+}
+
+.action-btn:hover::before {
+  transform: translateX(100%);
 }
 
 .action-btn:hover {
-  background: var(--empresa-cinza-muito-claro);
-  border-color: var(--empresa-cinza-claro);
-  color: var(--empresa-cinza-escuro);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 
 .action-btn:active {
-  transform: translateY(1px);
+  transform: translateY(0);
 }
 
-/* Ícones mais profissionais usando símbolos Unicode */
-.edit-btn::before {
-  content: "✎";
-  font-size: 16px;
+/* Botão de Editar */
+.edit-btn {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+  border-color: #3b82f6;
 }
 
-.delete-btn::before {
-  content: "🗑";
-  font-size: 16px;
+.edit-btn:hover {
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
 }
 
-.price-btn::before {
-  content: "$";
+/* Botão de Excluir */
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+}
+
+/* Botão de Preços */
+.price-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  border-color: #10b981;
+}
+
+.price-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+}
+
+/* Ícones com melhor visibilidade */
+.edit-btn::after {
+  content: "✏️";
   font-size: 16px;
-  font-weight: 600;
+  margin-left: 4px;
+}
+
+.delete-btn::after {
+  content: "🗑️";
+  font-size: 16px;
+  margin-left: 4px;
+}
+
+.price-btn::after {
+  content: "💰";
+  font-size: 16px;
+  margin-left: 4px;
 }
 
 .guindaste-info h3 {
@@ -800,6 +855,227 @@
   cursor: not-allowed;
   box-shadow: none;
   transform: none;
+}
+
+/* Modal de Confirmação de Exclusão */
+.delete-confirm-btn {
+  background: #dc3545 !important;
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+.delete-confirm-btn:hover {
+  background: #c82333 !important;
+  border-color: #bd2130 !important;
+}
+
+/* Estilos do Formulário Melhorado */
+.guindaste-form-modal {
+  max-width: 900px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Bloquear scroll do body quando modal estiver aberto */
+body.modal-open {
+  overflow: hidden !important;
+  position: fixed !important;
+  width: 100% !important;
+}
+
+/* Container da imagem no modal */
+.imagens-adicionais-container {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.imagens-adicionais-container img {
+  max-width: 200px !important;
+  max-height: 200px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* Preview de imagens no modal */
+.imagens-preview img {
+  max-width: 150px !important;
+  max-height: 150px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+/* Garantir que todas as imagens no modal respeitem o tamanho */
+.guindaste-form-modal img {
+  max-width: 200px !important;
+  max-height: 200px !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.modal-title-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.modal-subtitle {
+  font-size: 14px;
+  color: #6c757d;
+  font-weight: 400;
+}
+
+.modal-header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.save-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.save-btn:hover {
+  background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+}
+
+/* Seções do Formulário */
+.form-section {
+  margin-bottom: 32px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid #e9ecef;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #495057;
+  margin: 0;
+}
+
+.section-divider {
+  flex: 1;
+  height: 2px;
+  background: linear-gradient(90deg, #dee2e6 0%, transparent 100%);
+}
+
+/* Labels com ícones */
+.label-icon {
+  font-size: 16px;
+  margin-right: 8px;
+}
+
+/* Inputs melhorados */
+.form-input, .form-select, .form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Help text melhorado */
+.form-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #6c757d;
+  line-height: 1.4;
+}
+
+.form-help.success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* Seção Financeira */
+.financial-section {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border: 2px solid #ffc107;
+}
+
+.financial-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(255, 193, 7, 0.1);
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.warning-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.warning-text strong {
+  color: #856404;
+  font-size: 16px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.warning-text p {
+  color: #856404;
+  font-size: 14px;
+  margin: 0;
+}
+
+.financial-label {
+  font-weight: 700;
+  color: #856404;
+}
+
+.financial-input {
+  border-color: #ffc107;
+}
+
+.financial-input:focus {
+  border-color: #856404;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.2);
+}
+
+.financial-help {
+  color: #856404;
+  font-weight: 500;
 }
 
 /* Responsividade */
