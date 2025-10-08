@@ -36,6 +36,8 @@ const GerenciarGuindastes = () => {
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [guindasteToDelete, setGuindasteToDelete] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -177,18 +179,38 @@ const GerenciarGuindastes = () => {
       ncm: item.ncm || ''
     });
     setShowModal(true);
+    // Bloquear scroll do body
+    document.body.classList.add('modal-open');
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Tem certeza que deseja remover este guindaste?')) {
+  const handleDeleteClick = (id) => {
+    setGuindasteToDelete(id);
+    setShowDeleteModal(true);
+    // Bloquear scroll do body
+    document.body.classList.add('modal-open');
+  };
+
+  const confirmDelete = async () => {
+    if (guindasteToDelete) {
       try {
-        await db.deleteGuindaste(id);
+        await db.deleteGuindaste(guindasteToDelete);
         await loadData(page);
+        setShowDeleteModal(false);
+        setGuindasteToDelete(null);
+        // Restaurar scroll do body
+        document.body.classList.remove('modal-open');
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
         alert('Erro ao remover guindaste. Tente novamente.');
       }
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setGuindasteToDelete(null);
+    // Restaurar scroll do body
+    document.body.classList.remove('modal-open');
   };
 
   const handleCloseModal = () => {
@@ -207,6 +229,8 @@ const GerenciarGuindastes = () => {
       finame: '',
       ncm: ''
     });
+    // Restaurar scroll do body
+    document.body.classList.remove('modal-open');
   };
 
   const handleAddNew = () => {
@@ -225,6 +249,8 @@ const GerenciarGuindastes = () => {
       ncm: ''
     });
     setShowModal(true);
+    // Bloquear scroll do body
+    document.body.classList.add('modal-open');
   };
 
   const handleSubmit = async (e) => {
@@ -394,7 +420,7 @@ const GerenciarGuindastes = () => {
                                     aria-label="Editar"
                                   />
                                   <button
-                                    onClick={() => handleDelete(guindaste.id)}
+                                    onClick={() => handleDeleteClick(guindaste.id)}
                                     className="action-btn delete-btn"
                                     title="Remover"
                                     aria-label="Remover"
@@ -453,7 +479,7 @@ const GerenciarGuindastes = () => {
                                 aria-label="Editar"
                               />
                               <button
-                                onClick={() => handleDelete(guindaste.id)}
+                                onClick={() => handleDeleteClick(guindaste.id)}
                                 className="action-btn delete-btn"
                                 title="Remover"
                                 aria-label="Remover"
@@ -501,145 +527,208 @@ const GerenciarGuindastes = () => {
 
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content">
+          <div className="modal-content guindaste-form-modal">
             <div className="modal-header">
-              <h2>{editingGuindaste ? 'Editar Guindaste' : 'Novo Guindaste'}</h2>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button form="guindaste-form" type="submit" className="save-btn">Salvar</button>
+              <div className="modal-title-section">
+                <h2>{editingGuindaste ? 'Editar Guindaste' : 'Novo Guindaste'}</h2>
+                <div className="modal-subtitle">
+                  {editingGuindaste ? `Editando: ${editingGuindaste.modelo}` : 'Preencha os dados do novo guindaste'}
+                </div>
+              </div>
+              <div className="modal-header-actions">
+                <button form="guindaste-form" type="submit" className="save-btn">
+                  <span>💾</span>
+                  Salvar
+                </button>
                 <button onClick={handleCloseModal} className="close-btn">×</button>
               </div>
             </div>
             <form id="guindaste-form" onSubmit={handleSubmit} className="modal-form">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Subgrupo</label>
-                  <input
-                    type="text"
-                    value={formData.subgrupo}
-                    onChange={e => handleInputChange('subgrupo', e.target.value)}
-                    required
-                  />
+              {/* Seção: Informações Básicas */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>📋 Informações Básicas</h3>
+                  <div className="section-divider"></div>
                 </div>
-                <div className="form-group">
-                  <label>Modelo</label>
-                  <input
-                    type="text"
-                    value={formData.modelo}
-                    onChange={e => handleInputChange('modelo', e.target.value)}
-                    required
-                  />
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🏗️</span>
+                      Subgrupo
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.subgrupo}
+                      onChange={e => handleInputChange('subgrupo', e.target.value)}
+                      placeholder="Ex: Guindaste Hidráulico"
+                      required
+                      className="form-input"
+                    />
+                    <small className="form-help">Categoria principal do equipamento</small>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🔧</span>
+                      Modelo
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.modelo}
+                      onChange={e => handleInputChange('modelo', e.target.value)}
+                      placeholder="Ex: GH-25T"
+                      required
+                      className="form-input"
+                    />
+                    <small className="form-help">Nome/identificação do modelo</small>
+                  </div>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Configuração de Lanças</label>
-                  <input
-                    type="text"
-                    value={formData.peso_kg}
-                    onChange={e => handleInputChange('peso_kg', e.target.value)}
-                    placeholder="Ex: 3h1m, 4h2m, etc"
-                    required
-                  />
-                  <small style={{ display: 'block', marginTop: '4px', color: '#6c757d', fontSize: '0.875em' }}>
-                    Informe a configuração das lanças (ex: 3h1m = 3 hidráulicas + 1 manual)
-                  </small>
+              {/* Seção: Configuração Técnica */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>⚙️ Configuração Técnica</h3>
+                  <div className="section-divider"></div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🔗</span>
+                      Configuração de Lanças
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.peso_kg}
+                      onChange={e => handleInputChange('peso_kg', e.target.value)}
+                      placeholder="Ex: 3h1m, 4h2m, etc"
+                      required
+                      className="form-input"
+                    />
+                    <small className="form-help">Ex: 3h1m = 3 hidráulicas + 1 manual</small>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🎮</span>
+                      Controle Remoto
+                    </label>
+                    <select
+                      value={formData.tem_contr}
+                      onChange={e => handleInputChange('tem_contr', e.target.value)}
+                      required
+                      className="form-select"
+                    >
+                      <option value="Sim">✅ Sim</option>
+                      <option value="Não">❌ Não</option>
+                    </select>
+                    <small className="form-help">Campo automático baseado na configuração</small>
+                  </div>
                 </div>
                 <div className="form-group">
-                  <label>Tem Controle Remoto</label>
+                  <label>
+                    <span className="label-icon">🔧</span>
+                    Configuração Completa
+                  </label>
                   <select
-                    value={formData.tem_contr}
-                    onChange={e => handleInputChange('tem_contr', e.target.value)}
+                    value={formData.configuração}
+                    onChange={e => handleInputChange('configuração', e.target.value)}
                     required
+                    className="form-select"
                   >
-                    <option value="Sim">Sim</option>
-                    <option value="Não">Não</option>
+                    <option value="">Selecione uma configuração</option>
+                    <option value="STANDARD - Pedido Padrão">📦 STANDARD - Pedido Padrão</option>
+                    <option value="CR - Controle Remoto">🎮 CR - Controle Remoto</option>
+                    <option value="EH - Extensiva Hidráulica">🔧 EH - Extensiva Hidráulica</option>
+                    <option value="ECL - Extensiva Cilindro Lateral">⚙️ ECL - Extensiva Cilindro Lateral</option>
+                    <option value="ECS - Extensiva Cilindro Superior">🔩 ECS - Extensiva Cilindro Superior</option>
+                    <option value="P - Preparação p/ Perfuratriz">🔨 P - Preparação p/ Perfuratriz</option>
+                    <option value="GR - Preparação p/ Garra e Rotator">🦾 GR - Preparação p/ Garra e Rotator</option>
+                    <option value="Caminhão 3/4">🚛 Caminhão 3/4</option>
+                    <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
+                    <option value="CR/ECL - Controle Remoto e Extensiva Cilindro Lateral">🎮⚙️ CR/ECL - Controle Remoto e Extensiva Cilindro Lateral</option>
+                    <option value="CR/ECS - Controle Remoto e Extensiva Cilindro Superior">🎮🔩 CR/ECS - Controle Remoto e Extensiva Cilindro Superior</option>
+                    <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
+                    <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
                   </select>
-                  <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                    Campo automático baseado na configuração selecionada
-                  </small>
+                  <small className="form-help">Selecione a configuração completa do guindaste</small>
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Configuração</label>
-                <select
-                  value={formData.configuração}
-                  onChange={e => handleInputChange('configuração', e.target.value)}
-                  required
-                >
-                  <option value="">Selecione uma configuração</option>
-                  <option value="STANDARD - Pedido Padrão">STANDARD - Pedido Padrão</option>
-                  <option value="CR - Controle Remoto">CR - Controle Remoto</option>
-                  <option value="EH - Extensiva Hidráulica">EH - Extensiva Hidráulica</option>
-                  <option value="ECL - Extensiva Cilindro Lateral">ECL - Extensiva Cilindro Lateral</option>
-                  <option value="ECS - Extensiva Cilindro Superior">ECS - Extensiva Cilindro Superior</option>
-                  <option value="P - Preparação p/ Perfuratriz">P - Preparação p/ Perfuratriz</option>
-                  <option value="GR - Preparação p/ Garra e Rotator">GR - Preparação p/ Garra e Rotator</option>
-                  <option value="Caminhão 3/4">Caminhão 3/4</option>
-                  <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">CR/EH - Controle Remoto e Extensiva Hidráulica</option>
-                  <option value="CR/ECL - Controle Remoto e Extensiva Cilindro Lateral">CR/ECL - Controle Remoto e Extensiva Cilindro Lateral</option>
-                  <option value="CR/ECS - Controle Remoto e Extensiva Cilindro Superior">CR/ECS - Controle Remoto e Extensiva Cilindro Superior</option>
-                  <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
-                  <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
-                </select>
-                <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                  Selecione a configuração completa do guindaste
-                </small>
               </div>
 
-              <div className="form-group">
-                <label>Imagem do Guindaste</label>
-                <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
-                {formData.imagem_url ? (
-                  <small style={{ color: '#28a745', fontSize: '12px' }}>Imagem já cadastrada</small>
-                ) : (
-                  <small style={{ color: '#6c757d', fontSize: '12px' }}>Nenhuma imagem cadastrada</small>
-                )}
+              {/* Seção: Mídia e Documentação */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>📸 Mídia e Documentação</h3>
+                  <div className="section-divider"></div>
+                </div>
+                <div className="form-group">
+                  <label>
+                    <span className="label-icon">🖼️</span>
+                    Imagem Principal
+                  </label>
+                  <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
+                  {formData.imagem_url ? (
+                    <small className="form-help success">✅ Imagem já cadastrada</small>
+                  ) : (
+                    <small className="form-help">⚠️ Nenhuma imagem cadastrada</small>
+                  )}
+                </div>
               </div>
 
               {/* Upload de gráfico de carga removido: agora os PDFs técnicos são gerenciados em Gráficos de Carga e anexados automaticamente na proposta. */}
 
-              <div className="form-group">
-                <label>Descrição Técnica</label>
-                <textarea
-                  value={formData.descricao}
-                  onChange={e => handleInputChange('descricao', e.target.value)}
-                  rows="6"
-                  placeholder="Descreva as características técnicas, especificações, materiais, funcionalidades e qualquer informação relevante sobre o equipamento..."
-                />
-                <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                  Descrição completa do equipamento para os vendedores
-                </small>
+              {/* Seção: Descrições */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>📝 Descrições</h3>
+                  <div className="section-divider"></div>
+                </div>
+                <div className="form-group">
+                  <label>
+                    <span className="label-icon">📋</span>
+                    Descrição Técnica
+                  </label>
+                  <textarea
+                    value={formData.descricao}
+                    onChange={e => handleInputChange('descricao', e.target.value)}
+                    rows="6"
+                    placeholder="Descreva as características técnicas, especificações, materiais, funcionalidades e qualquer informação relevante sobre o equipamento..."
+                    className="form-textarea"
+                  />
+                  <small className="form-help">Descrição completa do equipamento para os vendedores</small>
+                </div>
+
+                <div className="form-group">
+                  <label>
+                    <span className="label-icon">❌</span>
+                    O que NÃO está incluído
+                  </label>
+                  <textarea
+                    value={formData.nao_incluido}
+                    onChange={e => handleInputChange('nao_incluido', e.target.value)}
+                    rows="4"
+                    placeholder="Ex: Instalação, transporte, documentação, treinamento, peças de reposição, etc..."
+                    className="form-textarea"
+                  />
+                  <small className="form-help">Itens que NÃO estão incluídos na proposta para evitar mal-entendidos</small>
+                </div>
               </div>
 
-              <div className="form-group">
-                <label>O que NÃO está incluído</label>
-                <textarea
-                  value={formData.nao_incluido}
-                  onChange={e => handleInputChange('nao_incluido', e.target.value)}
-                  rows="4"
-                  placeholder="Ex: Instalação, transporte, documentação, treinamento, peças de reposição, etc..."
-                />
-                <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                  Itens que NÃO estão incluídos na proposta para evitar mal-entendidos
-                </small>
-              </div>
-
-              {/* Campos FINAME e NCM */}
-              <div style={{ 
-                background: '#fff3cd', 
-                border: '2px solid #ffc107', 
-                borderRadius: '8px', 
-                padding: '15px', 
-                marginBottom: '20px'
-              }}>
-                <h4 style={{ color: '#856404', marginTop: '0', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <span style={{ fontSize: '20px' }}>⚠️</span>
-                  Informações Obrigatórias para Financiamento
-                </h4>
+              {/* Seção: Informações Financeiras */}
+              <div className="form-section financial-section">
+                <div className="section-header">
+                  <h3>💰 Informações Financeiras</h3>
+                  <div className="section-divider"></div>
+                </div>
+                <div className="financial-warning">
+                  <div className="warning-icon">⚠️</div>
+                  <div className="warning-text">
+                    <strong>Informações Obrigatórias para Financiamento</strong>
+                    <p>Estes códigos são necessários para financiamento FINAME e importação</p>
+                  </div>
+                </div>
                 
                 <div className="form-row">
                   <div className="form-group">
-                    <label style={{ fontWeight: 'bold', color: '#856404' }}>
+                    <label className="financial-label">
+                      <span className="label-icon">🏦</span>
                       Código FINAME *
                     </label>
                     <input
@@ -648,15 +737,16 @@ const GerenciarGuindastes = () => {
                       onChange={e => handleInputChange('finame', e.target.value)}
                       placeholder="Ex: 03795187"
                       required
-                      style={{ borderColor: '#ffc107' }}
+                      className="form-input financial-input"
                     />
-                    <small style={{ color: '#856404', fontSize: '12px', fontWeight: '500' }}>
+                    <small className="form-help financial-help">
                       Código obrigatório para financiamento FINAME
                     </small>
                   </div>
                   
                   <div className="form-group">
-                    <label style={{ fontWeight: 'bold', color: '#856404' }}>
+                    <label className="financial-label">
+                      <span className="label-icon">🌍</span>
                       Código NCM *
                     </label>
                     <input
@@ -665,48 +755,58 @@ const GerenciarGuindastes = () => {
                       onChange={e => handleInputChange('ncm', e.target.value)}
                       placeholder="Ex: 8436.80.00"
                       required
-                      style={{ borderColor: '#ffc107' }}
+                      className="form-input financial-input"
                     />
-                    <small style={{ color: '#856404', fontSize: '12px', fontWeight: '500' }}>
+                    <small className="form-help financial-help">
                       Nomenclatura Comum do Mercosul (obrigatório)
                     </small>
                   </div>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label>Imagens Adicionais (Galeria)</label>
-                <div className="imagens-adicionais-container">
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={handleImagensAdicionaisChange}
-                    className="file-input"
-                  />
-                  <small style={{ color: '#6c757d', fontSize: '12px' }}>
-                    Selecione múltiplas imagens para criar uma galeria. A primeira imagem será a foto principal.
-                  </small>
+              {/* Seção: Galeria de Imagens */}
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>🖼️ Galeria de Imagens</h3>
+                  <div className="section-divider"></div>
                 </div>
-                {formData.imagens_adicionais.length > 0 && (
-                  <div className="imagens-preview">
-                    <h4>Imagens Selecionadas:</h4>
-                    <div className="imagens-grid">
-                      {formData.imagens_adicionais.map((img, index) => (
-                        <div key={index} className="imagem-preview-item">
-                          <img src={img} alt={`Preview ${index + 1}`} />
-                          <button
-                            type="button"
-                            onClick={() => removeImagemAdicional(index)}
-                            className="remove-imagem-btn"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
-                    </div>
+                <div className="form-group">
+                  <label>
+                    <span className="label-icon">📷</span>
+                    Imagens Adicionais
+                  </label>
+                  <div className="imagens-adicionais-container">
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={handleImagensAdicionaisChange}
+                      className="file-input"
+                    />
+                    <small className="form-help">
+                      Selecione múltiplas imagens para criar uma galeria. A primeira imagem será a foto principal.
+                    </small>
                   </div>
-                )}
+                  {formData.imagens_adicionais.length > 0 && (
+                    <div className="imagens-preview">
+                      <h4>Imagens Selecionadas:</h4>
+                      <div className="imagens-grid">
+                        {formData.imagens_adicionais.map((img, index) => (
+                          <div key={index} className="imagem-preview-item">
+                            <img src={img} alt={`Preview ${index + 1}`} />
+                            <button
+                              type="button"
+                              onClick={() => removeImagemAdicional(index)}
+                              className="remove-imagem-btn"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div className="modal-actions">
@@ -719,6 +819,32 @@ const GerenciarGuindastes = () => {
       )}
 
       <PrecosPorRegiaoModal guindasteId={guindasteIdPrecos} open={showPrecosModal} onClose={() => setShowPrecosModal(false)} />
+
+      {/* Modal de Confirmação de Exclusão */}
+      {showDeleteModal && (
+        <div className="modal-overlay" onClick={cancelDelete}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Confirmar Exclusão</h2>
+              <button onClick={cancelDelete} className="close-btn">×</button>
+            </div>
+            <div className="modal-form">
+              <p>Tem certeza que deseja remover este guindaste?</p>
+              <p style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
+                ⚠️ Esta ação não pode ser desfeita.
+              </p>
+              <div className="modal-actions">
+                <button type="button" onClick={cancelDelete} className="cancel-btn">
+                  Cancelar
+                </button>
+                <button type="button" onClick={confirmDelete} className="save-btn delete-confirm-btn">
+                  Remover
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
