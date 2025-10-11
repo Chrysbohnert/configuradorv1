@@ -2,15 +2,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import PDFGenerator from '../components/PDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
-
+import { normalizarRegiao } from '../utils/regiaoHelper';
 import { db } from '../config/supabase';
-import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
-import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import { useCarrinho } from '../hooks/useCarrinho';
 import { usePagamento } from '../hooks/usePagamento';
 import { useGuindastes } from '../hooks/useGuindastes';
+
+// Componentes extraídos
+import Step1GuindasteSelector from '../components/NovoPedido/Step1GuindasteSelector';
+import ClienteFormDetalhado from '../components/NovoPedido/ClienteFormDetalhado';
+import CaminhaoFormDetalhado from '../components/NovoPedido/CaminhaoFormDetalhado';
+import ResumoPedido from '../components/NovoPedido/ResumoPedido';
+
 import '../styles/NovoPedido.css';
 
 const NovoPedido = () => {
@@ -18,19 +22,7 @@ const NovoPedido = () => {
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
   
-  // Hook do carrinho
-  const {
-    carrinho,
-    addItem: addToCart,
-    removeItem: removeFromCart,
-    updateQuantity,
-    updateAllPrices,
-    clearCart,
-    getTotal: getTotalCarrinho,
-    getTotalGuindastes,
-    isInCart
-  } = useCarrinho();
-  
+  // Estados locais
   const [clienteData, setClienteData] = useState({});
   const [caminhaoData, setCaminhaoData] = useState({});
   const [clienteTemIE, setClienteTemIE] = useState(true);
@@ -38,7 +30,17 @@ const NovoPedido = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const salvarRelatorioRef = React.useRef(null);
   
-  // Hook de guindastes
+  // Hooks customizados
+  const {
+    carrinho,
+    addItem: addToCart,
+    removeItem: removeFromCart,
+    updateAllPrices,
+    clearCart,
+    getTotal: getTotalCarrinho,
+    getTotalGuindastes,
+  } = useCarrinho();
+  
   const {
     guindastes,
     guindastesSelecionados,
@@ -54,19 +56,14 @@ const NovoPedido = () => {
     guindastesDisponiveis
   } = useGuindastes(user);
   
-  // Hook de pagamento
   const totalBase = getTotalCarrinho();
   const quantidadeGuindastes = getTotalGuindastes();
   const {
     pagamento: pagamentoData,
     setPagamento: setPagamentoData,
-    setTipoPagamento,
-    setPrazoPagamento,
-    updateField: updatePagamentoField,
-    valorFinal,
-    isValid: isPagamentoValid
   } = usePagamento(totalBase, quantidadeGuindastes);
 
+  // Carregar usuário
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -76,117 +73,93 @@ const NovoPedido = () => {
     }
   }, [navigate]);
 
-  // Verificar se há um guindaste selecionado vindo da tela de detalhes
+  // Processar guindaste selecionado vindo de outra página
   useEffect(() => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         setGuindastesSelecionados([guindaste]);
         
-      // Buscar preço do guindaste baseado na região do vendedor
-      let precoGuindaste = guindaste.preco || 0;
-      if (!precoGuindaste && user?.regiao) {
-        try {
-          let regiaoVendedor = user.regiao || 'sul-sudeste';
-          
-          // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
-          if (regiaoVendedor === 'rio grande do sul') {
-            regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
-          } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
-            regiaoVendedor = 'norte-nordeste';
-          } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
-            regiaoVendedor = 'sul-sudeste';
-          } else if (regiaoVendedor === 'centro-oeste') {
-            regiaoVendedor = 'centro-oeste';
+        // Buscar preço
+        let precoGuindaste = guindaste.preco || 0;
+        if (!precoGuindaste && user?.regiao) {
+          try {
+            const regiaoNormalizada = normalizarRegiao(user.regiao, clienteTemIE);
+            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
+          } catch (error) {
+            console.error('Erro ao buscar preço:', error);
           }
-          
-          precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
-        } catch (error) {
-          console.error('Erro ao buscar preço do guindaste:', error);
         }
-      }
         
-        // Adicionar ao carrinho se não estiver
-        const produto = {
-          id: guindaste.id,
-          nome: guindaste.subgrupo,
-          modelo: guindaste.modelo,
-          codigo_produto: guindaste.codigo_referencia,
-          grafico_carga_url: guindaste.grafico_carga_url,
-          preco: precoGuindaste,
-          tipo: 'guindaste',
-          finame: guindaste.finame || '',
-          ncm: guindaste.ncm || ''
-        };
+        // Adicionar ao carrinho com FINAME e NCM
+        if (precoGuindaste) {
+          const produto = {
+            id: guindaste.id,
+            nome: guindaste.subgrupo,
+            modelo: guindaste.modelo,
+            codigo_produto: guindaste.codigo_referencia,
+            grafico_carga_url: guindaste.grafico_carga_url,
+            preco: precoGuindaste,
+            tipo: 'guindaste',
+            finame: guindaste.finame || '',
+            ncm: guindaste.ncm || ''
+          };
+          addToCart(produto);
+        }
         
-        adicionarAoCarrinho(produto, 'guindaste');
-        
-        // Definir step correto
+        // Navegar para step indicado
         if (location.state.step) {
           setCurrentStep(location.state.step);
         }
-        
-        // Limpar o estado da navegação
-        navigate(location.pathname, { replace: true });
       }
     };
     
     if (user) {
       processarGuindasteSelecionado();
     }
-  }, [location.state, navigate, user]);
+  }, [location.state, user, clienteTemIE]);
 
-  // Efeito para atualizar preços quando mudar a seleção de IE (apenas para vendedores do RS)
+  // Atualizar preços quando clienteTemIE ou user mudar
   useEffect(() => {
-    if (!user || user.regiao !== 'rio grande do sul') return;
-    if (carrinho.length === 0) return;
-
-    const atualizarPrecosCarrinho = async () => {
-      const updates = [];
+    if (user && carrinho.length > 0) {
+      console.log('🛒 Carrinho atual:', carrinho);
+      console.log('💰 Total atual:', getTotalCarrinho());
       
-      for (const item of carrinho) {
-        if (item.tipo === 'guindaste') {
-          // Recalcular preço do guindaste baseado na região e IE
-          try {
-            let regiaoVendedor = user?.regiao || 'sul-sudeste';
-            
-            // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
-            if (regiaoVendedor === 'rio grande do sul') {
-              regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
-            } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
-              regiaoVendedor = 'norte-nordeste';
-            } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
-              regiaoVendedor = 'sul-sudeste';
-            } else if (regiaoVendedor === 'centro-oeste') {
-              regiaoVendedor = 'centro-oeste';
-            }
-            
-            const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
-            
-            if (novoPreco) {
-              updates.push({
-                id: item.id,
-                tipo: item.tipo,
-                preco: novoPreco
+      const atualizarPrecos = async () => {
+        const updates = [];
+        
+        for (const item of carrinho) {
+          if (item.tipo === 'guindaste') {
+            try {
+              const regiaoNormalizada = normalizarRegiao(user.regiao, clienteTemIE);
+              const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoNormalizada);
+              
+              console.log(`📊 Preço para ${item.nome}:`, {
+                precoAtual: item.preco,
+                novoPreco,
+                regiao: regiaoNormalizada
               });
+              
+              if (novoPreco && novoPreco !== item.preco) {
+                updates.push({ id: item.id, preco: novoPreco, tipo: 'guindaste' });
+              }
+            } catch (error) {
+              console.error('Erro ao atualizar preço:', error);
             }
-          } catch (error) {
-            console.error('Erro ao atualizar preço:', error);
           }
         }
-      }
+        
+        if (updates.length > 0) {
+          console.log('🔄 Atualizando preços:', updates);
+          updateAllPrices(updates);
+        }
+      };
       
-      if (updates.length > 0) {
-        updateAllPrices(updates);
-      }
-    };
+      atualizarPrecos();
+    }
+  }, [clienteTemIE, user]); // Removido carrinho, getTotalCarrinho e updateAllPrices para evitar loop
 
-    atualizarPrecosCarrinho();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [clienteTemIE, user]);
-
-  // loadData removida - agora usa useGuindastes hook
-
+  // Steps configuration
   const steps = [
     { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
     { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
@@ -195,63 +168,61 @@ const NovoPedido = () => {
     { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
   ];
 
-  // Funções movidas para useGuindastes hook
-
-  // Funções do Carrinho
-  const adicionarAoCarrinho = (item, tipo) => {
-    const itemComTipo = { ...item, tipo };
+  // Handlers para seleção de guindaste (com efeitos visuais)
+  const handleSelecionarCapacidadeLocal = (capacidade) => {
+    handleSelecionarCapacidade(capacidade);
     
-    if (tipo === 'guindaste') {
-      // Para guindastes, limpa guindastes existentes primeiro
-      const guindasteAtual = carrinho.find(i => i.tipo === 'guindaste');
-      if (guindasteAtual) {
-        removeFromCart(guindasteAtual.id, 'guindaste');
-      }
+    const card = document.querySelector(`[data-capacidade="${capacidade}"]`);
+    if (card) {
+      card.classList.add('pulse-effect');
+      setTimeout(() => card.classList.remove('pulse-effect'), 600);
     }
     
-    // Adiciona o novo item
-    addToCart(itemComTipo);
+    setTimeout(() => {
+      const modeloSection = document.querySelector('.cascata-step:nth-of-type(2)');
+      if (modeloSection) {
+        modeloSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
   };
 
-  // capacidades, modelosDisponiveis e guindastesDisponiveis vêm do useGuindastes hook
+  const handleSelecionarModeloLocal = (modelo) => {
+    handleSelecionarModelo(modelo);
+    
+    const card = document.querySelector(`[data-modelo="${modelo}"]`);
+    if (card) {
+      card.classList.add('pulse-effect');
+      setTimeout(() => card.classList.remove('pulse-effect'), 600);
+    }
+    
+    setTimeout(() => {
+      const guindasteSection = document.querySelector('.cascata-step:nth-of-type(3)');
+      if (guindasteSection) {
+        guindasteSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 300);
+  };
 
-  // Função para selecionar guindaste
   const handleSelecionarGuindaste = async (guindaste) => {
-    // Verificar se o guindaste já está selecionado
     const jaSelecionado = guindastesSelecionados.find(g => g.id === guindaste.id);
     
     if (jaSelecionado) {
-      // Remover se já estiver selecionado
       setGuindastesSelecionados(prev => prev.filter(g => g.id !== guindaste.id));
-      removerItemPorIndex(carrinho.findIndex(item => item.id === guindaste.id));
+      removeFromCart(guindaste.id, 'guindaste');
     } else {
-      // Buscar preço do guindaste baseado na região do vendedor
       let precoGuindaste = 0;
       try {
-        let regiaoVendedor = user?.regiao || 'sul-sudeste'; // Default: sul-sudeste
-        
-        // Para região Rio Grande do Sul, usar rs-com-ie ou rs-sem-ie
-        if (regiaoVendedor === 'rio grande do sul') {
-          regiaoVendedor = clienteTemIE ? 'rs-com-ie' : 'rs-sem-ie';
-        } else if (regiaoVendedor === 'norte' || regiaoVendedor === 'nordeste') {
-          regiaoVendedor = 'norte-nordeste';
-        } else if (regiaoVendedor === 'sul' || regiaoVendedor === 'sudeste') {
-          regiaoVendedor = 'sul-sudeste';
-        } else if (regiaoVendedor === 'centro-oeste') {
-          regiaoVendedor = 'centro-oeste';
-        }
-        
-        precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoVendedor);
+        const regiaoNormalizada = normalizarRegiao(user?.regiao, clienteTemIE);
+        precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
         
         if (!precoGuindaste || precoGuindaste === 0) {
-          alert('Atenção: Este guindaste não possui preço definido para a sua região. Por favor, contacte o administrador.');
+          alert('Atenção: Este guindaste não possui preço definido para a sua região.');
         }
       } catch (error) {
-        console.error('Erro ao buscar preço do guindaste:', error);
-        alert('Erro ao buscar preço do guindaste. Verifique com o administrador.');
+        console.error('Erro ao buscar preço:', error);
+        alert('Erro ao buscar preço. Verifique com o administrador.');
       }
       
-      // Adicionar se não estiver selecionado
       setGuindastesSelecionados(prev => [...prev, guindaste]);
       
       const produto = {
@@ -266,7 +237,7 @@ const NovoPedido = () => {
         ncm: guindaste.ncm || ''
       };
       
-      adicionarAoCarrinho(produto, 'guindaste');
+      addToCart(produto);
       
       console.log('✅ Guindaste adicionado ao carrinho:', produto.nome);
       
@@ -281,227 +252,114 @@ const NovoPedido = () => {
     }
   };
 
-  // Função para selecionar capacidade (sobrescreve a do hook com efeitos visuais)
-  const handleSelecionarCapacidadeLocal = (capacidade) => {
-    handleSelecionarCapacidade(capacidade); // Chama a função do hook
+  // Validação de steps
+  const validateStep = (step) => {
+    const errors = {};
     
-    // Adicionar efeito visual de destaque
-    const card = document.querySelector(`[data-capacidade="${capacidade}"]`);
-    if (card) {
-      card.classList.add('selection-highlight');
-      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
-    }
-    
-    // Scroll automático para a próxima etapa após um pequeno delay
-    setTimeout(() => {
-      const stepElement = document.querySelector('.cascata-step:nth-child(2)');
-      if (stepElement) {
-        const isMobile = window.innerWidth <= 768;
-        const offset = isMobile ? 120 : 80;
+    switch (step) {
+      case 1:
+        if (guindastesSelecionados.length === 0) {
+          errors.guindaste = 'Selecione pelo menos um guindaste';
+        }
+        break;
+      case 2:
+        if (!pagamentoData.tipoPagamento) errors.tipoPagamento = 'Selecione o tipo de pagamento';
+        if (!pagamentoData.prazoPagamento) errors.prazoPagamento = 'Selecione o prazo de pagamento';
+        if (!pagamentoData.tipoFrete) errors.tipoFrete = 'Selecione o tipo de frete';
         
-        const elementPosition = stepElement.offsetTop - offset;
-        window.scrollTo({
-          top: elementPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 300);
-  };
-
-  // Função para selecionar modelo (sobrescreve a do hook com efeitos visuais)
-  const handleSelecionarModeloLocal = (modelo) => {
-    handleSelecionarModelo(modelo); // Chama a função do hook
-    
-    // Adicionar efeito visual de destaque
-    const card = document.querySelector(`[data-modelo="${modelo}"]`);
-    if (card) {
-      card.classList.add('selection-highlight');
-      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
+        if (pagamentoData.tipoPagamento === 'cliente') {
+          if (!pagamentoData.localInstalacao) errors.localInstalacao = 'Informe o local de instalação';
+          if (!pagamentoData.tipoInstalacao) errors.tipoInstalacao = 'Selecione o tipo de instalação';
+          if (!pagamentoData.participacaoRevenda) errors.participacaoRevenda = 'Selecione se há participação de revenda';
+          if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
+            errors.revendaTemIE = 'Selecione se possui Inscrição Estadual';
+          }
+        }
+        break;
+      case 3:
+        if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
+        if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
+        if (!clienteData.email) errors.email = 'Email é obrigatório';
+        if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
+        if (!clienteData.inscricao_estadual) errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
+        break;
+      case 4:
+        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
+        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
+        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
+        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
+        break;
     }
     
-    // Scroll automático para a próxima etapa após um pequeno delay
-    setTimeout(() => {
-      const stepElement = document.querySelector('.cascata-step:nth-child(3)');
-      if (stepElement) {
-        const isMobile = window.innerWidth <= 768;
-        const offset = isMobile ? 120 : 80;
-        
-        const elementPosition = stepElement.offsetTop - offset;
-        window.scrollTo({
-          top: elementPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 300);
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
-
-
-  const removerItemPorIndex = (index) => {
-    const item = carrinho[index];
-    if (item) {
-      removeFromCart(item.id, item.tipo);
+  const canGoNext = () => {
+    switch (currentStep) {
+      case 1:
+        return guindastesSelecionados.length > 0;
+      case 2:
+        if (pagamentoData.tipoPagamento === 'revenda') {
+          return pagamentoData.tipoPagamento && pagamentoData.prazoPagamento && pagamentoData.tipoFrete;
+        }
+        return pagamentoData.tipoPagamento && 
+               pagamentoData.prazoPagamento && 
+               pagamentoData.localInstalacao && 
+               pagamentoData.tipoInstalacao &&
+               pagamentoData.tipoFrete &&
+               pagamentoData.participacaoRevenda &&
+               pagamentoData.revendaTemIE;
+      case 3:
+        return clienteData.nome && clienteData.telefone && clienteData.email && 
+               clienteData.documento && clienteData.inscricao_estadual && clienteData.endereco;
+      case 4:
+        return caminhaoData.tipo && caminhaoData.marca && caminhaoData.modelo && caminhaoData.voltagem;
+      case 5:
+        return true;
+      default:
+        return false;
     }
   };
 
-  const limparCarrinho = () => {
-    clearCart();
+  const handleNext = () => {
+    if (validateStep(currentStep) && currentStep < 5) {
+      setCurrentStep(currentStep + 1);
+      setValidationErrors({});
+    }
   };
 
+  const handlePrevious = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
+  const handleFinish = () => {
+    alert('Pedido finalizado! Revise o resumo e gere o PDF.');
+    // Lógica de salvamento está no ResumoPedido
+  };
 
-
-
-  // Renderizar conteúdo do step
+  // Renderizar conteúdo do step atual
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Selecione o Guindaste Ideal</h2>
-              <p>Escolha o guindaste que melhor atende às suas necessidades</p>
-            </div>
-
-            <div className="cascata-container">
-              {/* Indicador de Progresso */}
-              <div className="progress-indicator">
-                <div className={`progress-step ${selectedCapacidade ? 'completed' : 'active'}`}>
-                  <div className="step-number">1</div>
-                  <span>Capacidade</span>
-                </div>
-                <div className={`progress-line ${selectedCapacidade ? 'completed' : ''}`}></div>
-                <div className={`progress-step ${selectedCapacidade && selectedModelo ? 'completed' : selectedCapacidade ? 'active' : ''}`}>
-                  <div className="step-number">2</div>
-                  <span>Modelo</span>
-                </div>
-                <div className={`progress-line ${selectedCapacidade && selectedModelo ? 'completed' : ''}`}></div>
-                              <div className={`progress-step ${guindastesSelecionados.length > 0 ? 'completed' : selectedModelo ? 'active' : ''}`}>
-                <div className="step-number">3</div>
-                <span>Configuração</span>
-              </div>
-              </div>
-
-              {/* Passo 1: Selecionar Capacidade */}
-              <div className="cascata-step">
-                <div className="step-title">
-                  <h3>1. Escolha a Capacidade</h3>
-                  <p>Selecione a capacidade do guindaste</p>
-                </div>
-                
-                <div className="capacidades-grid">
-                  {capacidades.map((capacidade) => (
-                    <button
-                      key={capacidade}
-                      className={`capacidade-card no-photo ${selectedCapacidade === capacidade ? 'selected' : ''}`}
-                      onClick={() => handleSelecionarCapacidadeLocal(capacidade)}
-                      data-capacidade={capacidade}
-                    >
-                      <div className="capacidade-icon">
-                        <div className="capacidade-fallback" aria-hidden="true">🏗️</div>
-                      </div>
-                      <div className="capacidade-info">
-                        <h4>{capacidade} Ton</h4>
-                        <p>Capacidade {capacidade} toneladas</p>
-                      </div>
-                      {selectedCapacidade === capacidade && (
-                        <div className="selected-indicator">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Passo 2: Selecionar Modelo (apenas se capacidade foi selecionada) */}
-              {selectedCapacidade && (
-                <div className="cascata-step">
-                  <div className="step-title">
-                    <h3>2. Escolha o Modelo</h3>
-                    <p>Modelos disponíveis para {selectedCapacidade} ton</p>
-                  </div>
-                  
-                  <div className="modelos-grid">
-                    {modelosDisponiveis.map((guindaste) => {
-                      const subgrupo = guindaste.subgrupo || '';
-                      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-                      
-                      return (
-                        <button
-                          key={guindaste.id}
-                          className={`modelo-card ${selectedModelo === modeloBase ? 'selected' : ''}`}
-                          onClick={() => handleSelecionarModeloLocal(modeloBase)}
-                          data-modelo={modeloBase}
-                        >
-                          <div className="modelo-icon">
-                            {guindaste.imagem_url ? (
-                              <img
-                                src={guindaste.imagem_url}
-                                alt={modeloBase}
-                                className="modelo-thumbnail"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : (
-                              <div className="modelo-fallback">
-                                <span>{modeloBase.includes('GSI') ? '🏭' : '🏗️'}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="modelo-info">
-                            <h4>{modeloBase}</h4>
-                            <p>{guindaste.Grupo || 'Guindaste'}</p>
-                            <span className="modelo-codigo">{guindaste.codigo_referencia}</span>
-                          </div>
-                          {selectedModelo === modeloBase && (
-                            <div className="selected-indicator">
-                              <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Passo 3: Selecionar Guindaste Específico (apenas se modelo foi selecionado) */}
-              {selectedModelo && (
-                <div className="cascata-step">
-                  <div className="step-title">
-                    <h3>3. Escolha a Configuração</h3>
-                    <p>Configurações disponíveis para {selectedModelo}</p>
-                  </div>
-                  
-                  <div className="guindastes-grid">
-                    {guindastesDisponiveis.map((guindaste) => (
-                      <GuindasteCard
-                        key={guindaste.id}
-                        guindaste={guindaste}
-                        isSelected={guindastesSelecionados.some(g => g.id === guindaste.id)}
-                        onSelect={() => handleSelecionarGuindaste(guindaste)}
-                      />
-                    ))}
-                  </div>
-                  
-                  {validationErrors.guindaste && (
-                    <div className="validation-error">
-                      <span className="error-message">{validationErrors.guindaste}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <Step1GuindasteSelector
+            capacidades={capacidades}
+            selectedCapacidade={selectedCapacidade}
+            selectedModelo={selectedModelo}
+            modelosDisponiveis={modelosDisponiveis}
+            guindastesDisponiveis={guindastesDisponiveis}
+            guindastesSelecionados={guindastesSelecionados}
+            onSelecionarCapacidade={handleSelecionarCapacidadeLocal}
+            onSelecionarModelo={handleSelecionarModeloLocal}
+            onSelecionarGuindaste={handleSelecionarGuindaste}
+            validationErrors={validationErrors}
+          />
         );
-
+      
       case 2:
         return (
           <div className="step-content">
@@ -509,7 +367,6 @@ const NovoPedido = () => {
               <h2>Política de Pagamento</h2>
               <p>Selecione a forma de pagamento e visualize os descontos</p>
             </div>
-            
             <PaymentPolicy 
               precoBase={getTotalCarrinho()}
               onPaymentComputed={setPagamentoData}
@@ -521,7 +378,7 @@ const NovoPedido = () => {
             />
           </div>
         );
-
+      
       case 3:
         return (
           <div className="step-content">
@@ -529,10 +386,14 @@ const NovoPedido = () => {
               <h2>Dados do Cliente</h2>
               <p>Preencha as informações do cliente</p>
             </div>
-            <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
+            <ClienteFormDetalhado 
+              formData={clienteData} 
+              setFormData={setClienteData} 
+              errors={validationErrors} 
+            />
           </div>
         );
-
+      
       case 4:
         return (
           <div className="step-content">
@@ -540,10 +401,14 @@ const NovoPedido = () => {
               <h2>Estudo Veicular</h2>
               <p>Informações do veículo para o serviço</p>
             </div>
-            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
+            <CaminhaoFormDetalhado 
+              formData={caminhaoData} 
+              setFormData={setCaminhaoData} 
+              errors={validationErrors} 
+            />
           </div>
         );
-
+      
       case 5:
         return (
           <div className="step-content">
@@ -564,74 +429,10 @@ const NovoPedido = () => {
             />
           </div>
         );
-
+      
       default:
         return null;
     }
-  };
-
-  const validateStep = (step) => {
-    const errors = {};
-    
-    switch (step) {
-      case 1:
-        if (guindastesSelecionados.length === 0) {
-          errors.guindaste = 'Selecione pelo menos um guindaste';
-        }
-        break;
-      case 2:
-        if (!pagamentoData.tipoPagamento) {
-          errors.tipoPagamento = 'Selecione o tipo de pagamento';
-        }
-        if (!pagamentoData.prazoPagamento) {
-          errors.prazoPagamento = 'Selecione o prazo de pagamento';
-        }
-        // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
-        if (pagamentoData.tipoPagamento === 'cliente') {
-          if (!pagamentoData.localInstalacao) {
-            errors.localInstalacao = 'Informe o local de instalação';
-          }
-          if (!pagamentoData.tipoInstalacao) {
-            errors.tipoInstalacao = 'Selecione o tipo de instalação';
-          }
-          // Participação de revenda é obrigatória para cliente
-          if (!pagamentoData.participacaoRevenda) {
-            errors.participacaoRevenda = 'Selecione se há participação de revenda';
-          }
-          // Se respondeu participação, IE é obrigatória
-          if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
-            errors.revendaTemIE = 'Selecione se possui Inscrição Estadual';
-          }
-        }
-        if (!pagamentoData.tipoFrete) {
-          errors.tipoFrete = 'Selecione o tipo de frete';
-        }
-        break;
-      case 3:
-        if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
-        if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
-        if (!clienteData.email) errors.email = 'Email é obrigatório';
-        if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
-        // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
-        if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
-          errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
-        }
-        if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
-        break;
-      case 4:
-        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
-        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
-        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
-        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
-        // Ano é opcional; se informado, validar intervalo
-        if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
-          errors.ano = 'Ano inválido';
-        }
-        break;
-    }
-    
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
   };
 
   const canGoNext = () => {
@@ -757,7 +558,7 @@ const NovoPedido = () => {
             {renderStepContent()}
           </div>
 
-          {/* Botão Flutuante de Navegação */}
+          {/* Navigation Buttons */}
           <div className="floating-nav">
             {currentStep > 1 && (
               <button onClick={handlePrevious} className="floating-nav-btn prev">
@@ -797,6 +598,7 @@ const NovoPedido = () => {
   );
 };
 
+<<<<<<< HEAD
 // Função para extrair configurações do título do guindaste com ícones
 const extrairConfiguracoes = (subgrupo) => {
   const configuracoes = [];
@@ -1950,4 +1752,4 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   );
 };
 
-export default NovoPedido; 
+export default NovoPedido;
