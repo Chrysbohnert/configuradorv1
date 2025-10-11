@@ -210,16 +210,40 @@ const NovoPedido = () => {
       setGuindastesSelecionados(prev => prev.filter(g => g.id !== guindaste.id));
       removeFromCart(guindaste.id, 'guindaste');
     } else {
+      console.log('🔍 DEBUG COMPLETO - Busca de Preço:');
+      console.log('  📦 Guindaste:', {
+        id: guindaste.id,
+        nome: guindaste.subgrupo,
+        codigo: guindaste.codigo_referencia
+      });
+      console.log('  👤 Usuário:', {
+        nome: user?.nome,
+        regiao_original: user?.regiao,
+        email: user?.email
+      });
+      console.log('  📋 Cliente tem IE:', clienteTemIE);
+      
       let precoGuindaste = 0;
       try {
         const regiaoNormalizada = normalizarRegiao(user?.regiao, clienteTemIE);
+        console.log('  🌎 Região normalizada:', regiaoNormalizada);
+        console.log('  🔎 Buscando preço em precos_guindaste_regiao...');
+        
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
         
+        console.log('  💰 Preço retornado do banco:', precoGuindaste);
+        
         if (!precoGuindaste || precoGuindaste === 0) {
+          console.error('  ❌ PREÇO NÃO ENCONTRADO!');
+          console.log('  ℹ️ Verifique se existe registro em precos_guindaste_regiao para:');
+          console.log(`     - guindaste_id = ${guindaste.id}`);
+          console.log(`     - regiao = '${regiaoNormalizada}'`);
           alert('Atenção: Este guindaste não possui preço definido para a sua região.');
+        } else {
+          console.log('  ✅ Preço encontrado com sucesso!');
         }
       } catch (error) {
-        console.error('Erro ao buscar preço:', error);
+        console.error('  ❌ ERRO ao buscar preço:', error);
         alert('Erro ao buscar preço. Verifique com o administrador.');
       }
       
@@ -237,6 +261,7 @@ const NovoPedido = () => {
         ncm: guindaste.ncm || ''
       };
       
+      console.log('  📦 Produto adicionado ao carrinho:', produto);
       addToCart(produto);
       
       console.log('✅ Guindaste adicionado ao carrinho:', produto.nome);
