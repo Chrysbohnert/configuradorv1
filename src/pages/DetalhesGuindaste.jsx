@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/DetalhesGuindaste.css';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -10,6 +10,17 @@ const DetalhesGuindaste = () => {
   
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [user, setUser] = useState(null);
+
+  // Verificar usuário logado
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      setUser(JSON.parse(userData));
+    } else {
+      navigate('/');
+    }
+  }, [navigate]);
 
   if (!guindaste) {
     navigate('/novo-pedido');
@@ -64,7 +75,8 @@ const DetalhesGuindaste = () => {
         showBackButton={true}
         onBackClick={handleVoltar}
         showSupportButton={true}
-        showUserInfo={false}
+        showUserInfo={true}
+        user={user}
         title="Detalhes do Equipamento"
         subtitle={guindaste?.subgrupo}
       />
