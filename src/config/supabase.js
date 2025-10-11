@@ -630,31 +630,13 @@ class DatabaseService {
     try {
       console.log('Iniciando upload do arquivo:', fileName);
       
-      // Verificar se há sessão ativa
+      // Verificar se há sessão ativa (sem tentar renovar automaticamente)
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        console.log('🔑 Nenhuma sessão Supabase ativa, verificando localStorage...');
-        
-        // Verificar se há indicação de sessão Supabase no localStorage
-        const supabaseSession = localStorage.getItem('supabaseSession');
-        
-        if (supabaseSession === 'active') {
-          console.log('🔄 Sessão Supabase marcada como ativa, tentando renovar...');
-          
-          // Tentar renovar a sessão
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError) {
-            console.log('❌ Erro ao renovar sessão:', refreshError);
-            // Se não conseguir renovar, tentar fazer sign in novamente
-            throw new Error('Sessão Supabase expirada. Faça login novamente.');
-          } else {
-            console.log('✅ Sessão Supabase renovada com sucesso');
-          }
-        } else {
-          throw new Error('Sessão Supabase não encontrada. Faça login novamente.');
-        }
+        console.log('⚠️ Nenhuma sessão Supabase ativa para upload.');
+        console.log('ℹ️ Uploads de imagem funcionam sem autenticação se o bucket estiver público.');
+        // Continua com o upload mesmo sem sessão (o bucket deve estar configurado como público)
       }
       
       // Fazer upload diretamente (bucket já existe)
