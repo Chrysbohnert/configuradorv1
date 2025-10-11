@@ -527,6 +527,13 @@ const NovoPedido = () => {
 
   const handlePrevious = () => {
     if (currentStep > 1) {
+      // Se voltar para o Step 1 (seleção de guindastes), limpar o carrinho
+      if (currentStep === 2) {
+        console.log('⚠️ Voltando para Step 1 - Limpando carrinho');
+        clearCart();
+        setGuindastesSelecionados([]);
+      }
+      
       setCurrentStep(currentStep - 1);
     }
   };
