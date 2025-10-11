@@ -90,10 +90,22 @@ export function calcularPagamento({ precoBase, plan, dataEmissaoNF = new Date() 
   const descontoPercent = plan.discount_percent || 0;
   const acrescimoPercent = plan.surcharge_percent || 0;
   
+  console.log('💰 [PAYMENTS] Cálculo de Pagamento:');
+  console.log('   Preço Base:', precoBase.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  console.log('   Plano:', plan.description);
+  console.log('   Desconto do Plano:', (descontoPercent * 100).toFixed(2) + '%');
+  console.log('   Acréscimo do Plano:', (acrescimoPercent * 100).toFixed(2) + '%');
+  
   const descontoValor = round2(precoBase * descontoPercent);
   const acrescimoValor = round2(precoBase * acrescimoPercent);
   
+  console.log('   Valor do Desconto: -' + descontoValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  console.log('   Valor do Acréscimo: +' + acrescimoValor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  
   const valorAjustado = round2(precoBase - descontoValor + acrescimoValor);
+  
+  console.log('   Valor Ajustado:', valorAjustado.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+  console.log('   Diferença:', (valorAjustado - precoBase).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
 
   // 2. Calcular entrada (se houver)
   let entrada = 0;
