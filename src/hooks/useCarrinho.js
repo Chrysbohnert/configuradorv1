@@ -26,16 +26,14 @@ export function useCarrinho() {
       const exists = prev.find(i => i.id === item.id && i.tipo === item.tipo);
       
       if (exists) {
-        // Se já existe, aumenta quantidade
-        return prev.map(i => 
-          i.id === item.id && i.tipo === item.tipo
-            ? { ...i, quantidade: (i.quantidade || 1) + 1 }
-            : i
-        );
+        // ❌ NÃO aumentar quantidade! Apenas retornar o carrinho atual
+        // (No sistema de guindastes, não faz sentido ter múltiplas unidades do mesmo item)
+        console.warn(`⚠️ Item "${item.nome}" já existe no carrinho. Não será adicionado novamente.`);
+        return prev;
       }
       
-      // Se não existe, adiciona
-      return [...prev, { ...item, quantidade: item.quantidade || 1 }];
+      // Se não existe, adiciona com quantidade sempre = 1
+      return [...prev, { ...item, quantidade: 1 }];
     });
   }, []);
 

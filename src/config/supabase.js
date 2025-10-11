@@ -517,7 +517,12 @@ class DatabaseService {
     
     const preco = data[0]?.preco || 0;
     console.log('✅ [DB] Preço encontrado:', preco);
-    return preco;
+    console.log('🔢 [DB] Tipo do preço:', typeof preco);
+    console.log('📊 [DB] Valor numérico:', parseFloat(preco));
+    
+    // Garantir que retorna número limpo
+    const precoNumerico = parseFloat(preco) || 0;
+    return precoNumerico;
   }
 
   // ===== GRÁFICOS DE CARGA =====
