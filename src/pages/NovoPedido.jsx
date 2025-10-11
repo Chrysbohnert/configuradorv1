@@ -1,4 +1,3 @@
-// ⚡ IMPORTANTE: Campos medidaA, medidaB, medidaC, medidaD removidos - não existem no banco
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -28,7 +27,6 @@ const NovoPedido = () => {
   const [clienteTemIE, setClienteTemIE] = useState(true);
   const [user, setUser] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
-  const salvarRelatorioRef = React.useRef(null);
   
   // Hooks customizados
   const {
@@ -91,7 +89,6 @@ const NovoPedido = () => {
           }
         }
         
-        // Adicionar ao carrinho com FINAME e NCM
         if (precoGuindaste) {
           const produto = {
             id: guindaste.id,
@@ -100,9 +97,7 @@ const NovoPedido = () => {
             codigo_produto: guindaste.codigo_referencia,
             grafico_carga_url: guindaste.grafico_carga_url,
             preco: precoGuindaste,
-            tipo: 'guindaste',
-            finame: guindaste.finame || '',
-            ncm: guindaste.ncm || ''
+            tipo: 'guindaste'
           };
           addToCart(produto);
         }
@@ -210,16 +205,40 @@ const NovoPedido = () => {
       setGuindastesSelecionados(prev => prev.filter(g => g.id !== guindaste.id));
       removeFromCart(guindaste.id, 'guindaste');
     } else {
+      console.log('🔍 DEBUG COMPLETO - Busca de Preço:');
+      console.log('  📦 Guindaste:', {
+        id: guindaste.id,
+        nome: guindaste.subgrupo,
+        codigo: guindaste.codigo_referencia
+      });
+      console.log('  👤 Usuário:', {
+        nome: user?.nome,
+        regiao_original: user?.regiao,
+        email: user?.email
+      });
+      console.log('  📋 Cliente tem IE:', clienteTemIE);
+      
       let precoGuindaste = 0;
       try {
         const regiaoNormalizada = normalizarRegiao(user?.regiao, clienteTemIE);
+        console.log('  🌎 Região normalizada:', regiaoNormalizada);
+        console.log('  🔎 Buscando preço em precos_guindaste_regiao...');
+        
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
         
+        console.log('  💰 Preço retornado do banco:', precoGuindaste);
+        
         if (!precoGuindaste || precoGuindaste === 0) {
+          console.error('  ❌ PREÇO NÃO ENCONTRADO!');
+          console.log('  ℹ️ Verifique se existe registro em precos_guindaste_regiao para:');
+          console.log(`     - guindaste_id = ${guindaste.id}`);
+          console.log(`     - regiao = '${regiaoNormalizada}'`);
           alert('Atenção: Este guindaste não possui preço definido para a sua região.');
+        } else {
+          console.log('  ✅ Preço encontrado com sucesso!');
         }
       } catch (error) {
-        console.error('Erro ao buscar preço:', error);
+        console.error('  ❌ ERRO ao buscar preço:', error);
         alert('Erro ao buscar preço. Verifique com o administrador.');
       }
       
@@ -232,23 +251,22 @@ const NovoPedido = () => {
         codigo_produto: guindaste.codigo_referencia,
         grafico_carga_url: guindaste.grafico_carga_url,
         preco: precoGuindaste,
-        tipo: 'guindaste',
-        finame: guindaste.finame || '',
-        ncm: guindaste.ncm || ''
+        tipo: 'guindaste'
       };
       
+      console.log('  📦 Produto adicionado ao carrinho:', produto);
       addToCart(produto);
       
-      console.log('✅ Guindaste adicionado ao carrinho:', produto.nome);
-      
-      // Navegar para a página de detalhes do guindaste
-      navigate(`/detalhes-guindaste/${guindaste.id}`, {
-        state: { 
-          from: '/novo-pedido',
-          guindaste: guindaste,
-          precoGuindaste: precoGuindaste
-        }
-      });
+      // Navegar para detalhes
+      setTimeout(() => {
+        navigate('/detalhes-guindaste', { 
+          state: { 
+            guindaste: { ...guindaste, preco: precoGuindaste },
+            returnTo: '/novo-pedido',
+            step: 2
+          } 
+        });
+      }, 800);
     }
   };
 
@@ -423,9 +441,6 @@ const NovoPedido = () => {
               pagamentoData={pagamentoData}
               user={user}
               guindastes={guindastes}
-              onRemoverItem={removerItemPorIndex}
-              onLimparCarrinho={limparCarrinho}
-              onSalvarRelatorioRef={salvarRelatorioRef}
             />
           </div>
         );
@@ -522,6 +537,7 @@ const NovoPedido = () => {
   );
 };
 
+<<<<<<< HEAD
 // Função para extrair configurações do título do guindaste com ícones
 const extrairConfiguracoes = (subgrupo) => {
   const configuracoes = [];
@@ -1190,5 +1206,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   );
 };
 
+=======
+>>>>>>> 6fd95d8b6256ed3918924bb90b637eeb5fd7d0dc
 export default NovoPedido;
 
