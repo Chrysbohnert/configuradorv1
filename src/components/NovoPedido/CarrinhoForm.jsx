@@ -11,7 +11,7 @@ import { formatCurrency } from '../../utils/formatters';
  * @param {Function} props.onRemoveItem - Callback para remover item
  * @param {Function} props.onUpdateQuantity - Callback para atualizar quantidade
  */
-const CarrinhoForm = ({ 
+const CarrinhoForm = React.memo(({ 
   carrinho, 
   onCarrinhoChange,
   guindastes,
@@ -228,6 +228,8 @@ const CarrinhoForm = ({
       )}
     </div>
   );
-};
+});
+
+CarrinhoForm.displayName = 'CarrinhoForm';
 
 export default CarrinhoForm;

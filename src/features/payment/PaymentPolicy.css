@@ -219,6 +219,11 @@
   color: #007bff;
 }
 
+.calc-row.freight .calc-value {
+  color: #17a2b8;
+  font-weight: 600;
+}
+
 /* Parcelas */
 .calc-parcelas {
   margin-top: 16px;

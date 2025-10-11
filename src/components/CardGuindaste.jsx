@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatCurrency } from '../utils/formatters';
 
-const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) => {
+const CardGuindaste = React.memo(({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) => {
 
   const handleCartAction = (e) => {
     e.stopPropagation();
@@ -194,6 +194,8 @@ const CardGuindaste = ({ guindaste, onAddToCart, onRemoveFromCart, isInCart }) =
       </div>
     </div>
   );
-};
+});
+
+CardGuindaste.displayName = 'CardGuindaste';
 
 export default CardGuindaste;

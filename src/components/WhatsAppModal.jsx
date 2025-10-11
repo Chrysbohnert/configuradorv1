@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { generateAndSendQuote, generateAndSendReport } from '../utils/pdfGenerator';
 import '../styles/WhatsAppModal.css';
 
-const WhatsAppModal = ({ isOpen, onClose, type, data }) => {
+const WhatsAppModal = React.memo(({ isOpen, onClose, type, data }) => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -158,6 +158,8 @@ const WhatsAppModal = ({ isOpen, onClose, type, data }) => {
       </div>
     </div>
   );
-};
+});
+
+WhatsAppModal.displayName = 'WhatsAppModal';
 
 export default WhatsAppModal; 

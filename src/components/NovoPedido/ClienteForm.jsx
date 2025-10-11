@@ -12,7 +12,7 @@ import { validateCPF, validateCNPJ, validatePhone, validateName, validateEmail, 
  * @param {Function} props.onClienteIEChange - Callback para mudar IE
  * @param {Object} props.user - Dados do usuário logado
  */
-const ClienteForm = ({ 
+const ClienteForm = React.memo(({ 
   clienteData, 
   onClienteDataChange, 
   errors, 
@@ -378,6 +378,8 @@ const ClienteForm = ({
       )}
     </div>
   );
-};
+});
+
+ClienteForm.displayName = 'ClienteForm';
 
 export default ClienteForm;
