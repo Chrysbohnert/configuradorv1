@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getPaymentPlans, getPlanLabel, getPlanByDescription } from '../../services/paymentPlans';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
+import { db } from '../../config/supabase';
 import './PaymentPolicy.css';
 
 /**
@@ -37,6 +38,52 @@ const PaymentPolicy = ({
   const [tipoFrete, setTipoFrete] = useState(''); // 'cif' | 'fob'
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
+
+  // Estados para o sistema de frete
+  const [fretes, setFretes] = useState([]); // Dados de fretes carregados do banco
+  const [tipoFreteSelecionado, setTipoFreteSelecionado] = useState(''); // 'prioridade' | 'reaproveitamento'
+  const [dadosFreteAtual, setDadosFreteAtual] = useState(null); // Dados do frete selecionado
+
+  // Carregar dados de frete do banco
+  useEffect(() => {
+    const carregarFretes = async () => {
+      try {
+        const dadosFretes = await db.getFretes();
+        setFretes(dadosFretes);
+      } catch (error) {
+        console.error('Erro ao carregar fretes:', error);
+      }
+    };
+
+    carregarFretes();
+  }, []);
+
+  // Atualizar dados do frete quando o local de instalação mudar
+  useEffect(() => {
+    if (localInstalacao && fretes.length > 0) {
+      // Extrair cidade e oficina do localInstalacao (formato: "Nome - Cidade/UF")
+      const partes = localInstalacao.split(' - ');
+      if (partes.length === 2) {
+        const cidadeParte = partes[1].split('/')[0];
+
+        // Buscar dados de frete para a cidade
+        const freteEncontrado = fretes.find(frete =>
+          frete.cidade?.toLowerCase() === cidadeParte?.toLowerCase()
+        );
+
+        if (freteEncontrado) {
+          setDadosFreteAtual(freteEncontrado);
+          setTipoFreteSelecionado(''); // Resetar seleção
+        } else {
+          setDadosFreteAtual(null);
+          setTipoFreteSelecionado('');
+        }
+      }
+    } else {
+      setDadosFreteAtual(null);
+      setTipoFreteSelecionado('');
+    }
+  }, [localInstalacao, fretes]);
 
   // Lista de oficinas do Rio Grande do Sul
   const oficinasRS = [
@@ -109,8 +156,8 @@ const PaymentPolicy = ({
 
   // Determinar o limite máximo de desconto para revenda
   // Se tem GSE: máximo 3%
-  // Se tem GSI: 
-  //   - 1 unidade: até 12%
+  // Se tem GSI:
+  //   - 1 unidade: até 12% (ou 12% para cliente sem participação + produtor rural)
   //   - 2 unidades: até 14%
   //   - 3+ unidades: até 15%
   // Se não tem GSE/GSI: máximo 12%
@@ -123,6 +170,14 @@ const PaymentPolicy = ({
     }
     return 12;
   }, [temGuindasteGSE, temGuindasteGSI, quantidadeGSI]);
+
+  // Nova regra: GSI + Cliente sem participação de revenda + Produtor rural = desconto até 12%
+  const aplicarRegraGSISemParticipacao = useMemo(() => {
+    return temGuindasteGSI &&
+           tipoCliente === 'cliente' &&
+           participacaoRevenda === 'nao' &&
+           revendaTemIE === 'sim';
+  }, [temGuindasteGSI, tipoCliente, participacaoRevenda, revendaTemIE]);
 
   // Lista de planos disponíveis baseado no tipo de cliente e percentual de entrada
   const planosDisponiveis = useMemo(() => {
@@ -146,15 +201,20 @@ const PaymentPolicy = ({
 
   // Resetar desconto adicional se exceder o limite (por exemplo, se GSE for adicionado ao carrinho)
   // MAS permitir 14% e 15% manualmente para GSI (pois o sistema ainda não permite múltiplos itens)
+  // E permitir até 12% para GSI + Cliente sem participação + Produtor rural
   useEffect(() => {
+    const limiteCliente = aplicarRegraGSISemParticipacao ? 12 : 3; // Cliente sem participação: 3% normal, 12% com GSI + produtor rural
+
     if (tipoCliente === 'revenda' && descontoAdicional > maxDescontoRevenda) {
       // Se for GSI, permitir até 15% (seleção manual do vendedor)
       const limiteReal = temGuindasteGSI ? 15 : maxDescontoRevenda;
       if (descontoAdicional > limiteReal) {
         setDescontoAdicional(0);
       }
+    } else if (tipoCliente === 'cliente' && participacaoRevenda === 'nao' && descontoAdicional > limiteCliente) {
+      setDescontoAdicional(0);
     }
-  }, [tipoCliente, maxDescontoRevenda, descontoAdicional, temGuindasteGSI]);
+  }, [tipoCliente, maxDescontoRevenda, descontoAdicional, temGuindasteGSI, aplicarRegraGSISemParticipacao, participacaoRevenda]);
 
   // Forçar "Produtor rural" quando for Cliente + Participação de Revenda + GSI
   useEffect(() => {
@@ -180,10 +240,18 @@ const PaymentPolicy = ({
     if (prazoSelecionado === 'À Vista' && valorSinal) {
       setValorSinal('');
     }
-    
+
+    // Validações antes de fazer o cálculo
     if (!tipoCliente || !prazoSelecionado || !precoBase) {
       setCalculoAtual(null);
       setErroCalculo('');
+      return;
+    }
+
+    // Validação: se há dados de frete disponíveis, o tipo deve ser selecionado
+    if (dadosFreteAtual && !tipoFreteSelecionado) {
+      setCalculoAtual(null);
+      setErroCalculo(`🚛 Selecione o tipo de entrega para ${dadosFreteAtual.cidade} (Prioridade ou Reaproveitamento)`);
       return;
     }
 
@@ -205,7 +273,7 @@ const PaymentPolicy = ({
       // Determinar qual desconto o VENDEDOR pode aplicar:
       // - Cliente COM participação de revenda - Produtor rural → vendedor pode dar 1-5% (MAS NÃO se houver GSE)
       // - Cliente COM participação de revenda - Rodoviário → vendedor NÃO pode dar desconto
-      // - Cliente SEM participação de revenda → vendedor pode dar 0-3%
+      // - Cliente SEM participação de revenda → vendedor pode dar 0-3% (OU até 12% se houver GSI e for produtor rural)
       // - Revenda → vendedor pode dar 0-12% (ou até 15% para GSI com múltiplas unidades)
       let descontoFinal = 0;
       if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
@@ -221,16 +289,24 @@ const PaymentPolicy = ({
       const descontoAdicionalValor = precoBase * (descontoFinal / 100);
       const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
 
+      // Adicionar valor do frete selecionado
+      const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
+        (tipoFreteSelecionado === 'prioridade' ?
+          parseFloat(dadosFreteAtual.valor_prioridade || 0) :
+          parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
+
+      const valorFinalComFrete = valorFinalComDescontoAdicional + valorFrete;
+
       // Para Cliente: calcular entrada baseada no percentual (30% ou 50%)
       // Para Revenda: usar a entrada do plano
       const valorSinalNum = parseFloat(valorSinal) || 0;
       const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
-      const entradaParaCalculo = tipoCliente === 'cliente' && percentualEntradaNum > 0 
-        ? (valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
+      const entradaParaCalculo = tipoCliente === 'cliente' && percentualEntradaNum > 0
+        ? (valorFinalComFrete * percentualEntradaNum / 100)
         : resultado.entrada;
 
-      // Recalcular parcelas com o valor final (com desconto adicional) e entrada correta
-      const saldoComDesconto = valorFinalComDescontoAdicional - entradaParaCalculo;
+      // Recalcular parcelas com o valor final (com desconto adicional e frete) e entrada correta
+      const saldoComDesconto = valorFinalComFrete - entradaParaCalculo;
       const numParcelas = resultado.parcelas.length;
       const valorParcela = saldoComDesconto / numParcelas;
       
@@ -255,8 +331,12 @@ const PaymentPolicy = ({
         ...resultado,
         descontoAdicionalValor,
         valorFinalComDescontoAdicional,
+        valorFrete,
+        valorFinalComFrete,
         parcelas: parcelasAtualizadas,
-        saldo: saldoComDesconto
+        saldo: saldoComDesconto,
+        tipoFreteSelecionado,
+        dadosFreteAtual
       });
       setErroCalculo('');
 
@@ -266,7 +346,12 @@ const PaymentPolicy = ({
         // O sinal FAZ PARTE da entrada total
         const entradaTotal = entradaParaCalculo;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = saldoComDesconto; // Saldo após pagar a entrada completa
+        const saldo = saldoComDesconto; // Saldo após pagar a entrada completa (já inclui frete)
+        const valorFinal = valorFinalComFrete;
+        const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
+          (tipoFreteSelecionado === 'prioridade' ?
+            parseFloat(dadosFreteAtual.valor_prioridade || 0) :
+            parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
         
         onPaymentComputed({
           ...resultado,
@@ -289,12 +374,17 @@ const PaymentPolicy = ({
           participacaoRevenda: participacaoRevenda, // 'sim' | 'nao'
           revendaTemIE: revendaTemIE, // 'sim' | 'nao'
           descontoRevendaIE: descontoRevendaIE, // 1-5%
+          // Informações sobre frete
+          tipoFreteSelecionado: tipoFreteSelecionado, // 'prioridade' | 'reaproveitamento'
+          dadosFreteAtual: dadosFreteAtual, // Dados completos do frete selecionado
+          valorFrete: valorFrete, // Valor do frete aplicado
+          valorFinalComFrete: valorFinalComFrete, // Valor final com desconto e frete
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
           desconto: plan.discount_percent ? (plan.discount_percent * 100) : 0,
           acrescimo: plan.surcharge_percent ? (plan.surcharge_percent * 100) : 0,
-          valorFinal: valorFinalComDescontoAdicional, // Valor final com desconto adicional aplicado
+          valorFinal: valorFinal, // Valor final com desconto adicional e frete aplicado
           tipoInstalacao: pagamentoPorConta
         });
       }
@@ -312,7 +402,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -745,12 +835,28 @@ const PaymentPolicy = ({
                           ⭐ 14% (2 unidades GSI)
                         </option>
                         <option value="15" style={{ fontWeight: 'bold', backgroundColor: '#d4edda' }}>
-                          ⭐⭐ 15% (3+ unidades GSI)
+                          ⭐⭐ 15% (3 ou mais unidades GSI)
                         </option>
                       </>
                     )}
                   </>
                 )
+              ) : aplicarRegraGSISemParticipacao ? (
+                // Para cliente sem participação + GSI + Produtor rural: até 12%
+                <>
+                  <option value="1">1%</option>
+                  <option value="2">2%</option>
+                  <option value="3">3%</option>
+                  <option value="4">4%</option>
+                  <option value="5">5%</option>
+                  <option value="6">6%</option>
+                  <option value="7">7%</option>
+                  <option value="8">8%</option>
+                  <option value="9">9%</option>
+                  <option value="10">10%</option>
+                  <option value="11">11%</option>
+                  <option value="12">12%</option>
+                </>
               ) : (
                 // Para cliente: de 0.5% a 3%
                 <>
@@ -764,16 +870,142 @@ const PaymentPolicy = ({
               )}
             </select>
             <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
-              {tipoCliente === 'revenda' 
+              {tipoCliente === 'revenda'
                 ? temGuindasteGSE
                   ? '⚠️ Desconto limitado a 3% devido à presença de guindastes GSE no carrinho'
                   : temGuindasteGSI
                     ? 'Desconto especial para GSI: 12% (1 un), ⭐ 14% (2 un), ⭐⭐ 15% (3+ un). Selecione conforme a quantidade vendida.'
                     : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
-                : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
+                : aplicarRegraGSISemParticipacao
+                  ? '⭐ Desconto especial para GSI + Produtor Rural: até 12% permitido'
+                  : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
               }
             </small>
           </div>
+      )}
+
+      {/* Seleção de Local de Instalação - aparece após desconto adicional */}
+      {tipoCliente === 'cliente' && prazoSelecionado && (
+        <>
+          <div className="form-group" style={{ marginTop: '20px' }}>
+            <label htmlFor="localInstalacao">
+              Local de Instalação *
+            </label>
+            <select
+              id="localInstalacao"
+              value={localInstalacao}
+              onChange={(e) => setLocalInstalacao(e.target.value)}
+              className={errors.localInstalacao ? 'error' : ''}
+            >
+              <option value="">
+                {oficinasDisponiveis.length === 0
+                  ? 'Nenhuma oficina disponível para sua região'
+                  : 'Selecione o local de instalação'
+                }
+              </option>
+              {oficinasDisponiveis.map((oficina, index) => (
+                <option key={index} value={`${oficina.nome} - ${oficina.cidade}/${oficina.uf}`}>
+                  {oficina.nome} - {oficina.cidade}/{oficina.uf}
+                </option>
+              ))}
+            </select>
+            {errors.localInstalacao && (
+              <span className="error-message">{errors.localInstalacao}</span>
+            )}
+          </div>
+
+          {/* Seleção de tipo de frete especial - aparece quando há dados de frete disponíveis */}
+          {dadosFreteAtual && (
+            <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '2px solid #007bff' }}>
+              <label style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px', display: 'block', color: '#007bff' }}>
+                🚛 Tipo de Entrega - {dadosFreteAtual.cidade} <span style={{ color: '#dc3545' }}>*</span>
+              </label>
+              <small style={{ display: 'block', marginBottom: '12px', color: '#6c757d', fontSize: '0.875em' }}>
+                Selecione o tipo de entrega para incluir no cálculo
+              </small>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <label
+                  onClick={() => setTipoFreteSelecionado('prioridade')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    padding: '12px 16px',
+                    background: tipoFreteSelecionado === 'prioridade' ? '#ffc107' : '#ffffff',
+                    color: tipoFreteSelecionado === 'prioridade' ? '#212529' : '#495057',
+                    borderRadius: '6px',
+                    border: tipoFreteSelecionado === 'prioridade' ? '2px solid #ffc107' : '2px solid #ced4da',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: tipoFreteSelecionado === 'prioridade' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: tipoFreteSelecionado === 'prioridade' ? '0 2px 8px rgba(255, 193, 7, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="tipoFreteSelecionado"
+                    checked={tipoFreteSelecionado === 'prioridade'}
+                    onChange={() => {}}
+                    style={{
+                      cursor: 'pointer',
+                      accentColor: '#ffc107',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <span style={{ fontWeight: '600' }}>Prioridade</span>
+                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {formatCurrency(dadosFreteAtual.valor_prioridade || 0)} - Entrega exclusiva
+                    </span>
+                  </div>
+                </label>
+                <label
+                  onClick={() => setTipoFreteSelecionado('reaproveitamento')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    padding: '12px 16px',
+                    background: tipoFreteSelecionado === 'reaproveitamento' ? '#28a745' : '#ffffff',
+                    color: tipoFreteSelecionado === 'reaproveitamento' ? '#ffffff' : '#495057',
+                    borderRadius: '6px',
+                    border: tipoFreteSelecionado === 'reaproveitamento' ? '2px solid #28a745' : '2px solid #ced4da',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: tipoFreteSelecionado === 'reaproveitamento' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: tipoFreteSelecionado === 'reaproveitamento' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="tipoFreteSelecionado"
+                    checked={tipoFreteSelecionado === 'reaproveitamento'}
+                    onChange={() => {}}
+                    style={{
+                      cursor: 'pointer',
+                      accentColor: '#28a745',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <span style={{ fontWeight: '600' }}>Reaproveitamento</span>
+                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {formatCurrency(dadosFreteAtual.valor_reaproveitamento || 0)} - Carga compartilhada
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
 
@@ -828,8 +1060,8 @@ const PaymentPolicy = ({
               {calculoAtual.descontoAdicionalValor > 0 && (
                 <div className="calc-row discount">
                   <span className="calc-label">
-                    {tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim' 
-                      ? `Desconto do Vendedor (${descontoRevendaIE}%):` 
+                    {tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim'
+                      ? `Desconto do Vendedor (${descontoRevendaIE}%):`
                       : `Desconto Adicional do Vendedor (${descontoAdicional}%):`}
                   </span>
                   <span className="calc-value">- {formatCurrency(calculoAtual.descontoAdicionalValor)}</span>
@@ -839,6 +1071,20 @@ const PaymentPolicy = ({
               <div className="calc-row separator">
                 <span className="calc-label">Valor Ajustado:</span>
                 <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComDescontoAdicional)}</span>
+              </div>
+
+              {calculoAtual.valorFrete > 0 && (
+                <div className="calc-row freight">
+                  <span className="calc-label">
+                    🚛 Frete ({tipoFreteSelecionado === 'prioridade' ? 'Prioridade' : 'Reaproveitamento'}):
+                  </span>
+                  <span className="calc-value">+ {formatCurrency(calculoAtual.valorFrete)}</span>
+                </div>
+              )}
+
+              <div className="calc-row separator">
+                <span className="calc-label">Valor Final com Frete:</span>
+                <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComFrete)}</span>
               </div>
 
               {/* Mostrar valores de entrada (apenas para cliente) */}
@@ -902,7 +1148,7 @@ const PaymentPolicy = ({
 
               <div className="calc-row total">
                 <span className="calc-label">Total:</span>
-                <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComDescontoAdicional)}</span>
+                <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComFrete)}</span>
               </div>
 
               {/* Mostrar saldo restante (apenas para cliente com entrada) */}
@@ -919,40 +1165,13 @@ const PaymentPolicy = ({
         );
       })()}
 
-      {/* Campos Manuais */}
-      <div className="payment-section">
-        <h3>Informações Adicionais</h3>
-        
-        {/* Campos apenas para Cliente (não aparecem para Revenda) */}
-        {tipoCliente === 'cliente' && (
-          <>
-            <div className="form-group">
-              <label htmlFor="localInstalacao">
-                Local de Instalação *
-              </label>
-              <select
-                id="localInstalacao"
-                value={localInstalacao}
-                onChange={(e) => setLocalInstalacao(e.target.value)}
-                className={errors.localInstalacao ? 'error' : ''}
-              >
-                <option value="">
-                  {oficinasDisponiveis.length === 0
-                    ? 'Nenhuma oficina disponível para sua região'
-                    : 'Selecione o local de instalação'
-                  }
-                </option>
-                {oficinasDisponiveis.map((oficina, index) => (
-                  <option key={index} value={`${oficina.nome} - ${oficina.cidade}/${oficina.uf}`}>
-                    {oficina.nome} - {oficina.cidade}/{oficina.uf}
-                  </option>
-                ))}
-              </select>
-              {errors.localInstalacao && (
-                <span className="error-message">{errors.localInstalacao}</span>
-              )}
-            </div>
-
+      {/* Informações Adicionais - aparece apenas APÓS o cálculo */}
+      {calculoAtual && !erroCalculo && (
+        <div className="payment-section">
+          <h3>Informações Adicionais</h3>
+          
+          {/* Campos apenas para Cliente (não aparecem para Revenda) */}
+          {tipoCliente === 'cliente' && (
             <div className="form-group">
               <label>Pagamento por conta de: *</label>
               <div className="radio-group">
@@ -981,118 +1200,118 @@ const PaymentPolicy = ({
                 <span className="error-message">{errors.tipoInstalacao}</span>
               )}
             </div>
-          </>
-        )}
+          )}
 
-        {/* Tipo de Frete - aparece para todos */}
-        <div className="form-group" style={{ marginTop: '10px' }}>
-          <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-            Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
-          </label>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <label 
-              onClick={() => setTipoFrete('cif')}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '8px', 
-                cursor: 'pointer', 
-                padding: '10px 20px', 
-                background: tipoFrete === 'cif' ? '#28a745' : '#ffffff', 
-                color: tipoFrete === 'cif' ? '#ffffff' : '#495057', 
-                borderRadius: '6px', 
-                border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da', 
-                transition: 'all 0.2s ease',
-                fontSize: '14px',
-                fontWeight: tipoFrete === 'cif' ? '600' : '500',
-                flex: '1',
-                boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                userSelect: 'none'
-              }}
-              onMouseEnter={(e) => {
-                if (tipoFrete !== 'cif') {
-                  e.currentTarget.style.borderColor = '#28a745';
-                  e.currentTarget.style.background = '#f8f9fa';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (tipoFrete !== 'cif') {
-                  e.currentTarget.style.borderColor = '#ced4da';
-                  e.currentTarget.style.background = '#ffffff';
-                }
-              }}
-            >
-              <input 
-                type="radio" 
-                name="tipoFrete" 
-                checked={tipoFrete === 'cif'} 
-                onChange={() => {}}
-                style={{ 
-                  cursor: 'pointer',
-                  accentColor: '#28a745',
-                  width: '16px',
-                  height: '16px'
-                }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                <span style={{ fontWeight: '600' }}>CIF</span>
-                <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
-              </div>
+          {/* Tipo de Frete - aparece para todos */}
+          <div className="form-group" style={{ marginTop: '10px' }}>
+            <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+              Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
             </label>
-            <label 
-              onClick={() => setTipoFrete('fob')}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '8px', 
-                cursor: 'pointer', 
-                padding: '10px 20px', 
-                background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff', 
-                color: tipoFrete === 'fob' ? '#ffffff' : '#495057', 
-                borderRadius: '6px', 
-                border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da', 
-                transition: 'all 0.2s ease',
-                fontSize: '14px',
-                fontWeight: tipoFrete === 'fob' ? '600' : '500',
-                flex: '1',
-                boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
-                userSelect: 'none'
-              }}
-              onMouseEnter={(e) => {
-                if (tipoFrete !== 'fob') {
-                  e.currentTarget.style.borderColor = '#dc3545';
-                  e.currentTarget.style.background = '#f8f9fa';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (tipoFrete !== 'fob') {
-                  e.currentTarget.style.borderColor = '#ced4da';
-                  e.currentTarget.style.background = '#ffffff';
-                }
-              }}
-            >
-              <input 
-                type="radio" 
-                name="tipoFrete" 
-                checked={tipoFrete === 'fob'} 
-                onChange={() => {}}
-                style={{ 
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <label
+                onClick={() => setTipoFrete('cif')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
                   cursor: 'pointer',
-                  accentColor: '#dc3545',
-                  width: '16px',
-                  height: '16px'
+                  padding: '10px 20px',
+                  background: tipoFrete === 'cif' ? '#28a745' : '#ffffff',
+                  color: tipoFrete === 'cif' ? '#ffffff' : '#495057',
+                  borderRadius: '6px',
+                  border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: tipoFrete === 'cif' ? '600' : '500',
+                  flex: '1',
+                  boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                  userSelect: 'none'
                 }}
-              />
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                <span style={{ fontWeight: '600' }}>FOB</span>
-                <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
-              </div>
-            </label>
+                onMouseEnter={(e) => {
+                  if (tipoFrete !== 'cif') {
+                    e.currentTarget.style.borderColor = '#28a745';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tipoFrete !== 'cif') {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tipoFrete"
+                  checked={tipoFrete === 'cif'}
+                  onChange={() => {}}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: '#28a745',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                  <span style={{ fontWeight: '600' }}>CIF</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
+                </div>
+              </label>
+              <label
+                onClick={() => setTipoFrete('fob')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  padding: '10px 20px',
+                  background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff',
+                  color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
+                  borderRadius: '6px',
+                  border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: tipoFrete === 'fob' ? '600' : '500',
+                  flex: '1',
+                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (tipoFrete !== 'fob') {
+                    e.currentTarget.style.borderColor = '#dc3545';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tipoFrete !== 'fob') {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tipoFrete"
+                  checked={tipoFrete === 'fob'}
+                  onChange={() => {}}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: '#dc3545',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                  <span style={{ fontWeight: '600' }}>FOB</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

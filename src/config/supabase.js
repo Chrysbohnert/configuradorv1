@@ -516,9 +516,82 @@ class DatabaseService {
       .from('graficos_carga')
       .select('*')
       .order('nome');
-    
+
     if (error) throw error;
     return data || [];
+  }
+
+  // ===== FRETES POR CIDADE/OFICINA =====
+  async getFretes() {
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .order('cidade');
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getFretePorCidade(cidade) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .eq('cidade', cidade)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar frete por cidade:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async getFretePorOficina(oficina) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .eq('oficina', oficina)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar frete por oficina:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  async createFrete(freteData) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .insert([freteData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateFrete(id, freteData) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .update(freteData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteFrete(id) {
+    const { error } = await supabase
+      .from('fretes')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
   }
 
   async createGraficoCarga(graficoData) {
@@ -698,394 +771,8 @@ export const db = new DatabaseService();
 // ========================================
 // FUNÇÕES DE DEBUG (apenas em desenvolvimento)
 // ========================================
-if (typeof window !== 'undefined' && import.meta.env.DEV) {
-  console.log('🔧 Funções de debug carregadas (modo desenvolvimento)');
-  
-  // Função de teste para verificar campos da tabela guindastes
-  window.testGuindastesFields = async (guindasteId = 36) => {
-    try {
-      console.log('🔍 Testando campos da tabela guindastes...');
-      console.log('📌 Buscando guindaste ID:', guindasteId);
-      
-      // Buscar registro específico
-      const { data, error } = await supabase
-        .from('guindastes')
-        .select('*')
-        .eq('id', guindasteId)
-        .single();
-      
-      if (error) {
-        console.error('❌ Erro ao buscar guindaste:', error);
-        return;
-      }
-      
-      console.log('✅ Registro encontrado:', data);
-      console.log('📋 Todos os campos:', Object.keys(data));
-      console.log('📝 Campo descricao:', data.descricao);
-      console.log('⚠️ Campo nao_incluido:', data.nao_incluido);
-      
-      // Verificar se os campos existem
-      if ('descricao' in data) {
-        console.log('✅ Campo "descricao" existe na tabela');
-      } else {
-        console.error('❌ Campo "descricao" NÃO existe na tabela!');
-      }
-      
-      if ('nao_incluido' in data) {
-        console.log('✅ Campo "nao_incluido" existe na tabela');
-      } else {
-        console.error('❌ Campo "nao_incluido" NÃO existe na tabela!');
-      }
-      
-      return data;
-    } catch (error) {
-      console.error('❌ Erro no teste:', error);
-    }
-  };
-  
-  // Função para testar update direto
-  window.testUpdateDescricao = async (guindasteId = 36) => {
-    try {
-      console.log('🧪 Testando update dos campos descricao e nao_incluido...');
-      console.log('📌 ID do guindaste:', guindasteId);
-      
-      const testeDescricao = `Teste de descrição - ${new Date().toLocaleTimeString()}`;
-      const testeNaoIncluido = `Teste não incluído - ${new Date().toLocaleTimeString()}`;
-      
-      console.log('📝 Tentando salvar:');
-      console.log('   - descricao:', testeDescricao);
-      console.log('   - nao_incluido:', testeNaoIncluido);
-      
-      // Tentar fazer update
-      const { data, error } = await supabase
-        .from('guindastes')
-        .update({
-          descricao: testeDescricao,
-          nao_incluido: testeNaoIncluido
-        })
-        .eq('id', guindasteId)
-        .select();
-      
-      if (error) {
-        console.error('❌ ERRO no update:', error);
-        console.error('   - Message:', error.message);
-        console.error('   - Code:', error.code);
-        console.error('   - Details:', error.details);
-        console.error('   - Hint:', error.hint);
-        return;
-      }
-      
-      console.log('✅ Update executado sem erro');
-      console.log('📦 Data retornada:', data);
-      
-      // Buscar novamente para confirmar
-      const { data: verificacao, error: errorVerif } = await supabase
-        .from('guindastes')
-        .select('id, descricao, nao_incluido')
-        .eq('id', guindasteId)
-        .single();
-      
-      if (errorVerif) {
-        console.error('❌ Erro ao verificar:', errorVerif);
-        return;
-      }
-      
-      console.log('🔍 Verificação após update:');
-      console.log('   - descricao salva:', verificacao.descricao);
-      console.log('   - nao_incluido salvo:', verificacao.nao_incluido);
-      
-      if (verificacao.descricao === testeDescricao && verificacao.nao_incluido === testeNaoIncluido) {
-        console.log('✅ ✅ ✅ SUCESSO! Os dados foram salvos corretamente!');
-      } else {
-        console.error('❌ ❌ ❌ PROBLEMA! Os dados NÃO foram salvos!');
-        console.error('📋 POSSÍVEIS CAUSAS:');
-        console.error('   1. RLS (Row Level Security) bloqueando o update');
-        console.error('   2. Trigger no banco limpando os campos');
-        console.error('   3. Política de segurança no Supabase');
-      }
-      
-      return verificacao;
-    } catch (error) {
-      console.error('❌ Erro no teste:', error);
-    }
-  };
+// Movidas para src/utils/debug/
+// Carregadas automaticamente em modo DEV
+if (import.meta.env.DEV) {
+  import('../utils/debug/index.js');
 }
-
-// Função de teste para verificar buckets (disponível no console do navegador)
-if (typeof window !== 'undefined') {
-  window.testSupabaseStorage = async () => {
-    try {
-      console.log('🔍 Testando configuração do Supabase Storage...');
-      
-      // Verificar autenticação
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔑 Sessão ativa:', session ? 'Sim' : 'Não');
-      
-      if (!session) {
-        console.error('❌ Nenhuma sessão ativa! Faça login primeiro.');
-        console.log('💡 Dica: Vá para a página de login e faça login novamente.');
-        return;
-      }
-      
-      const { data: { user } } = await supabase.auth.getUser();
-      console.log('👤 Usuário autenticado:', user ? 'Sim' : 'Não');
-      console.log('🆔 ID do usuário:', user?.id);
-      console.log('📧 Email do usuário:', user?.email);
-      console.log('🔍 Metadata do usuário:', user?.user_metadata);
-      
-      if (!user) {
-        console.error('❌ Usuário não autenticado! Faça login primeiro.');
-        return;
-      }
-      
-      // Listar buckets
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error('❌ Erro ao listar buckets:', bucketsError);
-        console.error('Detalhes:', JSON.stringify(bucketsError, null, 2));
-        return;
-      }
-      
-      console.log('📦 Buckets encontrados:', buckets);
-      
-      // Verificar se graficos-carga existe
-      const graficosBucket = buckets.find(b => b.name === 'graficos-carga');
-      
-      if (graficosBucket) {
-        console.log('✅ Bucket graficos-carga encontrado:', graficosBucket);
-        
-        // Testar upload com PDF
-        const testContent = '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n72 720 Td\n(Test PDF) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000204 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n297\n%%EOF';
-        const testFile = new File([testContent], 'test.pdf', { type: 'application/pdf' });
-        
-        console.log('📤 Tentando upload de PDF de teste...');
-        const { data, error } = await supabase.storage
-          .from('graficos-carga')
-          .upload(`test_${Date.now()}.pdf`, testFile);
-        
-        if (error) {
-          console.error('❌ Erro no teste de upload:', error);
-          console.error('Mensagem:', error.message);
-          console.error('Código:', error.code);
-          console.error('Detalhes:', JSON.stringify(error, null, 2));
-          
-          if (error.message.includes('row-level security policy')) {
-            console.error('🔒 PROBLEMA IDENTIFICADO: Row Level Security (RLS)');
-            console.error('📋 SOLUÇÃO: Configure as políticas de acesso no Supabase');
-            console.error('📋 PASSO A PASSO:');
-            console.error('1. Vá para o painel do Supabase');
-            console.error('2. Storage → graficos-carga → Policies');
-            console.error('3. Clique em "New Policy"');
-            console.error('4. Selecione "Create a policy from scratch"');
-            console.error('5. Configure:');
-            console.error('   - Policy name: "Allow authenticated uploads"');
-            console.error('   - Allowed operation: INSERT');
-            console.error('   - Target roles: authenticated');
-            console.error('   - Policy definition: true');
-            console.error('6. Salve a política');
-          }
-        } else {
-          console.log('✅ Upload de teste bem-sucedido:', data);
-          
-          // Obter URL pública
-          const { data: urlData } = supabase.storage
-            .from('graficos-carga')
-            .getPublicUrl(data.path);
-          
-          console.log('🔗 URL pública:', urlData.publicUrl);
-          
-          // Limpar arquivo de teste
-          await supabase.storage.from('graficos-carga').remove([data.path]);
-          console.log('✅ Arquivo de teste removido');
-        }
-      } else {
-        console.log('❌ Bucket graficos-carga não encontrado');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro no teste:', error);
-      console.error('Detalhes:', JSON.stringify(error, null, 2));
-    }
-  };
-
-  // Função para testar status válidos da tabela pedidos
-  window.testPedidosStatus = async () => {
-    try {
-      console.log('🔍 Testando status válidos para pedidos...');
-      
-      const statusPossiveis = ['ativo', 'pendente', 'concluido', 'cancelado', 'em_andamento', 'aguardando', 'aprovado'];
-      
-      for (const status of statusPossiveis) {
-        try {
-          console.log(`📋 Testando status: "${status}"`);
-          
-          const testData = {
-            numero_pedido: `TEST_${Date.now()}`,
-            cliente_id: 1, // Assumindo que existe um cliente com ID 1
-            vendedor_id: 1, // Assumindo que existe um vendedor com ID 1
-            caminhao_id: 1, // Assumindo que existe um caminhão com ID 1
-            status: status,
-            valor_total: 1000.00,
-            observacoes: 'Teste de status'
-          };
-          
-          const { data, error } = await supabase
-            .from('pedidos')
-            .insert([testData])
-            .select()
-            .single();
-          
-          if (error) {
-            console.log(`❌ Status "${status}" inválido:`, error.message);
-          } else {
-            console.log(`✅ Status "${status}" válido!`, data);
-            
-            // Limpar o registro de teste
-            await supabase.from('pedidos').delete().eq('id', data.id);
-            console.log(`🧹 Registro de teste removido`);
-          }
-        } catch (error) {
-          console.log(`❌ Erro ao testar status "${status}":`, error.message);
-        }
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro no teste:', error);
-    }
-  };
-
-  // Função para testar estrutura da tabela caminhoes
-  window.testCaminhoesTable = async () => {
-    try {
-      console.log('🔍 Testando estrutura da tabela caminhoes...');
-      
-      // Tentar inserir um caminhão de teste
-      const testData = {
-        tipo: 'Truck',
-        marca: 'Mercedes-Benz',
-        modelo: 'Actros',
-        voltagem: '24V',
-        observacoes: 'Teste de inserção',
-        cliente_id: 1 // Assumindo que existe um cliente com ID 1
-      };
-      
-      console.log('📋 Dados de teste:', testData);
-      
-      const { data, error } = await supabase
-        .from('caminhoes')
-        .insert([testData])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('❌ Erro no teste:', error);
-        console.error('📋 Detalhes:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
-        
-        // Se for erro de constraint, mostrar sugestões
-        if (error.message.includes('foreign key')) {
-          console.log('💡 SUGESTÃO: O cliente_id não existe. Verifique se há clientes na tabela.');
-        }
-        if (error.message.includes('not-null')) {
-          console.log('💡 SUGESTÃO: Algum campo obrigatório não está sendo preenchido.');
-        }
-        if (error.message.includes('duplicate')) {
-          console.log('💡 SUGESTÃO: Já existe um registro com esses dados.');
-        }
-      } else {
-        console.log('✅ Teste bem-sucedido:', data);
-        
-        // Limpar o registro de teste
-        await supabase.from('caminhoes').delete().eq('id', data.id);
-        console.log('🧹 Registro de teste removido');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro no teste:', error);
-    }
-  };
-
-  // Função para debug da autenticação
-  window.debugAuth = async () => {
-    try {
-      console.log('🔍 DEBUG: Verificando autenticação completa...');
-      
-      // Verificar localStorage
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        const userObj = JSON.parse(userData);
-        console.log('✅ Usuário no localStorage:', userObj);
-        console.log('🔑 Tem senha:', userObj.password ? 'Sim' : 'Não');
-        console.log('📧 Email:', userObj.email);
-      } else {
-        console.log('❌ Nenhum usuário no localStorage');
-      }
-      
-      // Verificar sessão do Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      console.log('🔑 Sessão Supabase:', session ? 'Ativa' : 'Inativa');
-      
-      // Verificar indicador de sessão no localStorage
-      const supabaseSession = localStorage.getItem('supabaseSession');
-      console.log('🔑 Indicador Supabase no localStorage:', supabaseSession);
-      
-      // Verificar usuário do Supabase
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      console.log('👤 Usuário Supabase:', user ? 'Autenticado' : 'Não autenticado');
-      if (userError) console.error('❌ Erro no usuário Supabase:', userError);
-      
-      if (session) {
-        console.log('📋 Detalhes da sessão Supabase:');
-        console.log('  - ID:', session.user.id);
-        console.log('  - Email:', session.user.email);
-        console.log('  - Metadata:', session.user.user_metadata);
-        console.log('  - Expira em:', new Date(session.expires_at * 1000).toLocaleString());
-      }
-      
-      if (user) {
-        console.log('📋 Detalhes do usuário Supabase:');
-        console.log('  - ID:', user.id);
-        console.log('  - Email:', user.email);
-        console.log('  - Metadata:', user.user_metadata);
-      }
-      
-      // Verificar se existe na tabela users
-      if (user) {
-        try {
-          const { data: userData, error: dbError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', user.id)
-            .single();
-          
-          if (dbError) {
-            console.error('❌ Erro ao buscar na tabela users:', dbError);
-          } else if (userData) {
-            console.log('✅ Usuário encontrado na tabela users:', userData);
-          } else {
-            console.log('❌ Usuário não encontrado na tabela users');
-          }
-        } catch (error) {
-          console.error('❌ Erro ao verificar tabela users:', error);
-        }
-      }
-      
-      // Recomendações
-      if (!session && supabaseSession !== 'active') {
-        console.log('💡 RECOMENDAÇÃO: Faça login novamente para ativar a sessão Supabase');
-      } else if (!session && supabaseSession === 'active') {
-        console.log('💡 RECOMENDAÇÃO: Sessão marcada mas inativa, tente renovar');
-      } else if (session) {
-        console.log('✅ Sessão Supabase ativa e funcionando');
-      }
-      
-    } catch (error) {
-      console.error('❌ Erro no debug:', error);
-    }
-  };
-} 

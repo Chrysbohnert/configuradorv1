@@ -9,7 +9,7 @@ import { validatePlate } from '../../utils/validation';
  * @param {Object} props.errors - Erros de validação
  * @param {Function} props.onErrorsChange - Callback quando erros mudam
  */
-const CaminhaoForm = ({ 
+const CaminhaoForm = React.memo(({ 
   caminhaoData, 
   onCaminhaoDataChange, 
   errors, 
@@ -165,6 +165,8 @@ const CaminhaoForm = ({
       </div>
     </div>
   );
-};
+});
+
+CaminhaoForm.displayName = 'CaminhaoForm';
 
 export default CaminhaoForm;
