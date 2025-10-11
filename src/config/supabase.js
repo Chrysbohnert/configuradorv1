@@ -492,6 +492,8 @@ class DatabaseService {
 
   // Buscar preço específico de um guindaste por região
   async getPrecoPorRegiao(guindasteId, regiao) {
+    console.log('🔍 [DB] getPrecoPorRegiao chamado:', { guindasteId, regiao });
+    
     const { data, error } = await supabase
       .from('precos_guindaste_regiao')
       .select('preco')
@@ -499,15 +501,23 @@ class DatabaseService {
       .eq('regiao', regiao)
       .limit(1);
     
+    console.log('📊 [DB] Resposta do Supabase:', { data, error, dataLength: data?.length });
+    
     if (error) {
-      console.error('Erro ao buscar preço por região:', error);
+      console.error('❌ [DB] Erro ao buscar preço por região:', error);
       return 0;
     }
     
     // Se não encontrar preço ou array vazio, retornar 0
-    if (!data || data.length === 0) return 0;
+    if (!data || data.length === 0) {
+      console.warn('⚠️ [DB] Nenhum preço encontrado para:', { guindasteId, regiao });
+      console.log('💡 [DB] Execute no SQL: SELECT * FROM precos_guindaste_regiao WHERE guindaste_id =', guindasteId, 'AND regiao =', `'${regiao}'`);
+      return 0;
+    }
     
-    return data[0]?.preco || 0;
+    const preco = data[0]?.preco || 0;
+    console.log('✅ [DB] Preço encontrado:', preco);
+    return preco;
   }
 
   // ===== GRÁFICOS DE CARGA =====
