@@ -350,7 +350,7 @@
 
 .progress-step.active span,
 .progress-step.completed span {
-  color: #1f2937;
+  color: #000000;
   font-weight: 600;
 }
 
@@ -450,7 +450,7 @@
 .capacidade-card:hover {
   border-color: #000000;
   transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
 }
 
 .capacidade-card.selected {
@@ -593,7 +593,7 @@
   margin: 0 0 4px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #1f2937;
+  color: #000000;
 }
 
 .modelo-info p {
@@ -635,15 +635,15 @@
 @keyframes selectionPulse {
   0% {
     transform: scale(1);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   }
   50% {
     transform: scale(1.05);
-    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
   }
   100% {
     transform: scale(1);
-    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   }
 }
 
@@ -680,7 +680,7 @@
 
 .step-header p {
   font-size: 16px;
-  color: #6c757d;
+  color: #000000;
 }
 
 /* Filters Section */
@@ -700,7 +700,7 @@
   transform: translateY(-50%);
   width: 20px;
   height: 20px;
-  color: #6c757d;
+  color: #000000;
 }
 
 .search-box input {
@@ -715,7 +715,7 @@
 
 .search-box input:focus {
   outline: none;
-  border-color: #374151;
+  border-color: #000000;
   background: white;
   box-shadow: 0 0 0 4px rgba(55, 65, 81, 0.1);
 }
@@ -734,7 +734,7 @@
   border: 2px solid #dee2e6;
   border-radius: 8px;
   background: white;
-  color: #6c757d;
+  color: #000000;
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -742,13 +742,13 @@
 }
 
 .category-btn:hover {
-  border-color: #374151;
-  color: #374151;
+  border-color: #000000;
+  color: #000000;
 }
 
 .category-btn.active {
-  background: #374151;
-  border-color: #374151;
+  background: #000000;
+  border-color: #000000;
   color: white;
 }
 
