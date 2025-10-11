@@ -88,77 +88,22 @@ class DatabaseService {
   }
 
   // Versão leve para listagens: apenas campos necessários, com paginação e busca
-  // OTIMIZADO: Select específico, filtros server-side, cache-friendly
-  async getGuindastesLite({ 
-    page = 1, 
-    pageSize = 24, 
-    search = '', 
-    capacidade = null,
-    fieldsOnly = false, // Se true, retorna apenas campos essenciais (60% menor payload)
-    noPagination = false // Se true, busca TODOS os registros (sem paginação)
-  } = {}) {
-    // Select otimizado baseado na necessidade
-    // Para páginas de gerenciamento, sempre busca todos os campos
-    // Para listagens read-only, pode usar fieldsOnly=true
-    const fields = fieldsOnly 
-      ? 'id, subgrupo, modelo, imagem_url, updated_at'
-      : 'id, subgrupo, modelo, imagem_url, grafico_carga_url, peso_kg, codigo_referencia, configuração, tem_contr, descricao, nao_incluido, imagens_adicionais, finame, ncm, updated_at';
+  async getGuindastesLite({ page = 1, pageSize = 24, search = '' } = {}) {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
     let query = supabase
       .from('guindastes')
-      .select(fields, { count: 'exact' })
+      .select('id, subgrupo, modelo, imagem_url, grafico_carga_url, peso_kg, codigo_referencia, configuração, tem_contr, descricao, nao_incluido, imagens_adicionais, updated_at', { count: 'exact' })
       .order('subgrupo');
 
-    // Filtro de busca textual
     if (search && search.trim()) {
       const pattern = `%${search.trim()}%`;
       query = query.or(`subgrupo.ilike.${pattern},modelo.ilike.${pattern}`);
     }
 
-    // Filtro de capacidade server-side (DESABILITADO - causava bugs)
-    // Extrai capacidade do subgrupo (ex: "Guindaste 6.5T" -> "6.5")
-    if (capacidade && capacidade !== 'todos') {
-      query = query.ilike('subgrupo', `%${capacidade}%`);
-    }
-
-    // Aplicar paginação apenas se necessário
-    let data, error, count;
-    
-    if (noPagination) {
-      // Busca TODOS os registros sem paginação
-      const result = await query;
-      data = result.data;
-      error = result.error;
-      count = result.data?.length || 0;
-      
-      console.log('🔍 Query SEM paginação:', {
-        capacidade,
-        resultados: data?.length || 0,
-        total: count
-      });
-    } else {
-      // Busca com paginação
-      const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      const result = await query.range(from, to);
-      data = result.data;
-      error = result.error;
-      count = result.count;
-      
-      console.log('🔍 Query COM paginação:', {
-        capacidade,
-        pageSize,
-        page,
-        resultados: data?.length || 0,
-        total: count || 0
-      });
-    }
-    
-    if (error) {
-      console.error('❌ Erro na query getGuindastesLite:', error);
-      throw error;
-    }
-    
+    const { data, error, count } = await query.range(from, to);
+    if (error) throw error;
     return { data: data || [], count: count || 0 };
   }
 
@@ -406,54 +351,17 @@ class DatabaseService {
   }
 
   async getPedidoItens(pedidoId) {
-    try {
-      // Buscar os itens do pedido
-      const { data: itens, error: itensError } = await supabase
-        .from('pedido_itens')
-        .select('*')
-        .eq('pedido_id', pedidoId);
-      
-      if (itensError) throw itensError;
-      
-      // Para cada item, buscar os dados relacionados manualmente
-      const itensCompletos = await Promise.all(
-        (itens || []).map(async (item) => {
-          let guindaste = null;
-          let opcional = null;
-          
-          // Se o item é um guindaste, buscar dados do guindaste
-          if (item.tipo === 'guindaste' && item.guindaste_id) {
-            const { data: guindasteData } = await supabase
-              .from('guindastes')
-              .select('*')
-              .eq('id', item.guindaste_id)
-              .single();
-            guindaste = guindasteData;
-          }
-          
-          // Se o item é um opcional, buscar dados do opcional
-          if (item.tipo === 'opcional' && item.opcional_id) {
-            const { data: opcionalData } = await supabase
-              .from('opcionais')
-              .select('*')
-              .eq('id', item.opcional_id)
-              .single();
-            opcional = opcionalData;
-          }
-          
-          return {
-            ...item,
-            guindaste,
-            opcional
-          };
-        })
-      );
-      
-      return itensCompletos;
-    } catch (error) {
-      console.error('❌ Erro ao buscar itens do pedido:', error);
-      throw error;
-    }
+    const { data, error } = await supabase
+      .from('pedido_itens')
+      .select(`
+        *,
+        guindaste:guindastes(*),
+        opcional:opcionais(*)
+      `)
+      .eq('pedido_id', pedidoId);
+    
+    if (error) throw error;
+    return data || [];
   }
 
   // Métodos de preços por região de equipamento removidos (tabela ausente)
@@ -630,13 +538,31 @@ class DatabaseService {
     try {
       console.log('Iniciando upload do arquivo:', fileName);
       
-      // Verificar se há sessão ativa (sem tentar renovar automaticamente)
+      // Verificar se há sessão ativa
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
-        console.log('⚠️ Nenhuma sessão Supabase ativa para upload.');
-        console.log('ℹ️ Uploads de imagem funcionam sem autenticação se o bucket estiver público.');
-        // Continua com o upload mesmo sem sessão (o bucket deve estar configurado como público)
+        console.log('🔑 Nenhuma sessão Supabase ativa, verificando localStorage...');
+        
+        // Verificar se há indicação de sessão Supabase no localStorage
+        const supabaseSession = localStorage.getItem('supabaseSession');
+        
+        if (supabaseSession === 'active') {
+          console.log('🔄 Sessão Supabase marcada como ativa, tentando renovar...');
+          
+          // Tentar renovar a sessão
+          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+          
+          if (refreshError) {
+            console.log('❌ Erro ao renovar sessão:', refreshError);
+            // Se não conseguir renovar, tentar fazer sign in novamente
+            throw new Error('Sessão Supabase expirada. Faça login novamente.');
+          } else {
+            console.log('✅ Sessão Supabase renovada com sucesso');
+          }
+        } else {
+          throw new Error('Sessão Supabase não encontrada. Faça login novamente.');
+        }
       }
       
       // Fazer upload diretamente (bucket já existe)

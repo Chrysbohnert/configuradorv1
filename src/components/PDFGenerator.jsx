@@ -241,101 +241,34 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               };
             });
             
-            // Seção de FINAME e NCM (destacada e personalizada)
+            // Seção de FINAME e NCM (destacada)
             const guindasteComCodigos = guindastesCompletos.find(g => g.finame || g.ncm);
             const codigosSection = guindasteComCodigos ? `
-              <div style="margin-top: 30px; margin-bottom: 35px; padding: 0; background: linear-gradient(135deg, #fef3c7 0%, #fde68a 50%, #fbbf24 100%); border: 4px solid #d97706; border-radius: 16px; box-shadow: 0 8px 16px rgba(217, 119, 6, 0.25), 0 0 0 1px rgba(217, 119, 6, 0.1); position: relative; overflow: hidden;">
-                <!-- Barra superior decorativa -->
-                <div style="background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, #d97706 100%); height: 8px; width: 100%;"></div>
-                
-                <!-- Conteúdo principal -->
-                <div style="padding: 25px 30px;">
-                  <!-- Título com ícone -->
-                  <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 3px dashed #d97706;">
-                    <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); width: 50px; height: 50px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 8px rgba(217, 119, 6, 0.3);">
-                      📋
+              <div style="margin-top: 20px; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border: 3px solid #f59e0b; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h4 style="color: #92400e; font-size: 22px; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; font-weight: bold;">
+                  <span style="font-size: 28px;">📋</span>
+                  INFORMAÇÕES PARA FINANCIAMENTO
+                </h4>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+                  ${guindasteComCodigos.finame ? `
+                    <div style="padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                      <div style="font-size: 14px; color: #92400e; font-weight: 600; margin-bottom: 5px;">CÓDIGO FINAME</div>
+                      <div style="font-size: 24px; color: #1f2937; font-weight: bold; letter-spacing: 1px;">${guindasteComCodigos.finame}</div>
                     </div>
-                    <div>
-                      <h4 style="color: #78350f; font-size: 24px; margin: 0; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; text-shadow: 1px 1px 2px rgba(255,255,255,0.5);">
-                        Informações para Financiamento
-                      </h4>
-                      <p style="color: #92400e; font-size: 13px; margin: 4px 0 0 0; font-weight: 600;">
-                        Dados obrigatórios para FINAME e importação
-                      </p>
+                  ` : ''}
+                  ${guindasteComCodigos.ncm ? `
+                    <div style="padding: 15px; background: white; border-radius: 8px; border-left: 4px solid #f59e0b;">
+                      <div style="font-size: 14px; color: #92400e; font-weight: 600; margin-bottom: 5px;">CÓDIGO NCM</div>
+                      <div style="font-size: 24px; color: #1f2937; font-weight: bold; letter-spacing: 1px;">${guindasteComCodigos.ncm}</div>
                     </div>
-                  </div>
-                  
-                  <!-- Grid de códigos -->
-                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    ${guindasteComCodigos.finame ? `
-                      <div style="background: white; padding: 20px; border-radius: 12px; border: 2px solid #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15); position: relative; overflow: hidden;">
-                        <!-- Canto decorativo -->
-                        <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: linear-gradient(135deg, transparent 0%, #fef3c7 100%); border-bottom-left-radius: 100%;"></div>
-                        
-                        <!-- Ícone -->
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);">
-                            🏦
-                          </div>
-                          <div style="font-size: 15px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                            Código FINAME
-                          </div>
-                        </div>
-                        
-                        <!-- Código -->
-                        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 15px; border-radius: 8px; border: 2px dashed #d97706; margin-top: 10px;">
-                          <div style="font-size: 32px; color: #78350f; font-weight: 900; letter-spacing: 2px; text-align: center; font-family: 'Courier New', monospace; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);">
-                            ${guindasteComCodigos.finame}
-                          </div>
-                        </div>
-                      </div>
-                    ` : ''}
-                    
-                    ${guindasteComCodigos.ncm ? `
-                      <div style="background: white; padding: 20px; border-radius: 12px; border: 2px solid #d97706; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.15); position: relative; overflow: hidden;">
-                        <!-- Canto decorativo -->
-                        <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; background: linear-gradient(135deg, transparent 0%, #fef3c7 100%); border-bottom-left-radius: 100%;"></div>
-                        
-                        <!-- Ícone -->
-                        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
-                          <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.3);">
-                            🌍
-                          </div>
-                          <div style="font-size: 15px; color: #92400e; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                            Código NCM
-                          </div>
-                        </div>
-                        
-                        <!-- Código -->
-                        <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 15px; border-radius: 8px; border: 2px dashed #d97706; margin-top: 10px;">
-                          <div style="font-size: 32px; color: #78350f; font-weight: 900; letter-spacing: 2px; text-align: center; font-family: 'Courier New', monospace; text-shadow: 1px 1px 2px rgba(255,255,255,0.8);">
-                            ${guindasteComCodigos.ncm}
-                          </div>
-                        </div>
-                      </div>
-                    ` : ''}
-                  </div>
-                  
-                  <!-- Nota informativa -->
-                  <div style="background: rgba(255, 255, 255, 0.9); padding: 18px; border-radius: 10px; border-left: 6px solid #d97706; box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);">
-                    <div style="display: flex; align-items: flex-start; gap: 12px;">
-                      <div style="font-size: 24px; flex-shrink: 0; margin-top: -2px;">⚠️</div>
-                      <div>
-                        <div style="color: #78350f; font-size: 14px; font-weight: 700; margin-bottom: 6px;">
-                          Importante
-                        </div>
-                        <div style="color: #92400e; font-size: 13px; line-height: 1.6; font-weight: 500;">
-                          Estes códigos são <strong>fundamentais e obrigatórios</strong> para processos de financiamento FINAME, 
-                          documentação fiscal e importação. Mantenha-os sempre disponíveis para consulta e apresentação 
-                          junto às instituições financeiras.
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+                  ` : ''}
                 </div>
-                
-                <!-- Barra inferior decorativa -->
-                <div style="background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, #d97706 100%); height: 8px; width: 100%;"></div>
+                <div style="margin-top: 15px; padding: 12px; background: rgba(255,255,255,0.6); border-radius: 6px;">
+                  <small style="color: #92400e; font-size: 13px; line-height: 1.5;">
+                    <strong>Importante:</strong> Estes códigos são fundamentais para processos de financiamento e documentação fiscal. 
+                    Mantenha-os sempre disponíveis para consulta.
+                  </small>
+                </div>
               </div>
             ` : '';
             
