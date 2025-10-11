@@ -1,3 +1,4 @@
+// ⚡ IMPORTANTE: Campos medidaA, medidaB, medidaC, medidaD removidos - não existem no banco
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
@@ -36,6 +37,7 @@ const NovoPedido = () => {
   const [selectedCapacidade, setSelectedCapacidade] = useState(null);
   const [selectedModelo, setSelectedModelo] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  const salvarRelatorioRef = React.useRef(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -89,7 +91,9 @@ const NovoPedido = () => {
           codigo_produto: guindaste.codigo_referencia,
           grafico_carga_url: guindaste.grafico_carga_url,
           preco: precoGuindaste,
-          tipo: 'guindaste'
+          tipo: 'guindaste',
+          finame: guindaste.finame || '',
+          ncm: guindaste.ncm || ''
         };
         
         adicionarAoCarrinho(produto, 'guindaste');
@@ -287,21 +291,23 @@ const NovoPedido = () => {
         codigo_produto: guindaste.codigo_referencia,
         grafico_carga_url: guindaste.grafico_carga_url,
         preco: precoGuindaste,
-        tipo: 'guindaste'
+        tipo: 'guindaste',
+        finame: guindaste.finame || '',
+        ncm: guindaste.ncm || ''
       };
       
       adicionarAoCarrinho(produto, 'guindaste');
       
-      // Navegar para a tela de detalhes do guindaste
-      setTimeout(() => {
-        navigate('/detalhes-guindaste', { 
-          state: { 
-            guindaste: { ...guindaste, preco: precoGuindaste },
-            returnTo: '/novo-pedido',
-            step: 2
-          } 
-        });
-      }, 800);
+      console.log('✅ Guindaste adicionado ao carrinho:', produto.nome);
+      
+      // Navegar para a página de detalhes do guindaste
+      navigate(`/detalhes-guindaste/${guindaste.id}`, {
+        state: { 
+          from: '/novo-pedido',
+          guindaste: guindaste,
+          precoGuindaste: precoGuindaste
+        }
+      });
     }
   };
 
@@ -600,6 +606,7 @@ const NovoPedido = () => {
               guindastes={guindastes}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
+              onSalvarRelatorioRef={salvarRelatorioRef}
             />
           </div>
         );
@@ -728,17 +735,24 @@ const NovoPedido = () => {
 
   const handleFinish = async () => {
     try {
-      // Salvar relatório no banco de dados
-      await salvarRelatorio();
+      // Salvar relatório no banco de dados ao finalizar
+      if (salvarRelatorioRef.current) {
+        console.log('💾 Salvando relatório ao finalizar pedido...');
+        await salvarRelatorioRef.current();
+        console.log('✅ Relatório salvo com sucesso!');
+      } else {
+        console.warn('⚠️ Função salvarRelatorio não está disponível');
+      }
       
       // Limpar carrinho e navegar para histórico
       limparCarrinho();
-      navigate('/historico');
       
       alert('Pedido finalizado e salvo com sucesso!');
+      
+      navigate('/historico');
     } catch (error) {
-      console.error('Erro ao finalizar pedido:', error);
-      alert('Erro ao salvar pedido. Tente novamente.');
+      console.error('❌ Erro ao finalizar pedido:', error);
+      alert(`Erro ao salvar pedido: ${error.message}\n\nVerifique se todos os dados foram preenchidos corretamente.`);
     }
   };
 
@@ -1498,7 +1512,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, onSalvarRelatorioRef }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
   const handlePDFGenerated = async (fileName) => {
@@ -1525,7 +1539,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     }
   };
 
-  const salvarRelatorio = async () => {
+  const salvarRelatorio = React.useCallback(async () => {
     try {
       console.log('🔄 Iniciando salvamento do relatório...');
       console.log('📋 Dados do cliente:', clienteData);
@@ -1573,13 +1587,16 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
+      // Filtrar apenas campos que existem na tabela caminhoes
       const caminhaoDataToSave = {
-        ...caminhaoData,
+        tipo: caminhaoData.tipo,
+        marca: caminhaoData.marca,
+        modelo: caminhaoData.modelo,
+        ano: caminhaoData.ano || null,
+        voltagem: caminhaoData.voltagem,
         cliente_id: cliente.id,
-        // Garantir que campos opcionais tenham valores padrão
         observacoes: caminhaoData.observacoes || null,
-        // Campo placa é obrigatório no banco mas não usado no formulário
-        placa: 'N/A'
+        placa: 'N/A' // Campo obrigatório no banco mas não usado no formulário
       };
       
       console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
@@ -1658,7 +1675,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
       throw error;
     }
-  };
+  }, [carrinho, clienteData, caminhaoData, pagamentoData, user]);
+
+  // Expor a função salvarRelatorio para o componente pai
+  React.useEffect(() => {
+    if (onSalvarRelatorioRef) {
+      onSalvarRelatorioRef.current = salvarRelatorio;
+    }
+  }, [salvarRelatorio, onSalvarRelatorioRef]);
 
   // Buscar dados completos dos guindastes do carrinho
   const guindastesCompletos = carrinho
