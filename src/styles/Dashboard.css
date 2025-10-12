@@ -38,29 +38,37 @@ html {
   z-index: 1;
 }
 
-/* Tablet Large */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .admin-content {
-    margin-left: 260px;
-    width: calc(100% - 260px);
+/* Ajuste geral para tablets - REGRA FORTE */
+@media (min-width: 769px) and (max-width: 1200px) {
+  /* Reset geral */
+  body {
+    overflow-x: hidden !important;
   }
-}
 
-/* Tablet Medium */
-@media (min-width: 1025px) and (max-width: 1200px) {
-  .admin-content {
-    margin-left: 270px !important;
-    width: calc(100% - 270px) !important;
+  /* Layout principal */
+  .admin-layout {
+    position: relative !important;
+    display: flex !important;
+    min-height: 100vh !important;
   }
-}
 
-/* Tablet Medium específico - 1030px */
-@media (min-width: 1030px) and (max-width: 1030px) {
+  /* Sidebar */
+  .admin-navigation {
+    width: 270px !important;
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    z-index: 100 !important;
+  }
+
+  /* Conteúdo principal */
   .admin-content {
     margin-left: 270px !important;
     width: calc(100% - 270px) !important;
     position: relative !important;
     z-index: 1 !important;
+    min-height: 100vh !important;
+    background: #f8f9fa !important;
   }
 }
 

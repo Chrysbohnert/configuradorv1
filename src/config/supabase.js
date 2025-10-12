@@ -143,39 +143,169 @@ class DatabaseService {
   }
 
   async createGuindaste(guindasteData) {
-    const { data, error } = await supabase
-      .from('guindastes')
-      .insert([guindasteData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      // Limpar dados antes de enviar para evitar problemas de tipo
+      const cleanData = {
+        ...guindasteData,
+        // Garantir que campos de texto sejam strings válidas
+        subgrupo: guindasteData.subgrupo || '',
+        modelo: guindasteData.modelo || '',
+        peso_kg: guindasteData.peso_kg || '',
+        configuração: guindasteData.configuração || '',
+        tem_contr: guindasteData.tem_contr || 'Não',
+        imagem_url: guindasteData.imagem_url || null,
+        descricao: guindasteData.descricao || null,
+        nao_incluido: guindasteData.nao_incluido || null,
+        codigo_referencia: guindasteData.codigo_referencia || null,
+        finame: guindasteData.finame || null,
+        ncm: guindasteData.ncm || null,
+        // Garantir que arrays sejam válidos
+        imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
+          ? guindasteData.imagens_adicionais 
+          : []
+      };
+
+      const { data, error } = await supabase
+        .from('guindastes')
+        .insert([cleanData])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro detalhado do Supabase:', error);
+        throw error;
+      }
+      return data;
+    } catch (err) {
+      console.error('Erro ao criar guindaste:', err);
+      throw err;
+    }
   }
 
   async updateGuindaste(id, guindasteData) {
     try {
-      // Fazer update direto
-      const { error: updateError } = await supabase
-        .from('guindastes')
-        .update(guindasteData)
-        .eq('id', Number(id));
+      console.log('🔧 [updateGuindaste] ID recebido:', id, 'Tipo:', typeof id);
       
-      if (updateError) throw updateError;
+      // A tabela guindastes usa id como int4 (inteiro)
+      // Converter ID para número inteiro
+      const numericId = parseInt(id, 10);
+      console.log('🔧 [updateGuindaste] ID convertido para número:', numericId);
       
-      // Buscar o registro atualizado para retornar
-      const { data: updatedData, error: fetchError } = await supabase
-        .from('guindastes')
-        .select('*')
-        .eq('id', Number(id))
-        .single();
-      
-      if (fetchError) {
-        // Update funcionou, mas busca falhou - não é crítico
-        return null;
+      if (isNaN(numericId) || numericId <= 0) {
+        throw new Error('ID inválido: deve ser um número inteiro positivo');
       }
       
-      return updatedData;
+      // Limpar dados antes de enviar para evitar problemas de tipo
+      const cleanData = {
+        // Garantir que campos de texto sejam strings válidas
+        subgrupo: guindasteData.subgrupo || '',
+        modelo: guindasteData.modelo || '',
+        peso_kg: guindasteData.peso_kg || '',
+        configuração: guindasteData.configuração || '',
+        tem_contr: guindasteData.tem_contr || 'Não',
+        imagem_url: guindasteData.imagem_url || null,
+        descricao: guindasteData.descricao || null,
+        nao_incluido: guindasteData.nao_incluido || null,
+        codigo_referencia: guindasteData.codigo_referencia || null,
+        finame: guindasteData.finame || null,
+        ncm: guindasteData.ncm || null,
+        // Garantir que arrays sejam válidos
+        imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
+          ? guindasteData.imagens_adicionais 
+          : []
+      };
+      
+      // Remover qualquer campo que possa conter UUID
+      console.log('🔧 [updateGuindaste] Dados limpos:', cleanData);
+      
+      // Verificar se há algum campo com UUID
+      Object.keys(cleanData).forEach(key => {
+        if (typeof cleanData[key] === 'string' && cleanData[key].includes('-') && cleanData[key].length > 20) {
+          console.log('⚠️ [updateGuindaste] Campo com possível UUID encontrado:', key, cleanData[key]);
+          // Remover campos que parecem ser UUIDs
+          delete cleanData[key];
+        }
+      });
+      
+      console.log('🔧 [updateGuindaste] Dados finais após limpeza:', cleanData);
+
+      console.log('🔧 [updateGuindaste] Executando query com ID numérico:', numericId);
+      
+      // Primeiro, verificar se o registro existe
+      console.log('🔍 [updateGuindaste] Verificando se registro existe...');
+      const { data: existingRecord, error: checkError } = await supabase
+        .from('guindastes')
+        .select('*') // Buscar TODOS os campos
+        .eq('id', numericId)
+        .single();
+      
+      if (checkError) {
+        console.error('❌ [updateGuindaste] Registro não encontrado com ID:', numericId);
+        throw new Error(`Guindaste com ID ${numericId} não encontrado`);
+      }
+      
+      console.log('✅ [updateGuindaste] Registro encontrado:', existingRecord);
+      
+      // Comparação de dados para depuração
+      console.log('🔍 [updateGuindaste] Dados existentes no DB:', existingRecord);
+      console.log('🔍 [updateGuindaste] Dados a serem enviados:', cleanData);
+      
+      const changedFields = {};
+      for (const key in cleanData) {
+        if (cleanData[key] !== existingRecord[key]) {
+          changedFields[key] = {
+            old: existingRecord[key],
+            new: cleanData[key]
+          };
+        }
+      }
+      
+      if (Object.keys(changedFields).length === 0) {
+        console.warn('⚠️ [updateGuindaste] Nenhum campo alterado detectado. Os dados enviados são idênticos aos existentes.');
+        console.warn('⚠️ [updateGuindaste] Isso explica por que 0 linhas foram afetadas.');
+        return existingRecord; // Retorna os dados existentes sem fazer UPDATE
+      } else {
+        console.log('✅ [updateGuindaste] Campos alterados detectados:', changedFields);
+      }
+      
+      console.log('🔧 [updateGuindaste] Executando UPDATE com dados:', cleanData);
+      console.log('🔧 [updateGuindaste] WHERE id =', numericId);
+      
+      // Tentar UPDATE sem SELECT primeiro
+      const { error: updateError } = await supabase
+        .from('guindastes')
+        .update(cleanData)
+        .eq('id', numericId);
+        
+      console.log('🔧 [updateGuindaste] Resultado do UPDATE:', { updateError });
+      
+      if (updateError) {
+        console.error('❌ [updateGuindaste] Erro no UPDATE:', updateError);
+        throw updateError;
+      }
+      
+      // Depois fazer SELECT para verificar se foi atualizado
+      const { data: updatedData, error: selectError } = await supabase
+        .from('guindastes')
+        .select('*')
+        .eq('id', numericId)
+        .single();
+        
+      console.log('🔧 [updateGuindaste] Verificação pós-UPDATE:', { updatedData, selectError });
+      
+      if (selectError) {
+        console.error('❌ [updateGuindaste] Erro na verificação:', selectError);
+        throw selectError;
+      }
+      
+      const data = [updatedData]; // Simular array para compatibilidade
+      
+      console.log('✅ [updateGuindaste] Dados atualizados com sucesso:', data);
+      console.log('✅ [updateGuindaste] Registros afetados:', data?.length || 0);
+      
+      console.log('✅ [updateGuindaste] Dados atualizados com sucesso:', data);
+      console.log('✅ [updateGuindaste] Registros afetados:', data?.length || 0);
+      return data;
     } catch (err) {
       console.error('Erro ao atualizar guindaste:', err);
       throw err;
@@ -183,10 +313,18 @@ class DatabaseService {
   }
 
   async deleteGuindaste(id) {
+    // A tabela guindastes usa id como int4 (inteiro)
+    const numericId = parseInt(id, 10);
+    console.log('🗑️ [deleteGuindaste] ID convertido para número:', numericId);
+    
+    if (isNaN(numericId) || numericId <= 0) {
+      throw new Error('ID inválido: deve ser um número inteiro positivo');
+    }
+    
     const { error } = await supabase
       .from('guindastes')
       .delete()
-      .eq('id', id);
+      .eq('id', numericId);
     
     if (error) throw error;
   }
@@ -1151,4 +1289,4 @@ if (typeof window !== 'undefined') {
       console.error('❌ Erro no debug:', error);
     }
   };
-} 
+}
