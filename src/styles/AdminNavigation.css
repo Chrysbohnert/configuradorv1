@@ -131,6 +131,11 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+.vendedor-role {
+  color: #4CAF50 !important;
+}
+
 .admin-role svg {
   width: 12px;
   height: 12px;
