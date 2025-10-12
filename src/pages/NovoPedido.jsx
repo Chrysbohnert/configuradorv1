@@ -1717,10 +1717,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
         }
         
+        // Garantir que item_id seja um número inteiro
+        // Se for UUID (string), tentar converter; se falhar, usar null
+        let itemId = null;
+        if (item.id) {
+          const parsedId = parseInt(item.id);
+          if (!isNaN(parsedId)) {
+            itemId = parsedId;
+          }
+        }
+        
         const itemDataToSave = {
           pedido_id: pedido.id,
           tipo: item.tipo,
-          item_id: item.id,
+          item_id: itemId,
           quantidade: 1,
           preco_unitario: item.preco,
           codigo_produto
