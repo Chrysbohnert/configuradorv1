@@ -80,6 +80,17 @@ const AdminNavigation = ({ user }) => {
           <line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
       )
+    },
+    {
+      path: '/configuracoes',
+      label: 'Configurações',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M12 1v6m0 6v6M1 12h6m6 0h6"/>
+          <path d="M16.24 7.76l-4.24 4.24m0 4.24l4.24-4.24M7.76 7.76l4.24 4.24m0 0l4.24 4.24"/>
+        </svg>
+      )
     }
   ];
 
@@ -121,7 +132,23 @@ const AdminNavigation = ({ user }) => {
         <div className="nav-header">
           <div className="admin-info">
             <div className="admin-avatar">
-              <span className="avatar-text">{user?.nome?.charAt(0).toUpperCase()}</span>
+              {user?.foto_perfil ? (
+                <img 
+                  src={user.foto_perfil} 
+                  alt={user.nome} 
+                  className="avatar-image"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <span 
+                className="avatar-text" 
+                style={{ display: user?.foto_perfil ? 'none' : 'block' }}
+              >
+                {user?.nome?.charAt(0).toUpperCase()}
+              </span>
               <div className="avatar-status"></div>
             </div>
             <div className="admin-details">
