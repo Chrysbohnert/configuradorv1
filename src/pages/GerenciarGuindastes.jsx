@@ -4,7 +4,7 @@ import AdminNavigation from '../components/AdminNavigation';
 import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
 
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
@@ -16,7 +16,7 @@ const GerenciarGuindastes = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
-  const pageSize = 50; // Reduzido para carregamento mais rápido
+  const pageSize = 100; // Aumentado para pegar todos os 51 guindastes
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
@@ -72,6 +72,16 @@ const GerenciarGuindastes = () => {
   const loadData = async (pageToLoad = page, forceRefresh = false) => {
     try {
       setIsLoading(true);
+      
+      // Garantir que o usuário está autenticado no Supabase Auth
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('❌ Sessão Supabase não encontrada. Redirecionando para login...');
+        localStorage.clear();
+        navigate('/');
+        return;
+      }
+      
       const { data, count } = await db.getGuindastesLite({
         page: pageToLoad,
         pageSize,
@@ -421,10 +431,15 @@ const GerenciarGuindastes = () => {
                           <span className="capacity-count">{items.length}</span>
                         </div>
                         <div className="guindastes-grid">
-                          {items.map((guindaste) => (
+                          {items.map((guindaste) => {
+                            const hasValidImage = guindaste.imagem_url && 
+                                                   guindaste.imagem_url.trim() !== '' && 
+                                                   (guindaste.imagem_url.startsWith('http') || 
+                                                    guindaste.imagem_url.startsWith('https://'));
+                            return (
                             <div key={guindaste.id} className="guindaste-card">
                               <div className="guindaste-image">
-                                {guindaste.imagem_url ? (
+                                {hasValidImage ? (
                                   <img 
                                     src={guindaste.imagem_url} 
                                     alt={guindaste.subgrupo}
@@ -435,7 +450,7 @@ const GerenciarGuindastes = () => {
                                     }}
                                   />
                                 ) : null}
-                                <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                                <div className="guindaste-icon" style={{ display: hasValidImage ? 'none' : 'flex' }}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                                   </svg>
@@ -488,7 +503,8 @@ const GerenciarGuindastes = () => {
                                 </button>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </section>
                     );
@@ -500,10 +516,15 @@ const GerenciarGuindastes = () => {
                       <span className="capacity-count">{getGuindastesFiltrados().length}</span>
                     </div>
                     <div className="guindastes-grid">
-                      {getGuindastesFiltrados().map((guindaste) => (
+                      {getGuindastesFiltrados().map((guindaste) => {
+                        const hasValidImage = guindaste.imagem_url && 
+                                               guindaste.imagem_url.trim() !== '' && 
+                                               (guindaste.imagem_url.startsWith('http') || 
+                                                guindaste.imagem_url.startsWith('https://'));
+                        return (
                         <div key={guindaste.id} className="guindaste-card">
                           <div className="guindaste-image">
-                            {guindaste.imagem_url ? (
+                            {hasValidImage ? (
                               <img 
                                 src={guindaste.imagem_url} 
                                 alt={guindaste.subgrupo}
@@ -514,7 +535,7 @@ const GerenciarGuindastes = () => {
                                 }}
                               />
                             ) : null}
-                            <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                            <div className="guindaste-icon" style={{ display: hasValidImage ? 'none' : 'flex' }}>
                               <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                               </svg>
@@ -567,7 +588,8 @@ const GerenciarGuindastes = () => {
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 )}
@@ -596,6 +618,8 @@ const GerenciarGuindastes = () => {
                 )}
               </div>
             )}
+
+
           </div>
         </div>
       </div>
