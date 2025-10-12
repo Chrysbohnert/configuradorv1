@@ -761,90 +761,117 @@
 }
 
 .guindaste-card {
-  background: white;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
   overflow: hidden;
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   height: 100%;
+  position: relative;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.guindaste-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
 }
 
 .guindaste-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  border-color: #000000;
+  transform: translateY(-8px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(102, 126, 234, 0.1);
+  border-color: #667eea;
+}
+
+.guindaste-card:hover::before {
+  opacity: 1;
 }
 
 .guindaste-card.selected {
   border-color: #10b981;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.2);
+}
+
+.guindaste-card.selected::before {
+  background: linear-gradient(90deg, #10b981 0%, #059669 100%);
+  opacity: 1;
 }
 
 .card-header {
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border-bottom: 1px solid #f3f4f6;
-  background: #fafafa;
+  gap: 16px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+  background: linear-gradient(145deg, #fafbfc 0%, #f1f5f9 100%);
+  position: relative;
 }
 
 .guindaste-image {
   position: relative;
-  width: 60px;
-  height: 60px;
+  width: 70px;
+  height: 70px;
   flex-shrink: 0;
   margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%);
 }
 
 .guindaste-thumbnail {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 10px;
-  border: 2px solid #e5e7eb;
-  transition: all 0.3s ease;
+  border-radius: 12px;
+  transition: transform 0.3s ease;
 }
 
-.guindaste-thumbnail:hover {
+.guindaste-card:hover .guindaste-thumbnail {
   transform: scale(1.05);
-  border-color: #000000;
 }
 
 .guindaste-icon {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 10px;
+  background: linear-gradient(135deg, #667eea 0%, #5b6cdb 100%);
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
+  font-size: 28px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .guindaste-info {
   flex: 1;
-  text-align: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  gap: 8px;
+  text-align: left;
 }
 
 .guindaste-info h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1f2937;
-  margin-bottom: 4px;
-  line-height: 1.4;
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
+  gap: 10px;
 }
 
 .modelo {
@@ -855,22 +882,28 @@
 
 .categoria {
   display: inline-block;
-  padding: 3px 8px;
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
+  padding: 6px 10px;
+  background: rgba(100, 116, 139, 0.08);
+  color: #475569;
+  border: 1px solid rgba(100, 116, 139, 0.12);
   border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.8px;
+  width: fit-content;
 }
 
 .price {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
-  color: #000000;
+  color: #1e293b;
   text-align: center;
-  margin-top: 8px;
+  margin-top: auto;
+  padding: 8px 12px;
+  background: rgba(30, 41, 59, 0.05);
+  border-radius: 8px;
+  border: 1px solid rgba(30, 41, 59, 0.1);
 }
 
 .card-body {
@@ -888,24 +921,30 @@
 .spec {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 6px 0;
-  border-bottom: 1px solid #f3f4f6;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  gap: 12px;
 }
 
 .spec:last-child {
   border-bottom: none;
+  padding-bottom: 0;
 }
 
 .spec-label {
   font-size: 13px;
-  color: #000000;
+  font-weight: 600;
+  color: #374151;
+  min-width: fit-content;
 }
 
 .spec-value {
   font-size: 13px;
-  font-weight: 600;
-  color: #000000;
+  font-weight: 500;
+  color: #1f2937;
+  text-align: right;
+  flex: 1;
 }
 
 /* Lista de configurações */
@@ -1691,33 +1730,41 @@
 
 .btn-select {
   width: 100%;
-  padding: 10px 16px;
-  border: 2px solid #667eea;
-  background: white;
-  color: #667eea;
-  border-radius: 8px;
+  padding: 12px 20px;
+  border: 2px solid #e2e8f0;
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+  color: #475569;
+  border-radius: 10px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .btn-select:hover {
-  background: #667eea;
+  background: linear-gradient(145deg, #667eea 0%, #5b6cdb 100%);
   color: white;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
+  border-color: #667eea;
 }
 
 .btn-select.selected {
-  background: #10b981;
+  background: linear-gradient(145deg, #10b981 0%, #059669 100%);
   border-color: #10b981;
   color: white;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+}
+
+.btn-select.selected:hover {
+  background: linear-gradient(145deg, #059669 0%, #047857 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
 }
 
 .btn-select svg {
