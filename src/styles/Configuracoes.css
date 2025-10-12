@@ -314,6 +314,148 @@
 }
 
 /* ============================================
+   CONTEÚDO DAS TABS
+   ============================================ */
+
+.config-tab-content {
+  padding: 32px 24px;
+}
+
+.config-section {
+  margin-bottom: 40px;
+}
+
+.config-section:last-child {
+  margin-bottom: 0;
+}
+
+.config-section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 24px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+/* ============================================
+   UPLOAD DE FOTO
+   ============================================ */
+
+.photo-upload {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  background: #f9fafb;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.photo-upload .photo-preview {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.photo-upload .photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-upload .photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+}
+
+.photo-upload .photo-placeholder svg {
+  width: 32px;
+  height: 32px;
+  color: #9ca3af;
+}
+
+.photo-upload .photo-actions {
+  flex: 1;
+}
+
+.photo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: white;
+  border: 2px solid #d1d5db;
+  border-radius: 8px;
+  color: #374151;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.photo-upload-btn:hover {
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.photo-upload-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================
+   AÇÕES
+   ============================================ */
+
+.config-actions {
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.config-save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  border: none;
+  border-radius: 8px;
+  color: #000;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+}
+
+.config-save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(255, 193, 7, 0.3);
+}
+
+.config-save-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.config-save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ============================================
    RESPONSIVIDADE
    ============================================ */
 
@@ -355,6 +497,46 @@
   .save-btn {
     width: 100%;
     padding: 16px;
+  }
+
+  .config-tab-content {
+    padding: 24px 16px;
+  }
+
+  .config-section {
+    margin-bottom: 32px;
+  }
+
+  .config-section-title {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+
+  .photo-upload {
+    flex-direction: column;
+    text-align: center;
+    gap: 16px;
+  }
+
+  .photo-upload .photo-preview {
+    width: 60px;
+    height: 60px;
+  }
+
+  .photo-upload-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .config-actions {
+    margin-top: 24px;
+    padding-top: 20px;
+  }
+
+  .config-save-btn {
+    width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
   }
 }
 
