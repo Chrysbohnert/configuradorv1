@@ -94,12 +94,21 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
 .content-header h2 {
   font-size: 24px;
   font-weight: 600;
   color: #000000;
+  margin: 0;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
 }
 
 .add-btn {
@@ -125,6 +134,48 @@
 .add-btn svg {
   width: 16px;
   height: 16px;
+}
+
+/* Botão de Refresh */
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #ffffff;
+  color: #374151;
+  border: 2px solid #e5e7eb;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f8f9fa 0%, #f3f4f6 100%);
+  border-color: #d1d5db;
+  color: #1f2937;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.refresh-btn svg {
+  width: 15px;
+  height: 15px;
+  transition: transform 0.3s ease;
+}
+
+.refresh-btn:hover:not(:disabled) svg {
+  transform: rotate(180deg);
 }
 
 /* Cards dos Guindastes */
@@ -1087,6 +1138,17 @@ body.modal-open {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    width: 100%;
+    gap: 12px;
+  }
+
+  .refresh-btn, .add-btn {
+    width: 100%;
+    justify-content: center;
   }
 
   .guindastes-grid {
