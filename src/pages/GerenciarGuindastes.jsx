@@ -30,7 +30,8 @@ const GerenciarGuindastes = () => {
     nao_incluido: '',
     imagens_adicionais: [],
     finame: '',
-    ncm: ''
+    ncm: '',
+    codigo_referencia: ''
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
@@ -79,12 +80,15 @@ const GerenciarGuindastes = () => {
         console.log('⚠️ Erro ao verificar sessão Supabase, mas prosseguindo:', error);
       }
       
+      console.log('🔄 [loadData] Carregando dados da página:', pageToLoad);
       const { data, count } = await db.getGuindastesLite({
         page: pageToLoad,
         pageSize,
         forceRefresh
       });
 
+      console.log('📊 [loadData] Dados carregados:', data?.length || 0, 'registros');
+      console.log('📊 [loadData] Total de registros:', count);
       setGuindastes(data);
       setTotal(count || 0);
       setPage(pageToLoad);
@@ -183,23 +187,46 @@ const GerenciarGuindastes = () => {
   };
 
   const handleEdit = async (item) => {
-    setEditingGuindaste(item);
-    setFormData({
-      subgrupo: item.subgrupo,
-      modelo: item.modelo,
-      peso_kg: item.peso_kg,
-      configuração: item.configuração,
-      tem_contr: item.tem_contr,
-      imagem_url: item.imagem_url || '',
-      descricao: item.descricao || '',
-      nao_incluido: item.nao_incluido || '',
-      imagens_adicionais: item.imagens_adicionais || [],
-      finame: item.finame || '',
-      ncm: item.ncm || ''
-    });
-    setShowModal(true);
-    // Bloquear scroll do body
-    document.body.classList.add('modal-open');
+    console.log('🔧 [handleEdit] Item recebido:', item);
+    
+    try {
+      // Buscar dados completos do guindaste
+      console.log('🔍 Buscando dados completos do guindaste ID:', item.id);
+      const guindasteCompleto = await db.getGuindastes();
+      const guindasteData = guindasteCompleto.find(g => g.id === item.id);
+      
+      if (!guindasteData) {
+        console.error('❌ Guindaste não encontrado:', item.id);
+        alert('Erro: Guindaste não encontrado');
+        return;
+      }
+      
+      console.log('✅ Dados completos encontrados:', guindasteData);
+      
+      setEditingGuindaste(guindasteData);
+      const newFormData = {
+        subgrupo: guindasteData.subgrupo || '',
+        modelo: guindasteData.modelo || '',
+        peso_kg: guindasteData.peso_kg || '',
+        configuração: guindasteData.configuração || '',
+        tem_contr: guindasteData.tem_contr || 'Sim',
+        imagem_url: guindasteData.imagem_url || '',
+        descricao: guindasteData.descricao || '',
+        nao_incluido: guindasteData.nao_incluido || '',
+        imagens_adicionais: guindasteData.imagens_adicionais || [],
+        finame: guindasteData.finame || '',
+        ncm: guindasteData.ncm || '',
+        codigo_referencia: guindasteData.codigo_referencia || ''
+      };
+      console.log('📝 [handleEdit] FormData sendo definido:', newFormData);
+      setFormData(newFormData);
+      setShowModal(true);
+      // Bloquear scroll do body
+      document.body.classList.add('modal-open');
+    } catch (error) {
+      console.error('❌ Erro ao buscar dados completos do guindaste:', error);
+      alert('Erro ao carregar dados do guindaste');
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -233,6 +260,7 @@ const GerenciarGuindastes = () => {
   };
 
   const handleCloseModal = () => {
+    console.log('🚪 [handleCloseModal] Fechando modal e resetando formData');
     setShowModal(false);
     setEditingGuindaste(null);
     setFormData({
@@ -246,7 +274,8 @@ const GerenciarGuindastes = () => {
       nao_incluido: '',
       imagens_adicionais: [],
       finame: '',
-      ncm: ''
+      ncm: '',
+      codigo_referencia: ''
     });
     // Restaurar scroll do body
     document.body.classList.remove('modal-open');
@@ -265,7 +294,8 @@ const GerenciarGuindastes = () => {
       nao_incluido: '',
       imagens_adicionais: [],
       finame: '',
-      ncm: ''
+      ncm: '',
+      codigo_referencia: ''
     });
     setShowModal(true);
     // Bloquear scroll do body
@@ -274,12 +304,41 @@ const GerenciarGuindastes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('🚀 [handleSubmit] Iniciando submit do formulário');
+    console.log('🚀 [handleSubmit] editingGuindaste:', editingGuindaste);
+    console.log('🚀 [handleSubmit] formData:', formData);
+    
     try {
-      // Validação de campos obrigatórios
-      if (!formData.subgrupo || !formData.modelo || !formData.peso_kg || !formData.configuração) {
-        alert('Por favor, preencha todos os campos obrigatórios: Subgrupo, Modelo, Configuração de lanças e Configuração.');
+      // Validação completa de todos os campos obrigatórios
+      const requiredFields = [
+        { field: 'subgrupo', name: 'Subgrupo' },
+        { field: 'modelo', name: 'Modelo' },
+        { field: 'codigo_referencia', name: 'Código de Referência' },
+        { field: 'peso_kg', name: 'Configuração de Lanças' },
+        { field: 'configuração', name: 'Configuração Completa' },
+        { field: 'imagem_url', name: 'Imagem Principal' },
+        { field: 'descricao', name: 'Descrição Técnica' },
+        { field: 'nao_incluido', name: 'O que NÃO está incluído' },
+        { field: 'finame', name: 'Código FINAME' },
+        { field: 'ncm', name: 'Código NCM' }
+      ];
+
+      const missingFields = [];
+      
+      for (const { field, name } of requiredFields) {
+        const value = formData[field];
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          missingFields.push(name);
+        }
+      }
+
+      if (missingFields.length > 0) {
+        console.log('❌ [handleSubmit] Campos obrigatórios faltando:', missingFields);
+        alert(`Por favor, preencha todos os campos obrigatórios:\n\n• ${missingFields.join('\n• ')}`);
         return;
       }
+      
+      console.log('✅ [handleSubmit] Validação passou, prosseguindo...');
       
       // Converter peso_kg para string e validar
       const configuracaoLancas = String(formData.peso_kg).trim();
@@ -294,19 +353,28 @@ const GerenciarGuindastes = () => {
         peso_kg: configuracaoLancas, // Agora é texto (ex: "3h1m")
         configuração: formData.configuração.trim(),
         tem_contr: formData.tem_contr,
-        imagem_url: formData.imagem_url?.trim() || null,
-        descricao: formData.descricao?.trim() || null,
-        nao_incluido: formData.nao_incluido?.trim() || null,
-        imagens_adicionais: formData.imagens_adicionais || []
+        imagem_url: formData.imagem_url.trim(),
+        descricao: formData.descricao.trim(),
+        nao_incluido: formData.nao_incluido.trim(),
+        imagens_adicionais: formData.imagens_adicionais || [],
+        codigo_referencia: formData.codigo_referencia.trim(),
+        finame: formData.finame.trim(),
+        ncm: formData.ncm.trim()
       };
       
       if (editingGuindaste) {
+        console.log('🔧 [handleSubmit] Atualizando guindaste com ID:', editingGuindaste.id, 'Tipo:', typeof editingGuindaste.id);
+        console.log('🔧 [handleSubmit] Dados sendo enviados:', guindasteData);
+        console.log('🔧 [handleSubmit] Objeto editingGuindaste completo:', editingGuindaste);
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
       } else {
+        console.log('🔧 [handleSubmit] Criando novo guindaste');
         await db.createGuindaste(guindasteData);
       }
       
+      console.log('🔄 [handleSubmit] Recarregando dados...');
       await loadData(page);
+      console.log('✅ [handleSubmit] Dados recarregados com sucesso');
       handleCloseModal();
       alert('Guindaste salvo com sucesso!');
     } catch (error) {
@@ -524,6 +592,9 @@ const GerenciarGuindastes = () => {
                                 <div className="guindaste-info">
                                   <h3>{guindaste.subgrupo}</h3>
                                   <p>{guindaste.modelo}</p>
+                                  {guindaste.codigo_referencia && (
+                                    <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
+                                  )}
                                 </div>
                               </div>
                               <div className="guindaste-actions">
@@ -600,6 +671,9 @@ const GerenciarGuindastes = () => {
                             <div className="guindaste-info">
                               <h3>{guindaste.subgrupo}</h3>
                               <p>{guindaste.modelo}</p>
+                              {guindaste.codigo_referencia && (
+                                <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
+                              )}
                             </div>
                           </div>
                           <div className="guindaste-actions">
@@ -689,13 +763,10 @@ const GerenciarGuindastes = () => {
                 </div>
               </div>
               <div className="modal-header-actions">
-                <button form="guindaste-form" type="submit" className="save-btn">
-                  <span>💾</span>
-                  Salvar
-                </button>
                 <button onClick={handleCloseModal} className="close-btn">×</button>
               </div>
             </div>
+
             <form id="guindaste-form" onSubmit={handleSubmit} className="modal-form">
               {/* Seção: Informações Básicas */}
               <div className="form-section">
@@ -733,6 +804,21 @@ const GerenciarGuindastes = () => {
                       className="form-input"
                     />
                     <small className="form-help">Nome/identificação do modelo</small>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🏷️</span>
+                      Código de Referência *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.codigo_referencia}
+                      onChange={e => handleInputChange('codigo_referencia', e.target.value)}
+                      placeholder="Ex: GSI65001, GSE80010"
+                      required
+                      className="form-input"
+                    />
+                    <small className="form-help">Código único para identificação do produto</small>
                   </div>
                 </div>
               </div>
@@ -814,13 +900,13 @@ const GerenciarGuindastes = () => {
                 <div className="form-group">
                   <label>
                     <span className="label-icon">🖼️</span>
-                    Imagem Principal
+                    Imagem Principal *
                   </label>
                   <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
                   {formData.imagem_url ? (
                     <small className="form-help success">✅ Imagem já cadastrada</small>
                   ) : (
-                    <small className="form-help">⚠️ Nenhuma imagem cadastrada</small>
+                    <small className="form-help error">⚠️ Imagem obrigatória - faça o upload</small>
                   )}
                 </div>
               </div>
@@ -836,13 +922,14 @@ const GerenciarGuindastes = () => {
                 <div className="form-group">
                   <label>
                     <span className="label-icon">📋</span>
-                    Descrição Técnica
+                    Descrição Técnica *
                   </label>
                   <textarea
                     value={formData.descricao}
                     onChange={e => handleInputChange('descricao', e.target.value)}
                     rows="6"
                     placeholder="Descreva as características técnicas, especificações, materiais, funcionalidades e qualquer informação relevante sobre o equipamento..."
+                    required
                     className="form-textarea"
                   />
                   <small className="form-help">Descrição completa do equipamento para os vendedores</small>
@@ -851,13 +938,14 @@ const GerenciarGuindastes = () => {
                 <div className="form-group">
                   <label>
                     <span className="label-icon">❌</span>
-                    O que NÃO está incluído
+                    O que NÃO está incluído *
                   </label>
                   <textarea
                     value={formData.nao_incluido}
                     onChange={e => handleInputChange('nao_incluido', e.target.value)}
                     rows="4"
                     placeholder="Ex: Instalação, transporte, documentação, treinamento, peças de reposição, etc..."
+                    required
                     className="form-textarea"
                   />
                   <small className="form-help">Itens que NÃO estão incluídos na proposta para evitar mal-entendidos</small>
@@ -968,7 +1056,14 @@ const GerenciarGuindastes = () => {
 
               <div className="modal-actions">
                 <button type="button" onClick={handleCloseModal} className="cancel-btn">Cancelar</button>
-                <button type="submit" className="save-btn">Salvar Guindaste</button>
+                <button type="submit" className="save-btn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                    <polyline points="17,21 17,13 7,13 7,21"/>
+                    <polyline points="7,3 7,8 15,8"/>
+                  </svg>
+                  Salvar Guindaste
+                </button>
               </div>
             </form>
           </div>
