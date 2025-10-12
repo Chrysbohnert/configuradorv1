@@ -22,6 +22,7 @@ const GerenciarVendedores = () => {
     senha: 'vendedor123' // Senha padrão
   });
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, nome: '' });
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -75,9 +76,12 @@ const GerenciarVendedores = () => {
         tipo: 'vendedor'
       };
 
-      // Se está editando e a senha não foi alterada, remover do objeto
-      if (editingVendedor && formData.senha === 'vendedor123') {
+      // Se está editando e a senha está vazia, não alterar a senha atual
+      if (editingVendedor && !formData.senha.trim()) {
         delete vendedorData.senha;
+        console.log('🔧 [handleSubmit] Senha vazia - mantendo senha atual do vendedor');
+      } else if (editingVendedor && formData.senha.trim()) {
+        console.log('🔧 [handleSubmit] Nova senha fornecida - será atualizada');
       }
 
       if (editingVendedor) {
@@ -130,6 +134,9 @@ const GerenciarVendedores = () => {
 
   // Função para editar vendedor
   const handleEditVendedor = (vendedor) => {
+    console.log('🔧 [handleEditVendedor] Vendedor recebido:', vendedor);
+    console.log('🔧 [handleEditVendedor] Senha original:', vendedor.senha);
+    
     setEditingVendedor(vendedor);
     setFormData({
       nome: vendedor.nome,
@@ -139,8 +146,10 @@ const GerenciarVendedores = () => {
       comissao: vendedor.comissao.toString(),
       regiao: vendedor.regiao || '',
       tipo: vendedor.tipo,
-      senha: 'vendedor123' // Sempre usar senha padrão para edição
+      senha: '' // Campo vazio - usuário pode alterar ou manter atual
     });
+    
+    console.log('🔧 [handleEditVendedor] FormData definido com senha vazia para edição');
     setShowModal(true);
   };
 
@@ -396,17 +405,27 @@ const GerenciarVendedores = () => {
               
               <div className="form-group">
                 <label htmlFor="senha">Senha *</label>
-                <input
-                  id="senha"
-                  type="text"
-                  value={formData.senha}
-                  onChange={(e) => handleInputChange('senha', e.target.value)}
-                  required
-                  placeholder="Senha padrão: vendedor123"
-                />
+                <div className="password-input-container">
+                  <input
+                    id="senha"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.senha}
+                    onChange={(e) => handleInputChange('senha', e.target.value)}
+                    required={!editingVendedor}
+                    placeholder={editingVendedor ? "Deixe vazio para manter a senha atual" : "Senha padrão: vendedor123"}
+                  />
+                  <button
+                    type="button"
+                    className="password-toggle-btn"
+                    onClick={() => setShowPassword(!showPassword)}
+                    title={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? "👁️" : "👁️‍🗨️"}
+                  </button>
+                </div>
                 <small className="form-help">
                   {editingVendedor 
-                    ? 'Nova senha para o vendedor. Deixe em branco para manter a senha atual.' 
+                    ? 'Digite uma nova senha ou deixe em branco para manter a senha atual.' 
                     : 'Senha padrão para primeiro acesso. O vendedor poderá alterar após o primeiro login.'
                   }
                 </small>
