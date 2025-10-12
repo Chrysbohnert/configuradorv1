@@ -51,23 +51,21 @@ ORDER BY peso_kg;
 -- Ver guindastes sem configuração
 SELECT 
   id,
-  nome,
-  modelo,
   subgrupo,
+  modelo,
   peso_kg
 FROM guindastes
 WHERE peso_kg IS NULL OR peso_kg = ''
-ORDER BY nome;
+ORDER BY subgrupo;
 
 -- Ver todos os guindastes com suas configurações
 SELECT 
   id,
-  nome,
-  modelo,
   subgrupo,
+  modelo,
   peso_kg AS configuracao_lancas
 FROM guindastes
-ORDER BY peso_kg, nome;
+ORDER BY peso_kg, subgrupo;
 
 -- ============================================
 -- COMENTÁRIOS E OBSERVAÇÕES

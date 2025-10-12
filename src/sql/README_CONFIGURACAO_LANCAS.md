@@ -87,13 +87,12 @@ Se alguns guindastes não foram atualizados automaticamente, execute:
 ```sql
 SELECT 
   id,
-  nome,
-  modelo,
   subgrupo,
+  modelo,
   peso_kg
 FROM guindastes
 WHERE peso_kg IS NULL OR peso_kg = ''
-ORDER BY nome;
+ORDER BY subgrupo;
 ```
 
 Para atualizar manualmente:
@@ -101,6 +100,10 @@ Para atualizar manualmente:
 ```sql
 -- Substitua ID e configuração conforme necessário
 UPDATE guindastes SET peso_kg = '3H1M' WHERE id = 123;
+
+-- Ou por modelo/subgrupo
+UPDATE guindastes SET peso_kg = '3H1M' WHERE modelo = 'CR 5000';
+UPDATE guindastes SET peso_kg = '2H1M' WHERE subgrupo LIKE '%Guindaste CR 3000%';
 ```
 
 ---
@@ -113,11 +116,14 @@ Se precisar atualizar um guindaste específico:
 -- Por ID
 UPDATE guindastes SET peso_kg = '2H1M' WHERE id = 1;
 
--- Por nome exato
-UPDATE guindastes SET peso_kg = '3H1M' WHERE nome = 'CR 5000';
+-- Por modelo exato
+UPDATE guindastes SET peso_kg = '3H1M' WHERE modelo = 'CR 5000';
 
--- Por padrão no nome
-UPDATE guindastes SET peso_kg = '4H0M' WHERE nome ILIKE '%CR 8000%';
+-- Por padrão no subgrupo
+UPDATE guindastes SET peso_kg = '4H0M' WHERE subgrupo ILIKE '%CR 8000%';
+
+-- Por padrão no modelo
+UPDATE guindastes SET peso_kg = '3H2M' WHERE modelo ILIKE '%EH 5000%';
 ```
 
 ---
@@ -128,9 +134,8 @@ UPDATE guindastes SET peso_kg = '4H0M' WHERE nome ILIKE '%CR 8000%';
 -- Ver todos os guindastes ordenados por configuração
 SELECT 
   peso_kg AS config,
-  nome,
-  modelo,
-  subgrupo
+  subgrupo,
+  modelo
 FROM guindastes
 ORDER BY 
   CASE 
@@ -143,7 +148,7 @@ ORDER BY
     WHEN peso_kg = '4H2M' THEN 7
     ELSE 99
   END,
-  nome;
+  subgrupo;
 ```
 
 ---
