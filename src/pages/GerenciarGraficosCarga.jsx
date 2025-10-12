@@ -232,8 +232,7 @@ const GerenciarGraficosCarga = () => {
       <AdminNavigation user={user} />
       <div className="admin-content">
         <UnifiedHeader 
-          showBackButton={true}
-          onBackClick={() => navigate('/dashboard-admin')}
+          showBackButton={false}
           showSupportButton={true}
           showUserInfo={true}
           user={user}

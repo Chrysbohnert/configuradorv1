@@ -329,14 +329,83 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
-  // Resolver imagem do guindaste com fallback seguro
+  // Validar se uma URL de imagem é válida
+  const isValidImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (trimmed === '') return false;
+    
+    // Rejeitar base64 truncadas (que terminam com ... ou são muito curtas)
+    if (trimmed.startsWith('data:image/')) {
+      // Base64 truncada geralmente termina com ... ou é muito curta
+      if (trimmed.endsWith('...') || trimmed.endsWith('..')) {
+        console.warn('🚫 Imagem base64 truncada rejeitada:', trimmed.substring(0, 100) + '...');
+        return false;
+      }
+      
+      // Verificar estrutura mínima: data:image/tipo;base64,dados
+      const parts = trimmed.split(',');
+      if (parts.length !== 2 || !parts[0].includes('base64')) {
+        console.warn('🚫 Base64 com estrutura inválida:', trimmed.substring(0, 100));
+        return false;
+      }
+      
+      // Base64 válida deve ter pelo menos 1000 caracteres (uma imagem mínima)
+      // Isso filtra base64s truncadas que têm poucos dados
+      if (trimmed.length < 1000) {
+        console.warn('🚫 Base64 muito curta (provavelmente truncada):', trimmed.length, 'caracteres');
+        return false;
+      }
+      
+      // Verificar se os dados base64 são válidos (apenas caracteres base64)
+      const base64Data = parts[1];
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      
+      // Verificar apenas os primeiros 100 caracteres (performance)
+      const sampleData = base64Data.substring(0, 100);
+      if (!base64Regex.test(sampleData)) {
+        console.warn('🚫 Dados base64 contêm caracteres inválidos');
+        return false;
+      }
+      
+      return true;
+    }
+    
+    // Aceitar URLs http/https
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
+        new URL(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    
+    // Aceitar caminhos relativos que começam com /
+    if (trimmed.startsWith('/')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Resolver imagem do guindaste com validação e fallback seguro
   const resolveGuindasteImage = (g) => {
-    const main = g?.imagem_url && g.imagem_url.trim() !== '' ? g.imagem_url : null;
-    const extra = Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0
-      ? g.imagens_adicionais[0]
-      : null;
-    // Placeholder padrão caso não exista imagem
-    return main || extra || '/header-bg.jpg';
+    // Tentar imagem principal
+    if (g?.imagem_url && isValidImageUrl(g.imagem_url)) {
+      return g.imagem_url;
+    }
+    
+    // Tentar primeira imagem adicional
+    if (Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0) {
+      const firstExtra = g.imagens_adicionais[0];
+      if (isValidImageUrl(firstExtra)) {
+        return firstExtra;
+      }
+    }
+    
+    // Fallback para placeholder
+    return '/header-bg.jpg';
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
@@ -893,7 +962,11 @@ const GerenciarGuindastes = () => {
                       <div className="imagens-grid">
                         {formData.imagens_adicionais.map((img, index) => (
                           <div key={index} className="imagem-preview-item">
-                            <img src={img} alt={`Preview ${index + 1}`} />
+                            <img 
+                              src={img} 
+                              alt={`Preview ${index + 1}`}
+                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                            />
                             <button
                               type="button"
                               onClick={() => removeImagemAdicional(index)}

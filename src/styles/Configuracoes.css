@@ -1,0 +1,377 @@
+/* ============================================
+   CONFIGURAÇÕES - PÁGINA DE PERFIL
+   ============================================ */
+
+.configuracoes-container {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.configuracoes-content {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  overflow: hidden;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+
+.config-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.config-tab {
+  flex: 1;
+  max-width: 200px;
+  padding: 18px 24px;
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  color: #6b7280;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.config-tab svg {
+  width: 20px;
+  height: 20px;
+}
+
+.config-tab:hover {
+  background: rgba(255, 193, 7, 0.05);
+  color: #374151;
+}
+
+.config-tab.active {
+  background: white;
+  color: #ffc107;
+  border-bottom-color: #ffc107;
+  font-weight: 600;
+}
+
+/* ============================================
+   MENSAGENS
+   ============================================ */
+
+.config-message {
+  margin: 24px 24px 0;
+  padding: 14px 18px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.config-message svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.config-message.success {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+}
+
+.config-message.error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+/* ============================================
+   PAINEL DE CONFIGURAÇÃO
+   ============================================ */
+
+.config-panel {
+  padding: 32px 24px;
+}
+
+.config-panel h2 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 32px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f3f4f6;
+}
+
+/* ============================================
+   SEÇÃO DE FOTO
+   ============================================ */
+
+.photo-section {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin-bottom: 40px;
+  padding: 24px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 16px;
+}
+
+.photo-preview {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: white;
+  box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
+  border: 4px solid white;
+  flex-shrink: 0;
+}
+
+.photo-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.photo-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+}
+
+.photo-placeholder svg {
+  width: 50px;
+  height: 50px;
+  color: #9ca3af;
+}
+
+.photo-actions {
+  flex: 1;
+}
+
+.upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: white;
+  border: 2px solid #ffc107;
+  border-radius: 12px;
+  color: #000;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.2);
+}
+
+.upload-btn:hover {
+  background: #ffc107;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.upload-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.photo-hint {
+  margin-top: 12px;
+  font-size: 13px;
+  color: #78350f;
+}
+
+/* ============================================
+   FORMULÁRIO
+   ============================================ */
+
+.config-form {
+  max-width: 600px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 15px;
+  color: #111827;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+}
+
+.form-group input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.form-group input::placeholder {
+  color: #9ca3af;
+}
+
+/* ============================================
+   BOTÃO SALVAR
+   ============================================ */
+
+.save-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  border: none;
+  border-radius: 12px;
+  color: #000;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+  margin-top: 24px;
+}
+
+.save-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.4);
+}
+
+.save-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: #000;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================
+   RESPONSIVIDADE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .configuracoes-container {
+    padding: 20px 16px;
+  }
+
+  .config-panel {
+    padding: 24px 16px;
+  }
+
+  .config-panel h2 {
+    font-size: 20px;
+  }
+
+  .photo-section {
+    flex-direction: column;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .config-tabs {
+    flex-wrap: wrap;
+  }
+
+  .config-tab {
+    flex: 1;
+    min-width: 150px;
+    font-size: 14px;
+    padding: 16px 20px;
+  }
+
+  .save-btn {
+    width: 100%;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .photo-preview {
+    width: 100px;
+    height: 100px;
+  }
+
+  .upload-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .config-message {
+    font-size: 13px;
+    padding: 12px 14px;
+  }
+}
+
