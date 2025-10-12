@@ -329,6 +329,16 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
+  // Resolver imagem do guindaste com fallback seguro
+  const resolveGuindasteImage = (g) => {
+    const main = g?.imagem_url && g.imagem_url.trim() !== '' ? g.imagem_url : null;
+    const extra = Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0
+      ? g.imagens_adicionais[0]
+      : null;
+    // Placeholder padrão caso não exista imagem
+    return main || extra || '/header-bg.jpg';
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -441,25 +451,16 @@ const GerenciarGuindastes = () => {
                         </div>
                         <div className="guindastes-grid">
                           {items.map((guindaste) => {
-                            const hasValidImage = guindaste.imagem_url && 
-                                                   guindaste.imagem_url.trim() !== '' && 
-                                                   (guindaste.imagem_url.startsWith('http') || 
-                                                    guindaste.imagem_url.startsWith('https://'));
                             return (
                             <div key={guindaste.id} className="guindaste-card">
                               <div className="guindaste-image">
-                                {hasValidImage ? (
-                                  <img 
-                                    src={guindaste.imagem_url} 
-                                    alt={guindaste.subgrupo}
-                                    className="guindaste-thumbnail"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'flex';
-                                    }}
-                                  />
-                                ) : null}
-                                <div className="guindaste-icon" style={{ display: hasValidImage ? 'none' : 'flex' }}>
+                                <img 
+                                  src={resolveGuindasteImage(guindaste)} 
+                                  alt={guindaste.subgrupo}
+                                  className="guindaste-thumbnail"
+                                  onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                />
+                                <div className="guindaste-icon" style={{ display: 'none' }}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                                   </svg>
@@ -526,25 +527,16 @@ const GerenciarGuindastes = () => {
                     </div>
                     <div className="guindastes-grid">
                       {getGuindastesFiltrados().map((guindaste) => {
-                        const hasValidImage = guindaste.imagem_url && 
-                                               guindaste.imagem_url.trim() !== '' && 
-                                               (guindaste.imagem_url.startsWith('http') || 
-                                                guindaste.imagem_url.startsWith('https://'));
                         return (
                         <div key={guindaste.id} className="guindaste-card">
                           <div className="guindaste-image">
-                            {hasValidImage ? (
-                              <img 
-                                src={guindaste.imagem_url} 
-                                alt={guindaste.subgrupo}
-                                className="guindaste-thumbnail"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div className="guindaste-icon" style={{ display: hasValidImage ? 'none' : 'flex' }}>
+                            <img 
+                              src={resolveGuindasteImage(guindaste)} 
+                              alt={guindaste.subgrupo}
+                              className="guindaste-thumbnail"
+                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                            />
+                            <div className="guindaste-icon" style={{ display: 'none' }}>
                               <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                               </svg>
