@@ -435,6 +435,53 @@
   }
 }
 
+/* Tablet Medium específico - 1030px */
+@media (min-width: 1030px) and (max-width: 1030px) {
+  .unified-header {
+    height: 85px;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 50 !important;
+  }
+
+  .header-container {
+    padding: 0 28px;
+    max-width: calc(100% - 270px) !important;
+    margin-left: 270px !important;
+  }
+
+  .header-left {
+    gap: 22px;
+  }
+
+  .brand-title {
+    font-size: 24px;
+  }
+
+  .brand-subtitle {
+    font-size: 13px;
+  }
+
+  .support-button {
+    padding: 11px 18px;
+    font-size: 14px;
+  }
+
+  .user-avatar-wrapper {
+    width: 46px;
+    height: 46px;
+  }
+
+  .user-name {
+    font-size: 14px;
+  }
+
+  .user-role-badge {
+    font-size: 11px;
+    padding: 3px 9px;
+  }
+}
+
 /* Mobile Large */
 @media (max-width: 768px) {
   .unified-header {
