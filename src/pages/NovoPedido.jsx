@@ -33,7 +33,8 @@ const NovoPedido = () => {
 
   // Determinar IE: para vendedor do RS usa clienteTemIE; demais regiões mantém preço padrão
   const determinarClienteTemIE = () => {
-    if (currentStep >= 2 && user?.regiao === 'rio grande do sul' && pagamentoData.tipoPagamento === 'cliente') {
+    // Para RS: sempre usa o estado clienteTemIE quando estiver na etapa 2+
+    if (currentStep >= 2 && user?.regiao === 'rio grande do sul') {
       return !!clienteTemIE;
     }
     return true;
