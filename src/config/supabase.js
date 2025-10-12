@@ -464,7 +464,6 @@ class DatabaseService {
     return data || [];
   }
 
-<<<<<<< HEAD
   // ===== FRETES POR CIDADE/OFICINA =====
   async getFretes() {
     const { data, error } = await supabase
@@ -574,9 +573,6 @@ class DatabaseService {
 
     if (error) throw error;
   }
-
-=======
->>>>>>> 925f48491efa4cecba6da6391d7b7dd2d802742e
   async createGraficoCarga(graficoData) {
     const { data, error } = await supabase
       .from('graficos_carga')
