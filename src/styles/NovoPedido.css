@@ -771,7 +771,7 @@
   flex-direction: column;
   height: 100%;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .guindaste-card::before {
@@ -788,8 +788,8 @@
 
 .guindaste-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(102, 126, 234, 0.1);
-  border-color: #667eea;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(59, 130, 246, 0.15), 0 10px 20px rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
 }
 
 .guindaste-card:hover::before {
@@ -799,7 +799,13 @@
 .guindaste-card.selected {
   border-color: #10b981;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 20px rgba(16, 185, 129, 0.1);
+  animation: selectedGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes selectedGlow {
+  0% { box-shadow: 0 12px 24px rgba(16, 185, 129, 0.15), 0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 20px rgba(16, 185, 129, 0.1); }
+  100% { box-shadow: 0 12px 24px rgba(16, 185, 129, 0.2), 0 0 0 1px rgba(16, 185, 129, 0.3), 0 0 25px rgba(16, 185, 129, 0.15); }
 }
 
 .guindaste-card.selected::before {
@@ -1498,6 +1504,53 @@
     margin: 0 -20px;
     border-radius: 0;
   }
+
+  .card-badge {
+    top: 8px;
+    right: 8px;
+  }
+
+  .badge-selected, .badge-codigo {
+    font-size: 9px;
+    padding: 4px 8px;
+  }
+
+  .guindaste-title {
+    font-size: 18px;
+  }
+
+  .spec-item {
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .spec-icon {
+    padding: 6px;
+  }
+
+  .spec-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .btn-select {
+    padding: 12px 20px;
+    font-size: 13px;
+  }
+
+  .guindaste-image {
+    width: 60px;
+    height: 60px;
+  }
+
+  .config-badges {
+    gap: 2px;
+  }
+
+  .config-badge {
+    font-size: 12px;
+    padding: 3px 5px;
+  }
 } 
 
 /* Estilos para o novo sistema de filtros */
@@ -1712,64 +1765,274 @@
   background: #545b62;
 }
 
-/* Estilos para cards de guindaste atualizados */
-.guindaste-card {
-  cursor: pointer;
+/* Cards de Guindaste - Design Profissional Completo */
+
+/* Badges de Status */
+.card-badge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+}
+
+.badge-selected {
+  background: linear-gradient(145deg, var(--empresa-verde) 0%, #059669 100%);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+.badge-codigo {
+  background: linear-gradient(145deg, var(--empresa-cinza) 0%, #374151 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes badgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Container da Imagem com Badges de Configuração */
+.guindaste-image-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.config-badges {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.config-badge {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: var(--empresa-azul);
+  padding: 4px 6px;
+  border-radius: 8px;
+  font-size: 14px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
 
-.guindaste-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+.config-badge:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
 }
 
-.guindaste-card.selected {
-  border: 3px solid #007bff;
-  background: #e3f2fd;
+/* Informações Principais */
+.guindaste-main-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.guindaste-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--empresa-cinza-escuro);
+  margin: 0;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.guindaste-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: center;
+}
+
+.codigo-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--empresa-cinza-claro);
+  background: rgba(107, 114, 128, 0.1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  border: 1px solid rgba(107, 114, 128, 0.2);
+}
+
+/* Grade de Especificações */
+.specs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.spec-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(248, 250, 252, 0.5);
+  border-radius: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.8);
+  transition: all 0.3s ease;
+}
+
+.spec-item:hover {
+  background: rgba(248, 250, 252, 0.8);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.spec-icon {
+  color: var(--empresa-azul);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 8px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spec-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.spec-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.spec-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--empresa-cinza-claro);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.spec-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--empresa-cinza-escuro);
+  line-height: 1.3;
+}
+
+/* Lista de Opcionais */
+.opcionais-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.opcional-item {
+  font-size: 12px;
+  color: var(--empresa-cinza);
+  padding: 2px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.opcional-more {
+  font-size: 11px;
+  color: var(--empresa-azul);
+  font-style: italic;
+  padding: 2px 6px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 4px;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+/* Área de Ações (Footer) */
+.card-footer {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(226, 232, 240, 0.6);
 }
 
 .btn-select {
   width: 100%;
-  padding: 12px 20px;
-  border: 2px solid #e2e8f0;
+  padding: 14px 24px;
+  border: 2px solid rgba(226, 232, 240, 0.8);
   background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-  color: #475569;
-  border-radius: 10px;
+  color: var(--empresa-cinza);
+  border-radius: 12px;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-select::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  transition: left 0.6s ease;
+}
+
+.btn-select:hover::before {
+  left: 100%;
 }
 
 .btn-select:hover {
-  background: linear-gradient(145deg, #667eea 0%, #5b6cdb 100%);
+  background: linear-gradient(145deg, var(--empresa-azul) 0%, #2563eb 100%);
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(102, 126, 234, 0.25);
-  border-color: #667eea;
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+  border-color: var(--empresa-azul);
 }
 
 .btn-select.selected {
-  background: linear-gradient(145deg, #10b981 0%, #059669 100%);
-  border-color: #10b981;
+  background: linear-gradient(145deg, var(--empresa-verde) 0%, #059669 100%);
+  border-color: var(--empresa-verde);
   color: white;
-  box-shadow: 0 6px 16px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.3);
 }
 
 .btn-select.selected:hover {
   background: linear-gradient(145deg, #059669 0%, #047857 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 12px 24px rgba(16, 185, 129, 0.4);
 }
 
 .btn-select svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  transition: transform 0.3s ease;
+}
+
+.btn-select:hover svg {
+  transform: scale(1.1);
 }
 
 /* Estilos para validação de erros */
