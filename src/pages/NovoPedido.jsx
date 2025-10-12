@@ -39,53 +39,25 @@ const NovoPedido = () => {
     return true;
   };
 
-  // ← NOVO: Função para recalcular preços quando o contexto muda
+  // Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
     if (carrinho.length === 0 || !user?.regiao) {
-      console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
-        carrinhoLength: carrinho.length,
-        userRegiao: user?.regiao
-      });
       return;
     }
-
-    console.log('🔄 [recalcularPrecosCarrinho] INICIANDO recálculo...');
-    console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
     const regiaoVendedor = normalizarRegiao(user.regiao, temIE);
 
-    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região: ${regiaoVendedor}`);
-    console.log(`👤 [recalcularPrecosCarrinho] Usuário região: ${user.regiao}`);
-
-    // ← NOVO: Testar preços de todas as regiões para comparação
-    if (user.regiao === 'rio grande do sul') {
-      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões:');
-      for (const item of carrinho.filter(i => i.tipo === 'guindaste').slice(0, 1)) {
-        try {
-          const precoComIE = await db.getPrecoPorRegiao(item.id, 'rs-com-ie');
-          const precoSemIE = await db.getPrecoPorRegiao(item.id, 'rs-sem-ie');
-          console.log(`  ${item.nome}: rs-com-ie = R$ ${precoComIE}, rs-sem-ie = R$ ${precoSemIE}`);
-        } catch (error) {
-          console.error(`  Erro ao verificar preços para ${item.nome}:`, error);
-        }
-      }
-    }
-
     const carrinhoAtualizado = [];
+    let precisaAtualizar = false;
 
     for (const item of carrinho) {
       if (item.tipo === 'guindaste') {
         try {
-          console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
           const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
 
-          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${regiaoVendedor})`);
-
           if (novoPreco !== item.preco) {
-            console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
-          } else {
-            console.log(`➡️ [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
+            precisaAtualizar = true;
           }
 
           carrinhoAtualizado.push({
@@ -93,7 +65,6 @@ const NovoPedido = () => {
             preco: novoPreco || item.preco || 0
           });
         } catch (error) {
-          console.error(`❌ [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
           carrinhoAtualizado.push(item);
         }
       } else {
@@ -101,20 +72,20 @@ const NovoPedido = () => {
       }
     }
 
-    console.log('📊 [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
-
-    setCarrinho(carrinhoAtualizado);
-    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
-    console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
+    // Só atualiza se realmente houver mudança nos preços
+    if (precisaAtualizar) {
+      setCarrinho(carrinhoAtualizado);
+      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+    }
   };
 
-  // Recalcular preços quando contexto ou carrinho mudarem
+  // Recalcular preços quando contexto mudar (SEM monitorar carrinho para evitar loop)
   useEffect(() => {
     if (carrinho.length > 0 && user?.regiao) {
       recalcularPrecosCarrinho();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep, carrinho]);
+  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep]);
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
