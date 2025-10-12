@@ -1,45 +1,26 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-// TODO: Implementar virtual scrolling com react-window quando necessário (100+ itens)
-// import { FixedSizeList } from 'react-window';
 import AdminNavigation from '../components/AdminNavigation';
 import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
-import OptimizedGuindasteCard from '../components/OptimizedGuindasteCard';
 
-import { db } from '../config/supabase';
-import cacheManager, { withCache } from '../utils/cacheManager';
+import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
-/**
- * PÁGINA GERENCIAR GUINDASTES - OTIMIZADA ✨
- * 
- * Otimizações aplicadas:
- * 1. ✅ Lazy loading de imagens
- * 2. ✅ Componentes memoizados
- * 3. ✅ Query otimizada com filtros server-side
- * 4. ✅ Sistema de cache in-memory (5 minutos)
- * 5. ✅ Lazy state initialization
- * 6. ✅ useCallback para handlers estáveis
- * 7. ✅ useMemo para computações pesadas
- * 
- * @author SpecEngineer
- */
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const pageSize = 24;
+  const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
+  const pageSize = 100; // Aumentado para pegar todos os 51 guindastes
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
-  
-  // Lazy initialization para formData (evita criar objeto complexo em todo render)
-  const [formData, setFormData] = useState(() => ({
+  const [formData, setFormData] = useState({
     subgrupo: '',
     modelo: '',
     peso_kg: '',
@@ -51,19 +32,13 @@ const GerenciarGuindastes = () => {
     imagens_adicionais: [],
     finame: '',
     ncm: ''
-  }));
-  
+  });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
-  const [filtroCapacidade, setFiltroCapacidade] = useState(''); // Vazio até carregar
+  const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
-  
-  // Estados para busca avançada
-  const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
-  const [useVirtualScroll, setUseVirtualScroll] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -82,95 +57,66 @@ const GerenciarGuindastes = () => {
     loadData(1);
   }, [navigate]);
 
-  /**
-   * Carrega dados com cache e filtros server-side
-   * Otimizado para reduzir payload e melhorar performance
-   * ⚡ OTIMIZAÇÃO: Verifica cache ANTES de mostrar loading (UX instantânea)
-   */
-  const loadData = useCallback(async (pageToLoad = page, forceRefresh = false) => {
+  // Memoizar extração de capacidades para evitar recálculos
+  const extractCapacidades = React.useCallback((data) => {
+    const set = new Set();
+    data.forEach(g => {
+      const subgrupo = g.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) set.add(match[1]);
+    });
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
+  }, []);
+
+  const loadData = async (pageToLoad = page, forceRefresh = false) => {
     try {
-      // Parâmetros da query otimizada
-      const queryParams = {
+      setIsLoading(true);
+      
+      // Verificar autenticação (Supabase Auth ou localStorage)
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        console.error('❌ Usuário não encontrado. Redirecionando para login...');
+        navigate('/');
+        return;
+      }
+
+      // Tentar garantir sessão Supabase (opcional, não crítico)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('⚠️ Sessão Supabase não encontrada, mas prosseguindo com autenticação local');
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao verificar sessão Supabase, mas prosseguindo:', error);
+      }
+      
+      const { data, count } = await db.getGuindastesLite({
         page: pageToLoad,
         pageSize,
-        capacidade: null, // ← SEMPRE NULL: filtro server-side desabilitado
-        fieldsOnly: false, // Garante que busca todos os campos
-        noPagination: true // ← BUSCA TODOS os guindastes (sem limite de 24)
-      };
-
-      // ⚡ OTIMIZAÇÃO: Verificar cache ANTES de mostrar loading
-      if (!forceRefresh) {
-        const cacheKey = 'guindastes';
-        const cachedData = cacheManager.get(cacheKey, queryParams);
-        
-        if (cachedData) {
-          // ✅ CACHE HIT: Dados instantâneos, sem loading!
-          console.log('⚡ Cache HIT: Dados carregados instantaneamente');
-          setGuindastes(cachedData.data);
-          setTotal(cachedData.count || 0);
-          setPage(pageToLoad);
-          setIsLoading(false);
-          return; // Não precisa buscar do banco
-        }
-      }
-
-      // Só mostra loading se NÃO tiver cache
-      setIsLoading(true);
-
-      let data, count;
-
-      if (forceRefresh) {
-        // Invalida cache e busca novamente
-        cacheManager.invalidatePattern('guindastes:');
-        const result = await db.getGuindastesLite(queryParams);
-        data = result.data;
-        count = result.count;
-      } else {
-        // Usa cache (5 minutos de TTL)
-        const result = await withCache(
-          () => db.getGuindastesLite(queryParams),
-          'guindastes',
-          queryParams,
-          5 * 60 * 1000
-        );
-        data = result.data;
-        count = result.count;
-      }
-
-      // Debug: Verificar dados recebidos
-      console.log('📊 Dados recebidos do banco:', {
-        total_carregado: data.length,
-        total_banco: count,
-        esta_completo: data.length === count ? '✅ SIM' : '❌ NÃO',
-        amostra: data.slice(0, 3).map(g => ({
-          id: g.id,
-          subgrupo: g.subgrupo,
-          modelo: g.modelo,
-          capacidade: g.subgrupo?.match(/(\d+\.?\d*)/)?.[1] || '?',
-          tem_imagem: !!g.imagem_url
-        }))
+        forceRefresh
       });
-      
-      // Alerta se não carregou tudo
-      if (data.length < count) {
-        console.warn('⚠️ ATENÇÃO: Carregou apenas', data.length, 'de', count, 'guindastes!');
-      } else {
-        console.log('✅ Todos os', count, 'guindastes foram carregados!');
-      }
 
       setGuindastes(data);
       setTotal(count || 0);
       setPage(pageToLoad);
-      
-      // Define a capacidade inicial (primeira) apenas na primeira carga
-      if (!hasInitializedFiltro && Array.isArray(data) && data.length > 0) {
-        const capacidades = extractCapacidadesUnicas(data);
+
+      // Processar capacidades apenas se não foram inicializadas ainda
+      if (!hasInitializedFiltro && data.length > 0) {
+        const capacidades = extractCapacidades(data);
+        setCapacidadesDisponiveis(capacidades);
+
         if (capacidades.length > 0) {
           const saved = localStorage.getItem('gg_capacidade');
-          const initial = saved && (saved === 'todos' || capacidades.includes(saved)) ? saved : capacidades[0];
+          // Sempre inicia na primeira capacidade disponível. Ignora 'todos'.
+          const initial = saved && capacidades.includes(saved) ? saved : capacidades[0];
           setFiltroCapacidade(initial);
           setHasInitializedFiltro(true);
         }
+      } else if (hasInitializedFiltro && data.length > 0) {
+        // Atualizar capacidades disponíveis se já foram inicializadas
+        const capacidades = extractCapacidades(data);
+        setCapacidadesDisponiveis(capacidades);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -178,132 +124,39 @@ const GerenciarGuindastes = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [page, filtroCapacidade, hasInitializedFiltro]);
-
-  // Recarrega quando filtro de capacidade muda
-  useEffect(() => {
-    if (hasInitializedFiltro) {
-      loadData(1);
-    }
-  }, [filtroCapacidade]);
+  };
 
   // Persistir preferência do usuário
   useEffect(() => {
-    if (filtroCapacidade) {
+    if (filtroCapacidade && filtroCapacidade !== 'todos') {
       localStorage.setItem('gg_capacidade', filtroCapacidade);
+    } else if (filtroCapacidade === 'todos') {
+      localStorage.removeItem('gg_capacidade');
     }
   }, [filtroCapacidade]);
 
-  // Debounce para busca (performance)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms de delay
+  // Função para extrair capacidades únicas dos guindastes (otimizada)
+  const getCapacidadesUnicas = React.useCallback(() => {
+    return capacidadesDisponiveis;
+  }, [capacidadesDisponiveis]);
 
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  // Ativar virtual scroll automaticamente se houver muitos guindastes
-  useEffect(() => {
-    setUseVirtualScroll(guindastes.length > 50);
-  }, [guindastes.length]);
-
-  /**
-   * Extrai capacidades únicas de um array de guindastes
-   * Memoizada para evitar reprocessamento
-   */
-  const extractCapacidadesUnicas = useMemo(() => (guindastesList) => {
-    const capacidades = new Set();
-    guindastesList.forEach(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) capacidades.add(match[1]);
-    });
-    return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
-  }, []);
-
-  /**
-   * Capacidades únicas da lista atual
-   * Memoizado para não recalcular em todo render
-   */
-  const capacidadesUnicas = useMemo(() => {
-    return extractCapacidadesUnicas(guindastes);
-  }, [guindastes, extractCapacidadesUnicas]);
-
-  /**
-   * Função para extrair capacidades únicas (compatibilidade)
-   */
-  const getCapacidadesUnicas = () => capacidadesUnicas;
-
-  // Inicializar filtro com a primeira capacidade (6.5t, etc)
-  // IMPORTANTE: Deve estar DEPOIS da declaração de capacidadesUnicas
-  useEffect(() => {
-    if (guindastes.length > 0 && !hasInitializedFiltro && capacidadesUnicas.length > 0) {
-      const primeiraCapacidade = capacidadesUnicas[0]; // Menor capacidade
-      setFiltroCapacidade(primeiraCapacidade);
-      setHasInitializedFiltro(true);
-      console.log(`🎯 Filtro inicial configurado: ${primeiraCapacidade}t`);
-    }
-  }, [guindastes.length, capacidadesUnicas, hasInitializedFiltro]);
-
-  /**
-   * Extrai a capacidade de um guindaste individual
-   * Extração melhorada para evitar falsos positivos
-   */
-  const extractCapacidade = useCallback((guindaste) => {
+  // Extrai a capacidade (toneladas) de um registro de guindaste
+  const extractCapacidade = (guindaste) => {
     const subgrupo = guindaste.subgrupo || '';
     const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
     const match = modeloBase.match(/(\d+\.?\d*)/);
     return match ? match[1] : null;
-  }, []);
+  };
 
-  /**
-   * Filtra guindastes por capacidade E busca textual
-   * Memoizado para evitar reprocessamento
-   * FILTRO CLIENT-SIDE: Mais preciso que o server-side
-   */
-  const guindastesFiltrados = useMemo(() => {
-    let filtrados = guindastes;
-    
-    // Filtro 1: Capacidade (ignora se estiver vazio ou 'todos')
-    if (filtroCapacidade && filtroCapacidade !== 'todos') {
-      filtrados = filtrados.filter(guindaste => {
-        const cap = extractCapacidade(guindaste);
-        return cap && cap === filtroCapacidade;
-      });
-    }
-    
-    // Filtro 2: Busca textual
-    if (debouncedSearchTerm.trim()) {
-      const searchLower = debouncedSearchTerm.toLowerCase();
-      filtrados = filtrados.filter(guindaste => {
-        const subgrupo = (guindaste.subgrupo || '').toLowerCase();
-        const modelo = (guindaste.modelo || '').toLowerCase();
-        return subgrupo.includes(searchLower) || modelo.includes(searchLower);
-      });
-    }
-    
-    const filtroLabel = (!filtroCapacidade || filtroCapacidade === 'todos') ? 'todos' : `${filtroCapacidade}t`;
-    console.log(`🔍 Filtro ${filtroLabel} + busca "${debouncedSearchTerm}": ${filtrados.length}/${guindastes.length} guindastes`);
-    return filtrados;
-  }, [guindastes, filtroCapacidade, debouncedSearchTerm, extractCapacidade]);
-
-  const getGuindastesFiltrados = () => guindastesFiltrados;
-
-  /**
-   * Guindastes agrupados por capacidade (quando filtro = 'todos')
-   * Memoizado para evitar reprocessamento
-   */
-  const guindastesPorCapacidade = useMemo(() => {
-    const grupos = {};
-    capacidadesUnicas.forEach(cap => {
-      grupos[cap] = guindastes.filter(g => extractCapacidade(g) === cap);
+  const getGuindastesFiltrados = () => {
+    if (filtroCapacidade === 'todos') return guindastes;
+    return guindastes.filter(guindaste => {
+      const cap = extractCapacidade(guindaste);
+      return cap && cap === filtroCapacidade;
     });
-    return grupos;
-  }, [guindastes, capacidadesUnicas, extractCapacidade]);
+  };
 
-  const handleInputChange = useCallback((field, value) => {
+  const handleInputChange = (field, value) => {
     setFormData(prev => {
       const newData = { ...prev, [field]: value };
       if (field === 'configuração') {
@@ -312,15 +165,15 @@ const GerenciarGuindastes = () => {
       }
       return newData;
     });
-  }, []);
+  };
 
-  const handleImageUpload = useCallback((imageUrl) => {
+  const handleImageUpload = (imageUrl) => {
     setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
-  }, []);
+  };
 
   // Removido upload de gráfico de carga (PDF é anexado automaticamente na proposta)
 
-  const handleImagensAdicionaisChange = useCallback(async (e) => {
+  const handleImagensAdicionaisChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
     try {
@@ -335,13 +188,13 @@ const GerenciarGuindastes = () => {
       console.error('Erro ao fazer upload das imagens:', error);
       alert('Erro ao fazer upload das imagens. Tente novamente.');
     }
-  }, []);
+  };
 
-  const removeImagemAdicional = useCallback((index) => {
+  const removeImagemAdicional = (index) => {
     setFormData(prev => ({ ...prev, imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index) }));
-  }, []);
+  };
 
-  const handleEdit = useCallback(async (item) => {
+  const handleEdit = async (item) => {
     setEditingGuindaste(item);
     setFormData({
       subgrupo: item.subgrupo,
@@ -357,38 +210,41 @@ const GerenciarGuindastes = () => {
       ncm: item.ncm || ''
     });
     setShowModal(true);
+    // Bloquear scroll do body
     document.body.classList.add('modal-open');
-  }, []);
+  };
 
-  const handleDeleteClick = useCallback((id) => {
+  const handleDeleteClick = (id) => {
     setGuindasteToDelete(id);
     setShowDeleteModal(true);
+    // Bloquear scroll do body
     document.body.classList.add('modal-open');
-  }, []);
+  };
 
-  const confirmDelete = useCallback(async () => {
+  const confirmDelete = async () => {
     if (guindasteToDelete) {
       try {
         await db.deleteGuindaste(guindasteToDelete);
-        // Invalida cache e recarrega
-        await loadData(page, true);
+        await loadData(page);
         setShowDeleteModal(false);
         setGuindasteToDelete(null);
+        // Restaurar scroll do body
         document.body.classList.remove('modal-open');
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
         alert('Erro ao remover guindaste. Tente novamente.');
       }
     }
-  }, [guindasteToDelete, page, loadData]);
+  };
 
-  const cancelDelete = useCallback(() => {
+  const cancelDelete = () => {
     setShowDeleteModal(false);
     setGuindasteToDelete(null);
+    // Restaurar scroll do body
     document.body.classList.remove('modal-open');
-  }, []);
+  };
 
-  const handleCloseModal = useCallback(() => {
+  const handleCloseModal = () => {
     setShowModal(false);
     setEditingGuindaste(null);
     setFormData({
@@ -404,10 +260,11 @@ const GerenciarGuindastes = () => {
       finame: '',
       ncm: ''
     });
+    // Restaurar scroll do body
     document.body.classList.remove('modal-open');
-  }, []);
+  };
 
-  const handleAddNew = useCallback(() => {
+  const handleAddNew = () => {
     setEditingGuindaste(null);
     setFormData({
       subgrupo: '',
@@ -423,17 +280,20 @@ const GerenciarGuindastes = () => {
       ncm: ''
     });
     setShowModal(true);
+    // Bloquear scroll do body
     document.body.classList.add('modal-open');
-  }, []);
+  };
 
-  const handleSubmit = useCallback(async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Validação de campos obrigatórios
       if (!formData.subgrupo || !formData.modelo || !formData.peso_kg || !formData.configuração) {
         alert('Por favor, preencha todos os campos obrigatórios: Subgrupo, Modelo, Configuração de lanças e Configuração.');
         return;
       }
       
+      // Converter peso_kg para string e validar
       const configuracaoLancas = String(formData.peso_kg).trim();
       if (!configuracaoLancas) {
         alert('Por favor, insira a configuração de lanças (ex: 3h1m, 4h2m).');
@@ -443,15 +303,13 @@ const GerenciarGuindastes = () => {
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
-        peso_kg: configuracaoLancas,
+        peso_kg: configuracaoLancas, // Agora é texto (ex: "3h1m")
         configuração: formData.configuração.trim(),
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url?.trim() || null,
         descricao: formData.descricao?.trim() || null,
         nao_incluido: formData.nao_incluido?.trim() || null,
-        imagens_adicionais: formData.imagens_adicionais || [],
-        finame: formData.finame?.trim() || null,
-        ncm: formData.ncm?.trim() || null
+        imagens_adicionais: formData.imagens_adicionais || []
       };
       
       if (editingGuindaste) {
@@ -460,99 +318,26 @@ const GerenciarGuindastes = () => {
         await db.createGuindaste(guindasteData);
       }
       
-      // Invalida cache e recarrega
-      await loadData(page, true);
+      await loadData(page);
       handleCloseModal();
       alert('Guindaste salvo com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar guindaste:', error);
       alert(`Erro ao salvar guindaste: ${error.message}`);
     }
-  }, [formData, editingGuindaste, page, loadData, handleCloseModal]);
-
-  const handlePrecosClick = useCallback((guindasteId) => {
-    setGuindasteIdPrecos(guindasteId);
-    setShowPrecosModal(true);
-  }, []);
-
-  // Debug global: Expor dados para inspeção
-  if (typeof window !== 'undefined') {
-    window.debugGuindastes = () => {
-      console.log('🔍 DEBUG - Estado Atual:', {
-        total_guindastes: guindastes.length,
-        filtro_ativo: filtroCapacidade,
-        guindastes_filtrados: guindastesFiltrados.length,
-        cache_stats: cacheManager.getStats(),
-        guindastes: guindastes.map(g => ({
-          id: g.id,
-          subgrupo: g.subgrupo,
-          modelo: g.modelo,
-          capacidade_extraida: extractCapacidade(g),
-          tem_imagem: !!g.imagem_url,
-          imagem_url: g.imagem_url?.substring(0, 50) + '...'
-        }))
-      });
-      return guindastes;
-    };
-    
-    // Debug: Mostrar guindastes por capacidade
-    window.debugPorCapacidade = (cap) => {
-      const filtrados = guindastes.filter(g => extractCapacidade(g) === cap);
-      console.log(`🔍 Guindastes de ${cap}t:`, filtrados.map(g => ({
-        id: g.id,
-        subgrupo: g.subgrupo,
-        capacidade: extractCapacidade(g)
-      })));
-      return filtrados;
-    };
-    
-    // Verificar integridade dos dados
-    window.verificarIntegridade = async () => {
-      console.clear();
-      console.log('🔍 ===== VERIFICAÇÃO DE INTEGRIDADE =====\n');
-      
-      // 1. Total carregado
-      console.log(`📊 Total carregado: ${guindastes.length} guindastes`);
-      
-      // 2. Buscar total real no banco
-      console.log('🔄 Buscando total real no banco...');
-      const { count: totalBanco } = await db.getGuindastesLite({ 
-        noPagination: false, 
-        pageSize: 1 
-      });
-      console.log(`💾 Total no banco: ${totalBanco} guindastes`);
-      
-      // 3. Comparar
-      if (guindastes.length === totalBanco) {
-        console.log('✅ ✅ ✅ PERFEITO! Todos os guindastes foram carregados!\n');
-      } else {
-        console.error(`❌ ❌ ❌ PROBLEMA! Faltam ${totalBanco - guindastes.length} guindastes!\n`);
-        console.error('Solução: Recarregue a página com Ctrl+Shift+R\n');
-      }
-      
-      // 4. Distribuição por capacidade
-      console.log('📈 Distribuição por capacidade:');
-      const distribuicao = {};
-      guindastes.forEach(g => {
-        const cap = extractCapacidade(g);
-        if (cap) {
-          distribuicao[cap] = (distribuicao[cap] || 0) + 1;
-        }
-      });
-      console.table(distribuicao);
-      
-      console.log('\n🔍 ===== FIM DA VERIFICAÇÃO =====');
-      
-      return {
-        carregado: guindastes.length,
-        banco: totalBanco,
-        ok: guindastes.length === totalBanco,
-        distribuicao
-      };
-    };
-  }
+  };
 
   if (!user) return null;
+
+  // Resolver imagem do guindaste com fallback seguro
+  const resolveGuindasteImage = (g) => {
+    const main = g?.imagem_url && g.imagem_url.trim() !== '' ? g.imagem_url : null;
+    const extra = Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0
+      ? g.imagens_adicionais[0]
+      : null;
+    // Placeholder padrão caso não exista imagem
+    return main || extra || '/header-bg.jpg';
+  };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -594,144 +379,248 @@ const GerenciarGuindastes = () => {
 
             {activeTab === 'guindastes' && (
               <div className="tab-content">
-                <div className="content-header">
-                  <h2>Guindastes Cadastrados</h2>
-                  <button onClick={handleAddNew} className="add-btn">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                    </svg>
-                    Novo Guindaste
-                  </button>
-                </div>
-
-                {/* Busca Avançada */}
-                <div className="search-container">
-                  <div className="search-input-wrapper">
-                    <svg className="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="11" cy="11" r="8"/>
-                      <path d="m21 21-4.35-4.35"/>
-                    </svg>
-                    <input
-                      type="text"
-                      className="search-input"
-                      placeholder="🔍 Buscar por nome ou modelo..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    {searchTerm && (
-                      <button
-                        className="search-clear"
-                        onClick={() => setSearchTerm('')}
-                        title="Limpar busca"
-                      >
-                        ×
-                      </button>
-                    )}
+                {isLoading ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '20px' }}>
+                    <div style={{ width: '48px', height: '48px', border: '4px solid #f3f4f6', borderTop: '4px solid #111827', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                    <p style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>Carregando guindastes...</p>
+                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
                   </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="content-header">
+                      <h2>Guindastes Cadastrados</h2>
+                      <div className="header-actions">
+                        <button
+                          onClick={() => loadData(page, true)}
+                          className="refresh-btn"
+                          title="Atualizar dados"
+                          disabled={isLoading}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                          </svg>
+                          Atualizar
+                        </button>
+                        <button onClick={handleAddNew} className="add-btn">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                          </svg>
+                          Novo Guindaste
+                        </button>
+                      </div>
+                    </div>
 
-                {/* Chips Inteligentes com Contador */}
                 <div className="filtro-container">
                   <div className="capacity-chips">
-                    {getCapacidadesUnicas().map((capacidade) => {
-                      const count = guindastesPorCapacidade[capacidade]?.length || 0;
-                      return (
-                        <button
-                          key={capacidade}
-                          type="button"
-                          className={`chip chip-enhanced ${filtroCapacidade === capacidade ? 'active' : ''}`}
-                          onClick={() => setFiltroCapacidade(capacidade)}
-                          title={`${count} guindaste(s) de ${capacidade}t`}
-                        >
-                          <span className="chip-label">{capacidade}</span>
-                          <span className="chip-badge">{count}</span>
-                        </button>
-                      );
-                    })}
+                    {getCapacidadesUnicas().map((capacidade) => (
+                      <button
+                        key={capacidade}
+                        type="button"
+                        className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
+                        onClick={() => setFiltroCapacidade(capacidade)}
+                      >
+                        {capacidade}
+                      </button>
+                    ))}
                     <button
                       type="button"
-                      className={`chip chip-enhanced chip-all ${filtroCapacidade === 'todos' ? 'active' : ''}`}
+                      className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
                       onClick={() => setFiltroCapacidade('todos')}
-                      title={`${guindastes.length} guindastes no total`}
                     >
-                      <span className="chip-label">Todos</span>
-                      <span className="chip-badge">{guindastes.length}</span>
+                      Todos
                     </button>
                   </div>
                   <div className="filtro-info">
                     <span className="resultado-count">
-                      {guindastesFiltrados.length} de {guindastes.length} guindaste(s)
+                      {getGuindastesFiltrados().length} guindaste(s) listado(s)
                     </span>
-                    {searchTerm && (
-                      <span className="search-indicator">
-                        🔎 Filtrando por "{searchTerm}"
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {isLoading ? (
-                  <div className="guindastes-grid">
-                    {[1, 2, 3, 4, 5, 6].map((i) => (
-                      <div key={i} className="guindaste-card skeleton-card">
-                        <div className="skeleton-header">
-                          <div className="skeleton-image"></div>
-                          <div className="skeleton-text skeleton-title"></div>
-                          <div className="skeleton-text skeleton-subtitle"></div>
+                {filtroCapacidade === 'todos' ? (
+                  getCapacidadesUnicas().map((capacidade) => {
+                    const items = guindastes.filter(g => extractCapacidade(g) === capacidade);
+                    if (items.length === 0) return null;
+                    return (
+                      <section key={capacidade} className="capacity-section">
+                        <div className="capacity-header">
+                          <h3>{capacidade}</h3>
+                          <span className="capacity-count">{items.length}</span>
                         </div>
-                        <div className="skeleton-body">
-                          <div className="skeleton-text"></div>
-                          <div className="skeleton-text"></div>
+                        <div className="guindastes-grid">
+                          {items.map((guindaste) => {
+                            return (
+                            <div key={guindaste.id} className="guindaste-card">
+                              <div className="guindaste-image">
+                                <img 
+                                  src={resolveGuindasteImage(guindaste)} 
+                                  alt={guindaste.subgrupo}
+                                  className="guindaste-thumbnail"
+                                  onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                />
+                                <div className="guindaste-icon" style={{ display: 'none' }}>
+                                  <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                  </svg>
+                                </div>
+                              </div>
+                              <div className="guindaste-header">
+                                <div className="guindaste-info">
+                                  <h3>{guindaste.subgrupo}</h3>
+                                  <p>{guindaste.modelo}</p>
+                                </div>
+                              </div>
+                              <div className="guindaste-actions">
+                                <button
+                                  onClick={() => handleEdit(guindaste)}
+                                  className="action-btn edit-btn"
+                                  title="Editar Guindaste"
+                                  aria-label="Editar"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                  </svg>
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClick(guindaste.id)}
+                                  className="action-btn delete-btn"
+                                  title="Remover Guindaste"
+                                  aria-label="Remover"
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"/>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                    <line x1="10" y1="11" x2="10" y2="17"/>
+                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                  </svg>
+                                  Excluir
+                                </button>
+                                <button
+                                  className="action-btn price-btn"
+                                  title="Preços por Região"
+                                  aria-label="Preços por Região"
+                                  onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                >
+                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23"/>
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                  </svg>
+                                  Preços
+                                </button>
+                              </div>
+                            </div>
+                            );
+                          })}
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : guindastesFiltrados.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '40px', color: '#6b7280' }}>
-                    <p>
-                      {searchTerm 
-                        ? `Nenhum guindaste encontrado com "${searchTerm}"`
-                        : 'Nenhum guindaste encontrado nesta categoria'
-                      }
-                    </p>
-                  </div>
+                      </section>
+                    );
+                  })
                 ) : (
-                  <div className="guindastes-grid">
-                    {guindastesFiltrados.map((guindaste) => (
-                      <OptimizedGuindasteCard
-                        key={guindaste.id}
-                        guindaste={guindaste}
-                        onEdit={handleEdit}
-                        onDelete={handleDeleteClick}
-                        onPrecos={handlePrecosClick}
-                      />
-                    ))}
-                  </div>
+                  <section className="capacity-section">
+                    <div className="capacity-header">
+                      <h3>{filtroCapacidade}</h3>
+                      <span className="capacity-count">{getGuindastesFiltrados().length}</span>
+                    </div>
+                    <div className="guindastes-grid">
+                      {getGuindastesFiltrados().map((guindaste) => {
+                        return (
+                        <div key={guindaste.id} className="guindaste-card">
+                          <div className="guindaste-image">
+                            <img 
+                              src={resolveGuindasteImage(guindaste)} 
+                              alt={guindaste.subgrupo}
+                              className="guindaste-thumbnail"
+                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                            />
+                            <div className="guindaste-icon" style={{ display: 'none' }}>
+                              <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="guindaste-header">
+                            <div className="guindaste-info">
+                              <h3>{guindaste.subgrupo}</h3>
+                              <p>{guindaste.modelo}</p>
+                            </div>
+                          </div>
+                          <div className="guindaste-actions">
+                            <button
+                              onClick={() => handleEdit(guindaste)}
+                              className="action-btn edit-btn"
+                              title="Editar Guindaste"
+                              aria-label="Editar"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                              </svg>
+                              Editar
+                            </button>
+                            <button
+                              onClick={() => handleDeleteClick(guindaste.id)}
+                              className="action-btn delete-btn"
+                              title="Remover Guindaste"
+                              aria-label="Remover"
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6"/>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                                <line x1="10" y1="11" x2="10" y2="17"/>
+                                <line x1="14" y1="11" x2="14" y2="17"/>
+                              </svg>
+                              Excluir
+                            </button>
+                            <button
+                              className="action-btn price-btn"
+                              title="Preços por Região"
+                              aria-label="Preços por Região"
+                              onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                            >
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                <line x1="12" y1="1" x2="12" y2="23"/>
+                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                              </svg>
+                              Preços
+                            </button>
+                          </div>
+                        </div>
+                        );
+                      })}
+                    </div>
+                  </section>
                 )}
 
-                {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
-                {((filtroCapacidade === 'todos' ? total : guindastesFiltrados.length) > 10) && (
-                  <div className="pagination">
-                    <button 
-                      className="page-btn ghost"
-                      disabled={page <= 1}
-                      onClick={() => loadData(page - 1)}
-                    >
-                      Anterior
-                    </button>
-                    <div className="page-info">Página {page} de {totalPages}</div>
-                    <button 
-                      className="page-btn primary"
-                      disabled={page >= totalPages}
-                      onClick={() => loadData(page + 1)}
-                    >
-                      Próxima
-                    </button>
-                  </div>
+                    {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
+                    {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
+                      <div className="pagination">
+                        <button 
+                          className="page-btn ghost"
+                          disabled={page <= 1}
+                          onClick={() => loadData(page - 1)}
+                        >
+                          Anterior
+                        </button>
+                        <div className="page-info">Página {page} de {totalPages}</div>
+                        <button 
+                          className="page-btn primary"
+                          disabled={page >= totalPages}
+                          onClick={() => loadData(page + 1)}
+                        >
+                          Próxima
+                        </button>
+                      </div>
+                    )}
+                  </>
                 )}
-
               </div>
             )}
+
+
           </div>
         </div>
       </div>
@@ -1002,9 +891,9 @@ const GerenciarGuindastes = () => {
                     <div className="imagens-preview">
                       <h4>Imagens Selecionadas:</h4>
                       <div className="imagens-grid">
-                          {formData.imagens_adicionais.map((img, index) => (
+                        {formData.imagens_adicionais.map((img, index) => (
                           <div key={index} className="imagem-preview-item">
-                            <img src={img} alt={`Preview ${index + 1}`} loading="lazy" />
+                            <img src={img} alt={`Preview ${index + 1}`} />
                             <button
                               type="button"
                               onClick={() => removeImagemAdicional(index)}
