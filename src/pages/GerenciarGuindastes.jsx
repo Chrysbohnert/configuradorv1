@@ -73,13 +73,22 @@ const GerenciarGuindastes = () => {
     try {
       setIsLoading(true);
       
-      // Garantir que o usuário está autenticado no Supabase Auth
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.error('❌ Sessão Supabase não encontrada. Redirecionando para login...');
-        localStorage.clear();
+      // Verificar autenticação (Supabase Auth ou localStorage)
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        console.error('❌ Usuário não encontrado. Redirecionando para login...');
         navigate('/');
         return;
+      }
+
+      // Tentar garantir sessão Supabase (opcional, não crítico)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('⚠️ Sessão Supabase não encontrada, mas prosseguindo com autenticação local');
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao verificar sessão Supabase, mas prosseguindo:', error);
       }
       
       const { data, count } = await db.getGuindastesLite({
