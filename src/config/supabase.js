@@ -489,7 +489,18 @@ class DatabaseService {
 
     return data;
   }
-
+  
+  async createGraficoCarga(graficoData) {
+    const { data, error } = await supabase
+      .from('graficos_carga')
+      .insert([graficoData])
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  }
+  
   async getFretePorOficina(oficina) {
     const { data, error } = await supabase
       .from('fretes')
