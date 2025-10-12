@@ -4,7 +4,7 @@ import AdminNavigation from '../components/AdminNavigation';
 import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
 
-import { db } from '../config/supabase';
+import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
@@ -15,7 +15,8 @@ const GerenciarGuindastes = () => {
   const [guindastes, setGuindastes] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const pageSize = 100;
+  const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
+  const pageSize = 100; // Aumentado para pegar todos os 51 guindastes
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
@@ -56,25 +57,55 @@ const GerenciarGuindastes = () => {
     loadData(1);
   }, [navigate]);
 
-  const loadData = async (pageToLoad = page) => {
+  // Memoizar extração de capacidades para evitar recálculos
+  const extractCapacidades = React.useCallback((data) => {
+    const set = new Set();
+    data.forEach(g => {
+      const subgrupo = g.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) set.add(match[1]);
+    });
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
+  }, []);
+
+  const loadData = async (pageToLoad = page, forceRefresh = false) => {
     try {
       setIsLoading(true);
-      const { data, count } = await db.getGuindastesLite({ page: pageToLoad, pageSize });
+      
+      // Verificar autenticação (Supabase Auth ou localStorage)
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        console.error('❌ Usuário não encontrado. Redirecionando para login...');
+        navigate('/');
+        return;
+      }
+
+      // Tentar garantir sessão Supabase (opcional, não crítico)
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          console.log('⚠️ Sessão Supabase não encontrada, mas prosseguindo com autenticação local');
+        }
+      } catch (error) {
+        console.log('⚠️ Erro ao verificar sessão Supabase, mas prosseguindo:', error);
+      }
+      
+      const { data, count } = await db.getGuindastesLite({
+        page: pageToLoad,
+        pageSize,
+        forceRefresh
+      });
+
       setGuindastes(data);
       setTotal(count || 0);
       setPage(pageToLoad);
-      // Define a capacidade inicial (primeira) apenas na primeira carga
-      if (!hasInitializedFiltro && Array.isArray(data) && data.length > 0) {
-        const capacidades = (() => {
-          const set = new Set();
-          data.forEach(g => {
-            const subgrupo = g.subgrupo || '';
-            const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-            const match = modeloBase.match(/(\d+\.?\d*)/);
-            if (match) set.add(match[1]);
-          });
-          return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
-        })();
+
+      // Processar capacidades apenas se não foram inicializadas ainda
+      if (!hasInitializedFiltro && data.length > 0) {
+        const capacidades = extractCapacidades(data);
+        setCapacidadesDisponiveis(capacidades);
+
         if (capacidades.length > 0) {
           const saved = localStorage.getItem('gg_capacidade');
           // Sempre inicia na primeira capacidade disponível. Ignora 'todos'.
@@ -82,6 +113,10 @@ const GerenciarGuindastes = () => {
           setFiltroCapacidade(initial);
           setHasInitializedFiltro(true);
         }
+      } else if (hasInitializedFiltro && data.length > 0) {
+        // Atualizar capacidades disponíveis se já foram inicializadas
+        const capacidades = extractCapacidades(data);
+        setCapacidadesDisponiveis(capacidades);
       }
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -100,17 +135,10 @@ const GerenciarGuindastes = () => {
     }
   }, [filtroCapacidade]);
 
-  // Função para extrair capacidades únicas dos guindastes
-  const getCapacidadesUnicas = () => {
-    const capacidades = new Set();
-    guindastes.forEach(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) capacidades.add(match[1]);
-    });
-    return Array.from(capacidades).sort((a, b) => parseFloat(a) - parseFloat(b));
-  };
+  // Função para extrair capacidades únicas dos guindastes (otimizada)
+  const getCapacidadesUnicas = React.useCallback(() => {
+    return capacidadesDisponiveis;
+  }, [capacidadesDisponiveis]);
 
   // Extrai a capacidade (toneladas) de um registro de guindaste
   const extractCapacidade = (guindaste) => {
@@ -301,6 +329,16 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
+  // Resolver imagem do guindaste com fallback seguro
+  const resolveGuindasteImage = (g) => {
+    const main = g?.imagem_url && g.imagem_url.trim() !== '' ? g.imagem_url : null;
+    const extra = Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0
+      ? g.imagens_adicionais[0]
+      : null;
+    // Placeholder padrão caso não exista imagem
+    return main || extra || '/header-bg.jpg';
+  };
+
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
@@ -351,12 +389,27 @@ const GerenciarGuindastes = () => {
                   <>
                     <div className="content-header">
                       <h2>Guindastes Cadastrados</h2>
-                      <button onClick={handleAddNew} className="add-btn">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                        </svg>
-                        Novo Guindaste
-                      </button>
+                      <div className="header-actions">
+                        <button
+                          onClick={() => loadData(page, true)}
+                          className="refresh-btn"
+                          title="Atualizar dados"
+                          disabled={isLoading}
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                          </svg>
+                          Atualizar
+                        </button>
+                        <button onClick={handleAddNew} className="add-btn">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                          </svg>
+                          Novo Guindaste
+                        </button>
+                      </div>
                     </div>
 
                 <div className="filtro-container">
@@ -397,21 +450,17 @@ const GerenciarGuindastes = () => {
                           <span className="capacity-count">{items.length}</span>
                         </div>
                         <div className="guindastes-grid">
-                          {items.map((guindaste) => (
+                          {items.map((guindaste) => {
+                            return (
                             <div key={guindaste.id} className="guindaste-card">
                               <div className="guindaste-image">
-                                {guindaste.imagem_url ? (
-                                  <img 
-                                    src={guindaste.imagem_url} 
-                                    alt={guindaste.subgrupo}
-                                    className="guindaste-thumbnail"
-                                    onError={(e) => {
-                                      e.target.style.display = 'none';
-                                      e.target.nextSibling.style.display = 'flex';
-                                    }}
-                                  />
-                                ) : null}
-                                <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                                <img 
+                                  src={resolveGuindasteImage(guindaste)} 
+                                  alt={guindaste.subgrupo}
+                                  className="guindaste-thumbnail"
+                                  onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                />
+                                <div className="guindaste-icon" style={{ display: 'none' }}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
                                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                                   </svg>
@@ -464,7 +513,8 @@ const GerenciarGuindastes = () => {
                                 </button>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </section>
                     );
@@ -476,21 +526,17 @@ const GerenciarGuindastes = () => {
                       <span className="capacity-count">{getGuindastesFiltrados().length}</span>
                     </div>
                     <div className="guindastes-grid">
-                      {getGuindastesFiltrados().map((guindaste) => (
+                      {getGuindastesFiltrados().map((guindaste) => {
+                        return (
                         <div key={guindaste.id} className="guindaste-card">
                           <div className="guindaste-image">
-                            {guindaste.imagem_url ? (
-                              <img 
-                                src={guindaste.imagem_url} 
-                                alt={guindaste.subgrupo}
-                                className="guindaste-thumbnail"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : null}
-                            <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+                            <img 
+                              src={resolveGuindasteImage(guindaste)} 
+                              alt={guindaste.subgrupo}
+                              className="guindaste-thumbnail"
+                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                            />
+                            <div className="guindaste-icon" style={{ display: 'none' }}>
                               <svg viewBox="0 0 24 24" fill="currentColor">
                                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                               </svg>
@@ -543,7 +589,8 @@ const GerenciarGuindastes = () => {
                             </button>
                           </div>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </section>
                 )}
@@ -572,6 +619,8 @@ const GerenciarGuindastes = () => {
                 )}
               </div>
             )}
+
+
           </div>
         </div>
       </div>

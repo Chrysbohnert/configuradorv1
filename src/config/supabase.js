@@ -12,7 +12,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Variáveis de ambiente do Supabase não configuradas!');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+  }
+});
 
 // Classe para operações do banco de dados
 class DatabaseService {
@@ -87,8 +94,21 @@ class DatabaseService {
     return data || [];
   }
 
+  // Cache para evitar múltiplas requisições
+  _guindastesCache = new Map();
+
   // Versão leve para listagens: apenas campos necessários, com paginação e busca
-  async getGuindastesLite({ page = 1, pageSize = 100, search = '' } = {}) {
+  async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
+    const cacheKey = `page_${page}_size_${pageSize}_search_${search}`;
+
+    // Verificar cache primeiro (exceto se for refresh forçado)
+    if (!forceRefresh && this._guindastesCache.has(cacheKey)) {
+      const cached = this._guindastesCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5 minutos de cache
+        return cached.data;
+      }
+    }
+
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
@@ -104,7 +124,22 @@ class DatabaseService {
 
     const { data, error, count } = await query.range(from, to);
     if (error) throw error;
-    return { data: data || [], count: count || 0 };
+
+    const result = { data: data || [], count: count || 0 };
+
+    // Armazenar no cache
+    this._guindastesCache.set(cacheKey, {
+      data: result,
+      timestamp: Date.now()
+    });
+
+    // Limpar cache antigo (manter apenas últimos 10)
+    if (this._guindastesCache.size > 10) {
+      const oldestKey = Array.from(this._guindastesCache.keys())[0];
+      this._guindastesCache.delete(oldestKey);
+    }
+
+    return result;
   }
 
   async createGuindaste(guindasteData) {
