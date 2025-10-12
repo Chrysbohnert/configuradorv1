@@ -1544,42 +1544,42 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="form-group">
-                  <label>Medida A (mm)</label>
+                  <label>Medida A (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaA || ''}
                     onChange={(e) => handleChange('medidaA', e.target.value)}
-                    placeholder="Ex: 150"
+                    placeholder="Ex: 70"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida B (mm)</label>
+                  <label>Medida B (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaB || ''}
                     onChange={(e) => handleChange('medidaB', e.target.value)}
-                    placeholder="Ex: 200"
+                    placeholder="Ex: 63"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida C (mm)</label>
+                  <label>Medida C (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
                     onChange={(e) => handleChange('medidaC', e.target.value)}
-                    placeholder="Ex: 350"
+                    placeholder="Ex: 35"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida D (mm)</label>
+                  <label>Medida D (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
                     onChange={(e) => handleChange('medidaD', e.target.value)}
-                    placeholder="Ex: 400"
+                    placeholder="Ex: 40"
                   />
                 </div>
               </div>
