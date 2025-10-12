@@ -114,7 +114,7 @@ class DatabaseService {
 
     let query = supabase
       .from('guindastes')
-      .select('id, subgrupo, modelo, imagem_url', { count: 'exact' })
+      .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
       .order('subgrupo');
 
     if (search && search.trim()) {

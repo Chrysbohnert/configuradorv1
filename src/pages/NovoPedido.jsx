@@ -157,6 +157,7 @@ const NovoPedido = () => {
           modelo: guindaste.modelo,
           codigo_produto: guindaste.codigo_referencia,
           grafico_carga_url: guindaste.grafico_carga_url,
+          configuracao_lancas: guindaste.peso_kg,
           preco: precoGuindaste,
           tipo: 'guindaste'
         };
@@ -285,6 +286,7 @@ const NovoPedido = () => {
         modelo: guindaste.modelo,
         codigo_produto: guindaste.codigo_referencia,
         grafico_carga_url: guindaste.grafico_carga_url,
+        configuracao_lancas: guindaste.peso_kg,
         preco: precoGuindaste,
         tipo: 'guindaste'
       };
@@ -1794,6 +1796,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
                   <div className="item-type">{item.tipo}</div>
                   {codigoProduto && (
                     <div className="item-codigo">Código: <b>{codigoProduto}</b></div>
+                  )}
+                  {item.configuracao_lancas && item.tipo === 'guindaste' && (
+                    <div className="item-configuracao">Configuração de Lanças: <b>{item.configuracao_lancas}</b></div>
                   )}
                 </div>
                 <div className="item-price">{formatCurrency(item.preco)}</div>
