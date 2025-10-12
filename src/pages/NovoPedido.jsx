@@ -1,104 +1,25 @@
-﻿// âš¡ IMPORTANTE: Campos medidaA, medidaB, medidaC, medidaD removidos - nÃ£o existem no banco
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
+import PDFGenerator from '../components/PDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
-import { normalizarRegiao } from '../utils/regiaoHelper';
+
 import { db } from '../config/supabase';
-import { useCarrinho } from '../hooks/useCarrinho';
-// import { usePagamento } from '../hooks/usePagamento'; // ❌ DESABILITADO - estava multiplicando valores
-import { useGuindastes } from '../hooks/useGuindastes';
-
-// Componentes extraÃ­dos
-import Step1GuindasteSelector from '../components/NovoPedido/Step1GuindasteSelector';
-import ClienteFormDetalhado from '../components/NovoPedido/ClienteFormDetalhado';
-import CaminhaoFormDetalhado from '../components/NovoPedido/CaminhaoFormDetalhado';
-import ResumoPedido from '../components/NovoPedido/ResumoPedido';
-
+import { normalizarRegiao } from '../utils/regiaoHelper';
+import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
+import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import '../styles/NovoPedido.css';
 
 const NovoPedido = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentStep, setCurrentStep] = useState(1);
-  
-  // Estados locais
+  const [carrinho, setCarrinho] = useState(() => {
+    const savedCart = localStorage.getItem('carrinho');
+    return savedCart ? JSON.parse(savedCart) : [];
+  });
   const [clienteData, setClienteData] = useState({});
   const [caminhaoData, setCaminhaoData] = useState({});
-  const [clienteTemIE, setClienteTemIE] = useState(true);
-  const [user, setUser] = useState(null);
-  const [validationErrors, setValidationErrors] = useState({});
-  const salvarRelatorioRef = React.useRef(null);
-  
-  // Hooks customizados
-  const {
-    carrinho,
-    setCarrinho,
-    addItem: addToCart,
-    removeItem: removeFromCart,
-    updateAllPrices,
-    clearCart,
-    getTotal: getTotalCarrinho,
-    getTotalGuindastes,
-  } = useCarrinho();
-  
-  const {
-    guindastes,
-    guindastesSelecionados,
-    selectedCapacidade,
-    selectedModelo,
-    isLoading,
-    handleSelecionarCapacidade,
-    handleSelecionarModelo,
-    handleSelecionarGuindaste: handleSelecionarGuindasteHook,
-    setGuindastesSelecionados,
-    capacidades,
-    modelosDisponiveis,
-    guindastesDisponiveis
-  } = useGuindastes(user);
-  
-  // 🔧 CORREÇÃO: Forçar quantidade = 1 para todos os itens
-  useEffect(() => {
-    const temQuantidadeErrada = carrinho.some(item => (item.quantidade || 1) > 1);
-    if (temQuantidadeErrada) {
-      console.warn('⚠️ Detectada quantidade errada no carrinho! Corrigindo...');
-      const carrinhoCorrigido = carrinho.map(item => ({ ...item, quantidade: 1 }));
-      setCarrinho(carrinhoCorrigido);
-    }
-  }, [carrinho, setCarrinho]);
-  
-  const totalBase = getTotalCarrinho();
-  const quantidadeGuindastes = getTotalGuindastes();
-  
-  // DEBUG: Verificar valores do carrinho
-  console.log('==================== DEBUG CARRINHO ====================');
-  console.log('📦 Itens no carrinho:', carrinho.length);
-  carrinho.forEach((item, idx) => {
-    console.log(`  [${idx}] ${item.nome}`);
-    console.log(`      💰 Preço unitário: R$ ${item.preco?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-    console.log(`      🔢 Quantidade: ${item.quantidade || 1}`);
-    
-    // ALERTA SE QUANTIDADE > 1
-    if ((item.quantidade || 1) > 1) {
-      console.error(`      ⚠️ QUANTIDADE ANORMAL! Deveria ser 1, mas está ${item.quantidade}`);
-      console.error(`      🔧 CORREÇÃO NECESSÁRIA: Limpe o localStorage`);
-    }
-    
-    console.log(`      💵 Subtotal: R$ ${((item.preco || 0) * (item.quantidade || 1)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-    console.log(`      🏷️ Tipo: ${item.tipo}`);
-  });
-  console.log(`💰 TOTAL DO CARRINHO: R$ ${totalBase.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-  console.log('========================================================');
-  console.log('💡 Se a quantidade estiver errada, execute no console:');
-  console.log('   localStorage.removeItem("carrinho"); location.reload();');
-  
-  // ❌ DESABILITADO: Hook usePagamento estava multiplicando valores
-  // const {
-  //   pagamento: pagamentoData,
-  //   setPagamento: setPagamentoData,
-  // } = usePagamento(totalBase, quantidadeGuindastes);
-  
-  // ✅ USANDO STATE SIMPLES: PaymentPolicy faz o cálculo correto
   const [pagamentoData, setPagamentoData] = useState({
     tipoPagamento: '',
     prazoPagamento: '',
@@ -106,14 +27,124 @@ const NovoPedido = () => {
     acrescimo: 0,
     valorFinal: 0,
     localInstalacao: '',
-    tipoInstalacao: '',
-    tipoFrete: '',
-    participacaoRevenda: '',
-    revendaTemIE: '',
-    detalhes: []
+    tipoInstalacao: ''
   });
+  const [clienteTemIE, setClienteTemIE] = useState(true);
 
-  // Carregar usuÃ¡rio
+  // Determinar IE: para vendedor do RS usa clienteTemIE; demais regiões mantém preço padrão
+  const determinarClienteTemIE = () => {
+    if (currentStep >= 2 && user?.regiao === 'rio grande do sul' && pagamentoData.tipoPagamento === 'cliente') {
+      return !!clienteTemIE;
+    }
+    return true;
+  };
+
+  // ← NOVO: Função para recalcular preços quando o contexto muda
+  const recalcularPrecosCarrinho = async () => {
+    if (carrinho.length === 0 || !user?.regiao) {
+      console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
+        carrinhoLength: carrinho.length,
+        userRegiao: user?.regiao
+      });
+      return;
+    }
+
+    console.log('🔄 [recalcularPrecosCarrinho] INICIANDO recálculo...');
+    console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
+
+    const temIE = determinarClienteTemIE();
+    const regiaoVendedor = normalizarRegiao(user.regiao, temIE);
+
+    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região: ${regiaoVendedor}`);
+    console.log(`👤 [recalcularPrecosCarrinho] Usuário região: ${user.regiao}`);
+
+    // ← NOVO: Testar preços de todas as regiões para comparação
+    if (user.regiao === 'rio grande do sul') {
+      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões:');
+      for (const item of carrinho.filter(i => i.tipo === 'guindaste').slice(0, 1)) {
+        try {
+          const precoComIE = await db.getPrecoPorRegiao(item.id, 'rs-com-ie');
+          const precoSemIE = await db.getPrecoPorRegiao(item.id, 'rs-sem-ie');
+          console.log(`  ${item.nome}: rs-com-ie = R$ ${precoComIE}, rs-sem-ie = R$ ${precoSemIE}`);
+        } catch (error) {
+          console.error(`  Erro ao verificar preços para ${item.nome}:`, error);
+        }
+      }
+    }
+
+    const carrinhoAtualizado = [];
+
+    for (const item of carrinho) {
+      if (item.tipo === 'guindaste') {
+        try {
+          console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
+          const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
+
+          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${regiaoVendedor})`);
+
+          if (novoPreco !== item.preco) {
+            console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
+          } else {
+            console.log(`➡️ [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
+          }
+
+          carrinhoAtualizado.push({
+            ...item,
+            preco: novoPreco || item.preco || 0
+          });
+        } catch (error) {
+          console.error(`❌ [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
+          carrinhoAtualizado.push(item);
+        }
+      } else {
+        carrinhoAtualizado.push(item);
+      }
+    }
+
+    console.log('📊 [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
+
+    setCarrinho(carrinhoAtualizado);
+    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+    console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
+  };
+
+  // Recalcular preços quando contexto ou carrinho mudarem
+  useEffect(() => {
+    if (carrinho.length > 0 && user?.regiao) {
+      recalcularPrecosCarrinho();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep, carrinho]);
+
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [guindastes, setGuindastes] = useState([]);
+  const [guindastesSelecionados, setGuindastesSelecionados] = useState([]);
+  const [selectedCapacidade, setSelectedCapacidade] = useState(null);
+  const [selectedModelo, setSelectedModelo] = useState(null);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // ← MOVIDO: Definir funções antes dos useEffects
+  // Funções do Carrinho
+  const adicionarAoCarrinho = (item, tipo) => {
+    const itemComTipo = { ...item, tipo };
+    setCarrinho(prev => {
+      let newCart;
+
+      if (tipo === 'guindaste') {
+        // Para guindastes, remove qualquer guindaste existente e adiciona o novo
+        const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
+        newCart = [...carrinhoSemGuindastes, itemComTipo];
+      } else {
+        // Para opcionais, apenas adiciona
+        newCart = [...prev, itemComTipo];
+      }
+
+      localStorage.setItem('carrinho', JSON.stringify(newCart));
+      return newCart;
+    });
+  };
+
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
@@ -123,195 +154,31 @@ const NovoPedido = () => {
     }
   }, [navigate]);
 
-  // Processar guindaste selecionado vindo de outra pÃ¡gina
+  useEffect(() => {
+    if (!user) return;
+    loadData();
+  }, [user, navigate]);
+
+  // Verificar se há um guindaste selecionado vindo da tela de detalhes
   useEffect(() => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         setGuindastesSelecionados([guindaste]);
-        
-        // ✅ SEMPRE buscar preço do banco! NUNCA confiar no preço que vem do state
-        let precoGuindaste = 0;
-        if (user?.regiao) {
+
+        // Buscar preço inicial (será recalculado quando contexto for definido)
+        let precoGuindaste = guindaste.preco || 0;
+        if (!precoGuindaste && user?.regiao) {
           try {
-            const regiaoNormalizada = normalizarRegiao(user.regiao, clienteTemIE);
-            console.log('🔄 [PROCESSANDO GUINDASTE DO STATE]');
-            console.log('   Guindaste:', guindaste.subgrupo);
-            console.log('   Região normalizada:', regiaoNormalizada);
-            
-            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
-            
-            console.log('   Preço do banco:', precoGuindaste.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }));
+            const regiaoInicial = user.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+            console.log(`🌍 Buscando preço inicial: ${regiaoInicial}`);
+            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
           } catch (error) {
-            console.error('❌ Erro ao buscar preço:', error);
+            console.error('Erro ao buscar preço do guindaste:', error);
           }
         }
-        
-        // Adicionar ao carrinho com FINAME e NCM
-        if (precoGuindaste) {
-          const produto = {
-            id: guindaste.id,
-            nome: guindaste.subgrupo,
-            modelo: guindaste.modelo,
-            codigo_produto: guindaste.codigo_referencia,
-            grafico_carga_url: guindaste.grafico_carga_url,
-            preco: precoGuindaste,
-            tipo: 'guindaste',
-            finame: guindaste.finame || '',
-            ncm: guindaste.ncm || ''
-          };
-          addToCart(produto);
-        }
-        
-        // Navegar para step indicado
-        if (location.state.step) {
-          setCurrentStep(location.state.step);
-        }
-      }
-    };
-    
-    if (user) {
-      processarGuindasteSelecionado();
-    }
-  }, [location.state, user, clienteTemIE]);
 
-  // Atualizar preÃ§os quando clienteTemIE ou user mudar
-  useEffect(() => {
-    if (user && carrinho.length > 0) {
-      console.log('ðŸ›’ Carrinho atual:', carrinho);
-      console.log('ðŸ’° Total atual:', getTotalCarrinho());
-      
-      const atualizarPrecos = async () => {
-        const updates = [];
-        
-        console.log('='.repeat(60));
-        console.log('🔄 ATUALIZANDO PREÇOS DO CARRINHO');
-        console.log('👤 Vendedor:', user?.nome, '| Região:', user?.regiao);
-        console.log('📋 Cliente tem IE:', clienteTemIE ? 'SIM (Produtor Rural)' : 'NÃO (Rodoviário)');
-        console.log('='.repeat(60));
-        
-        for (const item of carrinho) {
-          if (item.tipo === 'guindaste') {
-            try {
-              const regiaoNormalizada = normalizarRegiao(user.regiao, clienteTemIE);
-              console.log(`\n🔍 Item: ${item.nome}`);
-              console.log(`   Região original: "${user.regiao}"`);
-              console.log(`   Região normalizada: "${regiaoNormalizada}"`);
-              console.log(`   Preço atual: R$ ${item.preco?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-              
-              const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoNormalizada);
-              
-              console.log(`   Novo preço (do banco): R$ ${novoPreco?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
-              
-              if (novoPreco && novoPreco !== item.preco) {
-                updates.push({ id: item.id, preco: novoPreco, tipo: 'guindaste' });
-              }
-            } catch (error) {
-              console.error('Erro ao atualizar preÃ§o:', error);
-            }
-          }
-        }
-        
-        if (updates.length > 0) {
-          console.log('ðŸ”„ Atualizando preÃ§os:', updates);
-          updateAllPrices(updates);
-        }
-      };
-      
-      atualizarPrecos();
-    }
-  }, [clienteTemIE, user]); // Removido carrinho, getTotalCarrinho e updateAllPrices para evitar loop
-
-  // Steps configuration
-  const steps = [
-    { id: 1, title: 'Selecionar Guindaste', icon: 'ðŸ—ï¸', description: 'Escolha o guindaste ideal' },
-    { id: 2, title: 'Pagamento', icon: 'ðŸ’³', description: 'PolÃ­tica de pagamento' },
-    { id: 3, title: 'Dados do Cliente', icon: 'ðŸ‘¤', description: 'InformaÃ§Ãµes do cliente' },
-    { id: 4, title: 'Estudo Veicular', icon: 'ðŸš›', description: 'ConfiguraÃ§Ã£o do veÃ­culo' },
-    { id: 5, title: 'Finalizar', icon: 'âœ…', description: 'Revisar e confirmar' }
-  ];
-
-  // Handlers para seleÃ§Ã£o de guindaste (com efeitos visuais)
-  const handleSelecionarCapacidadeLocal = (capacidade) => {
-    handleSelecionarCapacidade(capacidade);
-    
-    const card = document.querySelector(`[data-capacidade="${capacidade}"]`);
-    if (card) {
-      card.classList.add('pulse-effect');
-      setTimeout(() => card.classList.remove('pulse-effect'), 600);
-    }
-    
-    setTimeout(() => {
-      const modeloSection = document.querySelector('.cascata-step:nth-of-type(2)');
-      if (modeloSection) {
-        modeloSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 300);
-  };
-
-  const handleSelecionarModeloLocal = (modelo) => {
-    handleSelecionarModelo(modelo);
-    
-    const card = document.querySelector(`[data-modelo="${modelo}"]`);
-    if (card) {
-      card.classList.add('pulse-effect');
-      setTimeout(() => card.classList.remove('pulse-effect'), 600);
-    }
-    
-    setTimeout(() => {
-      const guindasteSection = document.querySelector('.cascata-step:nth-of-type(3)');
-      if (guindasteSection) {
-        guindasteSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
-    }, 300);
-  };
-
-  const handleSelecionarGuindaste = async (guindaste) => {
-    const jaSelecionado = guindastesSelecionados.find(g => g.id === guindaste.id);
-    
-    if (jaSelecionado) {
-      setGuindastesSelecionados(prev => prev.filter(g => g.id !== guindaste.id));
-      removeFromCart(guindaste.id, 'guindaste');
-    } else {
-      console.log('ðŸ” DEBUG COMPLETO - Busca de PreÃ§o:');
-      console.log('  ðŸ“¦ Guindaste:', {
-        id: guindaste.id,
-        nome: guindaste.subgrupo,
-        codigo: guindaste.codigo_referencia
-      });
-      console.log('  ðŸ‘¤ UsuÃ¡rio:', {
-        nome: user?.nome,
-        regiao_original: user?.regiao,
-        email: user?.email
-      });
-      console.log('  ðŸ“‹ Cliente tem IE:', clienteTemIE);
-      
-      let precoGuindaste = 0;
-      try {
-        const regiaoNormalizada = normalizarRegiao(user?.regiao, clienteTemIE);
-        console.log('  ðŸŒŽ RegiÃ£o normalizada:', regiaoNormalizada);
-        console.log('  ðŸ”Ž Buscando preÃ§o em precos_guindaste_regiao...');
-        
-        precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoNormalizada);
-        
-        console.log('  ðŸ’° PreÃ§o retornado do banco:', precoGuindaste);
-        
-        if (!precoGuindaste || precoGuindaste === 0) {
-          console.error('  âŒ PREÃ‡O NÃƒO ENCONTRADO!');
-          console.log('  â„¹ï¸ Verifique se existe registro em precos_guindaste_regiao para:');
-          console.log(`     - guindaste_id = ${guindaste.id}`);
-          console.log(`     - regiao = '${regiaoNormalizada}'`);
-          alert('AtenÃ§Ã£o: Este guindaste nÃ£o possui preÃ§o definido para a sua regiÃ£o.');
-        } else {
-          console.log('  âœ… PreÃ§o encontrado com sucesso!');
-        }
-      } catch (error) {
-        console.error('  âŒ ERRO ao buscar preÃ§o:', error);
-        alert('Erro ao buscar preÃ§o. Verifique com o administrador.');
-      }
-      
-      setGuindastesSelecionados(prev => [...prev, guindaste]);
-      
+        // Adicionar ao carrinho se não estiver
         const produto = {
           id: guindaste.id,
           nome: guindaste.subgrupo,
@@ -319,100 +186,410 @@ const NovoPedido = () => {
           codigo_produto: guindaste.codigo_referencia,
           grafico_carga_url: guindaste.grafico_carga_url,
           preco: precoGuindaste,
-          tipo: 'guindaste',
-          finame: guindaste.finame || '',
-          ncm: guindaste.ncm || '',
-          quantidade: 1
+          tipo: 'guindaste'
         };
-        
-        console.log('[NOVO PEDIDO] Produto adicionado ao carrinho:', produto);
-        console.log('[NOVO PEDIDO] Preco do produto:', typeof precoGuindaste, precoGuindaste);
-        addToCart(produto);
-      
-      console.log('âœ… Guindaste adicionado ao carrinho:', produto.nome);
-      
-      // Navegar para a pÃ¡gina de detalhes do guindaste
-      navigate(`/detalhes-guindaste/${guindaste.id}`, {
-        state: { 
-          from: '/novo-pedido',
-          guindaste: guindaste,
-          precoGuindaste: precoGuindaste
+
+        adicionarAoCarrinho(produto, 'guindaste');
+
+        // Definir step correto
+        if (location.state.step) {
+          setCurrentStep(location.state.step);
         }
+
+        // Limpar o estado da navegação
+        navigate(location.pathname, { replace: true });
+      }
+    };
+
+    if (user) {
+      processarGuindasteSelecionado();
+    }
+  }, [location.state, navigate, user]);
+
+
+  // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
+  useEffect(() => {
+    // Reseta se voltar para Step 1
+    if (currentStep === 1 && pagamentoData.tipoPagamento) {
+      console.log('🔄 Voltou para Step 1, resetando dados de pagamento');
+      setPagamentoDataOriginal({
+        tipoPagamento: '',
+        prazoPagamento: '',
+        desconto: 0,
+        acrescimo: 0,
+        valorFinal: 0,
+        localInstalacao: '',
+        tipoInstalacao: ''
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentStep]);
+
+
+  const loadData = async () => {
+    try {
+      setIsLoading(true);
+
+      // Carregar guindastes (versão leve)
+      const { data } = await db.getGuindastesLite({ page: 1, pageSize: 100 });
+      setGuindastes(data);
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // ValidaÃ§Ã£o de steps
-  const validateStep = (step) => {
-    const errors = {};
+  const steps = [
+    { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
+    { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
+    { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
+    { id: 4, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
+    { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
+  ];
+
+  // Capacidades hardcoded para carregamento instantâneo
+  const getCapacidadesUnicas = () => {
+    // Capacidades baseadas nos dados reais do sistema
+    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8'];
+  };
+
+  const getModelosPorCapacidade = (capacidade) => {
+    const modelos = new Map();
     
-    switch (step) {
-      case 1:
-        if (guindastesSelecionados.length === 0) {
-          errors.guindaste = 'Selecione pelo menos um guindaste';
+    guindastes.forEach(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match && match[1] === capacidade) {
+        // Agrupar por modelo base (GSI 6.5, GSE 8.0C, etc.) - coluna "Modelo" da tabela
+        if (!modelos.has(modeloBase)) {
+          modelos.set(modeloBase, guindaste);
         }
-        break;
-      case 2:
-        if (!pagamentoData.tipoPagamento) errors.tipoPagamento = 'Selecione o tipo de pagamento';
-        if (!pagamentoData.prazoPagamento) errors.prazoPagamento = 'Selecione o prazo de pagamento';
-        if (!pagamentoData.tipoFrete) errors.tipoFrete = 'Selecione o tipo de frete';
-        
-        if (pagamentoData.tipoPagamento === 'cliente') {
-          if (!pagamentoData.localInstalacao) errors.localInstalacao = 'Informe o local de instalaÃ§Ã£o';
-          if (!pagamentoData.tipoInstalacao) errors.tipoInstalacao = 'Selecione o tipo de instalaÃ§Ã£o';
-          if (!pagamentoData.participacaoRevenda) errors.participacaoRevenda = 'Selecione se hÃ¡ participaÃ§Ã£o de revenda';
-          if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
-            errors.revendaTemIE = 'Selecione se possui InscriÃ§Ã£o Estadual';
-          }
+      }
+    });
+    
+    return Array.from(modelos.values());
+  };
+
+  const getGuindastesPorModelo = (modelo) => {
+    return guindastes.filter(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      return modeloBase === modelo;
+    });
+  };
+
+
+
+  // Obter dados para a interface em cascata
+  const capacidades = getCapacidadesUnicas();
+  const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
+  const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
+
+  // ← SIMPLIFICADO: Função básica para selecionar guindaste
+  const handleSelecionarGuindaste = async (guindaste) => {
+    console.log('🔄 Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
+
+    try {
+      // Buscar preço inicial (será recalculado quando contexto for definido)
+      const regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+      const precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
+
+      console.log(`💰 Preço inicial: R$ ${precoGuindaste} (${regiaoInicial}) para ${guindaste.subgrupo}`);
+
+      if (!precoGuindaste || precoGuindaste === 0) {
+        alert('Este equipamento não possui preço definido para sua região.');
+        return;
+      }
+
+      // Criar produto com preço correto
+      const produto = {
+        id: guindaste.id,
+        nome: guindaste.subgrupo,
+        modelo: guindaste.modelo,
+        codigo_produto: guindaste.codigo_referencia,
+        grafico_carga_url: guindaste.grafico_carga_url,
+        preco: precoGuindaste,
+        tipo: 'guindaste'
+      };
+
+      // Adicionar ao carrinho (isso substitui qualquer guindaste anterior)
+      adicionarAoCarrinho(produto, 'guindaste');
+
+      // Navegar para detalhes
+      navigate('/detalhes-guindaste', {
+        state: {
+          guindaste: { ...guindaste, preco: precoGuindaste },
+          returnTo: '/novo-pedido',
+          step: 2
         }
-        break;
-      case 3:
-        if (!clienteData.nome) errors.nome = 'Nome Ã© obrigatÃ³rio';
-        if (!clienteData.telefone) errors.telefone = 'Telefone Ã© obrigatÃ³rio';
-        if (!clienteData.email) errors.email = 'Email Ã© obrigatÃ³rio';
-        if (!clienteData.documento) errors.documento = 'CPF/CNPJ Ã© obrigatÃ³rio';
-        if (!clienteData.inscricao_estadual) errors.inscricao_estadual = 'InscriÃ§Ã£o Estadual Ã© obrigatÃ³ria';
-        if (!clienteData.endereco) errors.endereco = 'EndereÃ§o Ã© obrigatÃ³rio';
-        break;
-      case 4:
-        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veÃ­culo Ã© obrigatÃ³rio';
-        if (!caminhaoData.marca) errors.marca = 'Marca Ã© obrigatÃ³ria';
-        if (!caminhaoData.modelo) errors.modelo = 'Modelo Ã© obrigatÃ³rio';
-        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem Ã© obrigatÃ³ria';
-        break;
+      });
+    } catch (error) {
+      console.error('❌ Erro ao buscar preço:', error);
+      alert('Erro ao buscar preço do equipamento.');
+    }
+  };
+
+  // Função para selecionar capacidade
+  const handleSelecionarCapacidade = (capacidade) => {
+    setSelectedCapacidade(capacidade);
+    setSelectedModelo(null);
+    setGuindastesSelecionados([]);
+    
+    // Adicionar efeito visual de destaque
+    const card = document.querySelector(`[data-capacidade="${capacidade}"]`);
+    if (card) {
+      card.classList.add('selection-highlight');
+      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
     }
     
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    // Scroll automático para a próxima etapa após um pequeno delay
+    setTimeout(() => {
+      const stepElement = document.querySelector('.cascata-step:nth-child(2)');
+      if (stepElement) {
+        // Calcular offset para mobile
+        const isMobile = window.innerWidth <= 768;
+        const offset = isMobile ? 120 : 80;
+        
+        const elementPosition = stepElement.offsetTop - offset;
+        window.scrollTo({
+          top: elementPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 300);
   };
 
-  // Renderizar conteÃºdo do step atual
+  // Função para selecionar modelo
+  const handleSelecionarModelo = (modelo) => {
+    setSelectedModelo(modelo);
+    setGuindastesSelecionados([]);
+    
+    // Adicionar efeito visual de destaque
+    const card = document.querySelector(`[data-modelo="${modelo}"]`);
+    if (card) {
+      card.classList.add('selection-highlight');
+      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
+    }
+    
+    // Scroll automático para a próxima etapa após um pequeno delay
+    setTimeout(() => {
+      const stepElement = document.querySelector('.cascata-step:nth-child(3)');
+      if (stepElement) {
+        // Calcular offset para mobile
+        const isMobile = window.innerWidth <= 768;
+        const offset = isMobile ? 120 : 80;
+        
+        const elementPosition = stepElement.offsetTop - offset;
+        window.scrollTo({
+          top: elementPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 300);
+  };
+
+
+
+  const removerItemPorIndex = (index) => {
+    setCarrinho(prev => {
+      const newCart = prev.filter((_, i) => i !== index);
+      localStorage.setItem('carrinho', JSON.stringify(newCart));
+
+      // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
+      const removedItem = prev[index];
+      if (removedItem && removedItem.tipo === 'guindaste') {
+        console.log('🔄 Equipamento removido do carrinho:', removedItem.id);
+      }
+
+      return newCart;
+    });
+  };
+
+  const limparCarrinho = () => {
+    setCarrinho([]);
+    localStorage.removeItem('carrinho');
+    console.log('🔄 Carrinho limpo completamente');
+  };
+
+
+
+  const getTotalCarrinho = () => {
+    const total = carrinho.reduce((acc, item) => {
+      const preco = parseFloat(item.preco) || 0;
+      return acc + preco;
+    }, 0);
+    return total;
+  };
+
+
+
+
+
+  // Renderizar conteúdo do step
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <Step1GuindasteSelector
-            capacidades={capacidades}
-            selectedCapacidade={selectedCapacidade}
-            selectedModelo={selectedModelo}
-            modelosDisponiveis={modelosDisponiveis}
-            guindastesDisponiveis={guindastesDisponiveis}
-            guindastesSelecionados={guindastesSelecionados}
-            onSelecionarCapacidade={handleSelecionarCapacidadeLocal}
-            onSelecionarModelo={handleSelecionarModeloLocal}
-            onSelecionarGuindaste={handleSelecionarGuindaste}
-            validationErrors={validationErrors}
-          />
+          <div className="step-content">
+            <div className="step-header">
+              <h2>Selecione o Guindaste Ideal</h2>
+              <p>Escolha o guindaste que melhor atende às suas necessidades</p>
+            </div>
+
+            <div className="cascata-container">
+              {/* Indicador de Progresso */}
+              <div className="progress-indicator">
+                <div className={`progress-step ${selectedCapacidade ? 'completed' : 'active'}`}>
+                  <div className="step-number">1</div>
+                  <span>Capacidade</span>
+                </div>
+                <div className={`progress-line ${selectedCapacidade ? 'completed' : ''}`}></div>
+                <div className={`progress-step ${selectedCapacidade && selectedModelo ? 'completed' : selectedCapacidade ? 'active' : ''}`}>
+                  <div className="step-number">2</div>
+                  <span>Modelo</span>
+                </div>
+                <div className={`progress-line ${selectedCapacidade && selectedModelo ? 'completed' : ''}`}></div>
+                              <div className={`progress-step ${guindastesSelecionados.length > 0 ? 'completed' : selectedModelo ? 'active' : ''}`}>
+                <div className="step-number">3</div>
+                <span>Configuração</span>
+              </div>
+              </div>
+
+              {/* Passo 1: Selecionar Capacidade */}
+              <div className="cascata-step">
+                <div className="step-title">
+                  <h3>1. Escolha a Capacidade</h3>
+                  <p>Selecione a capacidade do guindaste</p>
+                </div>
+                
+                <div className="capacidades-grid">
+                  {capacidades.map((capacidade) => (
+                    <button
+                      key={capacidade}
+                      className={`capacidade-card no-photo ${selectedCapacidade === capacidade ? 'selected' : ''}`}
+                      onClick={() => handleSelecionarCapacidade(capacidade)}
+                      data-capacidade={capacidade}
+                    >
+                      <div className="capacidade-icon">
+                        <div className="capacidade-fallback" aria-hidden="true">🏗️</div>
+                      </div>
+                      <div className="capacidade-info">
+                        <h4>{capacidade} Ton</h4>
+                        <p>Capacidade {capacidade} toneladas</p>
+                      </div>
+                      {selectedCapacidade === capacidade && (
+                        <div className="selected-indicator">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                          </svg>
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Passo 2: Selecionar Modelo (apenas se capacidade foi selecionada) */}
+              {selectedCapacidade && (
+                <div className="cascata-step">
+                  <div className="step-title">
+                    <h3>2. Escolha o Modelo</h3>
+                    <p>Modelos disponíveis para {selectedCapacidade} ton</p>
+                  </div>
+                  
+                  <div className="modelos-grid">
+                    {modelosDisponiveis.map((guindaste) => {
+                      const subgrupo = guindaste.subgrupo || '';
+                      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+                      
+                      return (
+                        <button
+                          key={guindaste.id}
+                          className={`modelo-card ${selectedModelo === modeloBase ? 'selected' : ''}`}
+                          onClick={() => handleSelecionarModelo(modeloBase)}
+                          data-modelo={modeloBase}
+                        >
+                          <div className="modelo-icon">
+                            {guindaste.imagem_url ? (
+                              <img
+                                src={guindaste.imagem_url}
+                                alt={modeloBase}
+                                className="modelo-thumbnail"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling.style.display = 'flex';
+                                }}
+                              />
+                            ) : (
+                              <div className="modelo-fallback">
+                                <span>{modeloBase.includes('GSI') ? '🏭' : '🏗️'}</span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="modelo-info">
+                            <h4>{modeloBase}</h4>
+                            <p>{guindaste.Grupo || 'Guindaste'}</p>
+                            <span className="modelo-codigo">{guindaste.codigo_referencia}</span>
+                          </div>
+                          {selectedModelo === modeloBase && (
+                            <div className="selected-indicator">
+                              <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                              </svg>
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Passo 3: Selecionar Guindaste Específico (apenas se modelo foi selecionado) */}
+              {selectedModelo && (
+                <div className="cascata-step">
+                  <div className="step-title">
+                    <h3>3. Escolha a Configuração</h3>
+                    <p>Configurações disponíveis para {selectedModelo}</p>
+                  </div>
+                  
+                  <div className="guindastes-grid">
+                    {guindastesDisponiveis.map((guindaste) => (
+                      <GuindasteCard
+                        key={guindaste.id}
+                        guindaste={guindaste}
+                        isSelected={guindastesSelecionados.some(g => g.id === guindaste.id)}
+                        onSelect={() => handleSelecionarGuindaste(guindaste)}
+                      />
+                    ))}
+                  </div>
+                  
+                  {validationErrors.guindaste && (
+                    <div className="validation-error">
+                      <span className="error-message">{validationErrors.guindaste}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         );
-      
+
       case 2:
         return (
           <div className="step-content">
             <div className="step-header">
-              <h2>PolÃ­tica de Pagamento</h2>
+              <h2>Política de Pagamento</h2>
               <p>Selecione a forma de pagamento e visualize os descontos</p>
             </div>
-            <PaymentPolicy 
+            
+            <PaymentPolicy
+              key={`payment-${carrinho.find(item => item.tipo === 'guindaste')?.id || 'none'}`}
               precoBase={getTotalCarrinho()}
               onPaymentComputed={setPagamentoData}
               errors={validationErrors}
@@ -423,43 +600,35 @@ const NovoPedido = () => {
             />
           </div>
         );
-      
+
       case 3:
         return (
           <div className="step-content">
             <div className="step-header">
               <h2>Dados do Cliente</h2>
-              <p>Preencha as informaÃ§Ãµes do cliente</p>
+              <p>Preencha as informações do cliente</p>
             </div>
-            <ClienteFormDetalhado 
-              formData={clienteData} 
-              setFormData={setClienteData} 
-              errors={validationErrors} 
-            />
+            <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
           </div>
         );
-      
+
       case 4:
         return (
           <div className="step-content">
             <div className="step-header">
               <h2>Estudo Veicular</h2>
-              <p>InformaÃ§Ãµes do veÃ­culo para o serviÃ§o</p>
+              <p>Informações do veículo para o serviço</p>
             </div>
-            <CaminhaoFormDetalhado 
-              formData={caminhaoData} 
-              setFormData={setCaminhaoData} 
-              errors={validationErrors} 
-            />
+            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
           </div>
         );
-      
+
       case 5:
         return (
           <div className="step-content">
             <div className="step-header">
               <h2>Resumo do Pedido</h2>
-              <p>Revise e confirme as informaÃ§Ãµes</p>
+              <p>Revise e confirme as informações</p>
             </div>
             <ResumoPedido 
               carrinho={carrinho}
@@ -470,14 +639,77 @@ const NovoPedido = () => {
               guindastes={guindastes}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
-              onSalvarRelatorioRef={salvarRelatorioRef}
             />
           </div>
         );
-      
+
       default:
         return null;
     }
+  };
+
+  const validateStep = (step) => {
+    const errors = {};
+    
+    switch (step) {
+      case 1:
+        if (guindastesSelecionados.length === 0) {
+          errors.guindaste = 'Selecione pelo menos um guindaste';
+        }
+        break;
+      case 2:
+        if (!pagamentoData.tipoPagamento) {
+          errors.tipoPagamento = 'Selecione o tipo de pagamento';
+        }
+        if (!pagamentoData.prazoPagamento) {
+          errors.prazoPagamento = 'Selecione o prazo de pagamento';
+        }
+        // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
+        if (pagamentoData.tipoPagamento === 'cliente') {
+          if (!pagamentoData.localInstalacao) {
+            errors.localInstalacao = 'Informe o local de instalação';
+          }
+          if (!pagamentoData.tipoInstalacao) {
+            errors.tipoInstalacao = 'Selecione o tipo de instalação';
+          }
+          // Participação de revenda é obrigatória para cliente
+          if (!pagamentoData.participacaoRevenda) {
+            errors.participacaoRevenda = 'Selecione se há participação de revenda';
+          }
+          // Se respondeu participação, IE é obrigatória
+          if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
+            errors.revendaTemIE = 'Selecione se possui Inscrição Estadual';
+          }
+        }
+        if (!pagamentoData.tipoFrete) {
+          errors.tipoFrete = 'Selecione o tipo de frete';
+        }
+        break;
+      case 3:
+        if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
+        if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
+        if (!clienteData.email) errors.email = 'Email é obrigatório';
+        if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
+        // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
+        if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
+          errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        }
+        if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
+        break;
+      case 4:
+        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
+        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
+        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
+        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
+        // Ano é opcional; se informado, validar intervalo
+        if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
+          errors.ano = 'Ano inválido';
+        }
+        break;
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   };
 
   const canGoNext = () => {
@@ -485,13 +717,13 @@ const NovoPedido = () => {
       case 1:
         return guindastesSelecionados.length > 0;
       case 2:
-        // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete sÃ£o obrigatÃ³rios
+        // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete são obrigatórios
         if (pagamentoData.tipoPagamento === 'revenda') {
           return pagamentoData.tipoPagamento && 
                  pagamentoData.prazoPagamento && 
                  pagamentoData.tipoFrete;
         }
-        // Para cliente, todos os campos sÃ£o obrigatÃ³rios, incluindo participaÃ§Ã£o e IE
+        // Para cliente, todos os campos são obrigatórios, incluindo participação e IE
         return pagamentoData.tipoPagamento && 
                pagamentoData.prazoPagamento && 
                pagamentoData.localInstalacao && 
@@ -504,7 +736,7 @@ const NovoPedido = () => {
                clienteData.telefone && 
                clienteData.email && 
                clienteData.documento && 
-               clienteData.inscricao_estadual && // Pode ser "ISENTO" ou um nÃºmero
+               clienteData.inscricao_estadual && // Pode ser "ISENTO" ou um número
                clienteData.endereco;
       case 4:
         return caminhaoData.tipo && 
@@ -521,20 +753,14 @@ const NovoPedido = () => {
   const handleNext = () => {
     if (validateStep(currentStep) && currentStep < 5) {
       setCurrentStep(currentStep + 1);
-      setValidationErrors({}); // Limpar erros ao avanÃ§ar
+      setValidationErrors({}); // Limpar erros ao avançar
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
-      // Se voltar para o Step 1 (seleção de guindastes), limpar o carrinho
-      if (currentStep === 2) {
-        console.log('⚠️ Voltando para Step 1 - Limpando carrinho');
-        clearCart();
-        setGuindastesSelecionados([]);
-      }
-      
       setCurrentStep(currentStep - 1);
+      // O reset do pagamentoData é feito pelo useEffect que monitora currentStep
     }
   };
 
@@ -542,24 +768,17 @@ const NovoPedido = () => {
 
   const handleFinish = async () => {
     try {
-      // Salvar relatÃ³rio no banco de dados ao finalizar
-      if (salvarRelatorioRef.current) {
-        console.log('ðŸ’¾ Salvando relatÃ³rio ao finalizar pedido...');
-        await salvarRelatorioRef.current();
-        console.log('âœ… RelatÃ³rio salvo com sucesso!');
-      } else {
-        console.warn('âš ï¸ FunÃ§Ã£o salvarRelatorio nÃ£o estÃ¡ disponÃ­vel');
-      }
+      // Salvar relatório no banco de dados
+      await salvarRelatorio();
       
-      // Limpar carrinho e navegar para histÃ³rico
+      // Limpar carrinho e navegar para histórico
       limparCarrinho();
+      navigate('/historico');
       
       alert('Pedido finalizado e salvo com sucesso!');
-      
-      navigate('/historico');
     } catch (error) {
-      console.error('âŒ Erro ao finalizar pedido:', error);
-      alert(`Erro ao salvar pedido: ${error.message}\n\nVerifique se todos os dados foram preenchidos corretamente.`);
+      console.error('Erro ao finalizar pedido:', error);
+      alert('Erro ao salvar pedido. Tente novamente.');
     }
   };
 
@@ -569,14 +788,94 @@ const NovoPedido = () => {
 
   return (
     <div className="novo-pedido-container">
-      <UnifiedHeader 
+      <UnifiedHeader
         showBackButton={true}
         onBackClick={() => navigate('/dashboard')}
         showSupportButton={true}
         showUserInfo={true}
         user={user}
         title="Novo Pedido"
-        subtitle="Criar orÃ§amento profissional"
+        subtitle="Criar orçamento profissional"
+        extraButtons={[
+          import.meta.env.DEV && (
+            <>
+              <button
+                key="debug-prices"
+                onClick={async () => {
+                  console.log('🔍 === DEBUG COMPLETO DE PREÇOS ===');
+                  console.log('👤 Usuário:', user?.nome, 'Região:', user?.regiao);
+
+                  // Verificar preços de todas as regiões para os primeiros equipamentos
+                  const regioesParaTestar = ['rs-com-ie', 'rs-sem-ie', 'sul-sudeste'];
+                  const equipamentosParaTestar = guindastes.slice(0, 3);
+
+                  for (const equipamento of equipamentosParaTestar) {
+                    console.log(`\n🏗️ ${equipamento.subgrupo} (ID: ${equipamento.id}):`);
+
+                    for (const regiao of regioesParaTestar) {
+                      try {
+                        const preco = await db.getPrecoPorRegiao(equipamento.id, regiao);
+                        console.log(`  ${regiao}: R$ ${preco}`);
+                      } catch (error) {
+                        console.error(`  ❌ Erro em ${regiao}:`, error.message);
+                      }
+                    }
+                  }
+
+                  // Testar lógica atual
+                  const temIE = determinarClienteTemIE();
+                  const regiaoAtual = normalizarRegiao(user?.regiao || 'sul-sudeste', temIE);
+                  console.log(`\n🎯 Lógica atual:`);
+                  console.log(`  Cliente tem IE: ${temIE}`);
+                  console.log(`  Região selecionada: ${regiaoAtual}`);
+                  console.log(`  Carrinho atual:`, carrinho.map(i => ({ nome: i.nome, preco: i.preco })));
+                }}
+                style={{
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  marginRight: '5px'
+                }}
+                title="Debug completo de preços"
+              >
+                🔍 DEBUG PREÇOS
+              </button>
+              <button
+                key="test-context"
+                onClick={() => {
+                  console.log('🧪 === TESTE DE CONTEXTO ===');
+                  console.log('📊 Estado atual do pagamentoData:', pagamentoData);
+                  console.log('🎯 Testando determinarClienteTemIE():', determinarClienteTemIE());
+
+                  // Simular mudança de contexto
+                  setPagamentoData({
+                    ...pagamentoData,
+                    tipoPagamento: 'cliente',
+                    participacaoRevenda: 'sim',
+                    revendaTemIE: 'nao'
+                  });
+                  console.log('✅ Simulado contexto: cliente + rodoviário');
+                }}
+                style={{
+                  background: '#ffc107',
+                  color: 'black',
+                  border: 'none',
+                  padding: '8px 12px',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '12px'
+                }}
+                title="Testar mudança de contexto"
+              >
+                🧪 TESTE CONTEXTO
+              </button>
+            </>
+          )
+        ]}
       />
 
       <div className="novo-pedido-content">
@@ -610,7 +909,7 @@ const NovoPedido = () => {
             {renderStepContent()}
           </div>
 
-          {/* Navigation Buttons */}
+          {/* Botão Flutuante de Navegação */}
           <div className="floating-nav">
             {currentStep > 1 && (
               <button onClick={handlePrevious} className="floating-nav-btn prev">
@@ -627,7 +926,7 @@ const NovoPedido = () => {
                 className={`floating-nav-btn next ${!canGoNext() ? 'disabled' : ''}`}
                 disabled={!canGoNext()}
               >
-                <span>PrÃ³ximo</span>
+                <span>Próximo</span>
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
                 </svg>
@@ -650,31 +949,31 @@ const NovoPedido = () => {
   );
 };
 
-// FunÃ§Ã£o para extrair configuraÃ§Ãµes do tÃ­tulo do guindaste com Ã­cones
+// Função para extrair configurações do título do guindaste com ícones
 const extrairConfiguracoes = (subgrupo) => {
   const configuracoes = [];
   
-  // Extrair configuraÃ§Ãµes do tÃ­tulo (mais especÃ­fico para evitar falsos positivos)
+  // Extrair configurações do título (mais específico para evitar falsos positivos)
   if (subgrupo.includes(' CR') || subgrupo.includes('CR ') || subgrupo.includes('CR/')) {
-    configuracoes.push({ icon: 'ðŸ•¹ï¸', text: 'CR - Controle Remoto' });
+    configuracoes.push({ icon: '🕹️', text: 'CR - Controle Remoto' });
   }
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
-    configuracoes.push({ icon: 'âš™ï¸', text: 'EH - Extensiva HidrÃ¡ulica' });
+    configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
   }
   if (subgrupo.includes(' ECL') || subgrupo.includes('ECL ') || subgrupo.includes('/ECL')) {
-    configuracoes.push({ icon: 'âŠ“', text: 'ECL - Extensiva Cilindro Lateral' });
+    configuracoes.push({ icon: '⊓', text: 'ECL - Extensiva Cilindro Lateral' });
   }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
-    configuracoes.push({ icon: 'âŠ“', text: 'ECS - Extensiva Cilindro Superior' });
+    configuracoes.push({ icon: '⊓', text: 'ECS - Extensiva Cilindro Superior' });
   }
   if (subgrupo.includes(' P') || subgrupo.includes('P ') || subgrupo.includes('/P')) {
-    configuracoes.push({ icon: 'ðŸ”¨', text: 'P - PreparaÃ§Ã£o p/ Perfuratriz' });
+    configuracoes.push({ icon: '🔨', text: 'P - Preparação p/ Perfuratriz' });
   }
   if (subgrupo.includes(' GR') || subgrupo.includes('GR ') || subgrupo.includes('/GR')) {
-    configuracoes.push({ icon: 'ðŸ¦¾', text: 'GR - PreparaÃ§Ã£o p/ Garra e Rotator' });
+    configuracoes.push({ icon: '🦾', text: 'GR - Preparação p/ Garra e Rotator' });
   }
-  if (subgrupo.includes('CaminhÃ£o 3/4')) {
-    configuracoes.push({ icon: 'ðŸš›', text: 'CaminhÃ£o 3/4' });
+  if (subgrupo.includes('Caminhão 3/4')) {
+    configuracoes.push({ icon: '🚛', text: 'Caminhão 3/4' });
   }
   
   return configuracoes;
@@ -729,13 +1028,13 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
           </h3>
           <span className="categoria">{guindaste.Grupo}</span>
         </div>
-        <div className="price">CÃ³digo: {guindaste.codigo_referencia}</div>
+        <div className="price">Código: {guindaste.codigo_referencia}</div>
       </div>
       
       <div className="card-body">
         <div className="specs">
           <div className="spec">
-            <span className="spec-label">ConfiguraÃ§Ã£o de LanÃ§as:</span>
+            <span className="spec-label">Configuração de Lanças:</span>
             <span className="spec-value">{guindaste.peso_kg || 'N/A'}</span>
           </div>
           <div className="spec">
@@ -753,7 +1052,7 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
                   ))}
                 </div>
               ) : (
-                'STANDARD - Pedido PadrÃ£o'
+                'STANDARD - Pedido Padrão'
               )}
             </span>
           </div>
@@ -803,7 +1102,7 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
   );
 };
 
-// Componente PolÃ­tica de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
+// Componente Política de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
 
 // Componente Form do Cliente
 const ClienteForm = ({ formData, setFormData, errors = {} }) => {
@@ -816,7 +1115,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const maskPhone = (value) => {
     const digits = onlyDigits(value).slice(0, 11);
     const ddd = digits.slice(0, 2);
-    const isMobile = digits.length > 10; // 11 dÃ­gitos
+    const isMobile = digits.length > 10; // 11 dígitos
     const partA = isMobile ? digits.slice(2, 7) : digits.slice(2, 6);
     const partB = isMobile ? digits.slice(7, 11) : digits.slice(6, 10);
     let out = '';
@@ -846,7 +1145,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
       if (field === 'telefone') maskedValue = maskPhone(value);
       if (field === 'cep') maskedValue = maskCEP(value);
       const next = { ...prev, [field]: maskedValue };
-      // ConsistÃªncia: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
+      // Consistência: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
       if (field === 'uf') {
         next.cidade = '';
         if (!manualEndereco && next.cep) next.cep = '';
@@ -854,7 +1153,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
       if (field === 'cidade') {
         if (!manualEndereco && next.cep) next.cep = '';
       }
-      // Se o campo alterado Ã© parte do endereÃ§o detalhado, atualizar 'endereco' composto
+      // Se o campo alterado é parte do endereço detalhado, atualizar 'endereco' composto
       if ([
         'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep'
       ].includes(field)) {
@@ -865,7 +1164,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   };
 
   React.useEffect(() => {
-    if (manualEndereco) return; // nÃ£o sobrescrever quando ediÃ§Ã£o manual estiver ativa
+    if (manualEndereco) return; // não sobrescrever quando edição manual estiver ativa
     const raw = onlyDigits(formData.cep || '');
     if (raw.length !== 8) return;
     let cancelled = false;
@@ -878,10 +1177,10 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           const next = {
             ...prev,
             cep: maskCEP(raw),
-            // CEP Ã© a fonte da verdade para UF e Cidade
+            // CEP é a fonte da verdade para UF e Cidade
             uf: data.uf || '',
             cidade: data.localidade || '',
-            // Logradouro e bairro: preencher apenas se ainda nÃ£o informados
+            // Logradouro e bairro: preencher apenas se ainda não informados
             logradouro: prev.logradouro || data.logradouro || '',
             bairro: prev.bairro || data.bairro || '',
           };
@@ -974,7 +1273,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
         </div>
 
         <div className="form-group">
-          <label>InscriÃ§Ã£o Estadual {!isentoIE && '*'}</label>
+          <label>Inscrição Estadual {!isentoIE && '*'}</label>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
             <input
               type="checkbox"
@@ -991,7 +1290,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
               style={{ width: 'auto', margin: '0' }}
             />
             <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
-              Isento de InscriÃ§Ã£o Estadual
+              Isento de Inscrição Estadual
             </label>
           </div>
           <input
@@ -1006,9 +1305,9 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
         </div>
         
-        {/* EndereÃ§o - fluxo em cascata: CEP â†’ UF â†’ Cidade â†’ Rua/NÃºmero/Bairro */}
+        {/* Endereço - fluxo em cascata: CEP → UF → Cidade → Rua/Número/Bairro */}
         <div className="form-group full-width">
-          <label>EndereÃ§o *</label>
+          <label>Endereço *</label>
           <div className="form-grid">
             <div className="form-group">
               <label>CEP</label>
@@ -1077,12 +1376,12 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
                   />
                 </div>
                 <div className="form-group">
-                  <label>NÃºmero</label>
+                  <label>Número</label>
                   <input
                     type="text"
                     value={formData.numero || ''}
                     onChange={(e) => handleChange('numero', e.target.value)}
-                    placeholder="NÃºmero"
+                    placeholder="Número"
                   />
                 </div>
                 <div className="form-group">
@@ -1102,7 +1401,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
             type="text"
             value={formData.endereco || ''}
             readOnly
-            placeholder="EndereÃ§o completo (gerado automaticamente)"
+            placeholder="Endereço completo (gerado automaticamente)"
             className={errors.endereco ? 'error' : ''}
             style={{ marginTop: '8px' }}
           />
@@ -1110,11 +1409,11 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
         </div>
         
         <div className="form-group">
-          <label>ObservaÃ§Ãµes</label>
+          <label>Observações</label>
           <textarea
             value={formData.observacoes || ''}
             onChange={(e) => handleChange('observacoes', e.target.value)}
-            placeholder="InformaÃ§Ãµes adicionais..."
+            placeholder="Informações adicionais..."
             rows="3"
           />
         </div>
@@ -1123,7 +1422,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   );
 };
 
-// Componente Form do CaminhÃ£o
+// Componente Form do Caminhão
 const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -1224,16 +1523,16 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
         )}
         
         <div className="form-group full-width">
-          <label>ObservaÃ§Ãµes</label>
+          <label>Observações</label>
           <textarea
             value={formData.observacoes || ''}
             onChange={(e) => handleChange('observacoes', e.target.value)}
-            placeholder="InformaÃ§Ãµes adicionais sobre o caminhÃ£o..."
+            placeholder="Informações adicionais sobre o caminhão..."
             rows="3"
           />
         </div>
 
-        {/* SeÃ§Ã£o de Estudo Veicular com Imagem e Medidas */}
+        {/* Seção de Estudo Veicular com Imagem e Medidas */}
         <div className="form-group full-width" style={{ marginTop: '30px' }}>
           <h3 style={{ color: '#495057', fontSize: '20px', marginBottom: '15px', borderBottom: '2px solid #dee2e6', paddingBottom: '10px' }}>
             Estudo Veicular - Medidas
@@ -1259,14 +1558,14 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                 }}
               />
               <div style={{ display: 'none', padding: '20px', background: '#f8f9fa', border: '2px dashed #dee2e6', borderRadius: '8px' }}>
-                <p style={{ color: '#6c757d', margin: '0' }}>Imagem nÃ£o disponÃ­vel</p>
+                <p style={{ color: '#6c757d', margin: '0' }}>Imagem não disponível</p>
               </div>
             </div>
 
             {/* Campos de Medidas */}
             <div style={{ flex: '1', minWidth: '300px' }}>
               <p style={{ marginBottom: '15px', color: '#6c757d', fontSize: '14px' }}>
-                Preencha as medidas conforme indicado na imagem, CaminhÃ£o 1 Guindaste GSI Interno, caminhÃ£o 2 GUindaste GSE Externo:
+                Preencha as medidas conforme indicado na imagem, Caminhão 1 Guindaste GSI Interno, caminhão 2 GUindaste GSE Externo:
               </p>
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -1318,4 +1617,479 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   );
 };
 
-export default NovoPedido;
+// Componente Resumo do Pedido
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes }) => {
+  const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
+
+  const handlePDFGenerated = async (fileName) => {
+    try {
+      // Critérios mínimos para salvar automaticamente sem interromper a experiência
+      const camposClienteOK = Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
+      const camposCaminhaoOK = Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo && caminhaoData?.voltagem);
+      const usuarioOK = Boolean(user?.id);
+
+      if (camposClienteOK && camposCaminhaoOK && usuarioOK) {
+        // Salvar relatório automaticamente no banco de dados (apenas uma vez)
+        if (!pedidoSalvoId) {
+          const pedido = await salvarRelatorio();
+          setPedidoSalvoId(pedido?.id || null);
+        }
+        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
+      } else {
+        alert(`PDF gerado com sucesso: ${fileName}\nObservação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios (Cliente e/ou Caminhão). Ao clicar em Finalizar, ele será salvo.`);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar relatório:', error);
+      const msg = (error && error.message) ? `\nMotivo: ${error.message}` : '';
+      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatório automaticamente.${msg}`);
+    }
+  };
+
+  const salvarRelatorio = async () => {
+    try {
+      console.log('🔄 Iniciando salvamento do relatório...');
+      console.log('📋 Dados do cliente:', clienteData);
+      console.log('🚛 Dados do caminhão:', caminhaoData);
+      console.log('💳 Dados de pagamento:', pagamentoData);
+      console.log('🛒 Carrinho:', carrinho);
+      console.log('👤 Usuário:', user);
+      
+      // 1. Criar cliente
+      console.log('1️⃣ Criando cliente...');
+      
+      // Montar endereço completo a partir dos campos separados
+      const enderecoCompleto = (() => {
+        const c = clienteData;
+        const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
+        const bairro = c.bairro ? ` - ${c.bairro}` : '';
+        const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
+        const cep = c.cep ? ` - CEP: ${c.cep}` : '';
+        return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'Não informado';
+      })();
+      
+      // Filtrar apenas campos que existem na tabela clientes
+      const clienteDataToSave = {
+        nome: clienteData.nome,
+        telefone: clienteData.telefone,
+        email: clienteData.email,
+        documento: clienteData.documento,
+        inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
+        endereco: enderecoCompleto,
+        observacoes: clienteData.observacoes || null
+      };
+      
+      console.log('📋 Dados do cliente para salvar:', clienteDataToSave);
+      const cliente = await db.createCliente(clienteDataToSave);
+      console.log('✅ Cliente criado:', cliente);
+      
+      // 2. Criar caminhão
+      console.log('2️⃣ Criando caminhão...');
+      
+      // Verificar se todos os campos obrigatórios estão preenchidos
+      const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
+      const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
+      
+      if (camposFaltando.length > 0) {
+        throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+      }
+      
+      const caminhaoDataToSave = {
+        ...caminhaoData,
+        cliente_id: cliente.id,
+        // Garantir que campos opcionais tenham valores padrão
+        observacoes: caminhaoData.observacoes || null,
+        // Campo placa é obrigatório no banco mas não usado no formulário
+        placa: 'N/A'
+      };
+      
+      console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
+      
+      const caminhao = await db.createCaminhao(caminhaoDataToSave);
+      console.log('✅ Caminhão criado:', caminhao);
+      
+      // 3. Gerar número do pedido
+      const numeroPedido = `PED${Date.now()}`;
+      console.log('3️⃣ Número do pedido gerado:', numeroPedido);
+      
+      // 4. Criar pedido
+      console.log('4️⃣ Criando pedido...');
+      const pedidoDataToSave = {
+        numero_pedido: numeroPedido,
+        cliente_id: cliente.id,
+        vendedor_id: user.id,
+        caminhao_id: caminhao.id,
+        status: 'em_andamento', // Status válido confirmado no banco
+        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+        observacoes: `Proposta gerada em ${new Date().toLocaleString('pt-BR')}. Local de instalação: ${pagamentoData.localInstalacao}. Tipo de instalação: ${pagamentoData.tipoInstalacao === 'cliente' ? 'Por conta do cliente' : 'Por conta da fábrica'}.`
+      };
+      console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);
+      
+      const pedido = await db.createPedido(pedidoDataToSave);
+      console.log('✅ Pedido criado:', pedido);
+      
+      // 5. Criar itens do pedido
+      console.log('5️⃣ Criando itens do pedido...');
+      for (const item of carrinho) {
+        console.log(`   Processando item: ${item.nome} (${item.tipo})`);
+        let codigo_produto = null;
+        if (item.tipo === 'equipamento') {
+          // Pega todos opcionais selecionados
+          const opcionaisSelecionados = carrinho
+            .filter(i => i.tipo === 'opcional')
+            .map(i => i.nome);
+          codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
+        }
+        
+        const itemDataToSave = {
+          pedido_id: pedido.id,
+          tipo: item.tipo,
+          item_id: item.id,
+          quantidade: 1,
+          preco_unitario: item.preco,
+          codigo_produto
+        };
+        
+        console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
+        
+        try {
+          await db.createPedidoItem(itemDataToSave);
+        } catch (itemError) {
+          console.error(`   ❌ Erro ao criar item ${item.nome}:`, itemError);
+          throw itemError;
+        }
+      }
+      
+      console.log('🎉 Relatório salvo com sucesso:', {
+        pedidoId: pedido.id,
+        numeroPedido,
+        cliente: cliente.nome,
+        vendedor: user.nome
+      });
+      return pedido;
+    } catch (error) {
+      console.error('❌ Erro ao salvar relatório:', error);
+      console.error('📋 Detalhes do erro:', {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        stack: error.stack
+      });
+      console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
+      throw error;
+    }
+  };
+
+  // Buscar dados completos dos guindastes do carrinho
+  const guindastesCompletos = carrinho
+    .filter(item => item.tipo === 'guindaste')
+    .map(item => {
+      // Buscar guindaste completo da lista carregada
+      const guindasteCompleto = guindastes.find(g => g.id === item.id);
+      return {
+        nome: item.nome,
+        modelo: item.modelo || guindasteCompleto?.modelo,
+        codigo_produto: item.codigo_produto,
+        descricao: guindasteCompleto?.descricao || '',
+        nao_incluido: guindasteCompleto?.nao_incluido || ''
+      };
+    });
+
+  const pedidoData = {
+    carrinho,
+    clienteData,
+    caminhaoData,
+    pagamentoData,
+    vendedor: user?.nome || 'Não informado',
+    guindastes: guindastesCompletos
+  };
+
+  return (
+    <div className="resumo-container">
+      <div className="resumo-section">
+        <h3>Itens Selecionados</h3>
+        <div className="resumo-items">
+          {carrinho.map((item, idx) => {
+            let codigoProduto = null;
+            if (item.tipo === 'equipamento') {
+              const opcionaisSelecionados = carrinho.filter(i => i.tipo === 'opcional').map(i => i.nome);
+              codigoProduto = generateCodigoProduto(item.nome, opcionaisSelecionados);
+            }
+            return (
+              <div key={idx} className="resumo-item">
+                <div className="item-info">
+                  <div className="item-name">{item.nome}</div>
+                  <div className="item-type">{item.tipo}</div>
+                  {codigoProduto && (
+                    <div className="item-codigo">Código: <b>{codigoProduto}</b></div>
+                  )}
+                </div>
+                <div className="item-price">{formatCurrency(item.preco)}</div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="resumo-total">
+          <span>Total: {formatCurrency(carrinho.reduce((total, item) => total + item.preco, 0))}</span>
+        </div>
+      </div>
+
+      <div className="resumo-section">
+        <h3>Dados do Cliente</h3>
+        <div className="resumo-data">
+          <div className="data-row">
+            <span className="label">Nome:</span>
+            <span className="value">{clienteData.nome || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Telefone:</span>
+            <span className="value">{clienteData.telefone || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Email:</span>
+            <span className="value">{clienteData.email || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">CPF/CNPJ:</span>
+            <span className="value">{clienteData.documento || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Inscrição Estadual:</span>
+            <span className="value">{clienteData.inscricao_estadual || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Endereço:</span>
+            <span className="value">{clienteData.endereco || 'Não informado'}</span>
+          </div>
+          {clienteData.bairro && (
+            <div className="data-row">
+              <span className="label">Bairro:</span>
+              <span className="value">{clienteData.bairro}</span>
+            </div>
+          )}
+          {(clienteData.cidade || clienteData.uf || clienteData.cep) && (
+            <div className="data-row">
+              <span className="label">Cidade/UF/CEP:</span>
+              <span className="value">{`${clienteData.cidade || '—'}/${clienteData.uf || '—'}${clienteData.cep ? ' - ' + clienteData.cep : ''}`}</span>
+            </div>
+          )}
+          {clienteData.observacoes && (
+            <div className="data-row">
+              <span className="label">Observações:</span>
+              <span className="value">{clienteData.observacoes}</span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="resumo-section">
+        <h3>Estudo Veicular</h3>
+        <div className="resumo-data">
+          <div className="data-row">
+            <span className="label">Tipo:</span>
+            <span className="value">{caminhaoData.tipo || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Marca:</span>
+            <span className="value">{caminhaoData.marca || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Modelo:</span>
+            <span className="value">{caminhaoData.modelo || 'Não informado'}</span>
+          </div>
+          <div className="data-row">
+            <span className="label">Voltagem:</span>
+            <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
+          </div>
+          {caminhaoData.observacoes && (
+            <div className="data-row">
+              <span className="label">Observações:</span>
+              <span className="value">{caminhaoData.observacoes}</span>
+            </div>
+          )}
+          
+          {/* Mostrar medidas do estudo veicular se alguma foi preenchida */}
+          {(caminhaoData.medidaA || caminhaoData.medidaB || caminhaoData.medidaC || caminhaoData.medidaD) && (
+            <>
+              <div className="data-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                <span className="label" style={{ fontWeight: 'bold' }}>Medidas do Veículo:</span>
+                <span className="value"></span>
+              </div>
+              {caminhaoData.medidaA && (
+                <div className="data-row">
+                  <span className="label">Medida A:</span>
+                  <span className="value">{caminhaoData.medidaA} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaB && (
+                <div className="data-row">
+                  <span className="label">Medida B:</span>
+                  <span className="value">{caminhaoData.medidaB} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaC && (
+                <div className="data-row">
+                  <span className="label">Medida C:</span>
+                  <span className="value">{caminhaoData.medidaC} mm</span>
+                </div>
+              )}
+              {caminhaoData.medidaD && (
+                <div className="data-row">
+                  <span className="label">Medida D:</span>
+                  <span className="value">{caminhaoData.medidaD} mm</span>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="resumo-section">
+        <h3>Política de Pagamento</h3>
+        <div className="resumo-data">
+          <div className="data-row">
+            <span className="label">Tipo de Pagamento:</span>
+            <span className="value">
+              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda - Guindastes GSI'}
+              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ/CPF - Guindastes GSE'}
+              {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno - Revenda'}
+              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento - CNPJ/CPF'}
+              {!pagamentoData.tipoPagamento && 'Não informado'}
+            </span>
+          </div>
+          <div className="data-row">
+            <span className="label">Prazo de Pagamento:</span>
+            <span className="value">
+              {pagamentoData.prazoPagamento === 'a_vista' && 'À Vista'}
+              {pagamentoData.prazoPagamento === '30_dias' && 'Até 30 dias (+3%)'}
+              {pagamentoData.prazoPagamento === '60_dias' && 'Até 60 dias (+1%)'}
+              {pagamentoData.prazoPagamento === '120_dias_interno' && 'Até 120 dias (sem acréscimo)'}
+              {pagamentoData.prazoPagamento === '90_dias_cnpj' && 'Até 90 dias (sem acréscimo)'}
+              {pagamentoData.prazoPagamento === 'mais_120_dias' && 'Após 120 dias (+2% ao mês)'}
+              {pagamentoData.prazoPagamento === 'mais_90_dias' && 'Após 90 dias (+2% ao mês)'}
+              {!pagamentoData.prazoPagamento && 'Não informado'}
+            </span>
+          </div>
+          {pagamentoData.desconto > 0 && (
+            <div className="data-row">
+              <span className="label">Desconto:</span>
+              <span className="value">{pagamentoData.desconto}%</span>
+            </div>
+          )}
+          {pagamentoData.acrescimo > 0 && (
+            <div className="data-row">
+              <span className="label">Acréscimo:</span>
+              <span className="value">{pagamentoData.acrescimo}%</span>
+            </div>
+          )}
+          <div className="data-row">
+            <span className="label">Valor Final:</span>
+            <span className="value" style={{ fontWeight: 'bold', color: '#007bff' }}>
+              {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0))}
+            </span>
+          </div>
+          {/* Mostrar campos adicionais para cliente */}
+          {pagamentoData.tipoCliente === 'cliente' && pagamentoData.percentualEntrada > 0 && (
+            <>
+              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                <span className="label">Entrada Total ({pagamentoData.percentualEntrada}%):</span>
+                <span className="value" style={{ fontWeight: 'bold' }}>
+                  {formatCurrency(pagamentoData.entradaTotal || 0)}
+                </span>
+              </div>
+              {pagamentoData.valorSinal > 0 && (
+                <>
+                  <div className="data-row" style={{ fontSize: '0.95em', color: '#28a745' }}>
+                    <span className="label">↳ Sinal (já pago):</span>
+                    <span className="value">- {formatCurrency(pagamentoData.valorSinal)}</span>
+                  </div>
+                  <div className="data-row" style={{ fontSize: '0.95em' }}>
+                    <span className="label">↳ Falta pagar de entrada:</span>
+                    <span className="value" style={{ fontWeight: 'bold' }}>
+                      {formatCurrency(pagamentoData.faltaEntrada || 0)}
+                    </span>
+                  </div>
+                  
+                  {/* Exibir forma de pagamento da entrada se preenchida */}
+                  {pagamentoData.formaEntrada && (
+                    <div className="data-row" style={{ fontSize: '0.9em', marginLeft: '10px', marginTop: '5px', fontStyle: 'italic', color: '#555' }}>
+                      <span className="label">Forma de pagamento:</span>
+                      <span className="value">{pagamentoData.formaEntrada}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #007bff' }}>
+                <span className="label" style={{ fontWeight: 'bold', fontSize: '1.1em' }}>Saldo a Pagar (após entrada):</span>
+                <span className="value" style={{ fontWeight: 'bold', color: '#007bff', fontSize: '1.1em' }}>
+                  {formatCurrency(pagamentoData.saldoAPagar || pagamentoData.valorFinal || 0)}
+                </span>
+              </div>
+            </>
+          )}
+          {/* Campos Local de Instalação e Tipo de Instalação apenas para cliente */}
+          {pagamentoData.tipoCliente === 'cliente' && (
+            <>
+              <div className="data-row">
+                <span className="label">Local de Instalação:</span>
+                <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+              </div>
+              <div className="data-row">
+                <span className="label">Tipo de Instalação:</span>
+                <span className="value">
+                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
+                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {!pagamentoData.tipoInstalacao && 'Não informado'}
+                </span>
+              </div>
+              
+              {/* Informações sobre Participação de Revenda */}
+              {pagamentoData.participacaoRevenda && (
+                <>
+                  <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
+                    <span className="label">Participação de Revenda:</span>
+                    <span className="value" style={{ fontWeight: 'bold', color: pagamentoData.participacaoRevenda === 'sim' ? '#28a745' : '#dc3545' }}>
+                      {pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}
+                    </span>
+                  </div>
+                  
+                  {pagamentoData.participacaoRevenda === 'sim' && pagamentoData.revendaTemIE && (
+                    <>
+                      <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '10px' }}>
+                        <span className="label">↳ Revenda possui IE:</span>
+                        <span className="value" style={{ color: pagamentoData.revendaTemIE === 'sim' ? '#007bff' : '#ffc107' }}>
+                          {pagamentoData.revendaTemIE === 'sim' ? 'Sim (Com IE)' : 'Não (Sem IE)'}
+                        </span>
+                      </div>
+                      
+                      {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
+                        <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '20px', color: '#28a745' }}>
+                          <span className="label">↳ Desconto do Vendedor:</span>
+                          <span className="value" style={{ fontWeight: 'bold' }}>
+                            {pagamentoData.descontoRevendaIE}%
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="resumo-section">
+        <h3>Ações</h3>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+          <PDFGenerator 
+            pedidoData={pedidoData} 
+            onGenerate={handlePDFGenerated}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default NovoPedido; 

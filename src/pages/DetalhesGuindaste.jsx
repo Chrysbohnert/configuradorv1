@@ -16,14 +16,23 @@ const DetalhesGuindaste = () => {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
+      console.log('✅ Usuário autenticado em DetalhesGuindaste');
       setUser(JSON.parse(userData));
     } else {
+      console.error('❌ Nenhum usuário encontrado, redirecionando para login');
       navigate('/');
     }
   }, [navigate]);
 
+  // Verificar se tem dados do guindaste
+  useEffect(() => {
+    if (!guindaste) {
+      console.warn('⚠️ Nenhum guindaste selecionado, redirecionando...');
+      navigate('/novo-pedido', { replace: true });
+    }
+  }, [guindaste, navigate]);
+
   if (!guindaste) {
-    navigate('/novo-pedido');
     return null;
   }
 
