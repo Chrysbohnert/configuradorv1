@@ -329,14 +329,56 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
-  // Resolver imagem do guindaste com fallback seguro
+  // Validar se uma URL de imagem é válida
+  const isValidImageUrl = (url) => {
+    if (!url || typeof url !== 'string') return false;
+    const trimmed = url.trim();
+    if (trimmed === '') return false;
+    
+    // Aceitar URLs http/https
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      try {
+        new URL(trimmed);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+    
+    // Aceitar base64 COMPLETAS e válidas (mínimo 100 caracteres para evitar base64 truncadas)
+    if (trimmed.startsWith('data:image/') && trimmed.length > 100) {
+      // Verificar se tem a estrutura básica: data:image/tipo;base64,dados
+      const parts = trimmed.split(',');
+      if (parts.length === 2 && parts[0].includes('base64')) {
+        return true;
+      }
+    }
+    
+    // Aceitar caminhos relativos que começam com /
+    if (trimmed.startsWith('/')) {
+      return true;
+    }
+    
+    return false;
+  };
+
+  // Resolver imagem do guindaste com validação e fallback seguro
   const resolveGuindasteImage = (g) => {
-    const main = g?.imagem_url && g.imagem_url.trim() !== '' ? g.imagem_url : null;
-    const extra = Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0
-      ? g.imagens_adicionais[0]
-      : null;
-    // Placeholder padrão caso não exista imagem
-    return main || extra || '/header-bg.jpg';
+    // Tentar imagem principal
+    if (g?.imagem_url && isValidImageUrl(g.imagem_url)) {
+      return g.imagem_url;
+    }
+    
+    // Tentar primeira imagem adicional
+    if (Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0) {
+      const firstExtra = g.imagens_adicionais[0];
+      if (isValidImageUrl(firstExtra)) {
+        return firstExtra;
+      }
+    }
+    
+    // Fallback para placeholder
+    return '/header-bg.jpg';
   };
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
