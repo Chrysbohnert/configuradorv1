@@ -1717,24 +1717,25 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
         }
         
-        // Garantir que item_id seja um número inteiro
-        // Se for UUID (string), tentar converter; se falhar, usar null
-        let itemId = null;
-        if (item.id) {
-          const parsedId = parseInt(item.id);
-          if (!isNaN(parsedId)) {
-            itemId = parsedId;
-          }
-        }
-        
+        // Construir dados do item
+        // Não incluir item_id se for UUID (string) - apenas se for número
         const itemDataToSave = {
           pedido_id: pedido.id,
           tipo: item.tipo,
-          item_id: itemId,
           quantidade: 1,
           preco_unitario: item.preco,
           codigo_produto
         };
+        
+        // Adicionar item_id apenas se for número inteiro
+        if (item.id && typeof item.id === 'number') {
+          itemDataToSave.item_id = item.id;
+        } else if (item.id && typeof item.id === 'string') {
+          const parsedId = parseInt(item.id);
+          if (!isNaN(parsedId)) {
+            itemDataToSave.item_id = parsedId;
+          }
+        }
         
         console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
         
