@@ -144,10 +144,8 @@ class DatabaseService {
 
   async createGuindaste(guindasteData) {
     try {
-      // Limpar dados antes de enviar para evitar problemas de tipo
+      // Enviar APENAS campos que existem na tabela guindastes
       const cleanData = {
-        ...guindasteData,
-        // Garantir que campos de texto sejam strings válidas
         subgrupo: guindasteData.subgrupo || '',
         modelo: guindasteData.modelo || '',
         peso_kg: guindasteData.peso_kg || '',
@@ -159,7 +157,6 @@ class DatabaseService {
         codigo_referencia: guindasteData.codigo_referencia || null,
         finame: guindasteData.finame || null,
         ncm: guindasteData.ncm || null,
-        // Garantir que arrays sejam válidos
         imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
           ? guindasteData.imagens_adicionais 
           : []
