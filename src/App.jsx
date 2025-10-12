@@ -21,6 +21,7 @@ const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga
 const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
 const Logistica = lazy(() => import('./pages/Logistica'));
 const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
+const Configuracoes = lazy(() => import('./pages/Configuracoes'));
 
 // Carregar scripts de migração em desenvolvimento
 if (import.meta.env.DEV) {
@@ -141,6 +142,15 @@ function App() {
             <ProtectedRoute>
               <LazyRoute loadingMessage="Carregando Detalhes do Guindaste...">
                 <DetalhesGuindaste />
+              </LazyRoute>
+            </ProtectedRoute>
+          } />
+          
+          {/* Rota de Configurações (Admin) */}
+          <Route path="/configuracoes" element={
+            <ProtectedRoute requireAdmin={true}>
+              <LazyRoute loadingMessage="Carregando Configurações...">
+                <Configuracoes />
               </LazyRoute>
             </ProtectedRoute>
           } />

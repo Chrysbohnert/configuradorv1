@@ -10,21 +10,38 @@
   --info-300: #93c5fd; /* azul suave */
 }
 
+/* Reset global para layout admin */
+body {
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
 /* Layout do Admin */
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  position: relative;
 }
 
 .admin-content {
   flex: 1;
   margin-left: 280px;
   background: #f8f9fa;
+  width: calc(100% - 280px);
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 768px) {
   .admin-content {
     margin-left: 0;
+    width: 100%;
   }
 }
 

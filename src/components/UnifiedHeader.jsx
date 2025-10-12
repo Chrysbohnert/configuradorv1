@@ -27,53 +27,51 @@ const UnifiedHeader = ({
 
   return (
     <div className="unified-header">
-      <div className="header-background">
-        <img src="/header-bg.jpg" alt="STARK Orçamento" className="header-bg-image" />
-        <div className="header-overlay"></div>
+      {/* Decorative Elements */}
+      <div className="header-decoration">
+        <div className="deco-line deco-line-1"></div>
+        <div className="deco-line deco-line-2"></div>
       </div>
       
-      <div className="header-content">
+      <div className="header-container">
         <div className="header-left">
           {showBackButton && (
-            <button onClick={handleBack} className="back-button">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            <button onClick={handleBack} className="back-button" aria-label="Voltar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
               </svg>
-              Voltar
+              <span>Voltar</span>
             </button>
           )}
           
           <div className="header-brand">
-            <div className="brand-logo">
-              <img src="/header-bg.jpg" alt="Logo STARK" className="logo-image" />
-            </div>
-            <div className="brand-text">
-              <h1>{title}</h1>
-              {subtitle && <p>{subtitle}</p>}
+            <div className="brand-content">
+              <div className="brand-title-wrapper">
+                <h1 className="brand-title">{title}</h1>
+              </div>
+              {subtitle && (
+                <p className="brand-subtitle">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="subtitle-icon">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                  </svg>
+                  {subtitle}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         <div className="header-right">
           {showSupportButton && (
-            <button onClick={handleSupport} className="support-button">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+            <button onClick={handleSupport} className="support-button" aria-label="Suporte">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
-              Suporte
+              <span>Suporte</span>
+              <div className="button-glow"></div>
             </button>
-          )}
-
-          {showUserInfo && user && (
-            <div className="user-info">
-              <div className="user-avatar">
-                {user.nome.charAt(0).toUpperCase()}
-              </div>
-              <div className="user-details">
-                <div className="user-name">{user.nome}</div>
-                <div className="user-role">{user.tipo}</div>
-              </div>
-            </div>
           )}
         </div>
       </div>
