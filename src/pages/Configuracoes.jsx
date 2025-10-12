@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminNavigation from '../components/AdminNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db, supabase } from '../config/supabase';
 import '../styles/Configuracoes.css';
 
 const Configuracoes = () => {
   const navigate = useNavigate();
+  const { user: contextUser } = useOutletContext(); // Pega o usuário do AdminLayout
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('perfil');
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -33,27 +32,17 @@ const Configuracoes = () => {
   const [photoFile, setPhotoFile] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      if (userObj.tipo !== 'admin') {
-        navigate('/dashboard');
-        return;
-      }
-      setUser(userObj);
+    if (contextUser) {
+      setUser(contextUser);
       setProfileData({
-        nome: userObj.nome || '',
-        email: userObj.email || '',
-        telefone: userObj.telefone || '',
-        cpf: userObj.cpf || ''
+        nome: contextUser.nome || '',
+        email: contextUser.email || '',
+        telefone: contextUser.telefone || '',
+        cpf: contextUser.cpf || ''
       });
-      setPhotoPreview(userObj.foto_perfil || null);
-    } else {
-      navigate('/');
-      return;
+      setPhotoPreview(contextUser.foto_perfil || null);
     }
-    setIsLoading(false);
-  }, [navigate]);
+  }, [contextUser]);
 
   const handleProfileChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
@@ -269,13 +258,10 @@ const Configuracoes = () => {
     }
   };
 
-  if (!user || isLoading) return null;
+  if (!user) return null;
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      
-      <div className="admin-content">
+    <>
         <UnifiedHeader 
           showBackButton={false}
           showSupportButton={true}
@@ -493,8 +479,7 @@ const Configuracoes = () => {
 
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 };
 

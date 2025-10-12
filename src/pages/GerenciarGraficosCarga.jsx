@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import AdminNavigation from '../components/AdminNavigation';
 import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGraficosCarga.css';
 
 const GerenciarGraficosCarga = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [graficos, setGraficos] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -18,41 +17,10 @@ const GerenciarGraficosCarga = () => {
   });
 
   useEffect(() => {
-    const checkAuth = () => {
-      try {
-        console.log('🔍 Verificando autenticação via localStorage...');
-        
-        // Verificar usuário no localStorage (método atual)
-        const userData = localStorage.getItem('user');
-        
-        if (!userData) {
-          console.log('❌ Nenhum usuário no localStorage');
-          navigate('/');
-          return;
-        }
-        
-        const userObj = JSON.parse(userData);
-        console.log('✅ Usuário encontrado no localStorage:', userObj);
-        
-        // Verificar se é admin
-        if (userObj.tipo !== 'admin') {
-          console.log('❌ Usuário não é admin:', userObj.tipo);
-          navigate('/dashboard');
-          return;
-        }
-        
-        console.log('✅ Usuário é admin, carregando gráficos...');
-        setUser(userObj);
-        loadGraficos();
-        
-      } catch (error) {
-        console.error('❌ Erro na verificação de autenticação:', error);
-        navigate('/');
-      }
-    };
-    
-    checkAuth();
-  }, [navigate]);
+    if (user) {
+      loadGraficos();
+    }
+  }, [user]);
 
   const loadGraficos = async () => {
     try {
@@ -228,10 +196,8 @@ const GerenciarGraficosCarga = () => {
   }
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      <div className="admin-content">
-        <UnifiedHeader 
+    <>
+      <UnifiedHeader 
           showBackButton={false}
           showSupportButton={true}
           showUserInfo={true}
@@ -340,7 +306,6 @@ const GerenciarGraficosCarga = () => {
             )}
           </div>
         </div>
-      </div>
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
@@ -389,7 +354,7 @@ const GerenciarGraficosCarga = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

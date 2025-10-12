@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminNavigation from '../components/AdminNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
@@ -8,7 +7,7 @@ import '../styles/Dashboard.css';
 
 const DashboardAdmin = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [pedidos, setPedidos] = useState([]);
@@ -16,17 +15,8 @@ const DashboardAdmin = () => {
   const [periodo, setPeriodo] = useState('30'); // 7, 30, 90, all
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      navigate('/');
-      return;
-    }
-  }, [navigate]);
-
-  useEffect(() => {
     const load = async () => {
+      if (!user) return;
       try {
         setIsLoading(true);
         const [usersResp, pedidosResp, guindastesResp] = await Promise.all([
@@ -43,7 +33,7 @@ const DashboardAdmin = () => {
         setIsLoading(false);
       }
     };
-    if (user) load();
+    load();
   }, [user]);
 
   // Pedidos por período
@@ -176,17 +166,15 @@ const DashboardAdmin = () => {
   if (!user) return null;
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      <div className="admin-content">
-        <UnifiedHeader 
-          showBackButton={false}
-          showSupportButton={true}
-          showUserInfo={true}
-          user={user}
-          title="Dashboard Admin"
-          subtitle="Resumo geral do sistema"
-        />
+    <>
+      <UnifiedHeader 
+        showBackButton={false}
+        showSupportButton={true}
+        showUserInfo={true}
+        user={user}
+        title="Dashboard Admin"
+        subtitle="Resumo geral do sistema"
+      />
         <div className="dashboard-container">
           <div className="dashboard-content">
             <div className="dashboard-header">
@@ -373,13 +361,12 @@ const DashboardAdmin = () => {
                 {recentes.length === 0 && (<div className="empty">Sem atividades</div>)}
               </ul>
             </div>
-
             
-          </div>
+
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
