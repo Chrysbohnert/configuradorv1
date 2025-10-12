@@ -78,7 +78,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       headerElement.style.left = '-9999px';
       headerElement.style.width = '1000px';
       headerElement.style.backgroundColor = 'white';
-      headerElement.innerHTML = `<img src="/cebecalho1.png" alt="Cabeçalho STARK" style="width: 100%; height: auto; display: block;">`;
+      headerElement.innerHTML = `<img src="/cebecalho1.png" alt="Cabeçalho STARK" style="width: 110%; height: auto; display: block;">`;
       
       const footerElement = document.createElement('div');
       footerElement.style.position = 'absolute';
@@ -86,7 +86,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       footerElement.style.width = '1000px';
       footerElement.style.backgroundColor = 'white';
       footerElement.innerHTML = `
-        <img src="/rodapé.png" alt="Rodapé STARK" style="width: 100%; height: auto; display: block;">
+        <img src="/rodapé.png" alt="Rodapé STARK" style="width: 110%; height: auto; display: block;">
         <div style="text-align: center; font-size: 11px; color:rgb(0, 0, 0); padding: 5px; background: white;">
           Proposta gerada automaticamente pelo sistema em ${new Date().toLocaleString('pt-BR')}
         </div>
@@ -117,20 +117,20 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h2 style="color:rgb(0, 0, 0); font-size: 28px; margin-bottom: 15px;">PROPOSTA COMERCIAL</h2>
+          <h2 style="color:rgb(0, 0, 0); font-size: 28px; margin-bottom: 15px;">PROPOSTA COMERCIAL STARK</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <div>
               <strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}
             </div>
             <div>
-              <strong>Proposta Nº:</strong> ${propostaNumero}
+              <strong>Proposta STARK Nº:</strong> ${propostaNumero}
             </div>
           </div>
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
+          <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE STARK</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Nome:</strong> ${pedidoData.clienteData.nome || 'Não informado'}
