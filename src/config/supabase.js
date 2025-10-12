@@ -513,13 +513,23 @@ class DatabaseService {
 
   // ===== ITENS DO PEDIDO =====
   async createPedidoItem(itemData) {
+    console.log('🔍 [createPedidoItem] Dados recebidos:', itemData);
+    console.log('🔍 [createPedidoItem] Tipo de item_id:', typeof itemData.item_id);
+    console.log('🔍 [createPedidoItem] Valor de item_id:', itemData.item_id);
+    
     const { data, error } = await supabase
       .from('pedido_itens')
       .insert([itemData])
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [createPedidoItem] Erro:', error);
+      console.error('❌ [createPedidoItem] Dados que causaram erro:', itemData);
+      throw error;
+    }
+    
+    console.log('✅ [createPedidoItem] Item criado com sucesso');
     return data;
   }
 
