@@ -574,12 +574,17 @@ const PaymentPolicy = ({
             {/* Campo de IE - Aparece SEMPRE após selecionar participação de revenda */}
             {participacaoRevenda && (
               <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
-                <label htmlFor="clienteRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'Tipo de Cliente:'} <span style={{ color: '#dc3545' }}>*</span>
+                <label htmlFor="clienteRevendaIE" style={{ fontWeight: '600', fontSize: '15px', marginBottom: '8px', display: 'block', color: '#495057' }}>
+                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'O cliente possui Inscrição Estadual?'} <span style={{ color: '#dc3545' }}>*</span>
                 </label>
                 <small style={{ display: 'block', marginBottom: '10px', color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
                   ⚠️ IMPORTANTE: Este campo afeta o PREÇO BASE do equipamento
                 </small>
+                {user?.regiao === 'rio grande do sul' && (
+                  <small style={{ display: 'block', marginBottom: '10px', color: '#0056b3', fontSize: '0.875em', fontWeight: '600', background: '#cfe2ff', padding: '8px', borderRadius: '4px', border: '1px solid #0056b3' }}>
+                    ℹ️ Vendedores do RS: Selecione "Produtor rural" para preços RS com IE ou "Rodoviário" para preços RS sem IE
+                  </small>
+                )}
                 {/* Mensagem especial para GSI */}
                 {participacaoRevenda === 'sim' && temGuindasteGSI && (
                   <small style={{ display: 'block', marginBottom: '10px', color: '#28a745', fontSize: '0.875em', fontWeight: '600', background: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #28a745' }}>
@@ -630,7 +635,12 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>🚜 Produtor rural</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                      <span style={{ fontWeight: '600' }}>🚜 Produtor rural</span>
+                      {user?.regiao === 'rio grande do sul' && (
+                        <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 'normal' }}>Com Inscrição Estadual</span>
+                      )}
+                    </span>
                   </label>
                   {/* Esconder "Rodoviário" quando for Cliente + Participação de Revenda + GSI */}
                   {!(participacaoRevenda === 'sim' && temGuindasteGSI) && (
@@ -675,7 +685,12 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>🚛 Rodoviário</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                      <span style={{ fontWeight: '600' }}>🚛 Rodoviário</span>
+                      {user?.regiao === 'rio grande do sul' && (
+                        <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 'normal' }}>Sem Inscrição Estadual</span>
+                      )}
+                    </span>
                   </label>
                   )}
                 </div>
