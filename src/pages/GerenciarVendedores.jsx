@@ -75,6 +75,11 @@ const GerenciarVendedores = () => {
         tipo: 'vendedor'
       };
 
+      // Se está editando e a senha não foi alterada, remover do objeto
+      if (editingVendedor && formData.senha === 'vendedor123') {
+        delete vendedorData.senha;
+      }
+
       if (editingVendedor) {
         // Editar vendedor existente
         await db.updateUser(editingVendedor.id, vendedorData);
@@ -134,7 +139,7 @@ const GerenciarVendedores = () => {
       comissao: vendedor.comissao.toString(),
       regiao: vendedor.regiao || '',
       tipo: vendedor.tipo,
-      senha: vendedor.senha || 'vendedor123'
+      senha: 'vendedor123' // Sempre usar senha padrão para edição
     });
     setShowModal(true);
   };
@@ -400,7 +405,10 @@ const GerenciarVendedores = () => {
                   placeholder="Senha padrão: vendedor123"
                 />
                 <small className="form-help">
-                  Senha padrão para primeiro acesso. O vendedor poderá alterar após o primeiro login.
+                  {editingVendedor 
+                    ? 'Nova senha para o vendedor. Deixe em branco para manter a senha atual.' 
+                    : 'Senha padrão para primeiro acesso. O vendedor poderá alterar após o primeiro login.'
+                  }
                 </small>
               </div>
               
