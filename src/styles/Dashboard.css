@@ -49,8 +49,18 @@ html {
 /* Tablet Medium */
 @media (min-width: 1025px) and (max-width: 1200px) {
   .admin-content {
-    margin-left: 270px;
-    width: calc(100% - 270px);
+    margin-left: 270px !important;
+    width: calc(100% - 270px) !important;
+  }
+}
+
+/* Tablet Medium específico - 1030px */
+@media (min-width: 1030px) and (max-width: 1030px) {
+  .admin-content {
+    margin-left: 270px !important;
+    width: calc(100% - 270px) !important;
+    position: relative !important;
+    z-index: 1 !important;
   }
 }
 
