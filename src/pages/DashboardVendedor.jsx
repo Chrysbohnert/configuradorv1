@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
+import VendedorNavigation from '../components/VendedorNavigation';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/Dashboard.css';
@@ -68,31 +68,21 @@ const DashboardVendedor = () => {
   }
 
   return (
-    <div className="dashboard-container">
-      <UnifiedHeader 
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title="Dashboard"
-        subtitle="Painel do Vendedor"
-      />
+    <div className="admin-layout">
+      <VendedorNavigation user={user} />
+      
+      <div className="admin-main-content">
+        <div className="admin-page-header">
+          <div>
+            <h1 className="admin-page-title">Dashboard</h1>
+            <p className="admin-page-subtitle">Painel do Vendedor</p>
+          </div>
+        </div>
 
-      <div className="dashboard-content">
-        {/* Widget de Pronta Entrega removido conforme solicitação */}
         <div className="dashboard-header">
           <div className="welcome-section">
             <h1>Bem-vindo, {user.nome}!</h1>
             <p>Gerencie seus pedidos e orçamentos</p>
-          </div>
-          
-          <div className="user-actions">
-            <button onClick={handleLogout} className="logout-btn">
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-              </svg>
-              Sair
-            </button>
           </div>
         </div>
 

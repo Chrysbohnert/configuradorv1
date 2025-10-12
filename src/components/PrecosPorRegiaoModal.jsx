@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { db } from '../config/supabase';
 
 const regioes = [
-  { id: 'norte-nordeste', nome: 'Norte-Nordeste' },
-  { id: 'centro-oeste', nome: 'Centro Oeste' },
-  { id: 'sul-sudeste', nome: 'Sul-Sudeste' },
-  { id: 'rs-com-ie', nome: 'RS com Inscrição Estadual' },
-  { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual' },
+  { id: 'norte-nordeste', nome: 'Norte-Nordeste', descricao: 'Estados do Norte e Nordeste' },
+  { id: 'centro-oeste', nome: 'Centro Oeste', descricao: 'MT, MS, GO, DF' },
+  { id: 'sul-sudeste', nome: 'Sul-Sudeste', descricao: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
+  { id: 'rs-com-ie', nome: 'RS com Inscrição Estadual', descricao: '🚜 Produtor Rural (Com IE)', destaque: true },
+  { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual', descricao: '🚛 Rodoviário (Sem IE)', destaque: true },
 ];
 
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
@@ -79,6 +79,12 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
           <h2>Preços por Região</h2>
           <button onClick={onClose} className="close-btn">×</button>
         </div>
+        <div style={{ padding: '15px', background: '#e7f3ff', borderBottom: '2px solid #0056b3', marginBottom: '15px' }}>
+          <p style={{ margin: 0, fontSize: '13px', color: '#004085', lineHeight: '1.6' }}>
+            <strong>💡 Dica:</strong> Configure preços diferentes para cada região. Para o <strong>Rio Grande do Sul</strong>, 
+            há duas opções: <strong>Com IE</strong> (Produtor Rural) e <strong>Sem IE</strong> (Rodoviário).
+          </p>
+        </div>
         <div className="modal-form">
           {loading ? (
             <div>Carregando...</div>
@@ -86,8 +92,31 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
             regioes.map(regiao => {
               const precoObj = precos.find(p => p.regiao === regiao.id) || {};
               return (
-                <div className="form-group" key={regiao.id}>
-                  <label>{regiao.nome}</label>
+                <div 
+                  className="form-group" 
+                  key={regiao.id}
+                  style={regiao.destaque ? {
+                    padding: '12px',
+                    background: '#fff3cd',
+                    borderRadius: '6px',
+                    border: '2px solid #ffc107',
+                    marginBottom: '12px'
+                  } : {}}
+                >
+                  <label style={{ fontWeight: regiao.destaque ? '600' : '500' }}>
+                    {regiao.nome}
+                    {regiao.descricao && (
+                      <small style={{ 
+                        display: 'block', 
+                        fontSize: '12px', 
+                        color: '#6c757d', 
+                        fontWeight: 'normal',
+                        marginTop: '4px'
+                      }}>
+                        {regiao.descricao}
+                      </small>
+                    )}
+                  </label>
                   <input
                     type="number"
                     min="0"
