@@ -11,6 +11,8 @@ import { db } from '../config/supabase';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  
   // Sequência de número de proposta local (persistido no navegador)
   const getNextProposalNumber = () => {
     try {
@@ -68,7 +70,10 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
   };
 
   const generatePDF = async () => {
+    if (isGenerating) return; // Evita múltiplos cliques
+    
     try {
+      setIsGenerating(true);
       const addSeparatePolicyPage = false; // política já está dentro do conteúdo principal
       // Debug: Verificar dados de pagamento
       console.log('Dados de pagamento recebidos:', pedidoData.pagamentoData);
@@ -1049,32 +1054,60 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
     <button 
       onClick={generatePDF}
+      disabled={isGenerating}
       className="pdf-generator-btn"
       style={{
-        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+        background: isGenerating 
+          ? 'linear-gradient(135deg, #6c757d 0%, #495057 100%)' 
+          : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
         color: 'white',
         border: 'none',
         padding: '12px 20px',
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: '600',
-        cursor: 'pointer',
+        cursor: isGenerating ? 'not-allowed' : 'pointer',
+        opacity: isGenerating ? 0.7 : 1,
         transition: 'all 0.3s ease',
         display: 'flex',
         alignItems: 'center',
         gap: '8px'
       }}
     >
-      <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
-        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-      </svg>
-      Gerar PDF
+      {isGenerating ? (
+        <>
+          <svg 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            style={{ 
+              width: '16px', 
+              height: '16px',
+              animation: 'spin 1s linear infinite'
+            }}
+          >
+            <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" opacity="0.25"/>
+            <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" strokeLinecap="round"/>
+          </svg>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          Gerando PDF...
+        </>
+      ) : (
+        <>
+          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
+            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+          </svg>
+          Gerar PDF
+        </>
+      )}
     </button>
   );
 };
