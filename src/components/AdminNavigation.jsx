@@ -133,9 +133,9 @@ const AdminNavigation = ({ user }) => {
           <div className="admin-info">
             <div className="admin-avatar">
               {user?.foto_perfil ? (
-                <img 
-                  src={user.foto_perfil} 
-                  alt={user.nome} 
+                <img
+                  src={user.foto_perfil}
+                  alt={user.nome}
                   className="avatar-image"
                   onError={(e) => {
                     e.currentTarget.style.display = 'none';
@@ -143,19 +143,18 @@ const AdminNavigation = ({ user }) => {
                   }}
                 />
               ) : null}
-              <span 
-                className="avatar-text" 
+              <span
+                className="avatar-text"
                 style={{ display: user?.foto_perfil ? 'none' : 'block' }}
               >
                 {user?.nome?.charAt(0).toUpperCase()}
               </span>
-              <div className="avatar-status"></div>
             </div>
             <div className="admin-details">
               <div className="admin-name">{user?.nome}</div>
               <div className="admin-role">
                 <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
-                  <path d="M12 0L15.708 7.604L24 8.852L18 14.696L19.416 23L12 19.104L4.584 23L6 14.696L0 8.852L8.292 7.604L12 0Z"/>
+                  <path d="M12 0L15.708 7.604L24 8.852L18 14.696L19.416 23L12 19.104L4.584 23L6 14.696L0 8.852L8.292 7.604L12 0Z" />
                 </svg>
                 Administrador
               </div>
@@ -182,9 +181,9 @@ const AdminNavigation = ({ user }) => {
         <div className="nav-footer">
           <button className="logout-button" onClick={() => { handleLogout(); setIsOpen(false); }}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
             </svg>
             <span>Sair</span>
           </button>
