@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminNavigation from '../components/AdminNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
 
@@ -10,7 +9,7 @@ import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
   const [page, setPage] = useState(1);
@@ -41,21 +40,10 @@ const GerenciarGuindastes = () => {
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      if (userObj.tipo !== 'admin') {
-        navigate('/dashboard');
-        return;
-      }
-      setUser(userObj);
-    } else {
-      navigate('/');
-      return;
+    if (user) {
+      loadData(1);
     }
-
-    loadData(1);
-  }, [navigate]);
+  }, [user]);
 
   // Memoizar extração de capacidades para evitar recálculos
   const extractCapacidades = React.useCallback((data) => {
@@ -411,18 +399,15 @@ const GerenciarGuindastes = () => {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      
-      <div className="admin-content">
-        <UnifiedHeader 
-          showBackButton={false}
-          showSupportButton={true}
-          showUserInfo={true}
-          user={user}
-          title="Gerenciar Guindastes"
-          subtitle="Cadastre e edite os guindastes"
-        />
+    <>
+      <UnifiedHeader 
+        showBackButton={false}
+        showSupportButton={true}
+        showUserInfo={true}
+        user={user}
+        title="Gerenciar Guindastes"
+        subtitle="Cadastre e edite os guindastes"
+      />
         <div className="gerenciar-guindastes-container">
           <div className="gerenciar-guindastes-content">
             <div className="page-header">
@@ -692,7 +677,6 @@ const GerenciarGuindastes = () => {
 
           </div>
         </div>
-      </div>
 
       {showModal && (
         <div className="modal-overlay">
@@ -1018,7 +1002,7 @@ const GerenciarGuindastes = () => {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
 

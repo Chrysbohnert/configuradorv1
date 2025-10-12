@@ -2,26 +2,27 @@ import React, { lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from './components/ProtectedRoute';
 import LazyRoute from './components/LazyRoute';
+import AdminLayout from './components/AdminLayout';
 
-// Componente público (não lazy)
+// Componentes públicos e admin (não lazy - carregam instantaneamente)
 import Login from './pages/Login';
+import DashboardAdmin from './pages/DashboardAdmin';
+import GerenciarVendedores from './pages/GerenciarVendedores';
+import GerenciarGuindastes from './pages/GerenciarGuindastes';
+import RelatorioCompleto from './pages/RelatorioCompleto';
+import GerenciarGraficosCarga from './pages/GerenciarGraficosCarga';
+import Logistica from './pages/Logistica';
+import Configuracoes from './pages/Configuracoes';
 
-// Componentes lazy (carregados sob demanda)
+// Componentes vendedor lazy (carregados sob demanda)
 const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
-const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'));
 const NovoPedido = lazy(() => import('./pages/NovoPedido'));
 const Historico = lazy(() => import('./pages/Historico'));
 const Support = lazy(() => import('./pages/Support'));
-const GerenciarVendedores = lazy(() => import('./pages/GerenciarVendedores'));
-const GerenciarGuindastes = lazy(() => import('./pages/GerenciarGuindastes'));
-const RelatorioCompleto = lazy(() => import('./pages/RelatorioCompleto'));
 const AlterarSenha = lazy(() => import('./pages/AlterarSenha'));
 const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
-const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga'));
 const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
-const Logistica = lazy(() => import('./pages/Logistica'));
 const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
-const Configuracoes = lazy(() => import('./pages/Configuracoes'));
 
 // Carregar scripts de migração em desenvolvimento
 if (import.meta.env.DEV) {
@@ -66,42 +67,20 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Rotas do Admin */}
-          <Route path="/dashboard-admin" element={
+          {/* Rotas do Admin - Com Layout Compartilhado */}
+          <Route element={
             <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Dashboard Admin...">
-                <DashboardAdmin />
-              </LazyRoute>
+              <AdminLayout />
             </ProtectedRoute>
-          } />
-          <Route path="/logistica" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Logística...">
-                <Logistica />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/gerenciar-vendedores" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Gerenciar Vendedores...">
-                <GerenciarVendedores />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/gerenciar-guindastes" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Gerenciar Guindastes...">
-                <GerenciarGuindastes />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/relatorio-completo" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Relatório...">
-                <RelatorioCompleto />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
+          }>
+            <Route path="/dashboard-admin" element={<DashboardAdmin />} />
+            <Route path="/logistica" element={<Logistica />} />
+            <Route path="/gerenciar-vendedores" element={<GerenciarVendedores />} />
+            <Route path="/gerenciar-guindastes" element={<GerenciarGuindastes />} />
+            <Route path="/relatorio-completo" element={<RelatorioCompleto />} />
+            <Route path="/gerenciar-graficos-carga" element={<GerenciarGraficosCarga />} />
+            <Route path="/configuracoes" element={<Configuracoes />} />
+          </Route>
           
           {/* Rota de Suporte */}
           <Route path="/suporte" element={
@@ -128,29 +107,11 @@ function App() {
             </ProtectedRoute>
           } />
           
-          {/* Rota de Gerenciar Gráficos de Carga */}
-          <Route path="/gerenciar-graficos-carga" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Gerenciar Gráficos...">
-                <GerenciarGraficosCarga />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          
           {/* Rota de Detalhes do Guindaste */}
           <Route path="/detalhes-guindaste/:id?" element={
             <ProtectedRoute>
               <LazyRoute loadingMessage="Carregando Detalhes do Guindaste...">
                 <DetalhesGuindaste />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          
-          {/* Rota de Configurações (Admin) */}
-          <Route path="/configuracoes" element={
-            <ProtectedRoute requireAdmin={true}>
-              <LazyRoute loadingMessage="Carregando Configurações...">
-                <Configuracoes />
               </LazyRoute>
             </ProtectedRoute>
           } />
