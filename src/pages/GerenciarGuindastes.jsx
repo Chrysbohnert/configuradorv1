@@ -335,6 +335,42 @@ const GerenciarGuindastes = () => {
     const trimmed = url.trim();
     if (trimmed === '') return false;
     
+    // Rejeitar base64 truncadas (que terminam com ... ou são muito curtas)
+    if (trimmed.startsWith('data:image/')) {
+      // Base64 truncada geralmente termina com ... ou é muito curta
+      if (trimmed.endsWith('...') || trimmed.endsWith('..')) {
+        console.warn('🚫 Imagem base64 truncada rejeitada:', trimmed.substring(0, 100) + '...');
+        return false;
+      }
+      
+      // Verificar estrutura mínima: data:image/tipo;base64,dados
+      const parts = trimmed.split(',');
+      if (parts.length !== 2 || !parts[0].includes('base64')) {
+        console.warn('🚫 Base64 com estrutura inválida:', trimmed.substring(0, 100));
+        return false;
+      }
+      
+      // Base64 válida deve ter pelo menos 1000 caracteres (uma imagem mínima)
+      // Isso filtra base64s truncadas que têm poucos dados
+      if (trimmed.length < 1000) {
+        console.warn('🚫 Base64 muito curta (provavelmente truncada):', trimmed.length, 'caracteres');
+        return false;
+      }
+      
+      // Verificar se os dados base64 são válidos (apenas caracteres base64)
+      const base64Data = parts[1];
+      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
+      
+      // Verificar apenas os primeiros 100 caracteres (performance)
+      const sampleData = base64Data.substring(0, 100);
+      if (!base64Regex.test(sampleData)) {
+        console.warn('🚫 Dados base64 contêm caracteres inválidos');
+        return false;
+      }
+      
+      return true;
+    }
+    
     // Aceitar URLs http/https
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       try {
@@ -342,15 +378,6 @@ const GerenciarGuindastes = () => {
         return true;
       } catch {
         return false;
-      }
-    }
-    
-    // Aceitar base64 COMPLETAS e válidas (mínimo 100 caracteres para evitar base64 truncadas)
-    if (trimmed.startsWith('data:image/') && trimmed.length > 100) {
-      // Verificar se tem a estrutura básica: data:image/tipo;base64,dados
-      const parts = trimmed.split(',');
-      if (parts.length === 2 && parts[0].includes('base64')) {
-        return true;
       }
     }
     
@@ -935,7 +962,11 @@ const GerenciarGuindastes = () => {
                       <div className="imagens-grid">
                         {formData.imagens_adicionais.map((img, index) => (
                           <div key={index} className="imagem-preview-item">
-                            <img src={img} alt={`Preview ${index + 1}`} />
+                            <img 
+                              src={img} 
+                              alt={`Preview ${index + 1}`}
+                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                            />
                             <button
                               type="button"
                               onClick={() => removeImagemAdicional(index)}
