@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminNavigation from '../components/AdminNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import '../styles/GerenciarVendedores.css';
 
 const GerenciarVendedores = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -25,21 +24,10 @@ const GerenciarVendedores = () => {
   const [confirmDelete, setConfirmDelete] = useState({ open: false, id: null, nome: '' });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      if (userObj.tipo !== 'admin') {
-        navigate('/dashboard');
-        return;
-      }
-      setUser(userObj);
-    } else {
-      navigate('/');
-      return;
+    if (user) {
+      loadVendedores();
     }
-
-    loadVendedores();
-  }, [navigate]);
+  }, [user]);
 
   const loadVendedores = async () => {
     try {
@@ -176,13 +164,10 @@ const GerenciarVendedores = () => {
   }
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      
-      <div className="admin-content">
-        <UnifiedHeader 
-          showBackButton={false}
-          showSupportButton={true}
+    <>
+      <UnifiedHeader 
+        showBackButton={false}
+        showSupportButton={true}
           showUserInfo={true}
           user={user}
           title="Vendedores"
@@ -454,8 +439,7 @@ const GerenciarVendedores = () => {
         </div>
       )}
         </div>
-      </div>
-    </div>
+    </>
   );
 };
 

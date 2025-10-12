@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { startOfWeek, startOfMonth, addDays, isToday, format as dfFormat } from 'date-fns';
-import AdminNavigation from '../components/AdminNavigation';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import '../styles/Dashboard.css';
 import '../styles/Logistica.css';
 
 const Logistica = () => {
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [eventos, setEventos] = useState([]);
   const [notaAtual, setNotaAtual] = useState({ id: null, data: '', titulo: '', descricao: '' });
@@ -16,19 +16,10 @@ const Logistica = () => {
   const [selectedDateStr, setSelectedDateStr] = useState('');
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      if (userObj.tipo !== 'admin') {
-        window.location.href = '/dashboard';
-        return;
-      }
-      setUser(userObj);
+    if (user) {
       loadData();
-    } else {
-      window.location.href = '/';
     }
-  }, []);
+  }, [user]);
 
   const loadData = async () => {
     try {
@@ -147,14 +138,12 @@ const Logistica = () => {
   if (!user) return null;
 
   return (
-    <div className="admin-layout logistica-page">
-      <AdminNavigation user={user} />
-      <div className="admin-content">
-        <UnifiedHeader 
-          showBackButton={false}
-          showSupportButton={true}
-          showUserInfo={true}
-          user={user}
+    <div className="logistica-page">
+      <UnifiedHeader 
+        showBackButton={false}
+        showSupportButton={true}
+        showUserInfo={true}
+        user={user}
           title="Logística"
           subtitle="Calendário simples de anotações"
         />
@@ -259,7 +248,6 @@ const Logistica = () => {
 
           </div>
         </div>
-      </div>
     </div>
   );
 };

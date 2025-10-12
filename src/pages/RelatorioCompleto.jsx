@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import AdminNavigation from '../components/AdminNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
@@ -9,7 +8,7 @@ import '../styles/Dashboard.css';
 
 const RelatorioCompleto = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [pedidosFiltrados, setPedidosFiltrados] = useState([]);
@@ -17,22 +16,8 @@ const RelatorioCompleto = () => {
   const [filtroVendedor, setFiltroVendedor] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const userObj = JSON.parse(userData);
-      if (userObj.tipo !== 'admin') {
-        navigate('/dashboard');
-        return;
-      }
-      setUser(userObj);
-    } else {
-      navigate('/');
-      return;
-    }
-  }, [navigate]);
-
   const loadRelatorio = async () => {
+    if (!user) return;
     try {
       setIsLoading(true);
       const [users, pedidos] = await Promise.all([db.getUsers(), db.getPedidos()]);
@@ -48,7 +33,7 @@ const RelatorioCompleto = () => {
   };
 
   useEffect(() => {
-    if (user) loadRelatorio();
+    loadRelatorio();
   }, [user]);
 
   useEffect(() => {
@@ -122,12 +107,10 @@ const RelatorioCompleto = () => {
   if (!user) return null;
 
   return (
-    <div className="admin-layout">
-      <AdminNavigation user={user} />
-      <div className="admin-content">
-        <UnifiedHeader 
-          showBackButton={false}
-          showSupportButton={true}
+    <>
+      <UnifiedHeader 
+        showBackButton={false}
+        showSupportButton={true}
           showUserInfo={true}
           user={user}
           title="Relatório"
@@ -235,8 +218,7 @@ const RelatorioCompleto = () => {
 
           </div>
         </div>
-      </div>
-    </div>
+    </>
   );
 };
 
