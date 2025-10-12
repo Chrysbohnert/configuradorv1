@@ -17,16 +17,18 @@ import './PaymentPolicy.css';
  * @param {Function} props.onClienteIEChange - Callback para mudar o estado de IE
  * @param {Array} props.carrinho - Itens do carrinho para verificar modelos GSE
  */
-const PaymentPolicy = ({ 
-  precoBase = 0, 
-  onPaymentComputed, 
+const PaymentPolicy = ({
+  precoBase = 0,
+  onPaymentComputed,
   onPlanSelected,
   errors = {},
   user = null,
   clienteTemIE = true,
   onClienteIEChange,
-  carrinho = []
+  carrinho = [],
+  debug = false
 }) => {
+  // Evitar logs excessivos em produção
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
   const [localInstalacao, setLocalInstalacao] = useState('');
@@ -40,41 +42,74 @@ const PaymentPolicy = ({
   const [erroCalculo, setErroCalculo] = useState('');
 
   // Estados para o sistema de frete
-  const [fretes, setFretes] = useState([]); // Dados de fretes carregados do banco
+  const [pontosInstalacao, setPontosInstalacao] = useState([]); // Pontos de instalação filtrados por região
   const [tipoFreteSelecionado, setTipoFreteSelecionado] = useState(''); // 'prioridade' | 'reaproveitamento'
   const [dadosFreteAtual, setDadosFreteAtual] = useState(null); // Dados do frete selecionado
+  const [loadingPontos, setLoadingPontos] = useState(false);
 
-  // Carregar dados de frete do banco
+  // Carregar pontos de instalação filtrados por região do vendedor
   useEffect(() => {
-    const carregarFretes = async () => {
+    const carregarPontos = async () => {
+      if (!user?.regiao) {
+        console.warn('⚠️ Vendedor sem região definida');
+        return;
+      }
+
       try {
-        const dadosFretes = await db.getFretes();
-        setFretes(dadosFretes);
+        setLoadingPontos(true);
+        
+        // Importar dinamicamente o helper de mapeamento
+        const { mapRegiaoToGrupo } = await import('../../utils/regiaoMapper');
+        
+        // Para RS, o grupo depende se o cliente tem IE (mas aqui pegamos todos do RS)
+        // A lógica de IE só afeta os PREÇOS, não os pontos disponíveis
+        const grupoRegiao = mapRegiaoToGrupo(user.regiao, clienteTemIE);
+        
+        console.log('🌍 Carregando pontos para:', { 
+          regiaoVendedor: user.regiao, 
+          grupoRegiao,
+          clienteTemIE 
+        });
+
+        const pontos = await db.getPontosInstalacaoPorRegiao(grupoRegiao);
+        setPontosInstalacao(pontos);
+        
+        console.log('✅ Pontos carregados:', pontos.length);
       } catch (error) {
-        console.error('Erro ao carregar fretes:', error);
+        console.error('❌ Erro ao carregar pontos de instalação:', error);
+        setPontosInstalacao([]);
+      } finally {
+        setLoadingPontos(false);
       }
     };
 
-    carregarFretes();
-  }, []);
+    carregarPontos();
+  }, [user?.regiao, clienteTemIE]);
 
   // Atualizar dados do frete quando o local de instalação mudar
   useEffect(() => {
-    if (localInstalacao && fretes.length > 0) {
-      // Extrair cidade e oficina do localInstalacao (formato: "Nome - Cidade/UF")
+    if (localInstalacao && pontosInstalacao.length > 0) {
+      // Extrair oficina, cidade e UF do localInstalacao (formato: "Oficina - Cidade/UF")
       const partes = localInstalacao.split(' - ');
       if (partes.length === 2) {
-        const cidadeParte = partes[1].split('/')[0];
+        const oficina = partes[0];
+        const cidadeUF = partes[1].split('/');
+        const cidade = cidadeUF[0];
+        const uf = cidadeUF[1];
 
-        // Buscar dados de frete para a cidade
-        const freteEncontrado = fretes.find(frete =>
-          frete.cidade?.toLowerCase() === cidadeParte?.toLowerCase()
+        // Buscar dados de frete específicos (oficina + cidade + UF para evitar ambiguidade)
+        const freteEncontrado = pontosInstalacao.find(ponto =>
+          ponto.oficina === oficina &&
+          ponto.cidade === cidade &&
+          ponto.uf === uf
         );
 
         if (freteEncontrado) {
+          console.log('✅ Frete encontrado para:', { oficina, cidade, uf });
           setDadosFreteAtual(freteEncontrado);
-          setTipoFreteSelecionado(''); // Resetar seleção
+          setTipoFreteSelecionado(''); // Resetar seleção para forçar escolha
         } else {
+          console.warn('⚠️ Frete não encontrado para:', { oficina, cidade, uf });
           setDadosFreteAtual(null);
           setTipoFreteSelecionado('');
         }
@@ -83,41 +118,35 @@ const PaymentPolicy = ({
       setDadosFreteAtual(null);
       setTipoFreteSelecionado('');
     }
-  }, [localInstalacao, fretes]);
+  }, [localInstalacao, pontosInstalacao]);
 
-  // Lista de oficinas do Rio Grande do Sul
-  const oficinasRS = [
-    { nome: 'Agiltec', cidade: 'Santa Rosa', uf: 'RS' },
-    { nome: 'Rodokurtz', cidade: 'Pelotas', uf: 'RS' },
-    { nome: 'Hidroen Guindastes', cidade: 'São José do Inhacorá', uf: 'RS' },
-    { nome: 'Trevisan', cidade: 'Santa Maria', uf: 'RS' },
-    { nome: 'Berto', cidade: 'Canoas', uf: 'RS' },
-    { nome: 'Guindas Move', cidade: 'Alvorada', uf: 'RS' },
-    { nome: 'Salex', cidade: 'Nova Prata', uf: 'RS' },
-    { nome: 'Guindasmap', cidade: 'Santo Antônio da Patrulha', uf: 'RS' },
-    { nome: 'VRC Manutenções', cidade: 'Caxias do Sul', uf: 'RS' },
-    { nome: 'BGS Implementos', cidade: 'Erechim', uf: 'RS' },
-    { nome: 'R.D.P. Soluções Hidráulicas', cidade: 'Não-Me-Toque', uf: 'RS' },
-    { nome: 'KM Prestação de Serviço Mecânico', cidade: 'Carazinho', uf: 'RS' },
-    { nome: 'Mecânica Acosta', cidade: 'Alegrete', uf: 'RS' },
-    { nome: 'KIST Oficina de Furgões', cidade: 'Santo Ângelo', uf: 'RS' },
-    { nome: 'Henz & Cassola Comércio', cidade: 'Cândido Godói', uf: 'RS' }
-  ];
-
-  // Filtrar oficinas baseado na região do vendedor
-  const oficinasDisponiveis = oficinasRS.filter(oficina => {
-    // Se o vendedor for do Rio Grande do Sul, mostrar todas as oficinas RS
-    if (user?.regiao === 'rio grande do sul') {
-      return oficina.uf === 'RS';
-    }
-    // Para outras regiões, pode ser necessário adicionar lógica futura
-    return false; // Por enquanto, só mostra para vendedores do RS
-  });
+  // Os pontos disponíveis já vêm filtrados do banco por região do vendedor
+  // Formatar para exibição no select
+  const oficinasDisponiveis = pontosInstalacao.map(ponto => ({
+    nome: ponto.oficina,
+    cidade: ponto.cidade,
+    uf: ponto.uf,
+    valor_prioridade: ponto.valor_prioridade,
+    valor_reaproveitamento: ponto.valor_reaproveitamento
+  }));
   
   // Estados para Participação de Revenda (apenas para Cliente)
   const [participacaoRevenda, setParticipacaoRevenda] = useState(''); // 'sim' | 'nao'
   const [revendaTemIE, setRevendaTemIE] = useState(''); // 'sim' | 'nao' (se participacaoRevenda === 'sim')
   const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // Desconto do vendedor: 1-5% (se cliente COM participação de revenda - Produtor rural)
+
+  // ← NOVO: Log quando estados internos mudam
+  useEffect(() => {
+    if (debug) {
+      console.log('📊 [PaymentPolicy] Estados internos atualizados:', {
+        tipoCliente,
+        prazoSelecionado,
+        participacaoRevenda,
+        revendaTemIE,
+        descontoRevendaIE
+      });
+    }
+  }, [tipoCliente, prazoSelecionado, participacaoRevenda, revendaTemIE, descontoRevendaIE, debug]);
 
   // Verificar se há guindastes GSE no carrinho
   const temGuindasteGSE = useMemo(() => {
@@ -236,6 +265,7 @@ const PaymentPolicy = ({
 
   // Efeito para recalcular quando mudar o tipo, prazo ou preço base
   useEffect(() => {
+
     // Se for À Vista, zerar o valor do sinal
     if (prazoSelecionado === 'À Vista' && valorSinal) {
       setValorSinal('');
@@ -243,6 +273,7 @@ const PaymentPolicy = ({
 
     // Validações antes de fazer o cálculo
     if (!tipoCliente || !prazoSelecionado || !precoBase) {
+      // silencioso
       setCalculoAtual(null);
       setErroCalculo('');
       return;
@@ -896,11 +927,14 @@ const PaymentPolicy = ({
               value={localInstalacao}
               onChange={(e) => setLocalInstalacao(e.target.value)}
               className={errors.localInstalacao ? 'error' : ''}
+              disabled={loadingPontos}
             >
               <option value="">
-                {oficinasDisponiveis.length === 0
-                  ? 'Nenhuma oficina disponível para sua região'
-                  : 'Selecione o local de instalação'
+                {loadingPontos 
+                  ? 'Carregando oficinas...'
+                  : oficinasDisponiveis.length === 0
+                    ? 'Nenhuma oficina disponível para sua região'
+                    : 'Selecione o local de instalação'
                 }
               </option>
               {oficinasDisponiveis.map((oficina, index) => (
@@ -909,6 +943,16 @@ const PaymentPolicy = ({
                 </option>
               ))}
             </select>
+            {loadingPontos && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+                🔄 Carregando pontos de instalação da sua região...
+              </small>
+            )}
+            {!loadingPontos && oficinasDisponiveis.length > 0 && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
+                ✓ {oficinasDisponiveis.length} {oficinasDisponiveis.length === 1 ? 'oficina disponível' : 'oficinas disponíveis'}
+              </small>
+            )}
             {errors.localInstalacao && (
               <span className="error-message">{errors.localInstalacao}</span>
             )}

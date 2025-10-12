@@ -137,7 +137,7 @@ function App() {
           } />
           
           {/* Rota de Detalhes do Guindaste */}
-          <Route path="/detalhes-guindaste/:id" element={
+          <Route path="/detalhes-guindaste/:id?" element={
             <ProtectedRoute>
               <LazyRoute loadingMessage="Carregando Detalhes do Guindaste...">
                 <DetalhesGuindaste />

@@ -577,6 +577,43 @@ class DatabaseService {
     return data;
   }
 
+  // Buscar pontos de instalação filtrados por grupo de região
+  async getPontosInstalacaoPorRegiao(grupoRegiao) {
+    console.log('🔍 [DB] Buscando pontos de instalação para grupo:', grupoRegiao);
+    
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .eq('regiao_grupo', grupoRegiao)
+      .order('cidade');
+
+    if (error) {
+      console.error('❌ [DB] Erro ao buscar pontos de instalação:', error);
+      throw error;
+    }
+
+    console.log('✅ [DB] Pontos encontrados:', data?.length || 0);
+    return data || [];
+  }
+
+  // Buscar frete específico por oficina, cidade e UF (evita ambiguidade)
+  async getFretePorOficinaCidadeUF(oficina, cidade, uf) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .eq('oficina', oficina)
+      .eq('cidade', cidade)
+      .eq('uf', uf)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar frete específico:', error);
+      return null;
+    }
+
+    return data;
+  }
+
   async createFrete(freteData) {
     const { data, error } = await supabase
       .from('fretes')
