@@ -12,7 +12,14 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Variáveis de ambiente do Supabase não configuradas!');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    storageKey: 'supabase.auth.token',
+  }
+});
 
 // Classe para operações do banco de dados
 class DatabaseService {
@@ -91,7 +98,7 @@ class DatabaseService {
   _guindastesCache = new Map();
 
   // Versão leve para listagens: apenas campos necessários, com paginação e busca
-  async getGuindastesLite({ page = 1, pageSize = 50, search = '', forceRefresh = false } = {}) {
+  async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
     const cacheKey = `page_${page}_size_${pageSize}_search_${search}`;
 
     // Verificar cache primeiro (exceto se for refresh forçado)
