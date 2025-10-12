@@ -106,10 +106,13 @@ const ResumoPedido = ({
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
+      // Remover campos que não existem na tabela caminhoes
+      const { medidaA, medidaB, medidaC, medidaD, ...caminhaoDataLimpo } = caminhaoData;
+      
       const caminhaoDataToSave = {
-        ...caminhaoData,
+        ...caminhaoDataLimpo,
         cliente_id: cliente.id,
-        observacoes: caminhaoData.observacoes || null,
+        observacoes: caminhaoDataLimpo.observacoes || null,
         placa: 'N/A' // Campo obrigatório no banco
       };
       

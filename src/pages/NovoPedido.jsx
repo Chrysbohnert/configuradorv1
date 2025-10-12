@@ -1667,11 +1667,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
+      // Remover campos que não existem na tabela caminhoes
+      const { medidaA, medidaB, medidaC, medidaD, ...caminhaoDataLimpo } = caminhaoData;
+      
       const caminhaoDataToSave = {
-        ...caminhaoData,
+        ...caminhaoDataLimpo,
         cliente_id: cliente.id,
         // Garantir que campos opcionais tenham valores padrão
-        observacoes: caminhaoData.observacoes || null,
+        observacoes: caminhaoDataLimpo.observacoes || null,
         // Campo placa é obrigatório no banco mas não usado no formulário
         placa: 'N/A'
       };
