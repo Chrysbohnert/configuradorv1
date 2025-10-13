@@ -97,9 +97,9 @@ class DatabaseService {
   // Cache para evitar múltiplas requisições
   _guindastesCache = new Map();
 
-  // Versão leve para listagens: apenas campos necessários, com paginação e busca
+  // Versão leve para listagens iniciais: APENAS campos essenciais
   async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
-    const cacheKey = `page_${page}_size_${pageSize}_search_${search}`;
+    const cacheKey = `lite_page_${page}_size_${pageSize}_search_${search}`;
 
     // Verificar cache primeiro (exceto se for refresh forçado)
     if (!forceRefresh && this._guindastesCache.has(cacheKey)) {
@@ -112,6 +112,7 @@ class DatabaseService {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
+    // Apenas campos essenciais para listagem rápida
     let query = supabase
       .from('guindastes')
       .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
@@ -140,6 +141,48 @@ class DatabaseService {
     }
 
     return result;
+  }
+
+  // Buscar guindaste completo com TODOS os campos (incluindo descricao e nao_incluido)
+  async getGuindasteCompleto(id) {
+    const cacheKey = `completo_${id}`;
+
+    // Verificar cache
+    if (this._guindastesCache.has(cacheKey)) {
+      const cached = this._guindastesCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 10 * 60 * 1000) { // 10 minutos de cache
+        return cached.data;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('guindastes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+
+    // Armazenar no cache
+    this._guindastesCache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+
+    return data;
+  }
+
+  // Buscar múltiplos guindastes completos
+  async getGuindastesCompletos(ids) {
+    if (!ids || ids.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('guindastes')
+      .select('*')
+      .in('id', ids);
+
+    if (error) throw error;
+    return data || [];
   }
 
   async createGuindaste(guindasteData) {

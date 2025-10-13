@@ -2018,20 +2018,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               </div>
             </>
           )}
-          {/* Campos Local de Instalação e Tipo de Instalação apenas para cliente */}
+          {/* Campos de Instalação apenas para cliente */}
           {pagamentoData.tipoCliente === 'cliente' && (
             <>
               <div className="data-row">
-                <span className="label">Local de Instalação:</span>
-                <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+                <span className="label">Pagamento Instalação por Conta de:</span>
+                <span className="value">
+                  {pagamentoData.pagamentoInstalacaoPorConta === 'cliente' && 'Cliente'}
+                  {pagamentoData.pagamentoInstalacaoPorConta === 'fabrica' && 'Fábrica'}
+                  {!pagamentoData.pagamentoInstalacaoPorConta && 'Não informado'}
+                </span>
               </div>
               <div className="data-row">
-                <span className="label">Tipo de Instalação:</span>
-                <span className="value">
-                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
-                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
-                  {!pagamentoData.tipoInstalacao && 'Não informado'}
-                </span>
+                <span className="label">Local de Instalação:</span>
+                <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
               </div>
               
               {/* Informações sobre Participação de Revenda */}
