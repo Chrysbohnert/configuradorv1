@@ -576,21 +576,21 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             ` : ''}
             ${pedidoData.pagamentoData?.tipoCliente === 'cliente' ? `
             <div style="margin-bottom: 10px;">
-              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
-            </div>
-            <div style="margin-bottom: 10px;">
-              <strong>Tipo de Instalação:</strong> ${
-                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
-                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
+              <strong>Pagamento Instalação por Conta de:</strong> ${
+                pedidoData.pagamentoData?.pagamentoInstalacaoPorConta === 'cliente' ? 'Cliente' :
+                pedidoData.pagamentoData?.pagamentoInstalacaoPorConta === 'fabrica' ? 'Fábrica' :
                 'Não informado'
               }
+            </div>
+            <div style="margin-bottom: 10px;">
+              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.tipoFrete ? `
             <div style="margin-bottom: 10px;">
               <strong>Tipo de Frete:</strong> 
-              <span style="color: ${pedidoData.pagamentoData.tipoFrete === 'cif' ? '#28a745' : '#dc3545'}; font-weight: bold;">
-                ${pedidoData.pagamentoData.tipoFrete === 'cif' ? 'CIF (Fábrica paga)' : 'FOB (Cliente paga)'}
+              <span style="color: ${pedidoData.pagamentoData.tipoFrete === 'cif' ? '#28a745' : '#6c757d'}; font-weight: bold;">
+                ${pedidoData.pagamentoData.tipoFrete === 'cif' ? 'CIF (Frete incluso no pedido)' : 'FOB (Por conta do cliente)'}
               </span>
             </div>
             ` : ''}

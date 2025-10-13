@@ -159,16 +159,16 @@ const ResumoForm = ({
             </div>
           )}
           <div className="data-row">
-            <span className="label">Local de Instalação:</span>
-            <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+            <span className="label">Pagamento Instalação por Conta de:</span>
+            <span className="value">
+              {pagamentoData.pagamentoInstalacaoPorConta === 'cliente' && 'Cliente'}
+              {pagamentoData.pagamentoInstalacaoPorConta === 'fabrica' && 'Fábrica'}
+              {!pagamentoData.pagamentoInstalacaoPorConta && 'Não informado'}
+            </span>
           </div>
           <div className="data-row">
-            <span className="label">Pagamento por Conta de:</span>
-            <span className="value">
-              {pagamentoData.tipoInstalacao === 'cliente' && 'Cliente'}
-              {pagamentoData.tipoInstalacao === 'fabrica' && 'Fábrica'}
-              {!pagamentoData.tipoInstalacao && 'Não informado'}
-            </span>
+            <span className="label">Local de Instalação:</span>
+            <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
           </div>
           {pagamentoData.valorFinal > 0 && (
             <div className="data-row total-row">
