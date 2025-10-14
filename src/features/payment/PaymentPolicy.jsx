@@ -15,7 +15,7 @@ import './PaymentPolicy.css';
  * @param {Object} props.user - Dados do usuário logado
  * @param {boolean} props.clienteTemIE - Se o cliente tem Inscrição Estadual
  * @param {Function} props.onClienteIEChange - Callback para mudar o estado de IE
- * @param {Array} props.carrinho - Itens do carrinho para verificar modelos GSE
+ * @param {Array} props.carrinho - Itens do carrinho para verificar modelos GSE/GSI
  */
 const PaymentPolicy = ({ 
   precoBase = 0, 
@@ -30,13 +30,13 @@ const PaymentPolicy = ({
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
   const [localInstalacao, setLocalInstalacao] = useState('');
-  const [pagamentoPorConta, setPagamentoPorConta] = useState(''); // 'cliente' | 'fabrica'
+  const [pagamentoPorConta, setPagamentoPorConta] = useState(''); // mantido para compatibilidade
   const [pagamentoInstalacaoPorConta, setPagamentoInstalacaoPorConta] = useState(''); // 'cliente' | 'fabrica'
   const [financiamentoBancario, setFinanciamentoBancario] = useState(''); // 'sim' | 'nao'
   const [valorSinal, setValorSinal] = useState('');
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50'
   const [formaEntrada, setFormaEntrada] = useState(''); // Forma de pagamento da entrada
-  const [descontoAdicional, setDescontoAdicional] = useState(0); // Desconto adicional do vendedor (0-3%)
+  const [descontoAdicional, setDescontoAdicional] = useState(0); // Desconto adicional do vendedor (0-3% / ou mais em regras específicas)
   const [tipoFrete, setTipoFrete] = useState(''); // 'cif' | 'fob'
   const [calculoAtual, setCalculoAtual] = useState(null);
   const [erroCalculo, setErroCalculo] = useState('');
@@ -86,6 +86,13 @@ const PaymentPolicy = ({
       setTipoFreteSelecionado('');
     }
   }, [localInstalacao, fretes]);
+
+  // Resetar tipo de frete selecionado quando mudar de CIF para FOB
+  useEffect(() => {
+    if (tipoFrete === 'fob' && tipoFreteSelecionado) {
+      setTipoFreteSelecionado(''); // Limpar seleção quando for FOB (cliente busca)
+    }
+  }, [tipoFrete, tipoFreteSelecionado]);
 
   // Lista de oficinas do Rio Grande do Sul
   const oficinasRS = [
@@ -244,21 +251,27 @@ const PaymentPolicy = ({
     }
 
     // Validações antes de fazer o cálculo
-    if (!tipoCliente || !prazoSelecionado || !precoBase) {
+    // Se houver financiamento bancário, não exigir prazo
+    const precisaPrazo = !(tipoCliente === 'cliente' && financiamentoBancario === 'sim');
+    if (!tipoCliente || (precisaPrazo && !prazoSelecionado) || !precoBase) {
       setCalculoAtual(null);
       setErroCalculo('');
       return;
     }
 
-    // Validação: se há dados de frete disponíveis, o tipo deve ser selecionado
-    if (dadosFreteAtual && !tipoFreteSelecionado) {
+    // Validação: se há dados de frete disponíveis E for CIF, o tipo deve ser selecionado
+    // Se for FOB, não exige tipo de entrega (cliente busca a máquina)
+    if (dadosFreteAtual && tipoFrete === 'cif' && !tipoFreteSelecionado) {
       setCalculoAtual(null);
       setErroCalculo(`🚛 Selecione o tipo de entrega para ${dadosFreteAtual.cidade} (Prioridade ou Reaproveitamento)`);
       return;
     }
 
     try {
-      const plan = getPlanByDescription(prazoSelecionado, tipoCliente);
+      // Se houver financiamento bancário, usar plano default (sem desconto/acréscimo)
+      const plan = (tipoCliente === 'cliente' && financiamentoBancario === 'sim') 
+        ? { description: 'Financiamento Bancário', discount_percent: 0, surcharge_percent: 0, entry_percent_required: 0 }
+        : getPlanByDescription(prazoSelecionado, tipoCliente);
       
       if (!plan) {
         setErroCalculo('Plano não encontrado');
@@ -368,6 +381,7 @@ const PaymentPolicy = ({
           localInstalacao,
           pagamentoPorConta,
           pagamentoInstalacaoPorConta,
+          financiamentoBancario: financiamentoBancario, // 'sim' | 'nao'
           valorSinal: valorSinalNum,
           percentualEntrada: percentualEntradaNum,
           entradaTotal: entradaTotal,
@@ -412,7 +426,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, pagamentoInstalacaoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, pagamentoInstalacaoPorConta, financiamentoBancario, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -436,6 +450,19 @@ const PaymentPolicy = ({
 
   return (
     <div className="payment-policy">
+      {/* Resumo do Carrinho - sempre visível */}
+      {tipoCliente && (
+        <div style={{ marginBottom: '20px' }}>
+          <h3>Resumo do Pedido</h3>
+          <div className="summary-box">
+            <div className="summary-row">
+              <span className="summary-label">Valor Total do Carrinho:</span>
+              <span className="summary-value">{formatCurrency(precoBase)}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Seleção de Tipo de Cliente e Prazo */}
       <div className="payment-section">
         <h3>Política de Pagamento</h3>
@@ -459,9 +486,10 @@ const PaymentPolicy = ({
           )}
         </div>
 
-        {/* Participação de Revenda - SEMPRE aparece para Cliente */}
-        {tipoCliente === 'cliente' && (
-          <>
+        {/* ======= CORREÇÃO: usar um Fragment para englobar os dois blocos abaixo ======= */}
+        <>
+          {/* Participação de Revenda - SEMPRE aparece para Cliente */}
+          {tipoCliente === 'cliente' && (
             <div className="form-group" style={{ marginTop: '15px' }}>
               <label htmlFor="participacaoRevenda" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
                 Há Participação de Revenda? <span style={{ color: '#dc3545' }}>*</span>
@@ -491,116 +519,12 @@ const PaymentPolicy = ({
                     flex: '1',
                     boxShadow: participacaoRevenda === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
                     userSelect: 'none'
-                  }}
-                >
-                  <input 
-                    type="radio" 
-                    name="participacaoRevenda" 
-                    checked={participacaoRevenda === 'sim'} 
-                    onChange={() => {}}
-                    style={{ 
-                      cursor: 'pointer',
-                      accentColor: '#28a745',
-                      width: '16px',
-                      height: '16px'
-                    }}
-                  />
-                  <span>Sim</span>
-                </label>
-                <label 
-                  onClick={() => {
-                    setParticipacaoRevenda('nao');
-                    // Resetar estados relacionados
-                    setRevendaTemIE('');
-                    setDescontoRevendaIE(0);
-                  }}
-                  style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    gap: '8px', 
-                    cursor: 'pointer', 
-                    padding: '10px 20px', 
-                    background: participacaoRevenda === 'nao' ? '#dc3545' : '#ffffff', 
-                    color: participacaoRevenda === 'nao' ? '#ffffff' : '#495057', 
-                    borderRadius: '6px', 
-                    border: participacaoRevenda === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: participacaoRevenda === 'nao' ? '600' : '500',
-                    flex: '1',
-                    boxShadow: participacaoRevenda === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
-                    userSelect: 'none'
-                  }}
-                >
-                  <input 
-                    type="radio" 
-                    name="participacaoRevenda" 
-                    checked={participacaoRevenda === 'nao'} 
-                    onChange={() => {}}
-                    style={{ 
-                      cursor: 'pointer',
-                      accentColor: '#dc3545',
-                      width: '16px',
-                      height: '16px'
-                    }}
-                  />
-                  <span>Não</span>
-                </label>
-              </div>
-            </div>
-
-            {/* Campo de IE - Aparece SEMPRE após selecionar participação de revenda */}
-            {participacaoRevenda && (
-              <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
-                <label htmlFor="clienteRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'Tipo de Cliente:'} <span style={{ color: '#dc3545' }}>*</span>
-                </label>
-                <small style={{ display: 'block', marginBottom: '10px', color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
-                  ⚠️ IMPORTANTE: Este campo afeta o PREÇO BASE do equipamento
-                </small>
-                {/* Mensagem especial para GSI */}
-                {participacaoRevenda === 'sim' && temGuindasteGSI && (
-                  <small style={{ display: 'block', marginBottom: '10px', color: '#28a745', fontSize: '0.875em', fontWeight: '600', background: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #28a745' }}>
-                    ✓ Guindastes GSI detectados - Apenas "Produtor rural" disponível
-                  </small>
-                )}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <label 
-                    onClick={() => {
-                      setRevendaTemIE('sim');
-                      // Atualizar estado do componente pai (para recalcular preços no carrinho)
-                      if (onClienteIEChange) {
-                        onClienteIEChange(true);
-                      }
-                      // Se houver participação de revenda - Produtor rural, o vendedor pode aplicar desconto de 1-5%
-                      if (participacaoRevenda === 'sim') {
-                        setDescontoRevendaIE(1); // Default: 1%
-                      }
-                    }}
-                    style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'center',
-                      gap: '8px', 
-                      cursor: 'pointer', 
-                      padding: '10px 20px', 
-                      background: revendaTemIE === 'sim' ? '#28a745' : '#ffffff', 
-                      color: revendaTemIE === 'sim' ? '#ffffff' : '#495057', 
-                      borderRadius: '6px', 
-                      border: revendaTemIE === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
-                      transition: 'all 0.2s ease',
-                      fontSize: '14px',
-                      fontWeight: revendaTemIE === 'sim' ? '600' : '500',
-                      flex: participacaoRevenda === 'sim' && temGuindasteGSI ? '1 1 100%' : '1',
-                      boxShadow: revendaTemIE === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                      userSelect: 'none'
                     }}
                   >
                     <input 
                       type="radio" 
-                      name="revendaTemIE" 
-                      checked={revendaTemIE === 'sim'} 
+                      name="participacaoRevenda" 
+                      checked={participacaoRevenda === 'sim'} 
                       onChange={() => {}}
                       style={{ 
                         cursor: 'pointer',
@@ -609,20 +533,120 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>🚜 Produtor rural</span>
+                    <span>Sim</span>
                   </label>
-                  {/* Esconder "Rodoviário" quando for Cliente + Participação de Revenda + GSI */}
-                  {!(participacaoRevenda === 'sim' && temGuindasteGSI) && (
-                    <label 
-                      onClick={() => {
-                        setRevendaTemIE('nao');
-                        // Atualizar estado do componente pai (para recalcular preços no carrinho)
-                        if (onClienteIEChange) {
-                          onClienteIEChange(false);
-                        }
-                        // Rodoviário = vendedor NÃO pode aplicar desconto (se houver participação de revenda)
-                        setDescontoRevendaIE(0);
+                  <label 
+                    onClick={() => {
+                      setParticipacaoRevenda('nao');
+                      // Resetar estados relacionados
+                      setRevendaTemIE('');
+                      setDescontoRevendaIE(0);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '8px', 
+                      cursor: 'pointer', 
+                      padding: '10px 20px', 
+                      background: participacaoRevenda === 'nao' ? '#dc3545' : '#ffffff', 
+                      color: participacaoRevenda === 'nao' ? '#ffffff' : '#495057', 
+                      borderRadius: '6px', 
+                      border: participacaoRevenda === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
+                      transition: 'all 0.2s ease',
+                      fontSize: '14px',
+                      fontWeight: participacaoRevenda === 'nao' ? '600' : '500',
+                      flex: '1',
+                      boxShadow: participacaoRevenda === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="participacaoRevenda" 
+                      checked={participacaoRevenda === 'nao'} 
+                      onChange={() => {}}
+                      style={{ 
+                        cursor: 'pointer',
+                        accentColor: '#dc3545',
+                        width: '16px',
+                        height: '16px'
                       }}
+                    />
+                    <span>Não</span>
+                  </label>
+                </div>
+              </div>
+          )}
+
+          {/* Campo de IE - Aparece SEMPRE após selecionar participação de revenda */}
+          {tipoCliente === 'cliente' && participacaoRevenda && (
+            <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
+              <label htmlFor="clienteRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'Tipo de Cliente:'} <span style={{ color: '#dc3545' }}>*</span>
+              </label>
+              <small style={{ display: 'block', marginBottom: '10px', color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
+                ⚠️ IMPORTANTE: Este campo afeta o PREÇO BASE do equipamento
+              </small>
+              {/* Mensagem especial para GSI */}
+              {participacaoRevenda === 'sim' && temGuindasteGSI && (
+                <small style={{ display: 'block', marginBottom: '10px', color: '#28a745', fontSize: '0.875em', fontWeight: '600', background: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #28a745' }}>
+                  ✓ Guindastes GSI detectados - Apenas "Produtor rural" disponível
+                </small>
+              )}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <label 
+                  onClick={() => {
+                    setRevendaTemIE('sim');
+                    if (onClienteIEChange) {
+                      onClienteIEChange(true);
+                    }
+                    if (participacaoRevenda === 'sim') {
+                      setDescontoRevendaIE(1);
+                    }
+                  }}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    gap: '8px', 
+                    cursor: 'pointer', 
+                    padding: '10px 20px', 
+                    background: revendaTemIE === 'sim' ? '#28a745' : '#ffffff', 
+                    color: revendaTemIE === 'sim' ? '#ffffff' : '#495057', 
+                    borderRadius: '6px', 
+                    border: revendaTemIE === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: revendaTemIE === 'sim' ? '600' : '500',
+                    flex: participacaoRevenda === 'sim' && temGuindasteGSI ? '1 1 100%' : '1',
+                    boxShadow: revendaTemIE === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input 
+                    type="radio" 
+                    name="revendaTemIE" 
+                    checked={revendaTemIE === 'sim'} 
+                    onChange={() => {}}
+                    style={{ 
+                      cursor: 'pointer',
+                      accentColor: '#28a745',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <span>🚜 Produtor rural</span>
+                </label>
+                {!(participacaoRevenda === 'sim' && temGuindasteGSI) && (
+                  <label 
+                    onClick={() => {
+                      setRevendaTemIE('nao');
+                      if (onClienteIEChange) {
+                        onClienteIEChange(false);
+                      }
+                      setDescontoRevendaIE(0);
+                    }}
                     style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
@@ -656,55 +680,53 @@ const PaymentPolicy = ({
                     />
                     <span>🚛 Rodoviário</span>
                   </label>
-                  )}
-                </div>
-
-                {/* Se houver participação de revenda E revenda tem IE, o vendedor pode aplicar desconto de 1% a 5% */}
-                {/* MAS NÃO aparece se houver GSE no carrinho */}
-                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && !temGuindasteGSE && (
-                  <div className="form-group" style={{ marginTop: '12px' }}>
-                    <label htmlFor="descontoRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                      Desconto do Vendedor (1% a 5%) <span style={{ color: '#dc3545' }}>*</span>
-                    </label>
-                    <select
-                      id="descontoRevendaIE"
-                      value={descontoRevendaIE}
-                      onChange={(e) => setDescontoRevendaIE(parseFloat(e.target.value))}
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        fontSize: '14px', 
-                        borderRadius: '6px', 
-                        border: '2px solid #ced4da',
-                        background: '#ffffff',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="1">1%</option>
-                      <option value="2">2%</option>
-                      <option value="3">3%</option>
-                      <option value="4">4%</option>
-                      <option value="5">5%</option>
-                    </select>
-                    <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
-                      Desconto que você (vendedor) pode aplicar sobre o valor total do pedido
-                    </small>
-                  </div>
                 )}
-
-                {/* Mensagem informativa quando GSE bloqueia o desconto */}
-                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && (
-                  <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', borderRadius: '6px', border: '1px solid #ffc107' }}>
-                    <small style={{ color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
-                      ⚠️ Guindastes GSE não permitem desconto adicional do vendedor
-                    </small>
-                  </div>
-                )}
-
               </div>
-            )}
-          </>
-        )}
+
+              {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && !temGuindasteGSE && (
+                <div className="form-group" style={{ marginTop: '12px' }}>
+                  <label htmlFor="descontoRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                    Desconto do Vendedor (1% a 5%) <span style={{ color: '#dc3545' }}>*</span>
+                  </label>
+                  <select
+                    id="descontoRevendaIE"
+                    value={descontoRevendaIE}
+                    onChange={(e) => setDescontoRevendaIE(parseFloat(e.target.value))}
+                    style={{ 
+                      width: '100%', 
+                      padding: '10px', 
+                      fontSize: '14px', 
+                      borderRadius: '6px', 
+                      border: '2px solid #ced4da',
+                      background: '#ffffff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <option value="1">1%</option>
+                    <option value="2">2%</option>
+                    <option value="3">3%</option>
+                    <option value="4">4%</option>
+                    <option value="5">5%</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
+                    Desconto que você (vendedor) pode aplicar sobre o valor total do pedido
+                  </small>
+                </div>
+              )}
+
+              {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && (
+                <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', borderRadius: '6px', border: '1px solid #ffc107' }}>
+                  <small style={{ color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
+                    ⚠️ Guindastes GSE não permitem desconto adicional do vendedor
+                  </small>
+                </div>
+              )}
+            </div>
+          )}
+        </>
+        {/* ======= FIM DA CORREÇÃO ======= */}
+
+      </div>
 
       {/* Campo de Financiamento Bancário - aparece para todos os clientes */}
       {tipoCliente === 'cliente' && (
@@ -796,59 +818,46 @@ const PaymentPolicy = ({
         </div>
       )}
       
-      {/* Resumo do Carrinho - só aparece depois de selecionar Revenda ou Cliente */}
-      {tipoCliente && (
-        <div style={{ marginTop: '20px' }}>
-          <h3>Resumo do Pedido</h3>
-          <div className="summary-box">
-            <div className="summary-row">
-              <span className="summary-label">Valor Total do Carrinho:</span>
-              <span className="summary-value">{formatCurrency(precoBase)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Campos de sinal e entrada apenas para "cliente" - NÃO aparece se financiamento bancário = SIM */}
       {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && (
         <>
           {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
-            {prazoSelecionado !== 'À Vista' && (
-              <div className="form-group">
-                <label htmlFor="valorSinal">
-                  Valor do Sinal
-                </label>
-                <input
-                  id="valorSinal"
-                  type="number"
-                  value={valorSinal}
-                  onChange={(e) => setValorSinal(e.target.value)}
-                  placeholder="Digite o valor do sinal"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-            )}
-
+          {prazoSelecionado !== 'À Vista' && (
             <div className="form-group">
-              <label htmlFor="percentualEntrada">
-                Percentual de Entrada *
+              <label htmlFor="valorSinal">
+                Valor do Sinal
               </label>
-              <select
-                id="percentualEntrada"
-                value={percentualEntrada}
-                onChange={(e) => handlePercentualEntradaChange(e.target.value)}
-              >
-                <option value="">Selecione o percentual</option>
-                <option value="30">30%</option>
-                <option value="50">50%</option>
-              </select>
-              <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
-                {percentualEntrada === '30' && 'Planos específicos para 30% de entrada (sem desconto/acréscimo)'}
-                {percentualEntrada === '50' && 'Planos específicos para 50% de entrada (com descontos de 1% a 5%)'}
-              </small>
+              <input
+                id="valorSinal"
+                type="number"
+                value={valorSinal}
+                onChange={(e) => setValorSinal(e.target.value)}
+                placeholder="Digite o valor do sinal"
+                min="0"
+                step="0.01"
+              />
             </div>
-          </>
+          )}
+
+          <div className="form-group">
+            <label htmlFor="percentualEntrada">
+              Percentual de Entrada *
+            </label>
+            <select
+              id="percentualEntrada"
+              value={percentualEntrada}
+              onChange={(e) => handlePercentualEntradaChange(e.target.value)}
+            >
+              <option value="">Selecione o percentual</option>
+              <option value="30">30%</option>
+              <option value="50">50%</option>
+            </select>
+            <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+              {percentualEntrada === '30' && 'Planos específicos para 30% de entrada (sem desconto/acréscimo)'}
+              {percentualEntrada === '50' && 'Planos específicos para 50% de entrada (com descontos de 1% a 5%)'}
+            </small>
+          </div>
+        </>
       )}
 
       {/* Prazo de Pagamento - NÃO aparece se cliente com financiamento bancário = SIM */}
@@ -883,69 +892,35 @@ const PaymentPolicy = ({
       )}
 
       {/* Campo de Desconto Adicional do Vendedor */}
-      {/* Só aparece quando:
-          1. Tipo for revenda (sempre) - até 3% (com GSE) ou 12% (sem GSE)
-          2. Tipo for cliente SEM participação de revenda - até 3%
-          3. Tipo for cliente COM participação de revenda mas Rodoviário - até 3%
-          NÃO aparece quando for cliente com participação de revenda - Produtor rural
-      */}
-      {prazoSelecionado && (
-        tipoCliente === 'revenda' || 
+      {(prazoSelecionado || (tipoCliente === 'cliente' && financiamentoBancario === 'sim')) && (
+        (tipoCliente === 'revenda' || 
         (tipoCliente === 'cliente' && participacaoRevenda === 'nao') ||
-        (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'nao')
+        (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'nao'))
       ) && (
-          <div className="form-group">
-            <label htmlFor="descontoAdicional">
-              Desconto Adicional do Vendedor
-            </label>
-            <select
-              id="descontoAdicional"
-              value={descontoAdicional}
-              onChange={(e) => setDescontoAdicional(parseFloat(e.target.value))}
-            >
-              <option value="0">Sem desconto adicional</option>
-              {tipoCliente === 'revenda' ? (
-                // Para revenda: limite dinâmico baseado em GSE/GSI
-                maxDescontoRevenda === 3 ? (
-                  // Tem GSE: de 0.5% a 3%
-                  <>
-                    <option value="0.5">0,5%</option>
-                    <option value="1">1%</option>
-                    <option value="1.5">1,5%</option>
-                    <option value="2">2%</option>
-                    <option value="2.5">2,5%</option>
-                    <option value="3">3%</option>
-                  </>
-                ) : (
-                  // Não tem GSE: de 1% até o limite (12%, 14% ou 15% dependendo da quantidade de GSI)
-                  <>
-                    <option value="1">1%</option>
-                    <option value="2">2%</option>
-                    <option value="3">3%</option>
-                    <option value="4">4%</option>
-                    <option value="5">5%</option>
-                    <option value="6">6%</option>
-                    <option value="7">7%</option>
-                    <option value="8">8%</option>
-                    <option value="9">9%</option>
-                    <option value="10">10%</option>
-                    <option value="11">11%</option>
-                    <option value="12">12%</option>
-                    {/* Sempre mostrar 14% e 15% quando houver GSI (independente da quantidade no carrinho) */}
-                    {temGuindasteGSI && (
-                      <>
-                        <option value="14" style={{ fontWeight: 'bold', backgroundColor: '#fff3cd' }}>
-                          ⭐ 14% (2 unidades GSI)
-                        </option>
-                        <option value="15" style={{ fontWeight: 'bold', backgroundColor: '#d4edda' }}>
-                          ⭐⭐ 15% (3 ou mais unidades GSI)
-                        </option>
-                      </>
-                    )}
-                  </>
-                )
-              ) : aplicarRegraGSISemParticipacao ? (
-                // Para cliente sem participação + GSI + Produtor rural: até 12%
+        <div className="form-group">
+          <label htmlFor="descontoAdicional">
+            Desconto Adicional do Vendedor
+          </label>
+          <select
+            id="descontoAdicional"
+            value={descontoAdicional}
+            onChange={(e) => setDescontoAdicional(parseFloat(e.target.value))}
+          >
+            <option value="0">Sem desconto adicional</option>
+            {tipoCliente === 'revenda' ? (
+              // Para revenda: limite dinâmico baseado em GSE/GSI
+              maxDescontoRevenda === 3 ? (
+                // Tem GSE: de 0.5% a 3%
+                <>
+                  <option value="0.5">0,5%</option>
+                  <option value="1">1%</option>
+                  <option value="1.5">1,5%</option>
+                  <option value="2">2%</option>
+                  <option value="2.5">2,5%</option>
+                  <option value="3">3%</option>
+                </>
+              ) : (
+                // Não tem GSE: de 1% até o limite (12%, 14% ou 15% dependendo da quantidade de GSI)
                 <>
                   <option value="1">1%</option>
                   <option value="2">2%</option>
@@ -959,36 +934,64 @@ const PaymentPolicy = ({
                   <option value="10">10%</option>
                   <option value="11">11%</option>
                   <option value="12">12%</option>
+                  {/* Sempre mostrar 14% e 15% quando houver GSI (independente da quantidade no carrinho) */}
+                  {temGuindasteGSI && (
+                    <>
+                      <option value="14" style={{ fontWeight: 'bold', backgroundColor: '#fff3cd' }}>
+                        ⭐ 14% (2 unidades GSI)
+                      </option>
+                      <option value="15" style={{ fontWeight: 'bold', backgroundColor: '#d4edda' }}>
+                        ⭐⭐ 15% (3 ou mais unidades GSI)
+                      </option>
+                    </>
+                  )}
                 </>
-              ) : (
-                // Para cliente: de 0.5% a 3%
-                <>
-                  <option value="0.5">0,5%</option>
-                  <option value="1">1%</option>
-                  <option value="1.5">1,5%</option>
-                  <option value="2">2%</option>
-                  <option value="2.5">2,5%</option>
-                  <option value="3">3%</option>
-                </>
-              )}
-            </select>
-            <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
-              {tipoCliente === 'revenda'
-                ? temGuindasteGSE
-                  ? '⚠️ Desconto limitado a 3% devido à presença de guindastes GSE no carrinho'
-                  : temGuindasteGSI
-                    ? 'Desconto especial para GSI: 12% (1 un), ⭐ 14% (2 un), ⭐⭐ 15% (3+ un). Selecione conforme a quantidade vendida.'
-                    : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
-                : aplicarRegraGSISemParticipacao
-                  ? '⭐ Desconto especial para GSI + Produtor Rural: até 12% permitido'
-                  : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
-              }
-            </small>
-          </div>
+              )
+            ) : aplicarRegraGSISemParticipacao ? (
+              // Para cliente sem participação + GSI + Produtor rural: até 12%
+              <>
+                <option value="1">1%</option>
+                <option value="2">2%</option>
+                <option value="3">3%</option>
+                <option value="4">4%</option>
+                <option value="5">5%</option>
+                <option value="6">6%</option>
+                <option value="7">7%</option>
+                <option value="8">8%</option>
+                <option value="9">9%</option>
+                <option value="10">10%</option>
+                <option value="11">11%</option>
+                <option value="12">12%</option>
+              </>
+            ) : (
+              // Para cliente: de 0.5% a 3%
+              <>
+                <option value="0.5">0,5%</option>
+                <option value="1">1%</option>
+                <option value="1.5">1,5%</option>
+                <option value="2">2%</option>
+                <option value="2.5">2,5%</option>
+                <option value="3">3%</option>
+              </>
+            )}
+          </select>
+          <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+            {tipoCliente === 'revenda'
+              ? temGuindasteGSE
+                ? '⚠️ Desconto limitado a 3% devido à presença de guindastes GSE no carrinho'
+                : temGuindasteGSI
+                  ? 'Desconto especial para GSI: 12% (1 un), ⭐ 14% (2 un), ⭐⭐ 15% (3+ un). Selecione conforme a quantidade vendida.'
+                  : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 12%)'
+              : aplicarRegraGSISemParticipacao
+                ? '⭐ Desconto especial para GSI + Produtor Rural: até 12% permitido'
+                : 'Desconto adicional aplicado sobre o valor total do carrinho (máximo 3%)'
+            }
+          </small>
+        </div>
       )}
 
       {/* Seleção de Pagamento Instalação Por Conta - aparece após desconto adicional */}
-      {tipoCliente === 'cliente' && prazoSelecionado && (
+      {tipoCliente === 'cliente' && (prazoSelecionado || financiamentoBancario === 'sim') && (
         <>
           <div className="form-group" style={{ marginTop: '20px' }}>
             <label>Pagamento instalação por conta de: *</label>
@@ -1056,14 +1059,123 @@ const PaymentPolicy = ({
             )}
           </div>
 
-          {/* Seleção de tipo de frete especial - aparece quando há dados de frete disponíveis */}
-          {dadosFreteAtual && (
+          {/* Tipo de Frete - aparece logo após Local de Instalação */}
+          <div className="form-group" style={{ marginTop: '20px' }}>
+            <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+              Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
+            </label>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <label
+                onClick={() => setTipoFrete('cif')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  padding: '10px 20px',
+                  background: tipoFrete === 'cif' ? '#28a745' : '#ffffff',
+                  color: tipoFrete === 'cif' ? '#ffffff' : '#495057',
+                  borderRadius: '6px',
+                  border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: tipoFrete === 'cif' ? '600' : '500',
+                  flex: '1',
+                  boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (tipoFrete !== 'cif') {
+                    e.currentTarget.style.borderColor = '#28a745';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tipoFrete !== 'cif') {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tipoFrete"
+                  checked={tipoFrete === 'cif'}
+                  onChange={() => {}}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: '#28a745',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                  <span style={{ fontWeight: '600' }}>CIF</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Frete incluso no pedido</span>
+                </div>
+              </label>
+              <label
+                onClick={() => setTipoFrete('fob')}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
+                  cursor: 'pointer',
+                  padding: '10px 20px',
+                  background: tipoFrete === 'fob' ? '#6c757d' : '#ffffff',
+                  color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
+                  borderRadius: '6px',
+                  border: tipoFrete === 'fob' ? '2px solid #6c757d' : '2px solid #ced4da',
+                  transition: 'all 0.2s ease',
+                  fontSize: '14px',
+                  fontWeight: tipoFrete === 'fob' ? '600' : '500',
+                  flex: '1',
+                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(108, 117, 125, 0.3)' : 'none',
+                  userSelect: 'none'
+                }}
+                onMouseEnter={(e) => {
+                  if (tipoFrete !== 'fob') {
+                    e.currentTarget.style.borderColor = '#6c757d';
+                    e.currentTarget.style.background = '#f8f9fa';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (tipoFrete !== 'fob') {
+                    e.currentTarget.style.borderColor = '#ced4da';
+                    e.currentTarget.style.background = '#ffffff';
+                  }
+                }}
+              >
+                <input
+                  type="radio"
+                  name="tipoFrete"
+                  checked={tipoFrete === 'fob'}
+                  onChange={() => {}}
+                  style={{
+                    cursor: 'pointer',
+                    accentColor: '#6c757d',
+                    width: '16px',
+                    height: '16px'
+                  }}
+                />
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                  <span style={{ fontWeight: '600' }}>FOB</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Por conta do cliente</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          {/* Seleção de tipo de frete especial - aparece apenas quando CIF E há dados de frete disponíveis */}
+          {dadosFreteAtual && tipoFrete === 'cif' && (
             <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '2px solid #007bff' }}>
               <label style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px', display: 'block', color: '#007bff' }}>
                 🚛 Tipo de Entrega - {dadosFreteAtual.cidade} <span style={{ color: '#dc3545' }}>*</span>
               </label>
               <small style={{ display: 'block', marginBottom: '12px', color: '#6c757d', fontSize: '0.875em' }}>
-                Selecione o tipo de entrega para incluir no cálculo
+                Selecione o tipo de entrega para incluir no cálculo (frete pago pelo cliente junto com o pedido)
               </small>
               <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
                 <label
@@ -1149,7 +1261,6 @@ const PaymentPolicy = ({
           )}
         </>
       )}
-    </div>
 
       {/* Mensagem de Erro */}
       {erroCalculo && (
@@ -1334,124 +1445,8 @@ const PaymentPolicy = ({
         );
       })()}
 
-      {/* Informações Adicionais - aparece apenas APÓS o cálculo */}
-      {calculoAtual && !erroCalculo && (
-        <div className="payment-section">
-          <h3>Informações Adicionais</h3>
-          
-          {/* Tipo de Frete - aparece para todos */}
-          <div className="form-group" style={{ marginTop: '10px' }}>
-            <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-              Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
-            </label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <label
-                onClick={() => setTipoFrete('cif')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  padding: '10px 20px',
-                  background: tipoFrete === 'cif' ? '#28a745' : '#ffffff',
-                  color: tipoFrete === 'cif' ? '#ffffff' : '#495057',
-                  borderRadius: '6px',
-                  border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: tipoFrete === 'cif' ? '600' : '500',
-                  flex: '1',
-                  boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (tipoFrete !== 'cif') {
-                    e.currentTarget.style.borderColor = '#28a745';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (tipoFrete !== 'cif') {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  checked={tipoFrete === 'cif'}
-                  onChange={() => {}}
-                  style={{
-                    cursor: 'pointer',
-                    accentColor: '#28a745',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                  <span style={{ fontWeight: '600' }}>CIF</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Frete incluso no pedido</span>
-                </div>
-              </label>
-              <label
-                onClick={() => setTipoFrete('fob')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  padding: '10px 20px',
-                  background: tipoFrete === 'fob' ? '#6c757d' : '#ffffff',
-                  color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
-                  borderRadius: '6px',
-                  border: tipoFrete === 'fob' ? '2px solid #6c757d' : '2px solid #ced4da',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: tipoFrete === 'fob' ? '600' : '500',
-                  flex: '1',
-                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(108, 117, 125, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (tipoFrete !== 'fob') {
-                    e.currentTarget.style.borderColor = '#6c757d';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (tipoFrete !== 'fob') {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  checked={tipoFrete === 'fob'}
-                  onChange={() => {}}
-                  style={{
-                    cursor: 'pointer',
-                    accentColor: '#6c757d',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                  <span style={{ fontWeight: '600' }}>FOB</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Por conta do cliente</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default PaymentPolicy;
-

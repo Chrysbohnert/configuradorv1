@@ -4,13 +4,24 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// Debug: Mostrar status das variáveis
+console.log('🔍 [Supabase Config] Verificando variáveis de ambiente...');
+console.log('   URL configurada:', supabaseUrl ? '✅ Sim' : '❌ Não');
+console.log('   Key configurada:', supabaseAnonKey ? '✅ Sim' : '❌ Não');
+
 if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ Variáveis de ambiente do Supabase não configuradas!');
   console.error('📋 Verifique se o arquivo .env.local existe e contém:');
   console.error('   VITE_SUPABASE_URL=sua-url');
   console.error('   VITE_SUPABASE_ANON_KEY=sua-chave');
-  throw new Error('Variáveis de ambiente do Supabase não configuradas!');
+  console.error('');
+  console.error('⚠️  IMPORTANTE: Após criar/editar .env.local, você DEVE reiniciar o servidor!');
+  console.error('   1. Parar o servidor (Ctrl+C)');
+  console.error('   2. Executar: npm run dev');
+  throw new Error('Variáveis de ambiente do Supabase não configuradas! Veja o console para instruções.');
 }
+
+console.log('✅ [Supabase Config] Variáveis carregadas com sucesso!');
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
@@ -85,21 +96,45 @@ class DatabaseService {
 
   // ===== GUINDASTES =====
   async getGuindastes() {
-    const { data, error } = await supabase
-      .from('guindastes')
-      .select('*')
-      .order('subgrupo');
+    // OTIMIZAÇÃO: Usar cache e ordenar por ID ao invés de subgrupo
+    const cacheKey = 'all_guindastes';
     
-    if (error) throw error;
-    return data || [];
+    if (this._guindastesCache.has(cacheKey)) {
+      const cached = this._guindastesCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 5 * 60 * 1000) {
+        console.log('📦 Usando cache de guindastes completos');
+        return cached.data;
+      }
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('guindastes')
+        .select('*')
+        .order('id', { ascending: true }) // ID é índice primário, muito mais rápido
+        .limit(200); // Limitar quantidade para evitar timeout
+      
+      if (error) throw error;
+      
+      // Armazenar no cache
+      this._guindastesCache.set(cacheKey, {
+        data: data || [],
+        timestamp: Date.now()
+      });
+      
+      return data || [];
+    } catch (error) {
+      console.error('❌ [getGuindastes] Erro:', error);
+      throw error;
+    }
   }
 
   // Cache para evitar múltiplas requisições
   _guindastesCache = new Map();
 
   // Versão leve para listagens iniciais: APENAS campos essenciais
-  async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
-    const cacheKey = `lite_page_${page}_size_${pageSize}_search_${search}`;
+  async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false, capacidade = null } = {}) {
+    const cacheKey = `lite_page_${page}_size_${pageSize}_search_${search}_cap_${capacidade}`;
 
     // Verificar cache primeiro (exceto se for refresh forçado)
     if (!forceRefresh && this._guindastesCache.has(cacheKey)) {
@@ -112,35 +147,55 @@ class DatabaseService {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Apenas campos essenciais para listagem rápida
-    let query = supabase
-      .from('guindastes')
-      .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
-      .order('subgrupo');
+    try {
+      // Apenas campos essenciais para listagem rápida
+      // OTIMIZAÇÃO: Usar id ao invés de subgrupo para ordenação (mais rápido)
+      let query = supabase
+        .from('guindastes')
+        .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
+        .order('id', { ascending: true }); // ID é mais rápido que texto
 
-    if (search && search.trim()) {
-      const pattern = `%${search.trim()}%`;
-      query = query.or(`subgrupo.ilike.${pattern},modelo.ilike.${pattern}`);
+      // Filtro por capacidade (se fornecido)
+      if (capacidade && capacidade !== 'todos') {
+        query = query.ilike('subgrupo', `%${capacidade}%`);
+      }
+
+      // Filtro de busca
+      if (search && search.trim()) {
+        const pattern = `%${search.trim()}%`;
+        query = query.or(`subgrupo.ilike.${pattern},modelo.ilike.${pattern}`);
+      }
+
+      const { data, error, count } = await query.range(from, to);
+      
+      if (error) {
+        console.error('❌ [getGuindastesLite] Erro na query:', error);
+        console.error('   Mensagem:', error.message);
+        console.error('   Código:', error.code);
+        console.error('   Detalhes:', error.details);
+        console.error('   URL Supabase:', supabaseUrl);
+        throw error;
+      }
+
+      const result = { data: data || [], count: count || 0 };
+
+      // Armazenar no cache
+      this._guindastesCache.set(cacheKey, {
+        data: result,
+        timestamp: Date.now()
+      });
+
+      // Limpar cache antigo (manter apenas últimos 20)
+      if (this._guindastesCache.size > 20) {
+        const keys = Array.from(this._guindastesCache.keys());
+        keys.slice(0, 10).forEach(key => this._guindastesCache.delete(key));
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ [getGuindastesLite] Erro:', error);
+      throw error;
     }
-
-    const { data, error, count } = await query.range(from, to);
-    if (error) throw error;
-
-    const result = { data: data || [], count: count || 0 };
-
-    // Armazenar no cache
-    this._guindastesCache.set(cacheKey, {
-      data: result,
-      timestamp: Date.now()
-    });
-
-    // Limpar cache antigo (manter apenas últimos 10)
-    if (this._guindastesCache.size > 10) {
-      const oldestKey = Array.from(this._guindastesCache.keys())[0];
-      this._guindastesCache.delete(oldestKey);
-    }
-
-    return result;
   }
 
   // Buscar guindaste completo com TODOS os campos (incluindo descricao e nao_incluido)
@@ -353,20 +408,70 @@ class DatabaseService {
   }
 
   async deleteGuindaste(id) {
-    // A tabela guindastes usa id como int4 (inteiro)
-    const numericId = parseInt(id, 10);
-    console.log('🗑️ [deleteGuindaste] ID convertido para número:', numericId);
+    console.log('🗑️ [deleteGuindaste] Iniciando remoção do guindaste ID:', id);
     
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('ID inválido: deve ser um número inteiro positivo');
+    // Validar ID
+    if (!id) {
+      throw new Error('ID inválido');
     }
     
-    const { error } = await supabase
-      .from('guindastes')
-      .delete()
-      .eq('id', numericId);
-    
-    if (error) throw error;
+    try {
+      // 1. Verificar se existem pedidos com este guindaste
+      // Nota: item_id pode ser UUID (texto), então verificamos sem conversão
+      console.log('🔍 Verificando pedidos vinculados...');
+      const { data: pedidosItens, error: errorPedidos } = await supabase
+        .from('pedido_itens')
+        .select('id')
+        .eq('item_id', String(id))
+        .eq('tipo', 'guindaste');
+      
+      if (errorPedidos) {
+        console.warn('⚠️ Erro ao verificar pedidos (tabela pode não existir):', errorPedidos);
+        // Não bloquear se a tabela não existir
+      } else if (pedidosItens && pedidosItens.length > 0) {
+        throw new Error(`Não é possível excluir este guindaste pois ele está vinculado a ${pedidosItens.length} pedido(s). Remova os pedidos primeiro.`);
+      }
+      
+      // 2. Remover preços por região vinculados a este guindaste
+      console.log('🔄 Removendo preços vinculados...');
+      const { error: errorPrecos } = await supabase
+        .from('precos_guindaste_regiao')
+        .delete()
+        .eq('guindaste_id', parseInt(id, 10));
+      
+      if (errorPrecos) {
+        console.warn('⚠️ Erro ao remover preços (pode não existir):', errorPrecos);
+        // Não lançar erro, pois pode não ter preços cadastrados
+      }
+      
+      // 3. Remover o guindaste (usar o ID original sem conversão)
+      console.log('🗑️ Removendo guindaste...');
+      const { error: errorGuindaste } = await supabase
+        .from('guindastes')
+        .delete()
+        .eq('id', parseInt(id, 10));
+      
+      if (errorGuindaste) {
+        console.error('❌ Erro ao remover guindaste:', errorGuindaste);
+        throw new Error(errorGuindaste.message || 'Erro ao remover guindaste do banco de dados');
+      }
+      
+      console.log('✅ Guindaste removido com sucesso!');
+      
+      // 4. Limpar cache
+      if (this._guindastesCache) {
+        this._guindastesCache.clear();
+      }
+      
+    } catch (error) {
+      console.error('❌ [deleteGuindaste] Erro completo:', error);
+      // Re-lançar com mensagem mais amigável
+      if (error.message && error.message.includes('vinculado a')) {
+        throw error;
+      } else {
+        throw new Error(error.message || 'Erro ao remover guindaste. Verifique se não há pedidos ou preços vinculados.');
+      }
+    }
   }
 
   // ===== LOGÍSTICA: CALENDÁRIO =====
@@ -771,16 +876,6 @@ class DatabaseService {
       .eq('id', id);
 
     if (error) throw error;
-  }
-  async createGraficoCarga(graficoData) {
-    const { data, error } = await supabase
-      .from('graficos_carga')
-      .insert([graficoData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
   }
 
   async updateGraficoCarga(id, graficoData) {
