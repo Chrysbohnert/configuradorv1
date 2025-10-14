@@ -245,9 +245,22 @@ const GerenciarGuindastes = () => {
         setGuindasteToDelete(null);
         // Restaurar scroll do body
         document.body.classList.remove('modal-open');
+        alert('✅ Guindaste removido com sucesso!');
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
-        alert('Erro ao remover guindaste. Tente novamente.');
+        
+        // Mensagem de erro mais específica
+        const mensagemErro = error.message || 'Erro desconhecido ao remover guindaste.';
+        
+        if (mensagemErro.includes('vinculado a') || mensagemErro.includes('pedido')) {
+          alert(`❌ ${mensagemErro}`);
+        } else {
+          alert(`❌ Erro ao remover guindaste: ${mensagemErro}\n\nVerifique se não há pedidos ou preços vinculados a este equipamento.`);
+        }
+        
+        setShowDeleteModal(false);
+        setGuindasteToDelete(null);
+        document.body.classList.remove('modal-open');
       }
     }
   };

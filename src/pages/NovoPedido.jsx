@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import PDFGenerator from '../components/PDFGenerator';
@@ -150,7 +150,7 @@ const NovoPedido = () => {
           }
         }
 
-        // Adicionar ao carrinho se não estiver
+        // Adicionar ao carrinho com TODOS os detalhes (incluindo descricao e nao_incluido)
         const produto = {
           id: guindaste.id,
           nome: guindaste.subgrupo,
@@ -158,6 +158,8 @@ const NovoPedido = () => {
           codigo_produto: guindaste.codigo_referencia,
           grafico_carga_url: guindaste.grafico_carga_url,
           configuracao_lancas: guindaste.peso_kg,
+          descricao: guindaste.descricao,
+          nao_incluido: guindaste.nao_incluido,
           preco: precoGuindaste,
           tipo: 'guindaste'
         };
@@ -268,7 +270,11 @@ const NovoPedido = () => {
     console.log('🔄 Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
 
     try {
-      // Buscar preço inicial (será recalculado quando contexto for definido)
+      // 1. Buscar detalhes completos do guindaste (incluindo descricao e nao_incluido)
+      console.log('📦 Buscando detalhes completos do guindaste...');
+      const guindasteCompleto = await db.getGuindasteCompleto(guindaste.id);
+      
+      // 2. Buscar preço inicial (será recalculado quando contexto for definido)
       const regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
       const precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
 
@@ -279,32 +285,34 @@ const NovoPedido = () => {
         return;
       }
 
-      // Criar produto com preço correto
+      // 3. Criar produto com preço correto e detalhes completos
       const produto = {
-        id: guindaste.id,
-        nome: guindaste.subgrupo,
-        modelo: guindaste.modelo,
-        codigo_produto: guindaste.codigo_referencia,
-        grafico_carga_url: guindaste.grafico_carga_url,
-        configuracao_lancas: guindaste.peso_kg,
+        id: guindasteCompleto.id,
+        nome: guindasteCompleto.subgrupo,
+        modelo: guindasteCompleto.modelo,
+        codigo_produto: guindasteCompleto.codigo_referencia,
+        grafico_carga_url: guindasteCompleto.grafico_carga_url,
+        configuracao_lancas: guindasteCompleto.peso_kg,
+        descricao: guindasteCompleto.descricao,
+        nao_incluido: guindasteCompleto.nao_incluido,
         preco: precoGuindaste,
         tipo: 'guindaste'
       };
 
-      // Adicionar ao carrinho (isso substitui qualquer guindaste anterior)
+      // 4. Adicionar ao carrinho (isso substitui qualquer guindaste anterior)
       adicionarAoCarrinho(produto, 'guindaste');
 
-      // Navegar para detalhes
+      // 5. Navegar para detalhes com objeto completo
       navigate('/detalhes-guindaste', {
         state: {
-          guindaste: { ...guindaste, preco: precoGuindaste },
+          guindaste: { ...guindasteCompleto, preco: precoGuindaste },
           returnTo: '/novo-pedido',
           step: 2
         }
       });
     } catch (error) {
-      console.error('❌ Erro ao buscar preço:', error);
-      alert('Erro ao buscar preço do equipamento.');
+      console.error('❌ Erro ao buscar dados do guindaste:', error);
+      alert('Erro ao buscar dados do equipamento.');
     }
   };
 
@@ -635,7 +643,8 @@ const NovoPedido = () => {
         if (!pagamentoData.tipoPagamento) {
           errors.tipoPagamento = 'Selecione o tipo de pagamento';
         }
-        if (!pagamentoData.prazoPagamento) {
+        // Prazo de pagamento NÃO é obrigatório se houver financiamento bancário
+        if (!pagamentoData.prazoPagamento && pagamentoData.financiamentoBancario !== 'sim') {
           errors.prazoPagamento = 'Selecione o prazo de pagamento';
         }
         // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
@@ -650,9 +659,9 @@ const NovoPedido = () => {
           if (!pagamentoData.participacaoRevenda) {
             errors.participacaoRevenda = 'Selecione se há participação de revenda';
           }
-          // Se respondeu participação, IE é obrigatória
+          // Se respondeu participação, IE/Tipo é obrigatório
           if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
-            errors.revendaTemIE = 'Selecione se possui Inscrição Estadual';
+            errors.revendaTemIE = 'Selecione o tipo de cliente/revenda';
           }
         }
         if (!pagamentoData.tipoFrete) {
@@ -697,14 +706,23 @@ const NovoPedido = () => {
                  pagamentoData.prazoPagamento && 
                  pagamentoData.tipoFrete;
         }
-        // Para cliente, todos os campos são obrigatórios, incluindo participação e IE
+        // Para cliente com financiamento bancário, não exige prazoPagamento
+        if (pagamentoData.tipoPagamento === 'cliente' && pagamentoData.financiamentoBancario === 'sim') {
+          return pagamentoData.tipoPagamento && 
+                 pagamentoData.localInstalacao && 
+                 pagamentoData.tipoInstalacao &&
+                 pagamentoData.tipoFrete &&
+                 pagamentoData.participacaoRevenda &&
+                 (pagamentoData.participacaoRevenda ? pagamentoData.revendaTemIE : true);
+        }
+        // Para cliente sem financiamento bancário, todos os campos são obrigatórios
         return pagamentoData.tipoPagamento && 
                pagamentoData.prazoPagamento && 
                pagamentoData.localInstalacao && 
                pagamentoData.tipoInstalacao &&
                pagamentoData.tipoFrete &&
                pagamentoData.participacaoRevenda &&
-               pagamentoData.revendaTemIE;
+               (pagamentoData.participacaoRevenda ? pagamentoData.revendaTemIE : true);
       case 3:
         return clienteData.nome && 
                clienteData.telefone && 

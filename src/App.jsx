@@ -3,6 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import ProtectedRoute from './components/ProtectedRoute';
 import LazyRoute from './components/LazyRoute';
 import AdminLayout from './components/AdminLayout';
+import ErrorBoundary from './components/ErrorBoundary';
+import { AuthProvider } from './contexts/AuthContext';
+import { CarrinhoProvider } from './contexts/CarrinhoContext';
 
 // Componentes públicos e admin (não lazy - carregam instantaneamente)
 import Login from './pages/Login';
@@ -31,9 +34,12 @@ if (import.meta.env.DEV) {
 
 function App() {
   return (
-    <Router>
-      <div className="App">
-        <Routes>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <CarrinhoProvider>
+            <div className="App">
+              <Routes>
           {/* Rota pública */}
           <Route path="/" element={<Login />} />
           
@@ -118,9 +124,12 @@ function App() {
           
           {/* Redirecionar rotas não encontradas */}
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
-    </Router>
+              </Routes>
+            </div>
+          </CarrinhoProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }
 
