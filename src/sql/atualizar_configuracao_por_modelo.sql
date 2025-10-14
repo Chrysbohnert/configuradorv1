@@ -161,4 +161,3 @@ ORDER BY modelo, id;
 -- - GSE 15.0 → 4H2M (4 Hidráulicas + 2 Manuais)
 -- - GSE 15.8 → 4H2M (4 Hidráulicas + 2 Manuais)
 
-

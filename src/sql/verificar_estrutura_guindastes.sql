@@ -41,4 +41,3 @@ FROM guindastes
 GROUP BY grupo
 ORDER BY grupo;
 
-
