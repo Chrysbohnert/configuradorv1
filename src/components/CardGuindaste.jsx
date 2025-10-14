@@ -170,51 +170,6 @@ const CardGuindaste = React.memo(({ guindaste, onAddToCart, onRemoveFromCart, is
           </div>
         </div>
 
-        {/* Descrição Técnica */}
-        {guindaste.descricao && (
-          <div 
-            className="mb-4 p-3 rounded-lg"
-            style={{ backgroundColor: '#e3f2fd' }}
-          >
-            <p 
-              className="text-xs font-semibold mb-1"
-              style={{ color: '#1976d2' }}
-            >
-              📋 Descrição Técnica:
-            </p>
-            <p 
-              className="text-sm line-clamp-3"
-              style={{ color: '#424242' }}
-            >
-              {guindaste.descricao}
-            </p>
-          </div>
-        )}
-
-        {/* Não Incluído */}
-        {guindaste.nao_incluido && (
-          <div 
-            className="mb-4 p-3 rounded-lg border-l-4"
-            style={{ 
-              backgroundColor: '#fff3cd',
-              borderLeftColor: '#ffc107'
-            }}
-          >
-            <p 
-              className="text-xs font-semibold mb-1"
-              style={{ color: '#856404' }}
-            >
-              ⚠️ Não está incluído:
-            </p>
-            <p 
-              className="text-sm line-clamp-2"
-              style={{ color: '#856404' }}
-            >
-              {guindaste.nao_incluido}
-            </p>
-          </div>
-        )}
-
         {/* Botão de Ação */}
         <button
           onClick={handleCartAction}

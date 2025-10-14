@@ -106,13 +106,10 @@ const ResumoPedido = ({
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
-      // Remover campos que não existem na tabela caminhoes
-      const { medidaA, medidaB, medidaC, medidaD, ...caminhaoDataLimpo } = caminhaoData;
-      
       const caminhaoDataToSave = {
-        ...caminhaoDataLimpo,
+        ...caminhaoData,
         cliente_id: cliente.id,
-        observacoes: caminhaoDataLimpo.observacoes || null,
+        observacoes: caminhaoData.observacoes || null,
         placa: 'N/A' // Campo obrigatório no banco
       };
       
@@ -153,25 +150,14 @@ const ResumoPedido = ({
           codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
         }
         
-        // Construir dados do item
-        // Não incluir item_id se for UUID (string) - apenas se for número
         const itemDataToSave = {
           pedido_id: pedido.id,
           tipo: item.tipo,
+          item_id: item.id,
           quantidade: 1,
           preco_unitario: item.preco,
           codigo_produto
         };
-        
-        // Adicionar item_id apenas se for número inteiro
-        if (item.id && typeof item.id === 'number') {
-          itemDataToSave.item_id = item.id;
-        } else if (item.id && typeof item.id === 'string') {
-          const parsedId = parseInt(item.id);
-          if (!isNaN(parsedId)) {
-            itemDataToSave.item_id = parsedId;
-          }
-        }
         
         await db.createPedidoItem(itemDataToSave);
       }
@@ -458,20 +444,20 @@ const ResumoPedido = ({
             </>
           )}
           
-          {/* Campos Local de Instalação e Pagamento Instalação */}
+          {/* Campos Local e Tipo de Instalação */}
           {pagamentoData.tipoCliente === 'cliente' && (
             <>
               <div className="data-row">
-                <span className="label">Pagamento Instalação por Conta de:</span>
-                <span className="value">
-                  {pagamentoData.pagamentoInstalacaoPorConta === 'cliente' && 'Cliente'}
-                  {pagamentoData.pagamentoInstalacaoPorConta === 'fabrica' && 'Fábrica'}
-                  {!pagamentoData.pagamentoInstalacaoPorConta && 'Não informado'}
-                </span>
-              </div>
-              <div className="data-row">
                 <span className="label">Local de Instalação:</span>
                 <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+              </div>
+              <div className="data-row">
+                <span className="label">Tipo de Instalação:</span>
+                <span className="value">
+                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
+                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {!pagamentoData.tipoInstalacao && 'Não informado'}
+                </span>
               </div>
               
               {/* Participação de Revenda */}
