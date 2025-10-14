@@ -11,8 +11,6 @@ import { db } from '../config/supabase';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
-  const [isGenerating, setIsGenerating] = React.useState(false);
-  
   // Sequência de número de proposta local (persistido no navegador)
   const getNextProposalNumber = () => {
     try {
@@ -70,10 +68,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
   };
 
   const generatePDF = async () => {
-    if (isGenerating) return; // Evita múltiplos cliques
-    
     try {
-      setIsGenerating(true);
       const addSeparatePolicyPage = false; // política já está dentro do conteúdo principal
       // Debug: Verificar dados de pagamento
       console.log('Dados de pagamento recebidos:', pedidoData.pagamentoData);
@@ -83,7 +78,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       headerElement.style.left = '-9999px';
       headerElement.style.width = '1000px';
       headerElement.style.backgroundColor = 'white';
-      headerElement.innerHTML = `<img src="/cebecalho1.png" alt="Cabeçalho STARK" style="width: 110%; height: auto; display: block;">`;
+      headerElement.innerHTML = `<img src="/cebecalho1.png" alt="Cabeçalho STARK" style="width: 100%; height: auto; display: block;">`;
       
       const footerElement = document.createElement('div');
       footerElement.style.position = 'absolute';
@@ -91,7 +86,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       footerElement.style.width = '1000px';
       footerElement.style.backgroundColor = 'white';
       footerElement.innerHTML = `
-        <img src="/rodapé.png" alt="Rodapé STARK" style="width: 110%; height: auto; display: block;">
+        <img src="/rodapé.png" alt="Rodapé STARK" style="width: 100%; height: auto; display: block;">
         <div style="text-align: center; font-size: 11px; color:rgb(0, 0, 0); padding: 5px; background: white;">
           Proposta gerada automaticamente pelo sistema em ${new Date().toLocaleString('pt-BR')}
         </div>
@@ -122,20 +117,20 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h2 style="color:rgb(0, 0, 0); font-size: 28px; margin-bottom: 15px;">PROPOSTA COMERCIAL STARK</h2>
+          <h2 style="color:rgb(0, 0, 0); font-size: 28px; margin-bottom: 15px;">PROPOSTA COMERCIAL</h2>
           
           <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
             <div>
               <strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}
             </div>
             <div>
-              <strong>Proposta STARK Nº:</strong> ${propostaNumero}
+              <strong>Proposta Nº:</strong> ${propostaNumero}
             </div>
           </div>
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE STARK</h3>
+          <h3 style="color: #495057; font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Nome:</strong> ${pedidoData.clienteData.nome || 'Não informado'}
@@ -576,21 +571,21 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             ` : ''}
             ${pedidoData.pagamentoData?.tipoCliente === 'cliente' ? `
             <div style="margin-bottom: 10px;">
-              <strong>Pagamento Instalação por Conta de:</strong> ${
-                pedidoData.pagamentoData?.pagamentoInstalacaoPorConta === 'cliente' ? 'Cliente' :
-                pedidoData.pagamentoData?.pagamentoInstalacaoPorConta === 'fabrica' ? 'Fábrica' :
-                'Não informado'
-              }
+              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
             </div>
             <div style="margin-bottom: 10px;">
-              <strong>Local de Instalação:</strong> ${pedidoData.pagamentoData?.localInstalacao || 'Não informado'}
+              <strong>Tipo de Instalação:</strong> ${
+                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
+                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
+                'Não informado'
+              }
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.tipoFrete ? `
             <div style="margin-bottom: 10px;">
               <strong>Tipo de Frete:</strong> 
-              <span style="color: ${pedidoData.pagamentoData.tipoFrete === 'cif' ? '#28a745' : '#6c757d'}; font-weight: bold;">
-                ${pedidoData.pagamentoData.tipoFrete === 'cif' ? 'CIF (Frete incluso no pedido)' : 'FOB (Por conta do cliente)'}
+              <span style="color: ${pedidoData.pagamentoData.tipoFrete === 'cif' ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                ${pedidoData.pagamentoData.tipoFrete === 'cif' ? 'CIF (Fábrica paga)' : 'FOB (Cliente paga)'}
               </span>
             </div>
             ` : ''}
@@ -1054,60 +1049,32 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
-    } finally {
-      setIsGenerating(false);
     }
   };
 
   return (
     <button 
       onClick={generatePDF}
-      disabled={isGenerating}
       className="pdf-generator-btn"
       style={{
-        background: isGenerating 
-          ? 'linear-gradient(135deg, #6c757d 0%, #495057 100%)' 
-          : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
         color: 'white',
         border: 'none',
         padding: '12px 20px',
         borderRadius: '8px',
         fontSize: '14px',
         fontWeight: '600',
-        cursor: isGenerating ? 'not-allowed' : 'pointer',
-        opacity: isGenerating ? 0.7 : 1,
+        cursor: 'pointer',
         transition: 'all 0.3s ease',
         display: 'flex',
         alignItems: 'center',
         gap: '8px'
       }}
     >
-      {isGenerating ? (
-        <>
-          <svg 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            style={{ 
-              width: '16px', 
-              height: '16px',
-              animation: 'spin 1s linear infinite'
-            }}
-          >
-            <circle cx="12" cy="12" r="10" strokeWidth="3" stroke="currentColor" opacity="0.25"/>
-            <path d="M12 2a10 10 0 0 1 10 10" strokeWidth="3" strokeLinecap="round"/>
-          </svg>
-          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-          Gerando PDF...
-        </>
-      ) : (
-        <>
-          <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
-            <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-          </svg>
-          Gerar PDF
-        </>
-      )}
+      <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
+        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+      </svg>
+      Gerar PDF
     </button>
   );
 };

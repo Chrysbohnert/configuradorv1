@@ -97,9 +97,9 @@ class DatabaseService {
   // Cache para evitar múltiplas requisições
   _guindastesCache = new Map();
 
-  // Versão leve para listagens iniciais: APENAS campos essenciais
+  // Versão leve para listagens: apenas campos necessários, com paginação e busca
   async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
-    const cacheKey = `lite_page_${page}_size_${pageSize}_search_${search}`;
+    const cacheKey = `page_${page}_size_${pageSize}_search_${search}`;
 
     // Verificar cache primeiro (exceto se for refresh forçado)
     if (!forceRefresh && this._guindastesCache.has(cacheKey)) {
@@ -112,7 +112,6 @@ class DatabaseService {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // Apenas campos essenciais para listagem rápida
     let query = supabase
       .from('guindastes')
       .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
@@ -143,52 +142,12 @@ class DatabaseService {
     return result;
   }
 
-  // Buscar guindaste completo com TODOS os campos (incluindo descricao e nao_incluido)
-  async getGuindasteCompleto(id) {
-    const cacheKey = `completo_${id}`;
-
-    // Verificar cache
-    if (this._guindastesCache.has(cacheKey)) {
-      const cached = this._guindastesCache.get(cacheKey);
-      if (Date.now() - cached.timestamp < 10 * 60 * 1000) { // 10 minutos de cache
-        return cached.data;
-      }
-    }
-
-    const { data, error } = await supabase
-      .from('guindastes')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-
-    // Armazenar no cache
-    this._guindastesCache.set(cacheKey, {
-      data,
-      timestamp: Date.now()
-    });
-
-    return data;
-  }
-
-  // Buscar múltiplos guindastes completos
-  async getGuindastesCompletos(ids) {
-    if (!ids || ids.length === 0) return [];
-
-    const { data, error } = await supabase
-      .from('guindastes')
-      .select('*')
-      .in('id', ids);
-
-    if (error) throw error;
-    return data || [];
-  }
-
   async createGuindaste(guindasteData) {
     try {
-      // Enviar APENAS campos que existem na tabela guindastes
+      // Limpar dados antes de enviar para evitar problemas de tipo
       const cleanData = {
+        ...guindasteData,
+        // Garantir que campos de texto sejam strings válidas
         subgrupo: guindasteData.subgrupo || '',
         modelo: guindasteData.modelo || '',
         peso_kg: guindasteData.peso_kg || '',
@@ -200,6 +159,7 @@ class DatabaseService {
         codigo_referencia: guindasteData.codigo_referencia || null,
         finame: guindasteData.finame || null,
         ncm: guindasteData.ncm || null,
+        // Garantir que arrays sejam válidos
         imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
           ? guindasteData.imagens_adicionais 
           : []
@@ -553,23 +513,13 @@ class DatabaseService {
 
   // ===== ITENS DO PEDIDO =====
   async createPedidoItem(itemData) {
-    console.log('🔍 [createPedidoItem] Dados recebidos:', itemData);
-    console.log('🔍 [createPedidoItem] Tipo de item_id:', typeof itemData.item_id);
-    console.log('🔍 [createPedidoItem] Valor de item_id:', itemData.item_id);
-    
     const { data, error } = await supabase
       .from('pedido_itens')
       .insert([itemData])
       .select()
       .single();
     
-    if (error) {
-      console.error('❌ [createPedidoItem] Erro:', error);
-      console.error('❌ [createPedidoItem] Dados que causaram erro:', itemData);
-      throw error;
-    }
-    
-    console.log('✅ [createPedidoItem] Item criado com sucesso');
+    if (error) throw error;
     return data;
   }
 

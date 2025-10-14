@@ -80,22 +80,9 @@ const MemoizedCardGuindaste = memo(({ guindaste, onAddToCart, onRemoveFromCart, 
 
         {/* Descrição */}
         {guindaste.descricao && (
-          <div className="mb-3 p-2 bg-blue-50 rounded">
-            <p className="text-xs font-semibold text-blue-800 mb-1">Descrição Técnica:</p>
-            <p className="text-sm text-gray-700 line-clamp-3">
-              {guindaste.descricao}
-            </p>
-          </div>
-        )}
-
-        {/* Não Incluído */}
-        {guindaste.nao_incluido && (
-          <div className="mb-3 p-2 bg-yellow-50 rounded border-l-4 border-yellow-400">
-            <p className="text-xs font-semibold text-yellow-800 mb-1">⚠️ Não está incluído:</p>
-            <p className="text-sm text-yellow-900 line-clamp-2">
-              {guindaste.nao_incluido}
-            </p>
-          </div>
+          <p className="text-sm text-gray-500 mb-4 line-clamp-3">
+            {guindaste.descricao}
+          </p>
         )}
 
         {/* Botão de Ação */}
