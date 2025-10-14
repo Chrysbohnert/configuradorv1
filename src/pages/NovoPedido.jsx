@@ -33,32 +33,59 @@ const NovoPedido = () => {
 
   // Determinar IE: para vendedor do RS usa clienteTemIE; demais regiões mantém preço padrão
   const determinarClienteTemIE = () => {
-    // Para RS: sempre usa o estado clienteTemIE quando estiver na etapa 2+
-    if (currentStep >= 2 && user?.regiao === 'rio grande do sul') {
+    if (currentStep >= 2 && user?.regiao === 'rio grande do sul' && pagamentoData.tipoPagamento === 'cliente') {
       return !!clienteTemIE;
     }
     return true;
   };
 
-  // Função para recalcular preços quando o contexto muda
+  // ← NOVO: Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
     if (carrinho.length === 0 || !user?.regiao) {
+      console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
+        carrinhoLength: carrinho.length,
+        userRegiao: user?.regiao
+      });
       return;
     }
+
+    console.log('🔄 [recalcularPrecosCarrinho] INICIANDO recálculo...');
+    console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
     const regiaoVendedor = normalizarRegiao(user.regiao, temIE);
 
+    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região: ${regiaoVendedor}`);
+    console.log(`👤 [recalcularPrecosCarrinho] Usuário região: ${user.regiao}`);
+
+    // ← NOVO: Testar preços de todas as regiões para comparação
+    if (user.regiao === 'rio grande do sul') {
+      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões:');
+      for (const item of carrinho.filter(i => i.tipo === 'guindaste').slice(0, 1)) {
+        try {
+          const precoComIE = await db.getPrecoPorRegiao(item.id, 'rs-com-ie');
+          const precoSemIE = await db.getPrecoPorRegiao(item.id, 'rs-sem-ie');
+          console.log(`  ${item.nome}: rs-com-ie = R$ ${precoComIE}, rs-sem-ie = R$ ${precoSemIE}`);
+        } catch (error) {
+          console.error(`  Erro ao verificar preços para ${item.nome}:`, error);
+        }
+      }
+    }
+
     const carrinhoAtualizado = [];
-    let precisaAtualizar = false;
 
     for (const item of carrinho) {
       if (item.tipo === 'guindaste') {
         try {
+          console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
           const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
 
+          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${regiaoVendedor})`);
+
           if (novoPreco !== item.preco) {
-            precisaAtualizar = true;
+            console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
+          } else {
+            console.log(`➡️ [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
           }
 
           carrinhoAtualizado.push({
@@ -66,6 +93,7 @@ const NovoPedido = () => {
             preco: novoPreco || item.preco || 0
           });
         } catch (error) {
+          console.error(`❌ [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
           carrinhoAtualizado.push(item);
         }
       } else {
@@ -73,20 +101,20 @@ const NovoPedido = () => {
       }
     }
 
-    // Só atualiza se realmente houver mudança nos preços
-    if (precisaAtualizar) {
-      setCarrinho(carrinhoAtualizado);
-      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
-    }
+    console.log('📊 [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
+
+    setCarrinho(carrinhoAtualizado);
+    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+    console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
   };
 
-  // Recalcular preços quando contexto mudar (SEM monitorar carrinho para evitar loop)
+  // Recalcular preços quando contexto ou carrinho mudarem
   useEffect(() => {
     if (carrinho.length > 0 && user?.regiao) {
       recalcularPrecosCarrinho();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep]);
+  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep, carrinho]);
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -955,84 +983,110 @@ const extrairConfiguracoes = (subgrupo) => {
 
 
 
-// Componente Card do Guindaste
+// Componente Card do Guindaste - Design Profissional
 const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
   const configuracoes = extrairConfiguracoes(guindaste.subgrupo);
-  
+
   return (
     <div className={`guindaste-card ${isSelected ? 'selected' : ''}`} onClick={onSelect}>
-      <div className="card-header">
-        <div className="guindaste-image">
-          {guindaste.imagem_url ? (
-            <img
-              src={guindaste.imagem_url}
-              alt={guindaste.subgrupo}
-              className="guindaste-thumbnail"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-            </svg>
-          </div>
-        </div>
-        <div className="guindaste-info">
-          <h3>
-            {guindaste.subgrupo}
-            {configuracoes.length > 0 && (
-              <span style={{ marginLeft: '10px', display: 'inline-flex', gap: '8px' }}>
-                {configuracoes.map((config, idx) => (
-                  <span 
-                    key={idx} 
-                    title={config.text}
-                    style={{ 
-                      fontSize: '24px',
-                      filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2))'
-                    }}
-                  >
-                    {config.icon}
-                  </span>
-                ))}
-              </span>
-            )}
-          </h3>
-          <span className="categoria">{guindaste.Grupo}</span>
-        </div>
-        <div className="price">Código: {guindaste.codigo_referencia}</div>
+      {/* Badges de Status */}
+      <div className="card-badge">
+        {isSelected && <span className="badge-selected">Selecionado</span>}
+        {guindaste.codigo_referencia && (
+          <span className="badge-codigo">#{guindaste.codigo_referencia}</span>
+        )}
       </div>
-      
-      <div className="card-body">
-        <div className="specs">
-          <div className="spec">
-            <span className="spec-label">Configuração de Lanças:</span>
-            <span className="spec-value">{guindaste.peso_kg || 'N/A'}</span>
+
+      {/* Cabeçalho com Imagem e Informações Principais */}
+      <div className="card-header">
+        <div className="guindaste-image-container">
+          <div className="guindaste-image">
+            {guindaste.imagem_url ? (
+              <img
+                src={guindaste.imagem_url}
+                alt={guindaste.subgrupo}
+                className="guindaste-thumbnail"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'flex';
+                }}
+              />
+            ) : null}
+            <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
           </div>
-          <div className="spec">
-            <span className="spec-label">Opcionais:</span>
-            <span className="spec-value">
-              {configuracoes.length > 0 ? (
-                <div className="configuracoes-lista">
-                  {configuracoes.map((config, idx) => (
-                    <div key={idx} className="config-item">
-                      <span className="config-icon" style={{ fontSize: '22px', marginRight: '8px' }}>
-                        {config.icon}
-                      </span>
-                      <span>{config.text}</span>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                'STANDARD - Pedido Padrão'
-              )}
-            </span>
+          {configuracoes.length > 0 && (
+            <div className="config-badges">
+              {configuracoes.slice(0, 3).map((config, idx) => (
+                <span
+                  key={idx}
+                  className="config-badge"
+                  title={config.text}
+                >
+                  {config.icon}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="guindaste-main-info">
+          <h3 className="guindaste-title">
+            {guindaste.subgrupo}
+          </h3>
+          <div className="guindaste-meta">
+            <span className="categoria">{guindaste.Grupo}</span>
+            {guindaste.codigo_referencia && (
+              <span className="codigo-display">Cód: {guindaste.codigo_referencia}</span>
+            )}
           </div>
         </div>
-        
-        <div className="card-actions">
+      </div>
+
+      {/* Corpo do Card com Especificações Detalhadas */}
+      <div className="card-body">
+        <div className="specs-grid">
+          <div className="spec-item">
+            <div className="spec-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M3 6h18M3 12h18M3 18h18"/>
+              </svg>
+            </div>
+            <div className="spec-content">
+              <span className="spec-label">Configuração de Lanças</span>
+              <span className="spec-value">{guindaste.peso_kg || 'Padrão'}</span>
+            </div>
+          </div>
+
+          {configuracoes.length > 0 && (
+            <div className="spec-item">
+              <div className="spec-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </div>
+              <div className="spec-content">
+                <span className="spec-label">Opcionais Incluídos</span>
+                <div className="opcionais-list">
+                  {configuracoes.slice(0, 2).map((config, idx) => (
+                    <span key={idx} className="opcional-item">
+                      {config.icon} {config.text}
+                    </span>
+                  ))}
+                  {configuracoes.length > 2 && (
+                    <span className="opcional-more">+{configuracoes.length - 2} mais</span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Área de Ações */}
+        <div className="card-footer">
           <button className={`btn-select ${isSelected ? 'selected' : ''}`}>
             {isSelected ? (
               <>
@@ -1043,8 +1097,10 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
               </>
             ) : (
               <>
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/>
+                  <path d="M2.05 11.05a13.99 13.99 0 0 1 11.9-11.9"/>
+                  <path d="M21.95 12.95a13.99 13.99 0 0 1-11.9 11.9"/>
                 </svg>
                 Selecionar
               </>
@@ -1544,42 +1600,42 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="form-group">
-                  <label>Medida A (cm)</label>
+                  <label>Medida A (mm)</label>
                   <input
                     type="text"
                     value={formData.medidaA || ''}
                     onChange={(e) => handleChange('medidaA', e.target.value)}
-                    placeholder="Ex: 70"
+                    placeholder="Ex: 150"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida B (cm)</label>
+                  <label>Medida B (mm)</label>
                   <input
                     type="text"
                     value={formData.medidaB || ''}
                     onChange={(e) => handleChange('medidaB', e.target.value)}
-                    placeholder="Ex: 63"
+                    placeholder="Ex: 200"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida C (cm)</label>
+                  <label>Medida C (mm)</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
                     onChange={(e) => handleChange('medidaC', e.target.value)}
-                    placeholder="Ex: 35"
+                    placeholder="Ex: 350"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida D (cm)</label>
+                  <label>Medida D (mm)</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
                     onChange={(e) => handleChange('medidaD', e.target.value)}
-                    placeholder="Ex: 40"
+                    placeholder="Ex: 400"
                   />
                 </div>
               </div>
@@ -1667,14 +1723,11 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
-      // Remover campos que não existem na tabela caminhoes
-      const { medidaA, medidaB, medidaC, medidaD, ...caminhaoDataLimpo } = caminhaoData;
-      
       const caminhaoDataToSave = {
-        ...caminhaoDataLimpo,
+        ...caminhaoData,
         cliente_id: cliente.id,
         // Garantir que campos opcionais tenham valores padrão
-        observacoes: caminhaoDataLimpo.observacoes || null,
+        observacoes: caminhaoData.observacoes || null,
         // Campo placa é obrigatório no banco mas não usado no formulário
         placa: 'N/A'
       };
@@ -1717,25 +1770,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
         }
         
-        // Construir dados do item
-        // Não incluir item_id se for UUID (string) - apenas se for número
         const itemDataToSave = {
           pedido_id: pedido.id,
           tipo: item.tipo,
+          item_id: item.id,
           quantidade: 1,
           preco_unitario: item.preco,
           codigo_produto
         };
-        
-        // Adicionar item_id apenas se for número inteiro
-        if (item.id && typeof item.id === 'number') {
-          itemDataToSave.item_id = item.id;
-        } else if (item.id && typeof item.id === 'string') {
-          const parsedId = parseInt(item.id);
-          if (!isNaN(parsedId)) {
-            itemDataToSave.item_id = parsedId;
-          }
-        }
         
         console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
         
@@ -2018,20 +2060,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               </div>
             </>
           )}
-          {/* Campos de Instalação apenas para cliente */}
+          {/* Campos Local de Instalação e Tipo de Instalação apenas para cliente */}
           {pagamentoData.tipoCliente === 'cliente' && (
             <>
               <div className="data-row">
-                <span className="label">Pagamento Instalação por Conta de:</span>
-                <span className="value">
-                  {pagamentoData.pagamentoInstalacaoPorConta === 'cliente' && 'Cliente'}
-                  {pagamentoData.pagamentoInstalacaoPorConta === 'fabrica' && 'Fábrica'}
-                  {!pagamentoData.pagamentoInstalacaoPorConta && 'Não informado'}
-                </span>
-              </div>
-              <div className="data-row">
                 <span className="label">Local de Instalação:</span>
                 <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
+              </div>
+              <div className="data-row">
+                <span className="label">Tipo de Instalação:</span>
+                <span className="value">
+                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
+                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {!pagamentoData.tipoInstalacao && 'Não informado'}
+                </span>
               </div>
               
               {/* Informações sobre Participação de Revenda */}

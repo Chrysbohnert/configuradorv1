@@ -17,22 +17,22 @@ import './PaymentPolicy.css';
  * @param {Function} props.onClienteIEChange - Callback para mudar o estado de IE
  * @param {Array} props.carrinho - Itens do carrinho para verificar modelos GSE
  */
-const PaymentPolicy = ({ 
-  precoBase = 0, 
-  onPaymentComputed, 
+const PaymentPolicy = ({
+  precoBase = 0,
+  onPaymentComputed,
   onPlanSelected,
   errors = {},
   user = null,
   clienteTemIE = true,
   onClienteIEChange,
-  carrinho = []
+  carrinho = [],
+  debug = false
 }) => {
+  // Evitar logs excessivos em produção
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
   const [localInstalacao, setLocalInstalacao] = useState('');
   const [pagamentoPorConta, setPagamentoPorConta] = useState(''); // 'cliente' | 'fabrica'
-  const [pagamentoInstalacaoPorConta, setPagamentoInstalacaoPorConta] = useState(''); // 'cliente' | 'fabrica'
-  const [financiamentoBancario, setFinanciamentoBancario] = useState(''); // 'sim' | 'nao'
   const [valorSinal, setValorSinal] = useState('');
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50'
   const [formaEntrada, setFormaEntrada] = useState(''); // Forma de pagamento da entrada
@@ -42,41 +42,74 @@ const PaymentPolicy = ({
   const [erroCalculo, setErroCalculo] = useState('');
 
   // Estados para o sistema de frete
-  const [fretes, setFretes] = useState([]); // Dados de fretes carregados do banco
+  const [pontosInstalacao, setPontosInstalacao] = useState([]); // Pontos de instalação filtrados por região
   const [tipoFreteSelecionado, setTipoFreteSelecionado] = useState(''); // 'prioridade' | 'reaproveitamento'
   const [dadosFreteAtual, setDadosFreteAtual] = useState(null); // Dados do frete selecionado
+  const [loadingPontos, setLoadingPontos] = useState(false);
 
-  // Carregar dados de frete do banco
+  // Carregar pontos de instalação filtrados por região do vendedor
   useEffect(() => {
-    const carregarFretes = async () => {
+    const carregarPontos = async () => {
+      if (!user?.regiao) {
+        console.warn('⚠️ Vendedor sem região definida');
+        return;
+      }
+
       try {
-        const dadosFretes = await db.getFretes();
-        setFretes(dadosFretes);
+        setLoadingPontos(true);
+        
+        // Importar dinamicamente o helper de mapeamento
+        const { mapRegiaoToGrupo } = await import('../../utils/regiaoMapper');
+        
+        // Para RS, o grupo depende se o cliente tem IE (mas aqui pegamos todos do RS)
+        // A lógica de IE só afeta os PREÇOS, não os pontos disponíveis
+        const grupoRegiao = mapRegiaoToGrupo(user.regiao, clienteTemIE);
+        
+        console.log('🌍 Carregando pontos para:', { 
+          regiaoVendedor: user.regiao, 
+          grupoRegiao,
+          clienteTemIE 
+        });
+
+        const pontos = await db.getPontosInstalacaoPorRegiao(grupoRegiao);
+        setPontosInstalacao(pontos);
+        
+        console.log('✅ Pontos carregados:', pontos.length);
       } catch (error) {
-        console.error('Erro ao carregar fretes:', error);
+        console.error('❌ Erro ao carregar pontos de instalação:', error);
+        setPontosInstalacao([]);
+      } finally {
+        setLoadingPontos(false);
       }
     };
 
-    carregarFretes();
-  }, []);
+    carregarPontos();
+  }, [user?.regiao, clienteTemIE]);
 
   // Atualizar dados do frete quando o local de instalação mudar
   useEffect(() => {
-    if (localInstalacao && fretes.length > 0) {
-      // Extrair cidade e oficina do localInstalacao (formato: "Nome - Cidade/UF")
+    if (localInstalacao && pontosInstalacao.length > 0) {
+      // Extrair oficina, cidade e UF do localInstalacao (formato: "Oficina - Cidade/UF")
       const partes = localInstalacao.split(' - ');
       if (partes.length === 2) {
-        const cidadeParte = partes[1].split('/')[0];
+        const oficina = partes[0];
+        const cidadeUF = partes[1].split('/');
+        const cidade = cidadeUF[0];
+        const uf = cidadeUF[1];
 
-        // Buscar dados de frete para a cidade
-        const freteEncontrado = fretes.find(frete =>
-          frete.cidade?.toLowerCase() === cidadeParte?.toLowerCase()
+        // Buscar dados de frete específicos (oficina + cidade + UF para evitar ambiguidade)
+        const freteEncontrado = pontosInstalacao.find(ponto =>
+          ponto.oficina === oficina &&
+          ponto.cidade === cidade &&
+          ponto.uf === uf
         );
 
         if (freteEncontrado) {
+          console.log('✅ Frete encontrado para:', { oficina, cidade, uf });
           setDadosFreteAtual(freteEncontrado);
-          setTipoFreteSelecionado(''); // Resetar seleção
+          setTipoFreteSelecionado(''); // Resetar seleção para forçar escolha
         } else {
+          console.warn('⚠️ Frete não encontrado para:', { oficina, cidade, uf });
           setDadosFreteAtual(null);
           setTipoFreteSelecionado('');
         }
@@ -85,41 +118,35 @@ const PaymentPolicy = ({
       setDadosFreteAtual(null);
       setTipoFreteSelecionado('');
     }
-  }, [localInstalacao, fretes]);
+  }, [localInstalacao, pontosInstalacao]);
 
-  // Lista de oficinas do Rio Grande do Sul
-  const oficinasRS = [
-    { nome: 'Agiltec', cidade: 'Santa Rosa', uf: 'RS' },
-    { nome: 'Rodokurtz', cidade: 'Pelotas', uf: 'RS' },
-    { nome: 'Hidroen Guindastes', cidade: 'São José do Inhacorá', uf: 'RS' },
-    { nome: 'Trevisan', cidade: 'Santa Maria', uf: 'RS' },
-    { nome: 'Berto', cidade: 'Canoas', uf: 'RS' },
-    { nome: 'Guindas Move', cidade: 'Alvorada', uf: 'RS' },
-    { nome: 'Salex', cidade: 'Nova Prata', uf: 'RS' },
-    { nome: 'Guindasmap', cidade: 'Santo Antônio da Patrulha', uf: 'RS' },
-    { nome: 'VRC Manutenções', cidade: 'Caxias do Sul', uf: 'RS' },
-    { nome: 'BGS Implementos', cidade: 'Erechim', uf: 'RS' },
-    { nome: 'R.D.P. Soluções Hidráulicas', cidade: 'Não-Me-Toque', uf: 'RS' },
-    { nome: 'KM Prestação de Serviço Mecânico', cidade: 'Carazinho', uf: 'RS' },
-    { nome: 'Mecânica Acosta', cidade: 'Alegrete', uf: 'RS' },
-    { nome: 'KIST Oficina de Furgões', cidade: 'Santo Ângelo', uf: 'RS' },
-    { nome: 'Henz & Cassola Comércio', cidade: 'Cândido Godói', uf: 'RS' }
-  ];
-
-  // Filtrar oficinas baseado na região do vendedor
-  const oficinasDisponiveis = oficinasRS.filter(oficina => {
-    // Se o vendedor for do Rio Grande do Sul, mostrar todas as oficinas RS
-    if (user?.regiao === 'rio grande do sul') {
-      return oficina.uf === 'RS';
-    }
-    // Para outras regiões, pode ser necessário adicionar lógica futura
-    return false; // Por enquanto, só mostra para vendedores do RS
-  });
+  // Os pontos disponíveis já vêm filtrados do banco por região do vendedor
+  // Formatar para exibição no select
+  const oficinasDisponiveis = pontosInstalacao.map(ponto => ({
+    nome: ponto.oficina,
+    cidade: ponto.cidade,
+    uf: ponto.uf,
+    valor_prioridade: ponto.valor_prioridade,
+    valor_reaproveitamento: ponto.valor_reaproveitamento
+  }));
   
   // Estados para Participação de Revenda (apenas para Cliente)
   const [participacaoRevenda, setParticipacaoRevenda] = useState(''); // 'sim' | 'nao'
   const [revendaTemIE, setRevendaTemIE] = useState(''); // 'sim' | 'nao' (se participacaoRevenda === 'sim')
   const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // Desconto do vendedor: 1-5% (se cliente COM participação de revenda - Produtor rural)
+
+  // ← NOVO: Log quando estados internos mudam
+  useEffect(() => {
+    if (debug) {
+      console.log('📊 [PaymentPolicy] Estados internos atualizados:', {
+        tipoCliente,
+        prazoSelecionado,
+        participacaoRevenda,
+        revendaTemIE,
+        descontoRevendaIE
+      });
+    }
+  }, [tipoCliente, prazoSelecionado, participacaoRevenda, revendaTemIE, descontoRevendaIE, debug]);
 
   // Verificar se há guindastes GSE no carrinho
   const temGuindasteGSE = useMemo(() => {
@@ -238,6 +265,7 @@ const PaymentPolicy = ({
 
   // Efeito para recalcular quando mudar o tipo, prazo ou preço base
   useEffect(() => {
+
     // Se for À Vista, zerar o valor do sinal
     if (prazoSelecionado === 'À Vista' && valorSinal) {
       setValorSinal('');
@@ -245,6 +273,7 @@ const PaymentPolicy = ({
 
     // Validações antes de fazer o cálculo
     if (!tipoCliente || !prazoSelecionado || !precoBase) {
+      // silencioso
       setCalculoAtual(null);
       setErroCalculo('');
       return;
@@ -291,29 +320,24 @@ const PaymentPolicy = ({
       const descontoAdicionalValor = precoBase * (descontoFinal / 100);
       const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
 
-      // Adicionar valor do frete selecionado (apenas se CIF - fábrica paga = cliente paga o frete)
-      // FOB = cliente busca = não adiciona valor
-      const valorFrete = tipoFrete === 'cif' && dadosFreteAtual && tipoFreteSelecionado ?
+      // Adicionar valor do frete selecionado
+      const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
         (tipoFreteSelecionado === 'prioridade' ?
           parseFloat(dadosFreteAtual.valor_prioridade || 0) :
           parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
 
-      // Adicionar valor da instalação se for por conta da fábrica
-      const valorInstalacao = dadosFreteAtual && pagamentoInstalacaoPorConta === 'fabrica' ?
-        parseFloat(dadosFreteAtual.valor_instalacao || 0) : 0;
-
-      const valorFinalComFreteEInstalacao = valorFinalComDescontoAdicional + valorFrete + valorInstalacao;
+      const valorFinalComFrete = valorFinalComDescontoAdicional + valorFrete;
 
       // Para Cliente: calcular entrada baseada no percentual (30% ou 50%)
       // Para Revenda: usar a entrada do plano
       const valorSinalNum = parseFloat(valorSinal) || 0;
       const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
       const entradaParaCalculo = tipoCliente === 'cliente' && percentualEntradaNum > 0
-        ? (valorFinalComFreteEInstalacao * percentualEntradaNum / 100)
+        ? (valorFinalComFrete * percentualEntradaNum / 100)
         : resultado.entrada;
 
-      // Recalcular parcelas com o valor final (com desconto adicional, frete e instalação) e entrada correta
-      const saldoComDesconto = valorFinalComFreteEInstalacao - entradaParaCalculo;
+      // Recalcular parcelas com o valor final (com desconto adicional e frete) e entrada correta
+      const saldoComDesconto = valorFinalComFrete - entradaParaCalculo;
       const numParcelas = resultado.parcelas.length;
       const valorParcela = saldoComDesconto / numParcelas;
       
@@ -339,8 +363,7 @@ const PaymentPolicy = ({
         descontoAdicionalValor,
         valorFinalComDescontoAdicional,
         valorFrete,
-        valorInstalacao,
-        valorFinalComFrete: valorFinalComFreteEInstalacao,
+        valorFinalComFrete,
         parcelas: parcelasAtualizadas,
         saldo: saldoComDesconto,
         tipoFreteSelecionado,
@@ -354,9 +377,9 @@ const PaymentPolicy = ({
         // O sinal FAZ PARTE da entrada total
         const entradaTotal = entradaParaCalculo;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = saldoComDesconto; // Saldo após pagar a entrada completa (já inclui frete e instalação)
-        const valorFinal = valorFinalComFreteEInstalacao;
-        const valorFreteCalc = tipoFrete === 'cif' && dadosFreteAtual && tipoFreteSelecionado ?
+        const saldo = saldoComDesconto; // Saldo após pagar a entrada completa (já inclui frete)
+        const valorFinal = valorFinalComFrete;
+        const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
           (tipoFreteSelecionado === 'prioridade' ?
             parseFloat(dadosFreteAtual.valor_prioridade || 0) :
             parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
@@ -367,7 +390,6 @@ const PaymentPolicy = ({
           tipoCliente,
           localInstalacao,
           pagamentoPorConta,
-          pagamentoInstalacaoPorConta,
           valorSinal: valorSinalNum,
           percentualEntrada: percentualEntradaNum,
           entradaTotal: entradaTotal,
@@ -386,15 +408,14 @@ const PaymentPolicy = ({
           // Informações sobre frete
           tipoFreteSelecionado: tipoFreteSelecionado, // 'prioridade' | 'reaproveitamento'
           dadosFreteAtual: dadosFreteAtual, // Dados completos do frete selecionado
-          valorFrete: valorFreteCalc, // Valor do frete aplicado
-          valorInstalacao: valorInstalacao, // Valor da instalação (se por conta da fábrica)
-          valorFinalComFrete: valorFinalComFreteEInstalacao, // Valor final com desconto, frete e instalação
+          valorFrete: valorFrete, // Valor do frete aplicado
+          valorFinalComFrete: valorFinalComFrete, // Valor final com desconto e frete
           // Manter compatibilidade com estrutura antiga
           tipoPagamento: tipoCliente,
           prazoPagamento: prazoSelecionado,
           desconto: plan.discount_percent ? (plan.discount_percent * 100) : 0,
           acrescimo: plan.surcharge_percent ? (plan.surcharge_percent * 100) : 0,
-          valorFinal: valorFinal, // Valor final com desconto adicional, frete e instalação aplicado
+          valorFinal: valorFinal, // Valor final com desconto adicional e frete aplicado
           tipoInstalacao: pagamentoPorConta
         });
       }
@@ -412,7 +433,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, pagamentoInstalacaoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -553,12 +574,17 @@ const PaymentPolicy = ({
             {/* Campo de IE - Aparece SEMPRE após selecionar participação de revenda */}
             {participacaoRevenda && (
               <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
-                <label htmlFor="clienteRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'Tipo de Cliente:'} <span style={{ color: '#dc3545' }}>*</span>
+                <label htmlFor="clienteRevendaIE" style={{ fontWeight: '600', fontSize: '15px', marginBottom: '8px', display: 'block', color: '#495057' }}>
+                  {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'O cliente possui Inscrição Estadual?'} <span style={{ color: '#dc3545' }}>*</span>
                 </label>
                 <small style={{ display: 'block', marginBottom: '10px', color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
                   ⚠️ IMPORTANTE: Este campo afeta o PREÇO BASE do equipamento
                 </small>
+                {user?.regiao === 'rio grande do sul' && (
+                  <small style={{ display: 'block', marginBottom: '10px', color: '#0056b3', fontSize: '0.875em', fontWeight: '600', background: '#cfe2ff', padding: '8px', borderRadius: '4px', border: '1px solid #0056b3' }}>
+                    ℹ️ Vendedores do RS: Selecione "Produtor rural" para preços RS com IE ou "Rodoviário" para preços RS sem IE
+                  </small>
+                )}
                 {/* Mensagem especial para GSI */}
                 {participacaoRevenda === 'sim' && temGuindasteGSI && (
                   <small style={{ display: 'block', marginBottom: '10px', color: '#28a745', fontSize: '0.875em', fontWeight: '600', background: '#d4edda', padding: '8px', borderRadius: '4px', border: '1px solid #28a745' }}>
@@ -609,7 +635,12 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>🚜 Produtor rural</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                      <span style={{ fontWeight: '600' }}>🚜 Produtor rural</span>
+                      {user?.regiao === 'rio grande do sul' && (
+                        <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 'normal' }}>Com Inscrição Estadual</span>
+                      )}
+                    </span>
                   </label>
                   {/* Esconder "Rodoviário" quando for Cliente + Participação de Revenda + GSI */}
                   {!(participacaoRevenda === 'sim' && temGuindasteGSI) && (
@@ -654,7 +685,12 @@ const PaymentPolicy = ({
                         height: '16px'
                       }}
                     />
-                    <span>🚛 Rodoviário</span>
+                    <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                      <span style={{ fontWeight: '600' }}>🚛 Rodoviário</span>
+                      {user?.regiao === 'rio grande do sul' && (
+                        <span style={{ fontSize: '11px', opacity: 0.9, fontWeight: 'normal' }}>Sem Inscrição Estadual</span>
+                      )}
+                    </span>
                   </label>
                   )}
                 </div>
@@ -705,96 +741,6 @@ const PaymentPolicy = ({
             )}
           </>
         )}
-
-      {/* Campo de Financiamento Bancário - aparece para todos os clientes */}
-      {tipoCliente === 'cliente' && (
-        <div className="form-group" style={{ marginTop: '20px', padding: '15px', background: '#e3f2fd', borderRadius: '6px', border: '2px solid #2196f3' }}>
-          <label htmlFor="financiamentoBancario" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-            Financiamento Bancário? <span style={{ color: '#dc3545' }}>*</span>
-          </label>
-          <small style={{ display: 'block', marginBottom: '10px', color: '#0d47a1', fontSize: '0.875em', fontWeight: '600' }}>
-            ℹ️ Se SIM, não será necessário informar sinal, entrada ou prazo de pagamento
-          </small>
-          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-            <label 
-              onClick={() => {
-                setFinanciamentoBancario('sim');
-                // Limpar campos que não serão usados
-                setValorSinal('');
-                setPercentualEntrada('');
-                setPrazoSelecionado('');
-              }}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '8px', 
-                cursor: 'pointer', 
-                padding: '10px 20px', 
-                background: financiamentoBancario === 'sim' ? '#2196f3' : '#ffffff', 
-                color: financiamentoBancario === 'sim' ? '#ffffff' : '#495057', 
-                borderRadius: '6px', 
-                border: financiamentoBancario === 'sim' ? '2px solid #2196f3' : '2px solid #ced4da', 
-                transition: 'all 0.2s ease',
-                fontSize: '14px',
-                fontWeight: financiamentoBancario === 'sim' ? '600' : '500',
-                flex: '1',
-                boxShadow: financiamentoBancario === 'sim' ? '0 2px 8px rgba(33, 150, 243, 0.3)' : 'none',
-                userSelect: 'none'
-              }}
-            >
-              <input 
-                type="radio" 
-                name="financiamentoBancario" 
-                checked={financiamentoBancario === 'sim'} 
-                onChange={() => {}}
-                style={{ 
-                  cursor: 'pointer',
-                  accentColor: '#2196f3',
-                  width: '16px',
-                  height: '16px'
-                }}
-              />
-              <span>Sim</span>
-            </label>
-            <label 
-              onClick={() => setFinanciamentoBancario('nao')}
-              style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center',
-                gap: '8px', 
-                cursor: 'pointer', 
-                padding: '10px 20px', 
-                background: financiamentoBancario === 'nao' ? '#28a745' : '#ffffff', 
-                color: financiamentoBancario === 'nao' ? '#ffffff' : '#495057', 
-                borderRadius: '6px', 
-                border: financiamentoBancario === 'nao' ? '2px solid #28a745' : '2px solid #ced4da', 
-                transition: 'all 0.2s ease',
-                fontSize: '14px',
-                fontWeight: financiamentoBancario === 'nao' ? '600' : '500',
-                flex: '1',
-                boxShadow: financiamentoBancario === 'nao' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                userSelect: 'none'
-              }}
-            >
-              <input 
-                type="radio" 
-                name="financiamentoBancario" 
-                checked={financiamentoBancario === 'nao'} 
-                onChange={() => {}}
-                style={{ 
-                  cursor: 'pointer',
-                  accentColor: '#28a745',
-                  width: '16px',
-                  height: '16px'
-                }}
-              />
-              <span>Não</span>
-            </label>
-          </div>
-        </div>
-      )}
       
       {/* Resumo do Carrinho - só aparece depois de selecionar Revenda ou Cliente */}
       {tipoCliente && (
@@ -809,8 +755,8 @@ const PaymentPolicy = ({
         </div>
       )}
 
-      {/* Campos de sinal e entrada apenas para "cliente" - NÃO aparece se financiamento bancário = SIM */}
-      {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && (
+      {/* Campos de sinal e entrada apenas para "cliente" */}
+      {tipoCliente === 'cliente' && (
         <>
           {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
             {prazoSelecionado !== 'À Vista' && (
@@ -851,9 +797,7 @@ const PaymentPolicy = ({
           </>
       )}
 
-      {/* Prazo de Pagamento - NÃO aparece se cliente com financiamento bancário = SIM */}
-      {!(tipoCliente === 'cliente' && financiamentoBancario === 'sim') && (
-        <div className="form-group">
+      <div className="form-group">
           <label htmlFor="prazoPagamento">
             Prazo de Pagamento *
           </label>
@@ -861,14 +805,14 @@ const PaymentPolicy = ({
             id="prazoPagamento"
             value={prazoSelecionado}
             onChange={(e) => setPrazoSelecionado(e.target.value)}
-            disabled={!tipoCliente || (tipoCliente === 'cliente' && financiamentoBancario === 'nao' && !percentualEntrada)}
+            disabled={!tipoCliente || (tipoCliente === 'cliente' && !percentualEntrada)}
             className={errors.prazoPagamento ? 'error' : ''}
           >
             <option value="">
               {!tipoCliente && 'Selecione primeiro o tipo de cliente'}
-              {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && !percentualEntrada && 'Selecione o percentual de entrada primeiro'}
+              {tipoCliente === 'cliente' && !percentualEntrada && 'Selecione o percentual de entrada primeiro'}
               {tipoCliente === 'revenda' && 'Selecione o prazo'}
-              {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && percentualEntrada && 'Selecione o prazo'}
+              {tipoCliente === 'cliente' && percentualEntrada && 'Selecione o prazo'}
             </option>
             {planosDisponiveis.map((plan, idx) => (
               <option key={idx} value={plan.description}>
@@ -879,8 +823,7 @@ const PaymentPolicy = ({
           {errors.prazoPagamento && (
             <span className="error-message">{errors.prazoPagamento}</span>
           )}
-        </div>
-      )}
+      </div>
 
       {/* Campo de Desconto Adicional do Vendedor */}
       {/* Só aparece quando:
@@ -987,48 +930,9 @@ const PaymentPolicy = ({
           </div>
       )}
 
-      {/* Seleção de Pagamento Instalação Por Conta - aparece após desconto adicional */}
+      {/* Seleção de Local de Instalação - aparece após desconto adicional */}
       {tipoCliente === 'cliente' && prazoSelecionado && (
         <>
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <label>Pagamento instalação por conta de: *</label>
-            <div className="radio-group">
-              <label className={`radio-option ${pagamentoInstalacaoPorConta === 'cliente' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="pagamentoInstalacaoPorConta"
-                  value="cliente"
-                  checked={pagamentoInstalacaoPorConta === 'cliente'}
-                  onChange={(e) => setPagamentoInstalacaoPorConta(e.target.value)}
-                />
-                <span>Cliente</span>
-              </label>
-              <label className={`radio-option ${pagamentoInstalacaoPorConta === 'fabrica' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="pagamentoInstalacaoPorConta"
-                  value="fabrica"
-                  checked={pagamentoInstalacaoPorConta === 'fabrica'}
-                  onChange={(e) => setPagamentoInstalacaoPorConta(e.target.value)}
-                />
-                <span>Fábrica</span>
-              </label>
-            </div>
-            {pagamentoInstalacaoPorConta === 'cliente' && (
-              <small style={{ display: 'block', marginTop: '8px', color: '#28a745', fontSize: '0.875em', fontWeight: '500' }}>
-                ℹ️ Instalação por conta do cliente - Valor: R$ 0,00 (não incluído no total)
-              </small>
-            )}
-            {pagamentoInstalacaoPorConta === 'fabrica' && dadosFreteAtual && dadosFreteAtual.valor_instalacao && (
-              <small style={{ display: 'block', marginTop: '8px', color: '#007bff', fontSize: '0.875em', fontWeight: '500' }}>
-                ℹ️ Instalação por conta da fábrica - Valor: {formatCurrency(dadosFreteAtual.valor_instalacao)} (incluído no total)
-              </small>
-            )}
-            {errors.pagamentoInstalacaoPorConta && (
-              <span className="error-message">{errors.pagamentoInstalacaoPorConta}</span>
-            )}
-          </div>
-
           <div className="form-group" style={{ marginTop: '20px' }}>
             <label htmlFor="localInstalacao">
               Local de Instalação *
@@ -1038,11 +942,14 @@ const PaymentPolicy = ({
               value={localInstalacao}
               onChange={(e) => setLocalInstalacao(e.target.value)}
               className={errors.localInstalacao ? 'error' : ''}
+              disabled={loadingPontos}
             >
               <option value="">
-                {oficinasDisponiveis.length === 0
-                  ? 'Nenhuma oficina disponível para sua região'
-                  : 'Selecione o local de instalação'
+                {loadingPontos 
+                  ? 'Carregando oficinas...'
+                  : oficinasDisponiveis.length === 0
+                    ? 'Nenhuma oficina disponível para sua região'
+                    : 'Selecione o local de instalação'
                 }
               </option>
               {oficinasDisponiveis.map((oficina, index) => (
@@ -1051,6 +958,16 @@ const PaymentPolicy = ({
                 </option>
               ))}
             </select>
+            {loadingPontos && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+                🔄 Carregando pontos de instalação da sua região...
+              </small>
+            )}
+            {!loadingPontos && oficinasDisponiveis.length > 0 && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
+                ✓ {oficinasDisponiveis.length} {oficinasDisponiveis.length === 1 ? 'oficina disponível' : 'oficinas disponíveis'}
+              </small>
+            )}
             {errors.localInstalacao && (
               <span className="error-message">{errors.localInstalacao}</span>
             )}
@@ -1170,10 +1087,10 @@ const PaymentPolicy = ({
         const valorSinalNum = parseFloat(valorSinal) || 0;
         const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
         const entradaTotal = tipoCliente === 'cliente' && percentualEntradaNum > 0 
-          ? (calculoAtual.valorFinalComFrete * percentualEntradaNum / 100) 
+          ? (calculoAtual.valorFinalComDescontoAdicional * percentualEntradaNum / 100) 
           : 0;
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
-        const saldo = calculoAtual.valorFinalComFrete - entradaTotal; // Saldo após pagar a entrada completa (inclui frete e instalação)
+        const saldo = calculoAtual.valorFinalComDescontoAdicional - entradaTotal; // Saldo após pagar a entrada completa
         
         return (
           <div className="payment-section">
@@ -1215,44 +1132,17 @@ const PaymentPolicy = ({
                 <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComDescontoAdicional)}</span>
               </div>
 
-              {tipoFrete === 'cif' && calculoAtual.valorFrete > 0 && (
+              {calculoAtual.valorFrete > 0 && (
                 <div className="calc-row freight">
                   <span className="calc-label">
-                    🚛 Frete CIF ({tipoFreteSelecionado === 'prioridade' ? 'Prioridade' : 'Reaproveitamento'}):
+                    🚛 Frete ({tipoFreteSelecionado === 'prioridade' ? 'Prioridade' : 'Reaproveitamento'}):
                   </span>
                   <span className="calc-value">+ {formatCurrency(calculoAtual.valorFrete)}</span>
                 </div>
               )}
 
-              {tipoFrete === 'fob' && (
-                <div className="calc-row" style={{ color: '#6c757d' }}>
-                  <span className="calc-label">
-                    🚛 Frete FOB (Por conta do cliente):
-                  </span>
-                  <span className="calc-value">R$ 0,00</span>
-                </div>
-              )}
-
-              {pagamentoInstalacaoPorConta === 'fabrica' && calculoAtual.valorInstalacao > 0 && (
-                <div className="calc-row freight">
-                  <span className="calc-label">
-                    🔧 Instalação (por conta da fábrica):
-                  </span>
-                  <span className="calc-value">+ {formatCurrency(calculoAtual.valorInstalacao)}</span>
-                </div>
-              )}
-
-              {pagamentoInstalacaoPorConta === 'cliente' && (
-                <div className="calc-row" style={{ color: '#28a745' }}>
-                  <span className="calc-label">
-                    🔧 Instalação (por conta do cliente):
-                  </span>
-                  <span className="calc-value">R$ 0,00</span>
-                </div>
-              )}
-
               <div className="calc-row separator">
-                <span className="calc-label">Valor Final:</span>
+                <span className="calc-label">Valor Final com Frete:</span>
                 <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComFrete)}</span>
               </div>
 
@@ -1339,6 +1229,38 @@ const PaymentPolicy = ({
         <div className="payment-section">
           <h3>Informações Adicionais</h3>
           
+          {/* Campos apenas para Cliente (não aparecem para Revenda) */}
+          {tipoCliente === 'cliente' && (
+            <div className="form-group">
+              <label>Pagamento por conta de: *</label>
+              <div className="radio-group">
+                <label className={`radio-option ${pagamentoPorConta === 'cliente' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="pagamentoPorConta"
+                    value="cliente"
+                    checked={pagamentoPorConta === 'cliente'}
+                    onChange={(e) => setPagamentoPorConta(e.target.value)}
+                  />
+                  <span>Cliente</span>
+                </label>
+                <label className={`radio-option ${pagamentoPorConta === 'fabrica' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="pagamentoPorConta"
+                    value="fabrica"
+                    checked={pagamentoPorConta === 'fabrica'}
+                    onChange={(e) => setPagamentoPorConta(e.target.value)}
+                  />
+                  <span>Fábrica</span>
+                </label>
+              </div>
+              {errors.tipoInstalacao && (
+                <span className="error-message">{errors.tipoInstalacao}</span>
+              )}
+            </div>
+          )}
+
           {/* Tipo de Frete - aparece para todos */}
           <div className="form-group" style={{ marginTop: '10px' }}>
             <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
@@ -1392,7 +1314,7 @@ const PaymentPolicy = ({
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                   <span style={{ fontWeight: '600' }}>CIF</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Frete incluso no pedido</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
                 </div>
               </label>
               <label
@@ -1404,20 +1326,20 @@ const PaymentPolicy = ({
                   gap: '8px',
                   cursor: 'pointer',
                   padding: '10px 20px',
-                  background: tipoFrete === 'fob' ? '#6c757d' : '#ffffff',
+                  background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff',
                   color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
                   borderRadius: '6px',
-                  border: tipoFrete === 'fob' ? '2px solid #6c757d' : '2px solid #ced4da',
+                  border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da',
                   transition: 'all 0.2s ease',
                   fontSize: '14px',
                   fontWeight: tipoFrete === 'fob' ? '600' : '500',
                   flex: '1',
-                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(108, 117, 125, 0.3)' : 'none',
+                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
                   userSelect: 'none'
                 }}
                 onMouseEnter={(e) => {
                   if (tipoFrete !== 'fob') {
-                    e.currentTarget.style.borderColor = '#6c757d';
+                    e.currentTarget.style.borderColor = '#dc3545';
                     e.currentTarget.style.background = '#f8f9fa';
                   }
                 }}
@@ -1435,14 +1357,14 @@ const PaymentPolicy = ({
                   onChange={() => {}}
                   style={{
                     cursor: 'pointer',
-                    accentColor: '#6c757d',
+                    accentColor: '#dc3545',
                     width: '16px',
                     height: '16px'
                   }}
                 />
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
                   <span style={{ fontWeight: '600' }}>FOB</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Por conta do cliente</span>
+                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
                 </div>
               </label>
             </div>
