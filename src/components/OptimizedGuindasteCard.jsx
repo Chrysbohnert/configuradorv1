@@ -90,7 +90,7 @@ const OptimizedGuindasteCard = memo(({
                 </div>
               )}
               <img 
-                src={guindaste.imagem_url} 
+                src={guindaste.imagem_url?.startsWith('http') ? guindaste.imagem_url : '/header-bg.jpg'}
                 alt={guindaste.subgrupo}
                 className="guindaste-thumbnail"
                 loading="lazy"

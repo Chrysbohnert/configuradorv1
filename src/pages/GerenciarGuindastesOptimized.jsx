@@ -63,6 +63,7 @@ const GerenciarGuindastesOptimized = () => {
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -80,6 +81,14 @@ const GerenciarGuindastesOptimized = () => {
 
     loadData(1);
   }, [navigate]);
+
+  // Auto-esconde o toast após alguns segundos
+  useEffect(() => {
+    if (toast.visible) {
+      const t = setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [toast.visible]);
 
   /**
    * Carrega dados com cache
@@ -279,6 +288,8 @@ const GerenciarGuindastesOptimized = () => {
         setShowDeleteModal(false);
         setGuindasteToDelete(null);
         document.body.classList.remove('modal-open');
+        // Notificação de sucesso
+        setToast({ visible: true, message: 'Guindaste removido com sucesso!', type: 'success' });
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
         alert('Erro ao remover guindaste. Tente novamente.');
@@ -852,6 +863,13 @@ const GerenciarGuindastesOptimized = () => {
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {toast.visible && (
+        <div className={`toast ${toast.type}`} role="status" aria-live="polite">
+          <span className="toast-icon">✅</span>
+          <span>{toast.message}</span>
+          <button className="toast-close" onClick={() => setToast(prev => ({ ...prev, visible: false }))}>×</button>
         </div>
       )}
     </div>
