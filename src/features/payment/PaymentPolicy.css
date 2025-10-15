@@ -47,6 +47,55 @@
   font-size: 1.25rem;
 }
 
+/* Bank Financing Info Card */
+.bank-financing-info {
+  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+  color: white;
+  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
+  border: 2px solid #0052a3;
+}
+
+.bank-financing-info h4 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bank-financing-info p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  opacity: 0.95;
+}
+
+.bank-financing-info ul {
+  margin: 0.75rem 0 0 1.25rem;
+  padding: 0;
+  list-style: none;
+}
+
+.bank-financing-info ul li {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+  position: relative;
+  font-size: 0.9rem;
+}
+
+.bank-financing-info ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #ffd700;
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
 /* Summary Card */
 .summary-card {
   background: linear-gradient(135deg, #fffbf0, #fff8e1);

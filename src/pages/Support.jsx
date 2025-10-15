@@ -17,7 +17,7 @@ const Support = () => {
   };
 
   const handleEmail = () => {
-    window.open('mailto:chrystianbohnert10@gmail.com?subject=Suporte - STARK Orçamento', '_blank');
+    window.open('mailto:starkorcamento@gmail.com?subject=Suporte - STARK Orçamento', '_blank');
   };
 
   return (
@@ -76,7 +76,7 @@ const Support = () => {
                   </svg>
                 </div>
                 <h3>Email</h3>
-                <p>chrystianbohnert10@gmail.com</p>
+                <p>starkorcamento@gmail.com</p>
                 <button onClick={handleEmail} className="contact-button email">
                   Enviar Email
                 </button>
@@ -120,11 +120,6 @@ const Support = () => {
                 <h3>Como alterar minha senha?</h3>
                 <p>Entre em contato com o administrador do sistema para solicitar a alteração de senha.</p>
               </div>
-
-              <div className="faq-item">
-                <h3>O sistema funciona offline?</h3>
-                <p>Sim! O sistema funciona offline e sincroniza os dados quando há conexão com a internet.</p>
-              </div>
             </div>
           )}
 
@@ -132,14 +127,15 @@ const Support = () => {
             <div className="about-section">
               <div className="about-card">
                 <h3>Sobre o STARK Orçamento</h3>
-                <p>O STARK Orçamento é um sistema profissional desenvolvido para facilitar a criação e gestão de orçamentos de guindastes.</p>
+                <p>O STARK Orçamento é um sistema profissional desenvolvido para facilitar a criação e digitalização de proposta comercial de guindastes.</p>
                 
                 <div className="version-info">
                   <h4>Informações do Sistema</h4>
                   <ul>
                     <li><strong>Versão:</strong> 1.0.0</li>
-                    <li><strong>Desenvolvido por:</strong> Chrystian Bohnert e equipe STARK</li>
-                    <li><strong>Última atualização:</strong> Julho 2025</li>
+                    <li><strong>Desenvolvido por:</strong> Chrystian Bohnert e Mathias Fuhr</li>
+                    <li><strong>Sistema criado em:</strong> Julho 2025</li>
+                    <li><strong>Última atualização:</strong> Outubro 2025</li>
                     <li><strong>Suporte:</strong> 24/7</li>
                   </ul>
                 </div>
@@ -147,7 +143,7 @@ const Support = () => {
                 <div className="features-list">
                   <h4>Funcionalidades Principais</h4>
                   <ul>
-                    <li>✅ Criação de orçamentos profissionais</li>
+                    <li>✅ Criação de proposta comercial profissional</li>
                     <li>✅ Geração de PDFs automática</li>
                     <li>✅ Integração com WhatsApp</li>
                     <li>✅ Dashboard administrativo</li>
