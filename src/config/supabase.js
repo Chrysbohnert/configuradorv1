@@ -254,19 +254,27 @@ class DatabaseService {
     console.log('🔧 [createGuindaste] Dados limpos para inserção:', cleanData);
     console.log('🔧 [createGuindaste] Campos limpos:', Object.keys(cleanData));
     
-    // Verificar o próximo ID disponível
-    const { data: maxIdData, error: maxIdError } = await supabase
-      .from('guindastes')
-      .select('id')
-      .order('id', { ascending: false })
-      .limit(1);
+    // Verificar se há algum campo com UUID (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+    // UUIDs têm exatamente 36 caracteres e 4 hífens em posições específicas
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    Object.keys(cleanData).forEach(key => {
+      if (typeof cleanData[key] === 'string' && uuidRegex.test(cleanData[key])) {
+        console.log('⚠️ [createGuindaste] Campo com UUID encontrado:', key, cleanData[key]);
+        // Remover campos que são UUIDs
+        delete cleanData[key];
+      }
+    });
     
-    if (maxIdError) {
-      console.error('❌ [createGuindaste] Erro ao verificar max ID:', maxIdError);
-    } else {
-      const nextId = maxIdData && maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
-      console.log('🔧 [createGuindaste] Próximo ID esperado:', nextId);
+    console.log('🔧 [createGuindaste] Dados finais após validação:', cleanData);
+    
+    // Garantir que o campo 'id' não está presente nos dados
+    // O PostgreSQL deve gerar automaticamente usando a sequência
+    if (cleanData.id) {
+      console.warn('⚠️ [createGuindaste] Removendo campo id dos dados para permitir auto-increment');
+      delete cleanData.id;
     }
+    
+    console.log('🔧 [createGuindaste] Dados finais para inserção (sem ID):', cleanData);
     
     const { data, error } = await supabase
       .from('guindastes')
