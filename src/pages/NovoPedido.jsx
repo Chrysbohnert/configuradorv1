@@ -1,14 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import PDFGenerator from '../components/PDFGenerator';
+import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
 
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
+import { createLogger } from '../utils/productionLogger';
 import '../styles/NovoPedido.css';
+
+// ⚡ Logger otimizado
+const logger = createLogger('NovoPedido');
 
 const NovoPedido = () => {
   const navigate = useNavigate();
@@ -103,18 +107,28 @@ const NovoPedido = () => {
 
     console.log('📊 [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
-    setCarrinho(carrinhoAtualizado);
-    localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
-    console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
+    // Verificar se houve mudança real nos preços antes de atualizar
+    const houveAlteracao = carrinhoAtualizado.some((itemNovo, index) => {
+      const itemAntigo = carrinho[index];
+      return itemAntigo && itemNovo.preco !== itemAntigo.preco;
+    });
+
+    if (houveAlteracao) {
+      console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
+      setCarrinho(carrinhoAtualizado);
+      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+    } else {
+      console.log('➡️ [recalcularPrecosCarrinho] Nenhuma alteração de preço, carrinho mantido');
+    }
   };
 
-  // Recalcular preços quando contexto ou carrinho mudarem
+  // Recalcular preços quando contexto de pagamento mudar (NÃO quando carrinho mudar)
   useEffect(() => {
     if (carrinho.length > 0 && user?.regiao) {
       recalcularPrecosCarrinho();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, currentStep, carrinho]);
+  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE]);
 
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -293,23 +307,28 @@ const NovoPedido = () => {
   const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
   const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
 
-  // ← SIMPLIFICADO: Função básica para selecionar guindaste
+  // ⚡ OTIMIZADO: Função para selecionar guindaste com cache
   const handleSelecionarGuindaste = async (guindaste) => {
-    console.log('🔄 Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
+    logger.log('Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
+    
+    // Mostrar loading
+    setIsLoading(true);
 
     try {
-      // 1. Buscar detalhes completos do guindaste (incluindo descricao e nao_incluido)
-      console.log('📦 Buscando detalhes completos do guindaste...');
+      // 1. Buscar detalhes completos do guindaste (com cache automático)
+      logger.time('Carregamento do guindaste');
       const guindasteCompleto = await db.getGuindasteCompleto(guindaste.id);
+      logger.timeEnd('Carregamento do guindaste');
       
       // 2. Buscar preço inicial (será recalculado quando contexto for definido)
       const regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
       const precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
 
-      console.log(`💰 Preço inicial: R$ ${precoGuindaste} (${regiaoInicial}) para ${guindaste.subgrupo}`);
+      logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
 
       if (!precoGuindaste || precoGuindaste === 0) {
         alert('Este equipamento não possui preço definido para sua região.');
+        setIsLoading(false);
         return;
       }
 
@@ -330,6 +349,8 @@ const NovoPedido = () => {
       // 4. Adicionar ao carrinho (isso substitui qualquer guindaste anterior)
       adicionarAoCarrinho(produto, 'guindaste');
 
+      logger.success('Guindaste adicionado ao carrinho');
+
       // 5. Navegar para detalhes com objeto completo
       navigate('/detalhes-guindaste', {
         state: {
@@ -339,8 +360,10 @@ const NovoPedido = () => {
         }
       });
     } catch (error) {
-      console.error('❌ Erro ao buscar dados do guindaste:', error);
-      alert('Erro ao buscar dados do equipamento.');
+      logger.error('Erro ao buscar dados do guindaste:', error);
+      alert('Erro ao buscar dados do equipamento. Tente novamente.');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -2133,7 +2156,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       <div className="resumo-section">
         <h3>Ações</h3>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <PDFGenerator 
+          <LazyPDFGenerator 
             pedidoData={pedidoData} 
             onGenerate={handlePDFGenerated}
           />

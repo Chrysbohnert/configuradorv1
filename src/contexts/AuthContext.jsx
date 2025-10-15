@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useNavigate } from 'react-router-dom';
 import { supabase, db } from '../config/supabase';
 import { verifyPassword } from '../utils/passwordHash';
-import { debugLogin } from '../utils/debugAuth';
+import { debugLogin } from '../utils/debug/authDebug';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 
 const AuthContext = createContext(null);
