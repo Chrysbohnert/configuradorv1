@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/ImageUpload.css';
+import { supabase } from '../config/supabase'; // Importar o cliente Supabase
+import { v4 as uuidv4 } from 'uuid'; // Para gerar nomes de arquivo únicos
 
 const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImageUrl);
+
+  // Sincronizar preview com currentImageUrl
+  useEffect(() => {
+    setPreview(currentImageUrl);
+  }, [currentImageUrl]);
 
   const handleImageUpload = async (event) => {
     try {
@@ -24,25 +31,58 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         return;
       }
 
-      // Usar apenas base64 por enquanto (mais confiável)
-      console.log('Convertendo imagem para base64...');
-      
+      // Gerar um nome de arquivo único
+      const fileExtension = file.name.split('.').pop();
+      const fileName = `${uuidv4()}.${fileExtension}`;
+      const filePath = `guindastes/${fileName}`; // Pasta 'guindastes' dentro do bucket
+
+      // Converter imagem para base64 como alternativa ao Storage
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const base64Data = e.target.result;
-        console.log('Base64 gerado com sucesso');
-        setPreview(base64Data);
-        onImageUpload(base64Data);
-      };
-      reader.onerror = (e) => {
-        console.error('Erro ao ler arquivo:', e);
-        alert('Erro ao processar imagem. Tente novamente.');
-      };
-      reader.readAsDataURL(file);
+      
+      const base64Promise = new Promise((resolve, reject) => {
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const base64Data = await base64Promise;
+      
+      console.log('✅ Imagem convertida para base64');
+      setPreview(base64Data);
+      onImageUpload(base64Data); // Passa a imagem em base64 para o componente pai
+
+      return; // Sair da função após conversão bem-sucedida
+
+      // Código do Supabase Storage (mantido como backup)
+      /*
+      const { error: uploadError } = await supabase.storage
+        .from('guindastes') // Nome do seu bucket no Supabase Storage
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false, // Não sobrescrever se o arquivo já existir
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Obter a URL pública da imagem
+      const { data: publicUrlData } = supabase.storage
+        .from('guindastes')
+        .getPublicUrl(filePath);
+
+      if (!publicUrlData || !publicUrlData.publicUrl) {
+        throw new Error('Não foi possível obter a URL pública da imagem.');
+      }
+
+      console.log('✅ Imagem enviada para Supabase Storage:', publicUrlData.publicUrl);
+      setPreview(publicUrlData.publicUrl);
+      onImageUpload(publicUrlData.publicUrl); // Passa a URL pública para o componente pai
+      */
 
     } catch (error) {
       console.error('❌ Erro no upload:', error);
-      alert('Erro ao enviar imagem. Tente novamente.');
+      alert(`Erro ao enviar imagem: ${error.message}. Tente novamente.`);
     } finally {
       setUploading(false);
     }
@@ -124,4 +164,4 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
   );
 };
 
-export default ImageUpload; 
+export default ImageUpload;
