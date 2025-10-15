@@ -3,7 +3,6 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
-import { generateReportPDF } from '../utils/pdfGenerator';
 import '../styles/Dashboard.css';
 
 const RelatorioCompleto = () => {
@@ -65,40 +64,8 @@ const RelatorioCompleto = () => {
     };
   }, [pedidosFiltrados]);
 
-  const handleExportarPDF = async () => {
-    try {
-      const vendedorNome = filtroVendedor
-        ? vendedores.find(v => String(v.id) === String(filtroVendedor))?.nome || 'Vendedor'
-        : 'Todos';
-      const reportData = {
-        vendedor: vendedorNome,
-        periodo: filtroMes || 'Todos os meses',
-        totalVendas: resumo.pedidosFinalizados,
-        valorTotal: resumo.valorTotal,
-        vendas: pedidosFiltrados.map(p => ({
-          cliente: p.cliente?.nome || 'Cliente',
-          modelo: '',
-          valor: p.valor_total || 0,
-          status: 'finalizado',
-          data: new Date(p.created_at).toLocaleDateString('pt-BR')
-        }))
-      };
-      const doc = await generateReportPDF(reportData);
-      const pdfBlob = doc.output('blob');
-      const fileName = `Relatorio_${vendedorNome.replace(/\s+/g, '_')}_${new Date()
-        .toISOString()
-        .split('T')[0]}.pdf`;
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(pdfBlob);
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(link.href), 1000);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      alert('Erro ao gerar PDF.');
-    }
+  const handleExportarPDF = () => {
+    alert('Exportação em PDF temporariamente indisponível.');
   };
 
   const corStatus = (s) => (s === 'finalizado' ? '#27b207' : s === 'em_andamento' ? '#fd7e14' : s === 'cancelado' ? '#dc3545' : '#6c757d');

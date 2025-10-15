@@ -279,8 +279,8 @@ const PaymentPolicy = ({
       return;
     }
 
-    // Validação: se há dados de frete disponíveis, o tipo deve ser selecionado
-    if (dadosFreteAtual && !tipoFreteSelecionado) {
+    // Validação: somente para CIF, se há dados de frete disponíveis, o tipo deve ser selecionado
+    if (tipoFrete === 'cif' && dadosFreteAtual && !tipoFreteSelecionado) {
       setCalculoAtual(null);
       setErroCalculo(`🚛 Selecione o tipo de entrega para ${dadosFreteAtual.cidade} (Prioridade ou Reaproveitamento)`);
       return;
@@ -320,8 +320,8 @@ const PaymentPolicy = ({
       const descontoAdicionalValor = precoBase * (descontoFinal / 100);
       const valorFinalComDescontoAdicional = resultado.valorAjustado - descontoAdicionalValor;
 
-      // Adicionar valor do frete selecionado
-      const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
+      // Adicionar valor do frete selecionado APENAS quando tipo de frete for CIF
+      const valorFrete = (tipoFrete === 'cif' && dadosFreteAtual && tipoFreteSelecionado) ?
         (tipoFreteSelecionado === 'prioridade' ?
           parseFloat(dadosFreteAtual.valor_prioridade || 0) :
           parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
@@ -379,7 +379,7 @@ const PaymentPolicy = ({
         const faltaEntrada = entradaTotal - valorSinalNum; // Quanto falta para completar a entrada
         const saldo = saldoComDesconto; // Saldo após pagar a entrada completa (já inclui frete)
         const valorFinal = valorFinalComFrete;
-        const valorFrete = dadosFreteAtual && tipoFreteSelecionado ?
+        const valorFrete = (tipoFrete === 'cif' && dadosFreteAtual && tipoFreteSelecionado) ?
           (tipoFreteSelecionado === 'prioridade' ?
             parseFloat(dadosFreteAtual.valor_prioridade || 0) :
             parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)) : 0;
@@ -741,7 +741,7 @@ const PaymentPolicy = ({
             )}
           </>
         )}
-      
+      </div>
       {/* Resumo do Carrinho - só aparece depois de selecionar Revenda ou Cliente */}
       {tipoCliente && (
         <div style={{ marginTop: '20px' }}>
@@ -753,6 +753,263 @@ const PaymentPolicy = ({
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Informações Adicionais */}
+      <div className="payment-section">
+        <h3>Informações Adicionais</h3>
+        {/* Pagamento da Instalação por conta de: */}
+        {tipoCliente === 'cliente' && (
+          <div className="form-group">
+            <label>Pagamento da Instalação por conta de: *</label>
+            <div className="radio-group">
+              <label className={`radio-option ${pagamentoPorConta === 'cliente' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="pagamentoPorConta"
+                  value="cliente"
+                  checked={pagamentoPorConta === 'cliente'}
+                  onChange={(e) => setPagamentoPorConta(e.target.value)}
+                />
+                <span>Cliente</span>
+              </label>
+              <label className={`radio-option ${pagamentoPorConta === 'fabrica' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="pagamentoPorConta"
+                  value="fabrica"
+                  checked={pagamentoPorConta === 'fabrica'}
+                  onChange={(e) => setPagamentoPorConta(e.target.value)}
+                />
+                <span>Fábrica</span>
+              </label>
+            </div>
+            {errors.tipoInstalacao && (
+              <span className="error-message">{errors.tipoInstalacao}</span>
+            )}
+          </div>
+        )}
+
+        {/* Tipo de Frete */}
+        <div className="form-group" style={{ marginTop: '10px' }}>
+          <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+            Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
+          </label>
+          <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <label
+              onClick={() => setTipoFrete('cif')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                padding: '10px 20px',
+                background: tipoFrete === 'cif' ? '#28a745' : '#ffffff',
+                color: tipoFrete === 'cif' ? '#ffffff' : '#495057',
+                borderRadius: '6px',
+                border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da',
+                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                fontWeight: tipoFrete === 'cif' ? '600' : '500',
+                flex: '1',
+                boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                userSelect: 'none'
+              }}
+            >
+              <input
+                type="radio"
+                name="tipoFrete"
+                checked={tipoFrete === 'cif'}
+                onChange={() => {}}
+                style={{
+                  cursor: 'pointer',
+                  accentColor: '#28a745',
+                  width: '16px',
+                  height: '16px'
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span style={{ fontWeight: '600' }}>CIF</span>
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
+              </div>
+            </label>
+            <label
+              onClick={() => setTipoFrete('fob')}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                cursor: 'pointer',
+                padding: '10px 20px',
+                background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff',
+                color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
+                borderRadius: '6px',
+                border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da',
+                transition: 'all 0.2s ease',
+                fontSize: '14px',
+                fontWeight: tipoFrete === 'fob' ? '600' : '500',
+                flex: '1',
+                boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                userSelect: 'none'
+              }}
+            >
+              <input
+                type="radio"
+                name="tipoFrete"
+                checked={tipoFrete === 'fob'}
+                onChange={() => {}}
+                style={{
+                  cursor: 'pointer',
+                  accentColor: '#dc3545',
+                  width: '16px',
+                  height: '16px'
+                }}
+              />
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                <span style={{ fontWeight: '600' }}>FOB</span>
+                <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      {/* Local de Instalação - agora depois de Informações Adicionais e antes do cálculo de exibição */}
+      {tipoCliente === 'cliente' && prazoSelecionado && (
+        <>
+          <div className="form-group" style={{ marginTop: '20px' }}>
+            <label htmlFor="localInstalacao">
+              Local de Instalação *
+            </label>
+            <select
+              id="localInstalacao"
+              value={localInstalacao}
+              onChange={(e) => setLocalInstalacao(e.target.value)}
+              className={errors.localInstalacao ? 'error' : ''}
+              disabled={loadingPontos}
+            >
+              <option value="">
+                {loadingPontos 
+                  ? 'Carregando oficinas...'
+                  : oficinasDisponiveis.length === 0
+                    ? 'Nenhuma oficina disponível para sua região'
+                    : 'Selecione o local de instalação'
+                }
+              </option>
+              {oficinasDisponiveis.map((oficina, index) => (
+                <option key={index} value={`${oficina.nome} - ${oficina.cidade}/${oficina.uf}`}>
+                  {oficina.nome} - {oficina.cidade}/{oficina.uf}
+                </option>
+              ))}
+            </select>
+            {loadingPontos && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
+                🔄 Carregando pontos de instalação da sua região...
+              </small>
+            )}
+            {!loadingPontos && oficinasDisponiveis.length > 0 && (
+              <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
+                ✓ {oficinasDisponiveis.length} {oficinasDisponiveis.length === 1 ? 'oficina disponível' : 'oficinas disponíveis'}
+              </small>
+            )}
+            {errors.localInstalacao && (
+              <span className="error-message">{errors.localInstalacao}</span>
+            )}
+          </div>
+          {/* Tipo de Entrega visível apenas quando CIF e dados disponíveis */}
+          {tipoFrete === 'cif' && dadosFreteAtual && (
+            <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '2px solid #007bff' }}>
+              <label style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px', display: 'block', color: '#007bff' }}>
+                🚛 Tipo de Entrega - {dadosFreteAtual.cidade} <span style={{ color: '#dc3545' }}>*</span>
+              </label>
+              <small style={{ display: 'block', marginBottom: '12px', color: '#6c757d', fontSize: '0.875em' }}>
+                Selecione o tipo de entrega para incluir no cálculo
+              </small>
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <label
+                  onClick={() => setTipoFreteSelecionado('prioridade')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    padding: '12px 16px',
+                    background: tipoFreteSelecionado === 'prioridade' ? '#ffc107' : '#ffffff',
+                    color: tipoFreteSelecionado === 'prioridade' ? '#212529' : '#495057',
+                    borderRadius: '6px',
+                    border: tipoFreteSelecionado === 'prioridade' ? '2px solid #ffc107' : '2px solid #ced4da',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: tipoFreteSelecionado === 'prioridade' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: tipoFreteSelecionado === 'prioridade' ? '0 2px 8px rgba(255, 193, 7, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="tipoFreteSelecionado"
+                    checked={tipoFreteSelecionado === 'prioridade'}
+                    onChange={() => {}}
+                    style={{
+                      cursor: 'pointer',
+                      accentColor: '#ffc107',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <span style={{ fontWeight: '600' }}>Prioridade</span>
+                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {formatCurrency(dadosFreteAtual.valor_prioridade || 0)} - Entrega exclusiva
+                    </span>
+                  </div>
+                </label>
+                <label
+                  onClick={() => setTipoFreteSelecionado('reaproveitamento')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    padding: '12px 16px',
+                    background: tipoFreteSelecionado === 'reaproveitamento' ? '#28a745' : '#ffffff',
+                    color: tipoFreteSelecionado === 'reaproveitamento' ? '#ffffff' : '#495057',
+                    borderRadius: '6px',
+                    border: tipoFreteSelecionado === 'reaproveitamento' ? '2px solid #28a745' : '2px solid #ced4da',
+                    transition: 'all 0.2s ease',
+                    fontSize: '14px',
+                    fontWeight: tipoFreteSelecionado === 'reaproveitamento' ? '600' : '500',
+                    flex: '1',
+                    boxShadow: tipoFreteSelecionado === 'reaproveitamento' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                    userSelect: 'none'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="tipoFreteSelecionado"
+                    checked={tipoFreteSelecionado === 'reaproveitamento'}
+                    onChange={() => {}}
+                    style={{
+                      cursor: 'pointer',
+                      accentColor: '#28a745',
+                      width: '16px',
+                      height: '16px'
+                    }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                    <span style={{ fontWeight: '600' }}>Reaproveitamento</span>
+                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
+                      {formatCurrency(dadosFreteAtual.valor_reaproveitamento || 0)} - Carga compartilhada
+                    </span>
+                  </div>
+                </label>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* Campos de sinal e entrada apenas para "cliente" */}
@@ -930,143 +1187,8 @@ const PaymentPolicy = ({
           </div>
       )}
 
-      {/* Seleção de Local de Instalação - aparece após desconto adicional */}
-      {tipoCliente === 'cliente' && prazoSelecionado && (
-        <>
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <label htmlFor="localInstalacao">
-              Local de Instalação *
-            </label>
-            <select
-              id="localInstalacao"
-              value={localInstalacao}
-              onChange={(e) => setLocalInstalacao(e.target.value)}
-              className={errors.localInstalacao ? 'error' : ''}
-              disabled={loadingPontos}
-            >
-              <option value="">
-                {loadingPontos 
-                  ? 'Carregando oficinas...'
-                  : oficinasDisponiveis.length === 0
-                    ? 'Nenhuma oficina disponível para sua região'
-                    : 'Selecione o local de instalação'
-                }
-              </option>
-              {oficinasDisponiveis.map((oficina, index) => (
-                <option key={index} value={`${oficina.nome} - ${oficina.cidade}/${oficina.uf}`}>
-                  {oficina.nome} - {oficina.cidade}/{oficina.uf}
-                </option>
-              ))}
-            </select>
-            {loadingPontos && (
-              <small style={{ display: 'block', marginTop: '5px', color: '#6c757d', fontSize: '0.875em' }}>
-                🔄 Carregando pontos de instalação da sua região...
-              </small>
-            )}
-            {!loadingPontos && oficinasDisponiveis.length > 0 && (
-              <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
-                ✓ {oficinasDisponiveis.length} {oficinasDisponiveis.length === 1 ? 'oficina disponível' : 'oficinas disponíveis'}
-              </small>
-            )}
-            {errors.localInstalacao && (
-              <span className="error-message">{errors.localInstalacao}</span>
-            )}
-          </div>
+      
 
-          {/* Seleção de tipo de frete especial - aparece quando há dados de frete disponíveis */}
-          {dadosFreteAtual && (
-            <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '2px solid #007bff' }}>
-              <label style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px', display: 'block', color: '#007bff' }}>
-                🚛 Tipo de Entrega - {dadosFreteAtual.cidade} <span style={{ color: '#dc3545' }}>*</span>
-              </label>
-              <small style={{ display: 'block', marginBottom: '12px', color: '#6c757d', fontSize: '0.875em' }}>
-                Selecione o tipo de entrega para incluir no cálculo
-              </small>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                <label
-                  onClick={() => setTipoFreteSelecionado('prioridade')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                    padding: '12px 16px',
-                    background: tipoFreteSelecionado === 'prioridade' ? '#ffc107' : '#ffffff',
-                    color: tipoFreteSelecionado === 'prioridade' ? '#212529' : '#495057',
-                    borderRadius: '6px',
-                    border: tipoFreteSelecionado === 'prioridade' ? '2px solid #ffc107' : '2px solid #ced4da',
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: tipoFreteSelecionado === 'prioridade' ? '600' : '500',
-                    flex: '1',
-                    boxShadow: tipoFreteSelecionado === 'prioridade' ? '0 2px 8px rgba(255, 193, 7, 0.3)' : 'none',
-                    userSelect: 'none'
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="tipoFreteSelecionado"
-                    checked={tipoFreteSelecionado === 'prioridade'}
-                    onChange={() => {}}
-                    style={{
-                      cursor: 'pointer',
-                      accentColor: '#ffc107',
-                      width: '16px',
-                      height: '16px'
-                    }}
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                    <span style={{ fontWeight: '600' }}>Prioridade</span>
-                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                      {formatCurrency(dadosFreteAtual.valor_prioridade || 0)} - Entrega exclusiva
-                    </span>
-                  </div>
-                </label>
-                <label
-                  onClick={() => setTipoFreteSelecionado('reaproveitamento')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    cursor: 'pointer',
-                    padding: '12px 16px',
-                    background: tipoFreteSelecionado === 'reaproveitamento' ? '#28a745' : '#ffffff',
-                    color: tipoFreteSelecionado === 'reaproveitamento' ? '#ffffff' : '#495057',
-                    borderRadius: '6px',
-                    border: tipoFreteSelecionado === 'reaproveitamento' ? '2px solid #28a745' : '2px solid #ced4da',
-                    transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: tipoFreteSelecionado === 'reaproveitamento' ? '600' : '500',
-                    flex: '1',
-                    boxShadow: tipoFreteSelecionado === 'reaproveitamento' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                    userSelect: 'none'
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="tipoFreteSelecionado"
-                    checked={tipoFreteSelecionado === 'reaproveitamento'}
-                    onChange={() => {}}
-                    style={{
-                      cursor: 'pointer',
-                      accentColor: '#28a745',
-                      width: '16px',
-                      height: '16px'
-                    }}
-                  />
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                    <span style={{ fontWeight: '600' }}>Reaproveitamento</span>
-                    <span style={{ fontSize: '12px', opacity: 0.8 }}>
-                      {formatCurrency(dadosFreteAtual.valor_reaproveitamento || 0)} - Carga compartilhada
-                    </span>
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
 
       {/* Mensagem de Erro */}
       {erroCalculo && (
@@ -1223,157 +1345,8 @@ const PaymentPolicy = ({
           </div>
         );
       })()}
-
-      {/* Informações Adicionais - aparece apenas APÓS o cálculo */}
-      {calculoAtual && !erroCalculo && (
-        <div className="payment-section">
-          <h3>Informações Adicionais</h3>
-          
-          {/* Campos apenas para Cliente (não aparecem para Revenda) */}
-          {tipoCliente === 'cliente' && (
-            <div className="form-group">
-              <label>Pagamento por conta de: *</label>
-              <div className="radio-group">
-                <label className={`radio-option ${pagamentoPorConta === 'cliente' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="pagamentoPorConta"
-                    value="cliente"
-                    checked={pagamentoPorConta === 'cliente'}
-                    onChange={(e) => setPagamentoPorConta(e.target.value)}
-                  />
-                  <span>Cliente</span>
-                </label>
-                <label className={`radio-option ${pagamentoPorConta === 'fabrica' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="pagamentoPorConta"
-                    value="fabrica"
-                    checked={pagamentoPorConta === 'fabrica'}
-                    onChange={(e) => setPagamentoPorConta(e.target.value)}
-                  />
-                  <span>Fábrica</span>
-                </label>
-              </div>
-              {errors.tipoInstalacao && (
-                <span className="error-message">{errors.tipoInstalacao}</span>
-              )}
-            </div>
-          )}
-
-          {/* Tipo de Frete - aparece para todos */}
-          <div className="form-group" style={{ marginTop: '10px' }}>
-            <label htmlFor="tipoFrete" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-              Tipo de Frete <span style={{ color: '#dc3545' }}>*</span>
-            </label>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-              <label
-                onClick={() => setTipoFrete('cif')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  padding: '10px 20px',
-                  background: tipoFrete === 'cif' ? '#28a745' : '#ffffff',
-                  color: tipoFrete === 'cif' ? '#ffffff' : '#495057',
-                  borderRadius: '6px',
-                  border: tipoFrete === 'cif' ? '2px solid #28a745' : '2px solid #ced4da',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: tipoFrete === 'cif' ? '600' : '500',
-                  flex: '1',
-                  boxShadow: tipoFrete === 'cif' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (tipoFrete !== 'cif') {
-                    e.currentTarget.style.borderColor = '#28a745';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (tipoFrete !== 'cif') {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  checked={tipoFrete === 'cif'}
-                  onChange={() => {}}
-                  style={{
-                    cursor: 'pointer',
-                    accentColor: '#28a745',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                  <span style={{ fontWeight: '600' }}>CIF</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Fábrica paga</span>
-                </div>
-              </label>
-              <label
-                onClick={() => setTipoFrete('fob')}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  cursor: 'pointer',
-                  padding: '10px 20px',
-                  background: tipoFrete === 'fob' ? '#dc3545' : '#ffffff',
-                  color: tipoFrete === 'fob' ? '#ffffff' : '#495057',
-                  borderRadius: '6px',
-                  border: tipoFrete === 'fob' ? '2px solid #dc3545' : '2px solid #ced4da',
-                  transition: 'all 0.2s ease',
-                  fontSize: '14px',
-                  fontWeight: tipoFrete === 'fob' ? '600' : '500',
-                  flex: '1',
-                  boxShadow: tipoFrete === 'fob' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
-                  userSelect: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (tipoFrete !== 'fob') {
-                    e.currentTarget.style.borderColor = '#dc3545';
-                    e.currentTarget.style.background = '#f8f9fa';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (tipoFrete !== 'fob') {
-                    e.currentTarget.style.borderColor = '#ced4da';
-                    e.currentTarget.style.background = '#ffffff';
-                  }
-                }}
-              >
-                <input
-                  type="radio"
-                  name="tipoFrete"
-                  checked={tipoFrete === 'fob'}
-                  onChange={() => {}}
-                  style={{
-                    cursor: 'pointer',
-                    accentColor: '#dc3545',
-                    width: '16px',
-                    height: '16px'
-                  }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
-                  <span style={{ fontWeight: '600' }}>FOB</span>
-                  <span style={{ fontSize: '11px', opacity: 0.8 }}>Cliente paga</span>
-                </div>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
 export default PaymentPolicy;
-
