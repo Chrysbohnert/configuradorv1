@@ -1035,6 +1035,7 @@ const GerenciarGuindastes = () => {
       {showPrecosModal && (
         <PrecosPorRegiaoModal
           guindasteId={guindasteIdPrecos}
+          open={showPrecosModal}
           onClose={() => {
             setShowPrecosModal(false);
             setGuindasteIdPrecos(null);

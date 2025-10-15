@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/ImageUpload.css';
 import { supabase } from '../config/supabase'; // Importar o cliente Supabase
-import { v4 as uuidv4 } from 'uuid'; // Para gerar nomes de arquivo únicos
 
 const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
   const [uploading, setUploading] = useState(false);
@@ -33,7 +32,10 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
 
       // Gerar um nome de arquivo único
       const fileExtension = file.name.split('.').pop();
-      const fileName = `${uuidv4()}.${fileExtension}`;
+      const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+      const fileName = `${uniqueId}.${fileExtension}`;
       const filePath = `guindastes/${fileName}`; // Pasta 'guindastes' dentro do bucket
 
       // Converter imagem para base64 como alternativa ao Storage

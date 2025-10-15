@@ -18,25 +18,14 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
     >
       <div className="card-header">
         <div className="guindaste-image">
-          {guindaste.imagem_url ? (
-            <img
-              src={guindaste.imagem_url}
-              alt={guindaste.subgrupo}
-              className="guindaste-thumbnail"
-              onError={(e) => {
-                e.target.style.display = 'none';
-                e.target.nextSibling.style.display = 'flex';
-              }}
-            />
-          ) : null}
-          <div 
-            className="guindaste-icon" 
-            style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-            </svg>
-          </div>
+          <img
+            src={guindaste.imagem_url || '/header-bg.jpg'}
+            alt={guindaste.subgrupo}
+            className="guindaste-thumbnail"
+            onError={(e) => {
+              e.currentTarget.src = '/header-bg.jpg';
+            }}
+          />
         </div>
         
         <div className="guindaste-info">

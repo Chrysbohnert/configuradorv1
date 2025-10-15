@@ -112,21 +112,14 @@ const Step1GuindasteSelector = ({
                     data-modelo={modeloBase}
                   >
                     <div className="modelo-icon">
-                      {guindaste.imagem_url ? (
-                        <img
-                          src={guindaste.imagem_url}
-                          alt={modeloBase}
-                          className="modelo-thumbnail"
-                          onError={(e) => {
-                            e.target.style.display = 'none';
-                            e.target.nextSibling.style.display = 'flex';
-                          }}
-                        />
-                      ) : (
-                        <div className="modelo-fallback">
-                          <span>{modeloBase.includes('GSI') ? '🏭' : '🏗️'}</span>
-                        </div>
-                      )}
+                      <img
+                        src={guindaste.imagem_url || '/header-bg.jpg'}
+                        alt={modeloBase}
+                        className="modelo-thumbnail"
+                        onError={(e) => {
+                          e.currentTarget.src = '/header-bg.jpg';
+                        }}
+                      />
                     </div>
                     <div className="modelo-info">
                       <h4>{modeloBase}</h4>

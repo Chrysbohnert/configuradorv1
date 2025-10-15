@@ -209,7 +209,16 @@ const GuindasteSelector = ({
                     data-modelo={modeloBase}
                   >
                     <div className="model-header">
-                      <div className="model-icon">🚛</div>
+                      <div className="model-icon">
+                        <img
+                          src={modelo.imagem_url || '/header-bg.jpg'}
+                          alt={modeloBase}
+                          className="model-image"
+                          onError={(e) => {
+                            e.currentTarget.src = '/header-bg.jpg';
+                          }}
+                        />
+                      </div>
                       <div className="model-info">
                         <h3>{modeloBase}</h3>
                         <p>Guindaste</p>
@@ -261,9 +270,6 @@ const GuindasteSelector = ({
                 const isPopular = index === 0; // Primeiro item como mais popular
                 const hasRemoteControl = guindaste.tem_contr === 'Sim';
                 const configName = guindaste.peso_kg || 'Configuração Padrão';
-                const hasImage = guindaste.imagem_url && 
-                  guindaste.imagem_url.length > 10 && 
-                  !guindaste.imagem_url.includes('base64');
                 
                 return (
                   <div
@@ -275,23 +281,14 @@ const GuindasteSelector = ({
                     
                     <div className="config-header">
                       <div className="config-image-container">
-                        {hasImage ? (
-                          <img 
-                            src={guindaste.imagem_url} 
-                            alt={configName}
-                            className="config-image-photo"
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className="config-image"
-                          style={{ display: hasImage ? 'none' : 'flex' }}
-                        >
-                          {hasRemoteControl ? '📱' : '⚙️'}
-                        </div>
+                        <img 
+                          src={guindaste.imagem_url || '/header-bg.jpg'} 
+                          alt={configName}
+                          className="config-image-photo"
+                          onError={(e) => {
+                            e.currentTarget.src = '/header-bg.jpg';
+                          }}
+                        />
                       </div>
                       
                       <div className="config-info">
