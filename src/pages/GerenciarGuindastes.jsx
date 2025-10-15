@@ -381,13 +381,17 @@ const GerenciarGuindastes = () => {
       } else {
         // LÓGICA DE CRIAÇÃO
         console.log('🔧 [handleSubmit] Criando novo guindaste');
-        await db.createGuindaste(guindasteData);
+        const result = await db.createGuindaste(guindasteData);
+        console.log('✅ [handleSubmit] Novo guindaste criado:', result);
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
-      // Recarregar apenas a página atual, não voltar para página 1
+      // Recarregar dados com forceRefresh para limpar cache
       await loadData(page, true);
       handleCloseModal();
+      
+      // Scroll suave para o topo para mostrar o novo guindaste
+      window.scrollTo({ top: 0, behavior: 'smooth' });
 
     } catch (error) {
       console.error('❌ Erro ao salvar guindaste:', error);
