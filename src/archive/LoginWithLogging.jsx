@@ -5,7 +5,7 @@ import { LOG_CATEGORIES } from '../utils/logger';
 import { showError } from '../utils/errorHandler';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import { validateEmail, validatePassword } from '../utils/validation';
-import { debugAuth } from '../utils/debugAuth';
+import { debugLogin } from '../utils/debug/authDebug';
 import { supabase } from '../config/supabase';
 import '../styles/Login.css';
 
@@ -124,7 +124,7 @@ const LoginWithLogging = () => {
         
         // Fallback para autenticação local
         logger.logApi('fallback-auth-start', { email: formData.email });
-        const debugResult = await debugAuth(formData.email, formData.senha);
+        const debugResult = await debugLogin(formData.email, formData.senha);
         
         if (debugResult.user && debugResult.isValidPassword) {
           // Login bem-sucedido via fallback

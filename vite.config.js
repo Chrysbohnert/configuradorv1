@@ -23,11 +23,36 @@ export default defineConfig({
     // Configurações de rollup
     rollupOptions: {
       output: {
-        // Chunk splitting para melhor performance
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          pdf: ['jspdf', 'html2canvas', 'qrcode'],
+        // ⚡ Chunk splitting otimizado para melhor performance
+        manualChunks: (id) => {
+          // React core
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+          // Router
+          if (id.includes('node_modules/react-router')) {
+            return 'vendor-router';
+          }
+          // Supabase
+          if (id.includes('node_modules/@supabase')) {
+            return 'vendor-supabase';
+          }
+          // PDF (carregado apenas quando necessário)
+          if (id.includes('jspdf') || id.includes('html2canvas') || id.includes('qrcode')) {
+            return 'vendor-pdf';
+          }
+          // Date utilities
+          if (id.includes('date-fns') || id.includes('dayjs')) {
+            return 'vendor-date';
+          }
+          // Lucide icons
+          if (id.includes('lucide-react')) {
+            return 'vendor-icons';
+          }
+          // Outros node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor-other';
+          }
         },
         
         // Nomes de arquivos otimizados

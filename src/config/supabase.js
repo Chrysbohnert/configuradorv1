@@ -142,6 +142,35 @@ class DatabaseService {
     return result;
   }
 
+  // ⚡ OTIMIZAÇÃO: Buscar guindaste completo por ID com cache
+  async getGuindasteCompleto(id) {
+    const cacheKey = `guindaste_${id}`;
+    
+    // Verificar cache primeiro
+    if (this._guindastesCache.has(cacheKey)) {
+      const cached = this._guindastesCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 10 * 60 * 1000) { // 10 minutos de cache
+        return cached.data;
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('guindastes')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) throw error;
+    
+    // Armazenar no cache
+    this._guindastesCache.set(cacheKey, {
+      data,
+      timestamp: Date.now()
+    });
+    
+    return data;
+  }
+
   async createGuindaste(guindasteData) {
     try {
       // Limpar dados antes de enviar para evitar problemas de tipo

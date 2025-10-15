@@ -4,6 +4,7 @@
  */
 
 import { supabase } from '../../config/supabase';
+import { verifyPassword } from '../passwordHash';
 
 export const debugAuth = {
   /**
@@ -79,10 +80,62 @@ export const debugAuth = {
   }
 };
 
+/**
+ * Debug de login - verifica credenciais no banco local
+ */
+export const debugLogin = async (email, senha) => {
+  try {
+    console.log('🔍 DEBUG LOGIN: Verificando credenciais...');
+    
+    // Buscar usuário no banco
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('email', email);
+    
+    if (error) {
+      console.error('❌ Erro ao buscar usuário:', error);
+      return { user: null, isValidPassword: false, isHashed: false };
+    }
+    
+    const user = users?.[0];
+    
+    if (!user) {
+      console.log('❌ Usuário não encontrado');
+      return { user: null, isValidPassword: false, isHashed: false };
+    }
+    
+    console.log('✅ Usuário encontrado:', user.email);
+    
+    // Verificar se a senha está em hash
+    const isHashed = user.senha && user.senha.length === 64; // SHA256 tem 64 caracteres
+    
+    if (!isHashed) {
+      console.log('⚠️ Senha não está em hash');
+      return { user, isValidPassword: false, isHashed: false };
+    }
+    
+    // Verificar senha
+    const isValidPassword = verifyPassword(senha, user.senha);
+    
+    if (isValidPassword) {
+      console.log('✅ Senha válida');
+    } else {
+      console.log('❌ Senha inválida');
+    }
+    
+    return { user, isValidPassword, isHashed };
+  } catch (error) {
+    console.error('❌ Erro no debugLogin:', error);
+    return { user: null, isValidPassword: false, isHashed: false };
+  }
+};
+
 // Expor no window apenas em DEV
 if (import.meta.env.DEV && typeof window !== 'undefined') {
   window.debugAuth = debugAuth.debugAuth;
   window.checkSession = debugAuth.checkSession;
   window.clearAuth = debugAuth.clearAuth;
+  window.debugLogin = debugLogin;
 }
 
