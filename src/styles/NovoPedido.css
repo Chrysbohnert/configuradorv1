@@ -50,12 +50,12 @@
 }
 
 .floating-nav-btn.finish {
-  background: linear-gradient(135deg, #28a745 0%, #000000 100%);
+  background: linear-gradient(135deg, #bfa721 0%, #000000 100%);
   color: white;
 }
 
 .floating-nav-btn.finish:hover {
-  background: linear-gradient(135deg, #218838 0%, #576562 100%);
+  background: linear-gradient(135deg, #c78d11 0%, #576562 100%);
 }
 
 .floating-nav-btn.disabled {
@@ -187,7 +187,7 @@
 
 .novo-pedido-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: linear-gradient(135deg, #b0a4a4 0%, #c7bebe 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
@@ -200,7 +200,7 @@
 
 /* Progress Bar */
 .progress-bar-container {
-  background: white;
+  background: rgb(234, 233, 233);
   border-radius: 16px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -253,7 +253,7 @@
   gap: 2rem;
   margin-bottom: 2rem;
   padding: 1.5rem;
-  background: white;
+  background: rgb(0, 0, 0);
   border-radius: 16px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   border: 2px solid #e5e5e5;
@@ -264,7 +264,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: white;
+  background: rgb(0, 0, 0);
   color: #666666;
   border: 2px solid #e5e5e5;
   border-radius: 12px;
@@ -305,7 +305,7 @@
 
 /* Client Form Container */
 .client-form-container {
-  background: white;
+  background: rgb(14, 14, 14);
   border-radius: 20px;
   padding: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
@@ -319,7 +319,7 @@
 }
 
 .form-section {
-  background: #f8f9fa;
+  background: #131313;
   border-radius: 16px;
   padding: 1.5rem;
   border: 1px solid #e5e5e5;
@@ -373,11 +373,11 @@
 .form-group select,
 .form-group textarea {
   padding: 0.875rem 1rem;
-  border: 2px solid #e5e5e5;
+  border: 2px solid #3a3a3a;
   border-radius: 12px;
   font-size: 1rem;
   transition: none;
-  background: white;
+  background: rgb(0, 0, 0);
 }
 
 .form-group input:focus,
@@ -549,18 +549,18 @@
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  margin-bottom: 3rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
-  border-radius: 24px;
-  padding: 2rem;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e5e5e5;
+  margin-bottom: 2.5rem;
+  background: #f9fafb;
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e5e7eb;
   position: relative;
   overflow: hidden;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
 .progress-steps::before {
@@ -612,16 +612,16 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1rem;
+  gap: 0.875rem;
   flex: 1;
   position: relative;
-  padding: 1.5rem 1rem;
-  transition: none;
-  min-height: 160px;
-  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-  border-radius: 20px;
-  border: 2px solid #e5e5e5;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  padding: 1.25rem 0.875rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 145px;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   overflow: hidden;
 }
 
@@ -631,9 +631,14 @@
 }
 
 .step.clickable:hover {
-  border-color: #000000;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-  transform: translateY(-2px);
+  border-color: #6b7280;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+}
+
+.step.clickable:hover .step-number {
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .step.disabled {
@@ -642,8 +647,9 @@
 }
 
 .step.disabled:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #e5e5e5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  border-color: #e5e7eb;
+  transform: none;
 }
 
 .step:not(:last-child)::after {
@@ -651,28 +657,29 @@
 }
 
 .step-number {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1.25rem;
-  background: linear-gradient(145deg, #f8f9fa 0%, #e2e8f0 100%);
-  color: #64748b;
-  border: 3px solid #e2e8f0;
-  transition: none;
+  font-size: 1.125rem;
+  background: #f3f4f6;
+  color: #9ca3af;
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   z-index: 2;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .step.active {
-  background: linear-gradient(145deg, #000000 0%, #1a1a1a 100%);
+  background: linear-gradient(145deg, #000000 0%, #1f1f1f 100%);
   border-color: #000000;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
   position: relative;
+  transform: scale(1.02);
 }
 
 .step.active::before {
@@ -681,22 +688,24 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #000000, #333333);
-  border-radius: 20px 20px 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, #6a6861, #f59e0b);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 0 12px rgba(251, 191, 36, 0.6);
 }
 
 .step.active .step-number {
   background: #ffffff;
   color: #000000;
-  border-color: #000000;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border-color: #fbbf24;
+  box-shadow: 0 3px 8px rgba(251, 191, 36, 0.4);
+  transform: scale(1.05);
 }
 
 .step.completed {
-  background: linear-gradient(145deg, #f0f9ff 0%, #e0f2fe 100%);
-  border-color: #000000;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  background: linear-gradient(145deg, #f0fdf4 0%, #dcfce7 100%);
+  border-color: #10b981;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.15);
   position: relative;
 }
 
@@ -706,16 +715,16 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 3px;
   background: linear-gradient(90deg, #10b981, #059669);
-  border-radius: 20px 20px 0 0;
+  border-radius: 16px 16px 0 0;
 }
 
 .step.completed .step-number {
-  background: linear-gradient(135deg, #000000, #333333);
+  background: linear-gradient(135deg, #10b981, #059669);
   color: #ffffff;
-  border-color: #000000;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  border-color: #10b981;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .step.completed .step-number svg {
@@ -729,59 +738,49 @@
 }
 
 .step-title {
-  font-size: 1.125rem;
-  font-weight: 700;
-  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
   margin-bottom: 0.25rem;
-  transition: none;
+  transition: all 0.3s ease;
   text-align: center;
   line-height: 1.3;
 }
 
 .step.active .step-title {
   color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 800;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .step.completed .step-title {
-  color: #000000;
-  font-weight: 700;
-  font-size: 1.125rem;
+  color: #065f46;
+  font-weight: 600;
+  font-size: 1rem;
 }
 
 .step-description {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-weight: 500;
+  font-size: 0.8125rem;
+  color: #9ca3af;
+  font-weight: 400;
   line-height: 1.4;
-  transition: none;
+  transition: all 0.3s ease;
   text-align: center;
   opacity: 0.9;
 }
 
 .step.active .step-description {
-  color: #e5e7eb;
-  font-weight: 600;
-  opacity: 1;
-}
-
-.step.completed .step-description {
-  color: #374151;
-  font-weight: 600;
-}
-
-.step.active .step-description {
-  color: #000000;
-  font-weight: 600;
-  font-size: 0.9375rem;
-}
-
-.step.completed .step-description {
-  color: #555555;
+  color: #d1d5db;
   font-weight: 500;
-  font-size: 0.875rem;
+  opacity: 1;
+  font-size: 0.8125rem;
+}
+
+.step.completed .step-description {
+  color: #059669;
+  font-weight: 500;
+  font-size: 0.8125rem;
 }
 
 /* Interface em Cascata */
@@ -1008,8 +1007,8 @@
 }
 
 .item-card {
-  background: linear-gradient(145deg, #f8fafc 0%, #f1f5f9 100%);
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(145deg, #000000 0%, #000000 100%);
+  border: 1px solid #3b3b3b;
   border-radius: 12px;
   padding: 1rem;
   position: relative;
@@ -1179,8 +1178,8 @@
 }
 
 .capacidade-card {
-  background: white;
-  border: 2px solid #e5e7eb;
+  background: rgb(23, 23, 23);
+  border: 2px solid #1e1e1e;
   border-radius: 12px;
   padding: 20px;
   cursor: pointer;

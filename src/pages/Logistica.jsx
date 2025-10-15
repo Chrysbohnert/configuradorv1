@@ -14,6 +14,8 @@ const Logistica = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isNotaModalOpen, setIsNotaModalOpen] = useState(false);
   const [selectedDateStr, setSelectedDateStr] = useState('');
+  const [prontaEntregaDescricao, setProntaEntregaDescricao] = useState('');
+  const [isSavingDescricao, setIsSavingDescricao] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -26,11 +28,38 @@ const Logistica = () => {
       setIsLoading(true);
       const ev = await db.getEventosLogistica();
       setEventos(ev);
+      
+      // Carregar descrição de pronta entrega
+      const descricaoData = await db.getProntaEntregaDescricao();
+      setProntaEntregaDescricao(descricaoData?.descricao || '');
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSalvarDescricao = async () => {
+    // Validar se é admin
+    if (user?.tipo !== 'admin') {
+      alert('Apenas administradores podem salvar a descrição de pronta entrega.');
+      return;
+    }
+
+    try {
+      setIsSavingDescricao(true);
+      console.log('Salvando descrição:', prontaEntregaDescricao);
+      const result = await db.updateProntaEntregaDescricao(prontaEntregaDescricao);
+      console.log('Descrição salva com sucesso:', result);
+      alert('Descrição de pronta entrega salva com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      console.error('Mensagem:', error.message);
+      console.error('Detalhes completos:', JSON.stringify(error, null, 2));
+      alert(`Erro ao salvar descrição: ${error.message || 'Erro desconhecido'}`);
+    } finally {
+      setIsSavingDescricao(false);
     }
   };
 
@@ -153,6 +182,62 @@ const Logistica = () => {
               <div className="welcome-section">
                 <h1>Logística</h1>
                 <p>Calendário simples de anotações</p>
+              </div>
+            </div>
+
+            {/* Seção de Pronta Entrega */}
+            <div className="pronta-entrega-section" style={{ background: '#fff', borderRadius: 16, padding: 20, boxShadow: '0 1px 2px rgba(0,0,0,0.06)', marginBottom: 20 }}>
+              <div style={{ marginBottom: 16 }}>
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: '#000', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>📦</span>
+                  Itens em Pronta Entrega
+                </h3>
+                <p style={{ fontSize: 14, color: '#666', marginBottom: 16 }}>
+                  Descreva os guindastes disponíveis para venda imediata. Esta informação será exibida para os vendedores.
+                </p>
+              </div>
+              <div className="form-group">
+                <label style={{ display: 'block', marginBottom: 8, fontWeight: 500, fontSize: 14, color: '#374151' }}>
+                  Descrição dos Itens
+                </label>
+                <textarea
+                  rows="6"
+                  placeholder="Ex: Guindaste GSI 6.5 3h1m - Disponível em estoque&#10;Guindaste GSE 8.0 4h2m - Pronta entrega&#10;..."
+                  value={prontaEntregaDescricao}
+                  onChange={(e) => setProntaEntregaDescricao(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: 12,
+                    border: '2px solid #e5e7eb',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontFamily: 'inherit',
+                    resize: 'vertical',
+                    minHeight: 120
+                  }}
+                />
+                <small style={{ display: 'block', marginTop: 8, color: '#6b7280', fontSize: 13 }}>
+                  💡 Dica: Liste cada item em uma linha separada para melhor visualização
+                </small>
+              </div>
+              <div style={{ marginTop: 16, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleSalvarDescricao}
+                  disabled={isSavingDescricao}
+                  style={{
+                    padding: '10px 24px',
+                    background: isSavingDescricao ? '#9ca3af' : 'linear-gradient(135deg, #000000, #333333)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: isSavingDescricao ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {isSavingDescricao ? 'Salvando...' : '💾 Salvar Descrição'}
+                </button>
               </div>
             </div>
 

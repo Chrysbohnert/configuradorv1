@@ -534,7 +534,7 @@ class DatabaseService {
   }
 
   async updateProntaEntrega(id, itemData) {
-    const { data, error } = await supabase
+    const { data, error} = await supabase
       .from('pronta_entrega')
       .update(itemData)
       .eq('id', id)
@@ -552,8 +552,65 @@ class DatabaseService {
     if (error) throw error;
   }
 
-  // Métodos relacionados a tabelas de opcionais foram removidos
-  // pois não existem nas tabelas do projeto atual (ver Supabase).
+  // ===== DESCRIÇÃO DE PRONTA ENTREGA (ADMIN) =====
+  async getProntaEntregaDescricao() {
+    const { data, error } = await supabase
+      .from('pronta_entrega_descricao')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('Erro ao buscar descrição de pronta entrega:', error);
+      throw error;
+    }
+    
+    // Retornar o primeiro registro ou objeto vazio
+    return data && data.length > 0 ? data[0] : { descricao: '' };
+  }
+
+  async updateProntaEntregaDescricao(descricao) {
+    // Primeiro, tentar buscar registro existente
+    const { data: existing, error: selectError } = await supabase
+      .from('pronta_entrega_descricao')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (selectError) {
+      console.error('Erro ao buscar descrição existente:', selectError);
+      throw selectError;
+    }
+
+    if (existing) {
+      // Atualizar registro existente
+      const { data, error } = await supabase
+        .from('pronta_entrega_descricao')
+        .update({ descricao })
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro ao atualizar descrição:', error);
+        throw error;
+      }
+      return data;
+    } else {
+      // Criar novo registro
+      const { data, error } = await supabase
+        .from('pronta_entrega_descricao')
+        .insert([{ descricao }])
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('Erro ao inserir descrição:', error);
+        throw error;
+      }
+      return data;
+    }
+  }
 
   // Métodos de opcionais de equipamento removidos (tabelas ausentes)
 

@@ -872,13 +872,11 @@ const GerenciarGuindastes = () => {
                     <option value="CR - Controle Remoto">🎮 CR - Controle Remoto</option>
                     <option value="EH - Extensiva Hidráulica">🔧 EH - Extensiva Hidráulica</option>
                     <option value="ECL - Extensiva Cilindro Lateral">⚙️ ECL - Extensiva Cilindro Lateral</option>
-                    <option value="ECS - Extensiva Cilindro Superior">🔩 ECS - Extensiva Cilindro Superior</option>
                     <option value="P - Preparação p/ Perfuratriz">🔨 P - Preparação p/ Perfuratriz</option>
                     <option value="GR - Preparação p/ Garra e Rotator">🦾 GR - Preparação p/ Garra e Rotator</option>
                     <option value="Caminhão 3/4">🚛 Caminhão 3/4</option>
                     <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
                     <option value="CR/ECL - Controle Remoto e Extensiva Cilindro Lateral">🎮⚙️ CR/ECL - Controle Remoto e Extensiva Cilindro Lateral</option>
-                    <option value="CR/ECS - Controle Remoto e Extensiva Cilindro Superior">🎮🔩 CR/ECS - Controle Remoto e Extensiva Cilindro Superior</option>
                     <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
                     <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
                   </select>
@@ -984,8 +982,8 @@ const GerenciarGuindastes = () => {
                     <input
                       type="text"
                       value={formData.finame}
-                      onChange={e => handleInputChange('finame', e.target.value)}
-                      placeholder="Ex: 01.01.01.001"
+                      onChange={e => handleInputChange('FINAME', e.target.value)}
+                      placeholder="Ex: 123456789"
                       required
                       className="form-input"
                     />
@@ -999,8 +997,8 @@ const GerenciarGuindastes = () => {
                     <input
                       type="text"
                       value={formData.ncm}
-                      onChange={e => handleInputChange('ncm', e.target.value)}
-                      placeholder="Ex: 8426.41.00"
+                      onChange={e => handleInputChange('NCM', e.target.value)}
+                      placeholder="Ex: 84264100"
                       required
                       className="form-input"
                     />

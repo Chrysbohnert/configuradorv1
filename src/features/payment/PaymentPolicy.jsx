@@ -31,6 +31,7 @@ const PaymentPolicy = ({
 }) => {
   // Evitar logs excessivos em produção
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
+  const [financiamentoBancario, setFinanciamentoBancario] = useState(''); // 'sim' | 'nao'
   const [prazoSelecionado, setPrazoSelecionado] = useState('');
   const [localInstalacao, setLocalInstalacao] = useState('');
   const [pagamentoPorConta, setPagamentoPorConta] = useState(''); // 'cliente' | 'fabrica'
@@ -389,6 +390,7 @@ const PaymentPolicy = ({
           ...resultado,
           plan,
           tipoCliente,
+          financiamentoBancario: financiamentoBancario, // 'sim' | 'nao' | ''
           localInstalacao,
           pagamentoPorConta,
           valorSinal: valorSinalNum,
@@ -481,99 +483,191 @@ const PaymentPolicy = ({
           )}
         </div>
 
-        {/* Participação de Revenda - SEMPRE aparece para Cliente */}
+        {/* Opção de Financiamento Bancário - LOGO APÓS TIPO DE CLIENTE */}
         {tipoCliente === 'cliente' && (
           <>
             <div className="form-group" style={{ marginTop: '15px' }}>
-              <label htmlFor="participacaoRevenda" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                Há Participação de Revenda? <span style={{ color: '#dc3545' }}>*</span>
+              <label htmlFor="financiamentoBancario" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                Financiamento Bancário? <span style={{ color: '#dc3545' }}>*</span>
               </label>
               <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
                 <label 
                   onClick={() => {
-                    setParticipacaoRevenda('sim');
-                    // Resetar estados relacionados
-                    setRevendaTemIE('');
-                    setDescontoRevendaIE(0);
+                    setFinanciamentoBancario('sim');
+                    setValorSinal('');
+                    setPercentualEntrada('');
+                    setPrazoSelecionado('');
+                    setParticipacaoRevenda('');
                   }}
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    gap: '8px', 
+                    gap: '6px', 
                     cursor: 'pointer', 
-                    padding: '10px 20px', 
-                    background: participacaoRevenda === 'sim' ? '#28a745' : '#ffffff', 
-                    color: participacaoRevenda === 'sim' ? '#ffffff' : '#495057', 
+                    padding: '8px 16px', 
+                    background: financiamentoBancario === 'sim' ? '#0066cc' : '#ffffff', 
+                    color: financiamentoBancario === 'sim' ? '#ffffff' : '#495057', 
                     borderRadius: '6px', 
-                    border: participacaoRevenda === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
+                    border: financiamentoBancario === 'sim' ? '2px solid #0066cc' : '2px solid #ced4da', 
                     transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: participacaoRevenda === 'sim' ? '600' : '500',
+                    fontSize: '13px',
+                    fontWeight: financiamentoBancario === 'sim' ? '600' : '500',
                     flex: '1',
-                    boxShadow: participacaoRevenda === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                    boxShadow: financiamentoBancario === 'sim' ? '0 2px 8px rgba(0, 102, 204, 0.3)' : 'none',
                     userSelect: 'none'
                   }}
                 >
                   <input 
                     type="radio" 
-                    name="participacaoRevenda" 
-                    checked={participacaoRevenda === 'sim'} 
+                    name="financiamentoBancario" 
+                    checked={financiamentoBancario === 'sim'} 
                     onChange={() => {}}
                     style={{ 
                       cursor: 'pointer',
-                      accentColor: '#28a745',
-                      width: '16px',
-                      height: '16px'
+                      accentColor: '#0066cc',
+                      width: '14px',
+                      height: '14px'
                     }}
                   />
                   <span>Sim</span>
                 </label>
                 <label 
                   onClick={() => {
-                    setParticipacaoRevenda('nao');
-                    // Resetar estados relacionados
-                    setRevendaTemIE('');
-                    setDescontoRevendaIE(0);
+                    setFinanciamentoBancario('nao');
                   }}
                   style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    gap: '8px', 
+                    gap: '6px', 
                     cursor: 'pointer', 
-                    padding: '10px 20px', 
-                    background: participacaoRevenda === 'nao' ? '#dc3545' : '#ffffff', 
-                    color: participacaoRevenda === 'nao' ? '#ffffff' : '#495057', 
+                    padding: '8px 16px', 
+                    background: financiamentoBancario === 'nao' ? '#dc3545' : '#ffffff', 
+                    color: financiamentoBancario === 'nao' ? '#ffffff' : '#495057', 
                     borderRadius: '6px', 
-                    border: participacaoRevenda === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
+                    border: financiamentoBancario === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
                     transition: 'all 0.2s ease',
-                    fontSize: '14px',
-                    fontWeight: participacaoRevenda === 'nao' ? '600' : '500',
+                    fontSize: '13px',
+                    fontWeight: financiamentoBancario === 'nao' ? '600' : '500',
                     flex: '1',
-                    boxShadow: participacaoRevenda === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                    boxShadow: financiamentoBancario === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
                     userSelect: 'none'
                   }}
                 >
                   <input 
                     type="radio" 
-                    name="participacaoRevenda" 
-                    checked={participacaoRevenda === 'nao'} 
+                    name="financiamentoBancario" 
+                    checked={financiamentoBancario === 'nao'} 
                     onChange={() => {}}
                     style={{ 
                       cursor: 'pointer',
                       accentColor: '#dc3545',
-                      width: '16px',
-                      height: '16px'
+                      width: '14px',
+                      height: '14px'
                     }}
                   />
                   <span>Não</span>
                 </label>
               </div>
+              {financiamentoBancario === 'sim' && (
+                <small style={{ display: 'block', marginTop: '8px', color: '#0066cc', fontSize: '12px', fontWeight: '500' }}>
+                  🏦 Condições definidas pelo banco financiador
+                </small>
+              )}
             </div>
 
+            {/* Participação de Revenda - SÓ aparece se financiamento = NÃO */}
+            {financiamentoBancario === 'nao' && (
+              <div className="form-group" style={{ marginTop: '15px' }}>
+                <label htmlFor="participacaoRevenda" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
+                  Há Participação de Revenda? <span style={{ color: '#dc3545' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <label 
+                    onClick={() => {
+                      setParticipacaoRevenda('sim');
+                      setRevendaTemIE('');
+                      setDescontoRevendaIE(0);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '6px', 
+                      cursor: 'pointer', 
+                      padding: '8px 16px', 
+                      background: participacaoRevenda === 'sim' ? '#28a745' : '#ffffff', 
+                      color: participacaoRevenda === 'sim' ? '#ffffff' : '#495057', 
+                      borderRadius: '6px', 
+                      border: participacaoRevenda === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
+                      transition: 'all 0.2s ease',
+                      fontSize: '13px',
+                      fontWeight: participacaoRevenda === 'sim' ? '600' : '500',
+                      flex: '1',
+                      boxShadow: participacaoRevenda === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="participacaoRevenda" 
+                      checked={participacaoRevenda === 'sim'} 
+                      onChange={() => {}}
+                      style={{ 
+                        cursor: 'pointer',
+                        accentColor: '#28a745',
+                        width: '14px',
+                        height: '14px'
+                      }}
+                    />
+                    <span>Sim</span>
+                  </label>
+                  <label 
+                    onClick={() => {
+                      setParticipacaoRevenda('nao');
+                      setRevendaTemIE('');
+                      setDescontoRevendaIE(0);
+                    }}
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      gap: '6px', 
+                      cursor: 'pointer', 
+                      padding: '8px 16px', 
+                      background: participacaoRevenda === 'nao' ? '#dc3545' : '#ffffff', 
+                      color: participacaoRevenda === 'nao' ? '#ffffff' : '#495057', 
+                      borderRadius: '6px', 
+                      border: participacaoRevenda === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
+                      transition: 'all 0.2s ease',
+                      fontSize: '13px',
+                      fontWeight: participacaoRevenda === 'nao' ? '600' : '500',
+                      flex: '1',
+                      boxShadow: participacaoRevenda === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <input 
+                      type="radio" 
+                      name="participacaoRevenda" 
+                      checked={participacaoRevenda === 'nao'} 
+                      onChange={() => {}}
+                      style={{ 
+                        cursor: 'pointer',
+                        accentColor: '#dc3545',
+                        width: '14px',
+                        height: '14px'
+                      }}
+                    />
+                    <span>Não</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Campo de IE - Aparece SEMPRE após selecionar participação de revenda */}
-            {participacaoRevenda && (
+            {financiamentoBancario === 'nao' && participacaoRevenda && (
               <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#fff3cd', borderRadius: '6px', border: '2px solid #ffc107' }}>
                 <label htmlFor="clienteRevendaIE" style={{ fontWeight: '600', fontSize: '15px', marginBottom: '8px', display: 'block', color: '#495057' }}>
                   {participacaoRevenda === 'sim' ? 'Tipo de Revenda:' : 'O cliente possui Inscrição Estadual?'} <span style={{ color: '#dc3545' }}>*</span>
@@ -609,15 +703,15 @@ const PaymentPolicy = ({
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      gap: '8px', 
+                      gap: '6px', 
                       cursor: 'pointer', 
-                      padding: '10px 20px', 
+                      padding: '8px 16px', 
                       background: revendaTemIE === 'sim' ? '#28a745' : '#ffffff', 
                       color: revendaTemIE === 'sim' ? '#ffffff' : '#495057', 
                       borderRadius: '6px', 
                       border: revendaTemIE === 'sim' ? '2px solid #28a745' : '2px solid #ced4da', 
                       transition: 'all 0.2s ease',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: revendaTemIE === 'sim' ? '600' : '500',
                       flex: participacaoRevenda === 'sim' && temGuindasteGSI ? '1 1 100%' : '1',
                       boxShadow: revendaTemIE === 'sim' ? '0 2px 8px rgba(40, 167, 69, 0.3)' : 'none',
@@ -632,8 +726,8 @@ const PaymentPolicy = ({
                       style={{ 
                         cursor: 'pointer',
                         accentColor: '#28a745',
-                        width: '16px',
-                        height: '16px'
+                        width: '14px',
+                        height: '14px'
                       }}
                     />
                     <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
@@ -659,15 +753,15 @@ const PaymentPolicy = ({
                       display: 'flex', 
                       alignItems: 'center', 
                       justifyContent: 'center',
-                      gap: '8px', 
+                      gap: '6px', 
                       cursor: 'pointer', 
-                      padding: '10px 20px', 
+                      padding: '8px 16px', 
                       background: revendaTemIE === 'nao' ? '#dc3545' : '#ffffff', 
                       color: revendaTemIE === 'nao' ? '#ffffff' : '#495057', 
                       borderRadius: '6px', 
                       border: revendaTemIE === 'nao' ? '2px solid #dc3545' : '2px solid #ced4da', 
                       transition: 'all 0.2s ease',
-                      fontSize: '14px',
+                      fontSize: '13px',
                       fontWeight: revendaTemIE === 'nao' ? '600' : '500',
                       flex: '1',
                       boxShadow: revendaTemIE === 'nao' ? '0 2px 8px rgba(220, 53, 69, 0.3)' : 'none',
@@ -682,8 +776,8 @@ const PaymentPolicy = ({
                       style={{ 
                         cursor: 'pointer',
                         accentColor: '#dc3545',
-                        width: '16px',
-                        height: '16px'
+                        width: '14px',
+                        height: '14px'
                       }}
                     />
                     <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
@@ -1013,8 +1107,8 @@ const PaymentPolicy = ({
         </>
       )}
 
-      {/* Campos de sinal e entrada apenas para "cliente" */}
-      {tipoCliente === 'cliente' && (
+      {/* Campos de sinal e entrada apenas para "cliente" SEM financiamento bancário */}
+      {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && (
         <>
           {/* Campo de sinal: não aparece quando prazo é "À Vista" */}
             {prazoSelecionado !== 'À Vista' && (
@@ -1063,14 +1157,20 @@ const PaymentPolicy = ({
             id="prazoPagamento"
             value={prazoSelecionado}
             onChange={(e) => setPrazoSelecionado(e.target.value)}
-            disabled={!tipoCliente || (tipoCliente === 'cliente' && !percentualEntrada)}
+            disabled={
+              !tipoCliente || 
+              (tipoCliente === 'cliente' && financiamentoBancario === '') ||
+              (tipoCliente === 'cliente' && financiamentoBancario === 'nao' && !percentualEntrada)
+            }
             className={errors.prazoPagamento ? 'error' : ''}
           >
             <option value="">
               {!tipoCliente && 'Selecione primeiro o tipo de cliente'}
-              {tipoCliente === 'cliente' && !percentualEntrada && 'Selecione o percentual de entrada primeiro'}
+              {tipoCliente === 'cliente' && financiamentoBancario === '' && 'Selecione se haverá financiamento bancário'}
+              {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && !percentualEntrada && 'Selecione o percentual de entrada primeiro'}
+              {tipoCliente === 'cliente' && financiamentoBancario === 'sim' && 'Selecione o prazo (definido pelo banco)'}
               {tipoCliente === 'revenda' && 'Selecione o prazo'}
-              {tipoCliente === 'cliente' && percentualEntrada && 'Selecione o prazo'}
+              {tipoCliente === 'cliente' && financiamentoBancario === 'nao' && percentualEntrada && 'Selecione o prazo'}
             </option>
             {planosDisponiveis.map((plan, idx) => (
               <option key={idx} value={plan.description}>
@@ -1080,6 +1180,11 @@ const PaymentPolicy = ({
           </select>
           {errors.prazoPagamento && (
             <span className="error-message">{errors.prazoPagamento}</span>
+          )}
+          {tipoCliente === 'cliente' && financiamentoBancario === 'sim' && (
+            <small style={{ display: 'block', marginTop: '5px', color: '#0066cc', fontSize: '0.875em', fontWeight: '500' }}>
+              💳 Prazo e condições serão definidos pela instituição financeira
+            </small>
           )}
       </div>
 
