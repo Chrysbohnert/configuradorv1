@@ -4,6 +4,7 @@
   min-height: 100vh;
   background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  margin-left: 280px;
 }
 
 .gerenciar-guindastes-content {
@@ -691,7 +692,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 10000;
   padding: 20px;
   backdrop-filter: blur(4px);
 }
@@ -1779,6 +1780,10 @@ textarea:focus {
 
 /* Responsive para o filtro */
 @media (max-width: 768px) {
+  .gerenciar-guindastes-container {
+    margin-left: 0;
+  }
+  
   .filtro-container {
     flex-direction: column;
     gap: 15px;
