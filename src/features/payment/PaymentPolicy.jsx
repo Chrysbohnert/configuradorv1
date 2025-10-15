@@ -26,7 +26,8 @@ const PaymentPolicy = ({
   clienteTemIE = true,
   onClienteIEChange,
   carrinho = [],
-  debug = false
+  debug = false,
+  onNext = null
 }) => {
   // Evitar logs excessivos em produção
   const [tipoCliente, setTipoCliente] = useState(''); // 'revenda' | 'cliente'
@@ -1345,6 +1346,24 @@ const PaymentPolicy = ({
           </div>
         );
       })()}
+      
+      {/* Botão de Navegação */}
+      <div className="payment-navigation">
+        <button 
+          className="payment-nav-btn"
+          onClick={() => {
+            if (onNext && typeof onNext === 'function') {
+              onNext();
+            }
+          }}
+          disabled={!calculoAtual || erroCalculo}
+        >
+          <span>Continuar para Dados do Cliente</span>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 };
