@@ -106,10 +106,19 @@ const ResumoPedido = ({
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
+      // Filtrar apenas campos válidos da tabela caminhoes
+      const filterCaminhaoDataForDB = (data) => ({
+        tipo: data.tipo,
+        marca: data.marca,
+        modelo: data.modelo,
+        ano: data.ano || null,
+        voltagem: data.voltagem,
+        observacoes: data.observacoes || null
+      });
+
       const caminhaoDataToSave = {
-        ...caminhaoData,
+        ...filterCaminhaoDataForDB(caminhaoData),
         cliente_id: cliente.id,
-        observacoes: caminhaoData.observacoes || null,
         placa: 'N/A' // Campo obrigatório no banco
       };
       

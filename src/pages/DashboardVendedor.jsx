@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import VendedorNavigation from '../components/VendedorNavigation';
+import { useNavigate, useOutletContext } from 'react-router-dom';
+import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/Dashboard.css';
 
 const DashboardVendedor = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
   const [isLoading, setIsLoading] = useState(false);
   const [stats, setStats] = useState({
     totalPedidos: 0,
@@ -15,10 +15,7 @@ const DashboardVendedor = () => {
   });
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
+    if (!user) {
       navigate('/');
       return;
     }
@@ -68,23 +65,23 @@ const DashboardVendedor = () => {
   }
 
   return (
-    <div className="admin-layout">
-      <VendedorNavigation user={user} />
-      
-      <div className="admin-main-content">
-        <div className="admin-page-header">
-          <div>
-            <h1 className="admin-page-title">Dashboard</h1>
-            <p className="admin-page-subtitle">Painel do Vendedor</p>
+    <>
+      <UnifiedHeader
+        showBackButton={false}
+        showSupportButton={true}
+        showUserInfo={true}
+        user={user}
+        title="Dashboard Vendedor"
+        subtitle="Painel de controle do vendedor"
+      />
+      <div className="dashboard-container">
+        <div className="dashboard-content">
+          <div className="dashboard-header">
+            <div className="welcome-section">
+              <h1>Bem-vindo, {user.nome}!</h1>
+              <p>Gerencie seus pedidos e orçamentos</p>
+            </div>
           </div>
-        </div>
-
-        <div className="dashboard-header">
-          <div className="welcome-section">
-            <h1>Bem-vindo, {user.nome}!</h1>
-            <p>Gerencie seus pedidos e orçamentos</p>
-          </div>
-        </div>
 
         <div className="stats-grid">
           <div className="stat-card">
@@ -186,8 +183,9 @@ const DashboardVendedor = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
