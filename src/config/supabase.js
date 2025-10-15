@@ -97,49 +97,89 @@ class DatabaseService {
   // Cache para evitar múltiplas requisições
   _guindastesCache = new Map();
 
-  // Versão leve para listagens: apenas campos necessários, com paginação e busca
-  async getGuindastesLite({ page = 1, pageSize = 100, search = '', forceRefresh = false } = {}) {
-    const cacheKey = `page_${page}_size_${pageSize}_search_${search}`;
+  // Função para limpar cache manualmente
+  clearGuindastesCache() {
+    console.log('🗑️ Limpando cache de guindastes...');
+    this._guindastesCache.clear();
+  }
 
-    // Verificar cache primeiro (exceto se for refresh forçado)
+  // Versão leve para listagens: apenas campos necessários, com paginação e busca
+  async getGuindastesLite(page = 1, pageSize = 100, forceRefresh = false) {
+    const cacheKey = `guindastes_lite_${page}_${pageSize}`;
+    const now = Date.now();
+    
+    // Verificar cache apenas se não for forceRefresh
     if (!forceRefresh && this._guindastesCache.has(cacheKey)) {
       const cached = this._guindastesCache.get(cacheKey);
-      if (Date.now() - cached.timestamp < 5 * 60 * 1000) { // 5 minutos de cache
+      const isExpired = now - cached.timestamp > 10 * 60 * 1000; // 10 minutos
+      
+      if (!isExpired) {
+        console.log('🔄 [getGuindastesLite] Usando dados do cache');
         return cached.data;
+      } else {
+        console.log('⏰ [getGuindastesLite] Cache expirado, removendo...');
+        this._guindastesCache.delete(cacheKey);
       }
     }
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    let query = supabase
-      .from('guindastes')
-      .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg', { count: 'exact' })
-      .order('subgrupo');
+    try {
+      console.log('🔍 [getGuindastesLite] Executando query otimizada...');
+      
+      // Query otimizada - sem count para evitar timeout
+      const { data, error } = await supabase
+        .from('guindastes')
+        .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg')
+        .order('subgrupo')
+        .range(from, to);
 
-    if (search && search.trim()) {
-      const pattern = `%${search.trim()}%`;
-      query = query.or(`subgrupo.ilike.${pattern},modelo.ilike.${pattern}`);
+      if (error) {
+        console.error('❌ [getGuindastesLite] Erro na query:', error);
+        console.error('❌ [getGuindastesLite] Detalhes:', error.message);
+        throw error;
+      }
+
+      // Estimar count baseado nos dados retornados para evitar timeout
+      let count = 0;
+      if (page === 1 && data && data.length > 0) {
+        // Se retornou dados completos (menos que pageSize), usar o length
+        if (data.length < pageSize) {
+          count = data.length;
+        } else {
+          // Estimar baseado na paginação (não é exato, mas evita timeout)
+          count = pageSize * 10; // Estimativa conservadora
+        }
+        console.log('📊 [getGuindastesLite] Count estimado:', count);
+      }
+
+      const result = {
+        data: data || [],
+        count: count,
+        page,
+        pageSize
+      };
+
+      // Armazenar no cache
+      this._guindastesCache.set(cacheKey, {
+        data: result,
+        timestamp: now
+      });
+
+      // Limpar cache antigo (manter apenas últimos 10)
+      if (this._guindastesCache.size > 10) {
+        const oldestKey = Array.from(this._guindastesCache.keys())[0];
+        this._guindastesCache.delete(oldestKey);
+      }
+
+      console.log('✅ [getGuindastesLite] Query executada com sucesso, registros:', data?.length || 0);
+      return result;
+      
+    } catch (error) {
+      console.error('❌ [getGuindastesLite] Erro geral:', error);
+      throw error;
     }
-
-    const { data, error, count } = await query.range(from, to);
-    if (error) throw error;
-
-    const result = { data: data || [], count: count || 0 };
-
-    // Armazenar no cache
-    this._guindastesCache.set(cacheKey, {
-      data: result,
-      timestamp: Date.now()
-    });
-
-    // Limpar cache antigo (manter apenas últimos 10)
-    if (this._guindastesCache.size > 10) {
-      const oldestKey = Array.from(this._guindastesCache.keys())[0];
-      this._guindastesCache.delete(oldestKey);
-    }
-
-    return result;
   }
 
   // ⚡ OTIMIZAÇÃO: Buscar guindaste completo por ID com cache
@@ -172,43 +212,94 @@ class DatabaseService {
   }
 
   async createGuindaste(guindasteData) {
-    try {
-      // Limpar dados antes de enviar para evitar problemas de tipo
-      const cleanData = {
-        ...guindasteData,
-        // Garantir que campos de texto sejam strings válidas
-        subgrupo: guindasteData.subgrupo || '',
-        modelo: guindasteData.modelo || '',
-        peso_kg: guindasteData.peso_kg || '',
-        configuração: guindasteData.configuração || '',
-        tem_contr: guindasteData.tem_contr || 'Não',
-        imagem_url: guindasteData.imagem_url || null,
-        descricao: guindasteData.descricao || null,
-        nao_incluido: guindasteData.nao_incluido || null,
-        codigo_referencia: guindasteData.codigo_referencia || null,
-        finame: guindasteData.finame || null,
-        ncm: guindasteData.ncm || null,
-        // Garantir que arrays sejam válidos
-        imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
-          ? guindasteData.imagens_adicionais 
-          : []
-      };
-
-      const { data, error } = await supabase
+    console.log('🔧 [createGuindaste] Dados recebidos:', guindasteData);
+    console.log('🔧 [createGuindaste] Campos do objeto:', Object.keys(guindasteData));
+    
+    // Verificar se código de referência já existe
+    if (guindasteData.codigo_referencia) {
+      console.log('🔍 [createGuindaste] Verificando se código de referência já existe:', guindasteData.codigo_referencia);
+      const { data: existingCode, error: checkError } = await supabase
         .from('guindastes')
-        .insert([cleanData])
-        .select()
-        .single();
+        .select('id, codigo_referencia')
+        .eq('codigo_referencia', guindasteData.codigo_referencia)
+        .limit(1);
       
-      if (error) {
-        console.error('Erro detalhado do Supabase:', error);
-        throw error;
+      if (checkError) {
+        console.error('❌ [createGuindaste] Erro ao verificar código:', checkError);
+      } else if (existingCode && existingCode.length > 0) {
+        console.error('❌ [createGuindaste] Código de referência já existe:', existingCode[0]);
+        throw new Error(`Código de referência "${guindasteData.codigo_referencia}" já existe no sistema. Use um código único.`);
+      } else {
+        console.log('✅ [createGuindaste] Código de referência disponível');
       }
-      return data;
-    } catch (err) {
-      console.error('Erro ao criar guindaste:', err);
-      throw err;
     }
+    
+    // Criar uma cópia limpa dos dados, removendo TODOS os campos que possam causar conflito
+    const cleanData = {
+      subgrupo: guindasteData.subgrupo,
+      modelo: guindasteData.modelo,
+      grupo: guindasteData.grupo,
+      peso_kg: guindasteData.peso_kg,
+      configuração: guindasteData.configuração,
+      tem_contr: guindasteData.tem_contr,
+      imagem_url: guindasteData.imagem_url,
+      descricao: guindasteData.descricao,
+      nao_incluido: guindasteData.nao_incluido,
+      imagens_adicionais: guindasteData.imagens_adicionais,
+      codigo_referencia: guindasteData.codigo_referencia,
+      finame: guindasteData.finame,
+      ncm: guindasteData.ncm
+    };
+    
+    console.log('🔧 [createGuindaste] Dados limpos para inserção:', cleanData);
+    console.log('🔧 [createGuindaste] Campos limpos:', Object.keys(cleanData));
+    
+    // Verificar o próximo ID disponível
+    const { data: maxIdData, error: maxIdError } = await supabase
+      .from('guindastes')
+      .select('id')
+      .order('id', { ascending: false })
+      .limit(1);
+    
+    if (maxIdError) {
+      console.error('❌ [createGuindaste] Erro ao verificar max ID:', maxIdError);
+    } else {
+      const nextId = maxIdData && maxIdData.length > 0 ? maxIdData[0].id + 1 : 1;
+      console.log('🔧 [createGuindaste] Próximo ID esperado:', nextId);
+    }
+    
+    const { data, error } = await supabase
+      .from('guindastes')
+      .insert([cleanData])
+      .select();
+
+    if (error) {
+      console.error('❌ [createGuindaste] Erro na criação:', error);
+      console.error('❌ [createGuindaste] Mensagem:', error.message);
+      console.error('❌ [createGuindaste] Código:', error.code);
+      console.error('❌ [createGuindaste] Detalhes:', error.details);
+      console.error('❌ [createGuindaste] Dados que causaram erro:', cleanData);
+      
+      // Tratamento específico para erro de chave duplicada
+      if (error.code === '23505') {
+        if (error.message.includes('guindastes_pkey')) {
+          throw new Error('Erro interno: Conflito de ID. Tente novamente ou contate o suporte.');
+        } else if (error.message.includes('codigo_referencia')) {
+          throw new Error('Código de referência já existe. Use um código único.');
+        } else {
+          throw new Error(`Conflito de dados: ${error.message}`);
+        }
+      }
+      
+      throw error;
+    }
+    
+    console.log('✅ [createGuindaste] Guindaste criado com sucesso:', data);
+    console.log('✅ [createGuindaste] ID do novo registro:', data[0]?.id);
+    
+    // Limpar cache após criação
+    this.clearGuindastesCache();
+    return data;
   }
 
   async updateGuindaste(id, guindasteData) {
@@ -332,8 +423,9 @@ class DatabaseService {
       console.log('✅ [updateGuindaste] Dados atualizados com sucesso:', data);
       console.log('✅ [updateGuindaste] Registros afetados:', data?.length || 0);
       
-      console.log('✅ [updateGuindaste] Dados atualizados com sucesso:', data);
-      console.log('✅ [updateGuindaste] Registros afetados:', data?.length || 0);
+      // Limpar cache após atualização
+      this.clearGuindastesCache();
+      
       return data;
     } catch (err) {
       console.error('Erro ao atualizar guindaste:', err);
@@ -342,20 +434,25 @@ class DatabaseService {
   }
 
   async deleteGuindaste(id) {
-    // A tabela guindastes usa id como int4 (inteiro)
     const numericId = parseInt(id, 10);
-    console.log('🗑️ [deleteGuindaste] ID convertido para número:', numericId);
-    
-    if (isNaN(numericId) || numericId <= 0) {
-      throw new Error('ID inválido: deve ser um número inteiro positivo');
+    if (isNaN(numericId)) {
+      console.error('❌ ID inválido:', id);
+      return null;
     }
-    
+
     const { error } = await supabase
       .from('guindastes')
       .delete()
       .eq('id', numericId);
+
+    if (error) {
+      console.error('❌ Erro ao deletar guindaste:', error);
+      return null;
+    }
     
-    if (error) throw error;
+    // Limpar cache após operação de delete
+    this.clearGuindastesCache();
+    return { success: true };
   }
 
   // ===== LOGÍSTICA: CALENDÁRIO =====
@@ -1018,6 +1115,7 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
       if (errorVerif) {
         console.error('❌ Erro ao verificar:', errorVerif);
         return;
+
       }
       
       console.log('🔍 Verificação após update:');
