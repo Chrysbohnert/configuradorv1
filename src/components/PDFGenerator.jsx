@@ -11,6 +11,8 @@ import { db } from '../config/supabase';
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
+  const [isGenerating, setIsGenerating] = React.useState(false);
+
   // Sequência de número de proposta local (persistido no navegador)
   const getNextProposalNumber = () => {
     try {
@@ -68,6 +70,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
   };
 
   const generatePDF = async () => {
+    setIsGenerating(true);
     try {
       const addSeparatePolicyPage = false; // política já está dentro do conteúdo principal
       // Debug: Verificar dados de pagamento
@@ -1049,33 +1052,118 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       alert('Erro ao gerar PDF. Tente novamente.');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
   return (
-    <button 
-      onClick={generatePDF}
-      className="pdf-generator-btn"
-      style={{
-        background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
-        color: 'white',
-        border: 'none',
-        padding: '12px 20px',
-        borderRadius: '8px',
-        fontSize: '14px',
-        fontWeight: '600',
-        cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '8px'
-      }}
-    >
-      <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
-        <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
-      </svg>
-      Gerar PDF
-    </button>
+    <>
+      <button 
+        onClick={generatePDF}
+        disabled={isGenerating}
+        className="pdf-generator-btn"
+        style={{
+          background: isGenerating 
+            ? 'linear-gradient(135deg, #6c757d 0%, #5a6268 100%)' 
+            : 'linear-gradient(135deg, #28a745 0%, #20c997 100%)',
+          color: 'white',
+          border: 'none',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: isGenerating ? 'not-allowed' : 'pointer',
+          transition: 'all 0.3s ease',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          opacity: isGenerating ? 0.7 : 1
+        }}
+      >
+        {isGenerating ? (
+          <>
+            <div style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid #ffffff',
+              borderTop: '2px solid transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }}></div>
+            Gerando PDF...
+          </>
+        ) : (
+          <>
+            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '16px', height: '16px' }}>
+              <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+            </svg>
+            Gerar PDF
+          </>
+        )}
+      </button>
+
+      {/* Modal de Loading */}
+      {isGenerating && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.7)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '2rem',
+            borderRadius: '16px',
+            boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+            textAlign: 'center',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <div style={{
+              width: '60px',
+              height: '60px',
+              border: '4px solid #e5e5e5',
+              borderTop: '4px solid #28a745',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto 1.5rem'
+            }}></div>
+            <h3 style={{
+              margin: '0 0 0.5rem',
+              color: '#333',
+              fontSize: '1.25rem',
+              fontWeight: '600'
+            }}>
+              Gerando PDF
+            </h3>
+            <p style={{
+              margin: '0',
+              color: '#666',
+              fontSize: '0.875rem',
+              lineHeight: '1.4'
+            }}>
+              Por favor, aguarde enquanto processamos sua proposta...
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* CSS para animação de rotação */}
+      <style jsx>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </>
   );
 };
 

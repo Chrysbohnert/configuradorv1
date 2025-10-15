@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
+import GuindasteSelector from '../components/GuindasteSelector';
 
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
@@ -17,23 +18,99 @@ const logger = createLogger('NovoPedido');
 const NovoPedido = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
   const [currentStep, setCurrentStep] = useState(1);
+  const [maxStepReached, setMaxStepReached] = useState(1);
   const [carrinho, setCarrinho] = useState(() => {
     const savedCart = localStorage.getItem('carrinho');
     return savedCart ? JSON.parse(savedCart) : [];
   });
-  const [clienteData, setClienteData] = useState({});
-  const [caminhaoData, setCaminhaoData] = useState({});
-  const [pagamentoData, setPagamentoData] = useState({
-    tipoPagamento: '',
-    prazoPagamento: '',
-    desconto: 0,
-    acrescimo: 0,
-    valorFinal: 0,
-    localInstalacao: '',
-    tipoInstalacao: ''
+  const [clienteData, setClienteData] = useState(() => {
+    const saved = localStorage.getItem('novoPedido_clienteData');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [caminhaoData, setCaminhaoData] = useState(() => {
+    const saved = localStorage.getItem('novoPedido_caminhaoData');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [pagamentoData, setPagamentoData] = useState(() => {
+    const saved = localStorage.getItem('novoPedido_pagamentoData');
+    return saved ? JSON.parse(saved) : {
+      tipoPagamento: '',
+      prazoPagamento: '',
+      desconto: 0,
+      acrescimo: 0,
+      valorFinal: 0,
+      localInstalacao: '',
+      tipoInstalacao: ''
+    };
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
+
+  // Salvar dados no localStorage sempre que mudarem
+  React.useEffect(() => {
+    localStorage.setItem('novoPedido_clienteData', JSON.stringify(clienteData));
+  }, [clienteData]);
+
+  React.useEffect(() => {
+    localStorage.setItem('novoPedido_caminhaoData', JSON.stringify(caminhaoData));
+  }, [caminhaoData]);
+
+  React.useEffect(() => {
+    localStorage.setItem('novoPedido_pagamentoData', JSON.stringify(pagamentoData));
+  }, [pagamentoData]);
+
+  // Função para filtrar dados do caminhão para salvamento no banco
+  const filterCaminhaoDataForDB = (caminhaoData) => {
+    return {
+      tipo: caminhaoData.tipo,
+      marca: caminhaoData.marca,
+      modelo: caminhaoData.modelo,
+      ano: caminhaoData.ano || null,
+      voltagem: caminhaoData.voltagem,
+      observacoes: caminhaoData.observacoes || null
+    };
+  };
+
+  // Verificar se há dados salvos para cada step
+  const hasStepData = (stepId) => {
+    switch (stepId) {
+      case 1: // Selecionar Guindaste
+        return carrinho.length > 0;
+      case 2: // Pagamento
+        return pagamentoData.tipoPagamento !== '' || pagamentoData.prazoPagamento !== '';
+      case 3: // Dados do Cliente
+        return Object.keys(clienteData).length > 0 && (clienteData.nome || clienteData.email || clienteData.telefone);
+      case 4: // Estudo Veicular
+        return Object.keys(caminhaoData).length > 0 && (caminhaoData.tipo || caminhaoData.marca || caminhaoData.modelo);
+      case 5: // Finalizar
+        return false; // Step final não precisa de dados salvos
+      default:
+        return false;
+    }
+  };
+
+  // Função para limpar todos os dados salvos (útil para novo pedido)
+  const clearAllSavedData = () => {
+    localStorage.removeItem('novoPedido_clienteData');
+    localStorage.removeItem('novoPedido_caminhaoData');
+    localStorage.removeItem('novoPedido_pagamentoData');
+    localStorage.removeItem('carrinho');
+    setClienteData({});
+    setCaminhaoData({});
+    setPagamentoData({
+      tipoPagamento: '',
+      prazoPagamento: '',
+      desconto: 0,
+      acrescimo: 0,
+      valorFinal: 0,
+      localInstalacao: '',
+      tipoInstalacao: ''
+    });
+    setCarrinho([]);
+    setCurrentStep(1);
+    setMaxStepReached(1);
+  };
 
   // Determinar IE: para vendedor do RS usa clienteTemIE; demais regiões mantém preço padrão
   const determinarClienteTemIE = () => {
@@ -130,7 +207,6 @@ const NovoPedido = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE]);
 
-  const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
   const [guindastesSelecionados, setGuindastesSelecionados] = useState([]);
@@ -159,19 +235,33 @@ const NovoPedido = () => {
     });
   };
 
-  useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      setUser(JSON.parse(userData));
-    } else {
-      navigate('/');
+  // Função para carregar dados dos guindastes
+  const loadData = useCallback(async () => {
+    try {
+      setIsLoading(true);
+
+      // Carregar guindastes (versão leve)
+      const result = await db.getGuindastesLite(1, 100, false);
+      console.log('🔍 [NovoPedido] Resultado completo:', result);
+      console.log('🔍 [NovoPedido] Guindastes carregados:', result?.data?.length || 0);
+      console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', result?.data?.slice(0, 3));
+      setGuindastes(result?.data || []);
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+    } finally {
+      setIsLoading(false);
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      navigate('/');
+      return;
+    }
     loadData();
-  }, [user, navigate]);
+  }, [user, navigate, loadData]);
 
   // Verificar se há um guindaste selecionado vindo da tela de detalhes
   useEffect(() => {
@@ -229,7 +319,7 @@ const NovoPedido = () => {
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
       console.log('🔄 Voltou para Step 1, resetando dados de pagamento');
-      setPagamentoDataOriginal({
+      setPagamentoData({
         tipoPagamento: '',
         prazoPagamento: '',
         desconto: 0,
@@ -241,23 +331,6 @@ const NovoPedido = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
-
-
-  const loadData = async () => {
-    try {
-      setIsLoading(true);
-
-      // Carregar guindastes (versão leve)
-      const { data } = await db.getGuindastesLite({ page: 1, pageSize: 100 });
-      setGuindastes(data);
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const steps = [
     { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
@@ -274,6 +347,9 @@ const NovoPedido = () => {
   };
 
   const getModelosPorCapacidade = (capacidade) => {
+    console.log('🔍 [getModelosPorCapacidade] Buscando modelos para capacidade:', capacidade);
+    console.log('🔍 [getModelosPorCapacidade] Total de guindastes:', guindastes?.length || 0);
+    
     const modelos = new Map();
     
     guindastes.forEach(guindaste => {
@@ -282,6 +358,7 @@ const NovoPedido = () => {
       
       const match = modeloBase.match(/(\d+\.?\d*)/);
       if (match && match[1] === capacidade) {
+        console.log('🔍 [getModelosPorCapacidade] Encontrado modelo:', modeloBase, 'para guindaste:', guindaste.id);
         // Agrupar por modelo base (GSI 6.5, GSE 8.0C, etc.) - coluna "Modelo" da tabela
         if (!modelos.has(modeloBase)) {
           modelos.set(modeloBase, guindaste);
@@ -289,7 +366,9 @@ const NovoPedido = () => {
       }
     });
     
-    return Array.from(modelos.values());
+    const resultado = Array.from(modelos.values());
+    console.log('🔍 [getModelosPorCapacidade] Modelos encontrados:', resultado.length);
+    return resultado;
   };
 
   const getGuindastesPorModelo = (modelo) => {
@@ -306,6 +385,14 @@ const NovoPedido = () => {
   const capacidades = getCapacidadesUnicas();
   const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
   const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
+  
+  console.log('🔍 [NovoPedido] Estado atual:', {
+    selectedCapacidade,
+    selectedModelo,
+    totalGuindastes: guindastes?.length || 0,
+    modelosDisponiveis: modelosDisponiveis?.length || 0,
+    guindastesDisponiveis: guindastesDisponiveis?.length || 0
+  });
 
   // ⚡ OTIMIZADO: Função para selecionar guindaste com cache
   const handleSelecionarGuindaste = async (guindaste) => {
@@ -462,155 +549,20 @@ const NovoPedido = () => {
 
 
 
-
   // Renderizar conteúdo do step
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
         return (
-          <div className="step-content">
-            <div className="step-header">
-              <h2>Selecione o Guindaste Ideal</h2>
-              <p>Escolha o guindaste que melhor atende às suas necessidades</p>
-            </div>
-
-            <div className="cascata-container">
-              {/* Indicador de Progresso */}
-              <div className="progress-indicator">
-                <div className={`progress-step ${selectedCapacidade ? 'completed' : 'active'}`}>
-                  <div className="step-number">1</div>
-                  <span>Capacidade</span>
-                </div>
-                <div className={`progress-line ${selectedCapacidade ? 'completed' : ''}`}></div>
-                <div className={`progress-step ${selectedCapacidade && selectedModelo ? 'completed' : selectedCapacidade ? 'active' : ''}`}>
-                  <div className="step-number">2</div>
-                  <span>Modelo</span>
-                </div>
-                <div className={`progress-line ${selectedCapacidade && selectedModelo ? 'completed' : ''}`}></div>
-                              <div className={`progress-step ${guindastesSelecionados.length > 0 ? 'completed' : selectedModelo ? 'active' : ''}`}>
-                <div className="step-number">3</div>
-                <span>Configuração</span>
-              </div>
-              </div>
-
-              {/* Passo 1: Selecionar Capacidade */}
-              <div className="cascata-step">
-                <div className="step-title">
-                  <h3>1. Escolha a Capacidade</h3>
-                  <p>Selecione a capacidade do guindaste</p>
-                </div>
-                
-                <div className="capacidades-grid">
-                  {capacidades.map((capacidade) => (
-                    <button
-                      key={capacidade}
-                      className={`capacidade-card no-photo ${selectedCapacidade === capacidade ? 'selected' : ''}`}
-                      onClick={() => handleSelecionarCapacidade(capacidade)}
-                      data-capacidade={capacidade}
-                    >
-                      <div className="capacidade-icon">
-                        <div className="capacidade-fallback" aria-hidden="true">🏗️</div>
-                      </div>
-                      <div className="capacidade-info">
-                        <h4>{capacidade} Ton</h4>
-                        <p>Capacidade {capacidade} toneladas</p>
-                      </div>
-                      {selectedCapacidade === capacidade && (
-                        <div className="selected-indicator">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                          </svg>
-                        </div>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Passo 2: Selecionar Modelo (apenas se capacidade foi selecionada) */}
-              {selectedCapacidade && (
-                <div className="cascata-step">
-                  <div className="step-title">
-                    <h3>2. Escolha o Modelo</h3>
-                    <p>Modelos disponíveis para {selectedCapacidade} ton</p>
-                  </div>
-                  
-                  <div className="modelos-grid">
-                    {modelosDisponiveis.map((guindaste) => {
-                      const subgrupo = guindaste.subgrupo || '';
-                      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-                      
-                      return (
-                        <button
-                          key={guindaste.id}
-                          className={`modelo-card ${selectedModelo === modeloBase ? 'selected' : ''}`}
-                          onClick={() => handleSelecionarModelo(modeloBase)}
-                          data-modelo={modeloBase}
-                        >
-                          <div className="modelo-icon">
-                            {guindaste.imagem_url ? (
-                              <img
-                                src={guindaste.imagem_url}
-                                alt={modeloBase}
-                                className="modelo-thumbnail"
-                                onError={(e) => {
-                                  e.target.style.display = 'none';
-                                  e.target.nextSibling.style.display = 'flex';
-                                }}
-                              />
-                            ) : (
-                              <div className="modelo-fallback">
-                                <span>{modeloBase.includes('GSI') ? '🏭' : '🏗️'}</span>
-                              </div>
-                            )}
-                          </div>
-                          <div className="modelo-info">
-                            <h4>{modeloBase}</h4>
-                            <p>{guindaste.Grupo || 'Guindaste'}</p>
-                            <span className="modelo-codigo">{guindaste.codigo_referencia}</span>
-                          </div>
-                          {selectedModelo === modeloBase && (
-                            <div className="selected-indicator">
-                              <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                              </svg>
-                            </div>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Passo 3: Selecionar Guindaste Específico (apenas se modelo foi selecionado) */}
-              {selectedModelo && (
-                <div className="cascata-step">
-                  <div className="step-title">
-                    <h3>3. Escolha a Configuração</h3>
-                    <p>Configurações disponíveis para {selectedModelo}</p>
-                  </div>
-                  
-                  <div className="guindastes-grid">
-                    {guindastesDisponiveis.map((guindaste) => (
-                      <GuindasteCard
-                        key={guindaste.id}
-                        guindaste={guindaste}
-                        isSelected={guindastesSelecionados.some(g => g.id === guindaste.id)}
-                        onSelect={() => handleSelecionarGuindaste(guindaste)}
-                      />
-                    ))}
-                  </div>
-                  
-                  {validationErrors.guindaste && (
-                    <div className="validation-error">
-                      <span className="error-message">{validationErrors.guindaste}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+          <GuindasteSelector
+            guindastes={guindastes}
+            onGuindasteSelect={handleSelecionarGuindaste}
+            isLoading={isLoading}
+            selectedCapacidade={selectedCapacidade}
+            selectedModelo={selectedModelo}
+            onCapacidadeSelect={handleSelecionarCapacidade}
+            onModeloSelect={handleSelecionarModelo}
+          />
         );
 
       case 2:
@@ -630,6 +582,7 @@ const NovoPedido = () => {
               clienteTemIE={clienteTemIE}
               onClienteIEChange={setClienteTemIE}
               carrinho={carrinho}
+              onNext={handleNext}
             />
           </div>
         );
@@ -637,22 +590,88 @@ const NovoPedido = () => {
       case 3:
         return (
           <div className="step-content">
-            <div className="step-header">
-              <h2>Dados do Cliente</h2>
-              <p>Preencha as informações do cliente</p>
+            <div className="step-header-with-nav">
+              <button 
+                className="btn-back"
+                onClick={handlePrevious}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+                Voltar ao Pagamento
+              </button>
+              
+              <div className="step-header">
+                <h2>👤 Dados do Cliente</h2>
+                <p>Preencha as informações do cliente para finalizar o orçamento</p>
+              </div>
             </div>
-            <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
+            
+            <div className="client-form-container">
+              <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
+              
+              <div className="form-actions">
+                <button 
+                  className="btn-continue"
+                  onClick={handleNext}
+                  disabled={!canGoNext()}
+                >
+                  <span>Continuar para Estudo Veicular</span>
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         );
 
       case 4:
         return (
           <div className="step-content">
-            <div className="step-header">
-              <h2>Estudo Veicular</h2>
-              <p>Informações do veículo para o serviço</p>
+            <div className="step-header-with-nav">
+              <button 
+                className="btn-back"
+                onClick={handlePrevious}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                </svg>
+                Voltar aos Dados do Cliente
+              </button>
+              
+              <div className="step-header">
+                <h2>🚛 Estudo Veicular</h2>
+                <p>Informações do veículo para o serviço de guindaste</p>
+              </div>
             </div>
-            <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
+            
+            <div className="vehicle-form-container">
+              <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
+              
+              <div className="form-actions">
+                <button 
+                  className="btn-back-secondary"
+                  onClick={handlePrevious}
+                >
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                  </svg>
+                  Voltar
+                </button>
+                
+                <button 
+                  className="btn-continue"
+                  onClick={handleNext}
+                  disabled={!canGoNext()}
+                >
+                  <span>Finalizar Orçamento</span>
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         );
 
@@ -795,7 +814,9 @@ const NovoPedido = () => {
 
   const handleNext = () => {
     if (validateStep(currentStep) && currentStep < 5) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setMaxStepReached(Math.max(maxStepReached, nextStep));
       setValidationErrors({}); // Limpar erros ao avançar
     }
   };
@@ -804,6 +825,14 @@ const NovoPedido = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       // O reset do pagamentoData é feito pelo useEffect que monitora currentStep
+    }
+  };
+
+  const handleStepClick = (stepId) => {
+    // Permite navegar para qualquer step que já foi alcançado
+    if (stepId <= maxStepReached) {
+      setCurrentStep(stepId);
+      setValidationErrors({}); // Limpar erros ao navegar
     }
   };
 
@@ -922,12 +951,27 @@ const NovoPedido = () => {
       />
 
       <div className="novo-pedido-content">
+        {/* Progress Bar */}
+        <div className="progress-bar-container">
+          <div className="progress-bar-background">
+            <div 
+              className="progress-bar-fill" 
+              style={{ width: `${(currentStep / 5) * 100}%` }}
+            ></div>
+          </div>
+          <div className="progress-info">
+            <span className="progress-text">Etapa {currentStep} de 5</span>
+            <span className="progress-percentage">{Math.round((currentStep / 5) * 100)}%</span>
+          </div>
+        </div>
+
         {/* Progress Steps */}
-        <div className="progress-steps">
+        <div className={`progress-steps step-${currentStep}`}>
           {steps.map((step) => (
             <div
               key={step.id}
-              className={`step ${currentStep >= step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''}`}
+              className={`step ${currentStep === step.id ? 'active' : ''} ${currentStep > step.id ? 'completed' : ''} ${step.id <= maxStepReached ? 'clickable' : 'disabled'} ${hasStepData(step.id) ? 'has-data' : ''}`}
+              onClick={() => handleStepClick(step.id)}
             >
               <div className="step-number">
                 {currentStep > step.id ? (
@@ -952,40 +996,6 @@ const NovoPedido = () => {
             {renderStepContent()}
           </div>
 
-          {/* Botão Flutuante de Navegação */}
-          <div className="floating-nav">
-            {currentStep > 1 && (
-              <button onClick={handlePrevious} className="floating-nav-btn prev">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                </svg>
-                <span>Anterior</span>
-              </button>
-            )}
-            
-            {currentStep < 5 ? (
-              <button 
-                onClick={handleNext} 
-                className={`floating-nav-btn next ${!canGoNext() ? 'disabled' : ''}`}
-                disabled={!canGoNext()}
-              >
-                <span>Próximo</span>
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                </svg>
-              </button>
-            ) : (
-              <button 
-                onClick={handleFinish} 
-                className="floating-nav-btn finish"
-              >
-                <span>Finalizar</span>
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-              </button>
-            )}
-          </div>
         </div>
       </div>
     </div>
@@ -1293,87 +1303,118 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   }, [formData.uf]);
 
   return (
-    <div className="form-container">
-      <div className="form-grid">
-        <div className="form-group">
-          <label>Nome Completo *</label>
-          <input
-            type="text"
-            value={formData.nome || ''}
-            onChange={(e) => handleChange('nome', e.target.value)}
-            placeholder="Digite o nome completo"
-            className={errors.nome ? 'error' : ''}
-          />
-          {errors.nome && <span className="error-message">{errors.nome}</span>}
+    <div className="client-form">
+      {/* Informações Pessoais */}
+      <div className="form-section">
+        <div className="section-header">
+          <h3>📋 Informações Pessoais</h3>
+          <p>Dados básicos do cliente</p>
         </div>
         
-        <div className="form-group">
-          <label>Telefone *</label>
-          <input
-            type="tel"
-            value={formData.telefone || ''}
-            onChange={(e) => handleChange('telefone', e.target.value)}
-            placeholder="(00) 00000-0000"
-            className={errors.telefone ? 'error' : ''}
-          />
-          {errors.telefone && <span className="error-message">{errors.telefone}</span>}
-        </div>
-        
-        <div className="form-group">
-          <label>Email *</label>
-          <input
-            type="email"
-            value={formData.email || ''}
-            onChange={(e) => handleChange('email', e.target.value)}
-            placeholder="email@exemplo.com"
-            className={errors.email ? 'error' : ''}
-          />
-          {errors.email && <span className="error-message">{errors.email}</span>}
-        </div>
-        
-        <div className="form-group">
-          <label>CPF/CNPJ *</label>
-          <input
-            type="text"
-            value={formData.documento || ''}
-            onChange={(e) => handleChange('documento', e.target.value)}
-            placeholder="000.000.000-00"
-            className={errors.documento ? 'error' : ''}
-          />
-          {errors.documento && <span className="error-message">{errors.documento}</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Inscrição Estadual {!isentoIE && '*'}</label>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-            <input
-              type="checkbox"
-              id="isentoIE"
-              checked={isentoIE}
-              onChange={(e) => {
-                setIsentoIE(e.target.checked);
-                if (e.target.checked) {
-                  handleChange('inscricao_estadual', 'ISENTO');
-                } else {
-                  handleChange('inscricao_estadual', '');
-                }
-              }}
-              style={{ width: 'auto', margin: '0' }}
-            />
-            <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
-              Isento de Inscrição Estadual
+        <div className="form-grid">
+          <div className="form-group">
+            <label>
+              <span className="label-icon">👤</span>
+              Nome Completo *
             </label>
+            <input
+              type="text"
+              value={formData.nome || ''}
+              onChange={(e) => handleChange('nome', e.target.value)}
+              placeholder="Digite o nome completo"
+              className={errors.nome ? 'error' : ''}
+            />
+            {errors.nome && <span className="error-message">{errors.nome}</span>}
           </div>
-          <input
-            type="text"
-            value={formData.inscricao_estadual || ''}
-            onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
-            placeholder={isentoIE ? "ISENTO" : "00000000000000"}
-            className={errors.inscricao_estadual ? 'error' : ''}
-            disabled={isentoIE}
-            style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
-          />
-          {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">📞</span>
+              Telefone *
+            </label>
+            <input
+              type="tel"
+              value={formData.telefone || ''}
+              onChange={(e) => handleChange('telefone', e.target.value)}
+              placeholder="(00) 00000-0000"
+              className={errors.telefone ? 'error' : ''}
+            />
+            {errors.telefone && <span className="error-message">{errors.telefone}</span>}
+          </div>
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">📧</span>
+              Email *
+            </label>
+            <input
+              type="email"
+              value={formData.email || ''}
+              onChange={(e) => handleChange('email', e.target.value)}
+              placeholder="email@exemplo.com"
+              className={errors.email ? 'error' : ''}
+            />
+            {errors.email && <span className="error-message">{errors.email}</span>}
+          </div>
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">🆔</span>
+              CPF/CNPJ *
+            </label>
+            <input
+              type="text"
+              value={formData.documento || ''}
+              onChange={(e) => handleChange('documento', e.target.value)}
+              placeholder="000.000.000-00"
+              className={errors.documento ? 'error' : ''}
+            />
+            {errors.documento && <span className="error-message">{errors.documento}</span>}
+          </div>
+
+          <div className="form-group">
+            <label>
+              <span className="label-icon">🏢</span>
+              Inscrição Estadual {!isentoIE && '*'}
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <input
+                type="checkbox"
+                id="isentoIE"
+                checked={isentoIE}
+                onChange={(e) => {
+                  setIsentoIE(e.target.checked);
+                  if (e.target.checked) {
+                    handleChange('inscricao_estadual', 'ISENTO');
+                  } else {
+                    handleChange('inscricao_estadual', '');
+                  }
+                }}
+                style={{ width: 'auto', margin: '0' }}
+              />
+              <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
+                Isento de Inscrição Estadual
+              </label>
+            </div>
+            <input
+              type="text"
+              value={formData.inscricao_estadual || ''}
+              onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
+              placeholder={isentoIE ? "ISENTO" : "00000000000000"}
+              className={errors.inscricao_estadual ? 'error' : ''}
+              disabled={isentoIE}
+              style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
+            />
+            {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
+          </div>
+        </div>
+      </div>
+      
+      {/* Endereço */}
+      <div className="form-section">
+        <div className="section-header">
+          <h3>📍 Endereço</h3>
+          <p>Localização do cliente</p>
         </div>
         
         {/* Endereço - fluxo em cascata: CEP → UF → Cidade → Rua/Número/Bairro */}
@@ -1480,7 +1521,10 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
         </div>
         
         <div className="form-group">
-          <label>Observações</label>
+          <label>
+            <span className="label-icon">📝</span>
+            Observações
+          </label>
           <textarea
             value={formData.observacoes || ''}
             onChange={(e) => handleChange('observacoes', e.target.value)}
@@ -1507,107 +1551,132 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   })();
 
   return (
-    <div className="form-container">
-      <div className="form-grid">
-        <div className="form-group">
-          <label>Tipo *</label>
-          <select
-            value={formData.tipo || ''}
-            onChange={(e) => handleChange('tipo', e.target.value)}
-            className={errors.tipo ? 'error' : ''}
-          >
-            <option value="">Selecione o tipo</option>
-            <option value="Truck">Truck</option>
-            <option value="Tractor CAVALINHO">Tractor CAVALINHO</option>
-            <option value="3/4">3/4</option>
-            <option value="Toco">Toco</option>
-            <option value="Carreta">Carreta</option>
-            <option value="Bitruck">Bitruck</option>
-            <option value="Outro">Outro</option>
-          </select>
-          {errors.tipo && <span className="error-message">{errors.tipo}</span>}
+    <div className="vehicle-form">
+      {/* Informações do Veículo */}
+      <div className="form-section">
+        <div className="section-header">
+          <h3>🚛 Informações do Veículo</h3>
+          <p>Dados técnicos do caminhão para instalação</p>
         </div>
         
-        <div className="form-group">
-          <label>Marca *</label>
-          <select
-            value={formData.marca || ''}
-            onChange={(e) => handleChange('marca', e.target.value)}
-            className={errors.marca ? 'error' : ''}
-          >
-            <option value="">Selecione a marca</option>
-            <option value="Mercedes-Benz">Mercedes-Benz</option>
-            <option value="Volvo">Volvo</option>
-            <option value="Scania">Scania</option>
-            <option value="Iveco">Iveco</option>
-            <option value="DAF">DAF</option>
-            <option value="MAN">MAN</option>
-            <option value="Ford">Ford</option>
-            <option value="Chevrolet">Chevrolet</option>
-            <option value="Volkswagen">Volkswagen</option>
-            <option value="Outra">Outra</option>
-          </select>
-          {errors.marca && <span className="error-message">{errors.marca}</span>}
-        </div>
-        
-        <div className="form-group">
-          <label>Modelo *</label>
-          <input
-            type="text"
-            value={formData.modelo || ''}
-            onChange={(e) => handleChange('modelo', e.target.value)}
-            placeholder="Ex: Actros, FH, R-Series"
-            className={errors.modelo ? 'error' : ''}
-          />
-          {errors.modelo && <span className="error-message">{errors.modelo}</span>}
-        </div>
-        <div className="form-group">
-          <label>Ano</label>
-          <select
-            value={formData.ano || ''}
-            onChange={(e) => handleChange('ano', e.target.value)}
-          >
-            <option value="">Selecione o ano</option>
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </div>
-        
-        <div className="form-group">
-          <label>Voltagem *</label>
-          <select
-            value={formData.voltagem || ''}
-            onChange={(e) => handleChange('voltagem', e.target.value)}
-            className={errors.voltagem ? 'error' : ''}
-          >
-            <option value="">Selecione a voltagem</option>
-            <option value="12V">12V</option>
-            <option value="24V">24V</option>
-          </select>
-          {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
-        </div>
-        {errors.ano && (
-          <div className="form-group full-width">
-            <span className="error-message">{errors.ano}</span>
+        <div className="form-grid">
+          <div className="form-group">
+            <label>
+              <span className="label-icon">🚚</span>
+              Tipo *
+            </label>
+            <select
+              value={formData.tipo || ''}
+              onChange={(e) => handleChange('tipo', e.target.value)}
+              className={errors.tipo ? 'error' : ''}
+            >
+              <option value="">Selecione o tipo</option>
+              <option value="Truck">Truck</option>
+              <option value="Tractor CAVALINHO">Tractor CAVALINHO</option>
+              <option value="3/4">3/4</option>
+              <option value="Toco">Toco</option>
+              <option value="Carreta">Carreta</option>
+              <option value="Bitruck">Bitruck</option>
+              <option value="Outro">Outro</option>
+            </select>
+            {errors.tipo && <span className="error-message">{errors.tipo}</span>}
           </div>
-        )}
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">🏭</span>
+              Marca *
+            </label>
+            <select
+              value={formData.marca || ''}
+              onChange={(e) => handleChange('marca', e.target.value)}
+              className={errors.marca ? 'error' : ''}
+            >
+              <option value="">Selecione a marca</option>
+              <option value="Mercedes-Benz">Mercedes-Benz</option>
+              <option value="Volvo">Volvo</option>
+              <option value="Scania">Scania</option>
+              <option value="Iveco">Iveco</option>
+              <option value="DAF">DAF</option>
+              <option value="MAN">MAN</option>
+              <option value="Ford">Ford</option>
+              <option value="Chevrolet">Chevrolet</option>
+              <option value="Volkswagen">Volkswagen</option>
+              <option value="Outra">Outra</option>
+            </select>
+            {errors.marca && <span className="error-message">{errors.marca}</span>}
+          </div>
         
-        <div className="form-group full-width">
-          <label>Observações</label>
-          <textarea
-            value={formData.observacoes || ''}
-            onChange={(e) => handleChange('observacoes', e.target.value)}
-            placeholder="Informações adicionais sobre o caminhão..."
-            rows="3"
-          />
+          <div className="form-group">
+            <label>
+              <span className="label-icon">🚗</span>
+              Modelo *
+            </label>
+            <input
+              type="text"
+              value={formData.modelo || ''}
+              onChange={(e) => handleChange('modelo', e.target.value)}
+              placeholder="Ex: Actros, FH, R-Series"
+              className={errors.modelo ? 'error' : ''}
+            />
+            {errors.modelo && <span className="error-message">{errors.modelo}</span>}
+          </div>
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">📅</span>
+              Ano
+            </label>
+            <select
+              value={formData.ano || ''}
+              onChange={(e) => handleChange('ano', e.target.value)}
+            >
+              <option value="">Selecione o ano</option>
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+            {errors.ano && <span className="error-message">{errors.ano}</span>}
+          </div>
+          
+          <div className="form-group">
+            <label>
+              <span className="label-icon">⚡</span>
+              Voltagem *
+            </label>
+            <select
+              value={formData.voltagem || ''}
+              onChange={(e) => handleChange('voltagem', e.target.value)}
+              className={errors.voltagem ? 'error' : ''}
+            >
+              <option value="">Selecione a voltagem</option>
+              <option value="12V">12V</option>
+              <option value="24V">24V</option>
+            </select>
+            {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
+          </div>
+          
+          <div className="form-group full-width">
+            <label>
+              <span className="label-icon">📝</span>
+              Observações
+            </label>
+            <textarea
+              value={formData.observacoes || ''}
+              onChange={(e) => handleChange('observacoes', e.target.value)}
+              placeholder="Informações adicionais sobre o caminhão..."
+              rows="3"
+            />
+          </div>
         </div>
+      </div>
 
-        {/* Seção de Estudo Veicular com Imagem e Medidas */}
-        <div className="form-group full-width" style={{ marginTop: '30px' }}>
-          <h3 style={{ color: '#495057', fontSize: '20px', marginBottom: '15px', borderBottom: '2px solid #dee2e6', paddingBottom: '10px' }}>
-            Estudo Veicular - Medidas
-          </h3>
+      {/* Seção de Medidas */}
+      <div className="form-section">
+        <div className="section-header">
+          <h3>📐 Estudo Veicular - Medidas</h3>
+          <p>Medidas técnicas para instalação do guindaste</p>
+        </div>
           
           <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
             {/* Imagem do Estudo Veicular */}
@@ -1684,7 +1753,6 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
@@ -1764,11 +1832,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
+      // Filtrar apenas campos válidos da tabela caminhoes
       const caminhaoDataToSave = {
-        ...caminhaoData,
+        ...filterCaminhaoDataForDB(caminhaoData),
         cliente_id: cliente.id,
-        // Garantir que campos opcionais tenham valores padrão
-        observacoes: caminhaoData.observacoes || null,
         // Campo placa é obrigatório no banco mas não usado no formulário
         placa: 'N/A'
       };
@@ -1878,30 +1945,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   return (
     <div className="resumo-container">
       <div className="resumo-section">
-        <h3>Itens Selecionados</h3>
-        <div className="resumo-items">
-          {carrinho.map((item, idx) => {
-            let codigoProduto = null;
-            if (item.tipo === 'equipamento') {
-              const opcionaisSelecionados = carrinho.filter(i => i.tipo === 'opcional').map(i => i.nome);
-              codigoProduto = generateCodigoProduto(item.nome, opcionaisSelecionados);
-            }
-            return (
-              <div key={idx} className="resumo-item">
-                <div className="item-info">
-                  <div className="item-name">{item.nome}</div>
-                  <div className="item-type">{item.tipo}</div>
-                  {codigoProduto && (
-                    <div className="item-codigo">Código: <b>{codigoProduto}</b></div>
-                  )}
-                  {item.configuracao_lancas && item.tipo === 'guindaste' && (
-                    <div className="item-configuracao">Configuração de Lanças: <b>{item.configuracao_lancas}</b></div>
-                  )}
-                </div>
-                <div className="item-price">{formatCurrency(item.preco)}</div>
-              </div>
-            );
-          })}
+        <div className="section-header">
+          <h3>🛒 Itens Selecionados</h3>
+          <span className="item-count">{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
         </div>
         <div className="resumo-total">
           <span>Total: {formatCurrency(carrinho.reduce((total, item) => total + item.preco, 0))}</span>

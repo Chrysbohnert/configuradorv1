@@ -12,6 +12,7 @@ import Login from './pages/Login';
 // ⚡ OTIMIZAÇÃO: Todos os componentes admin e vendedor são lazy
 // Isso reduz o bundle inicial de ~800KB para ~200KB
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
+const VendedorLayout = lazy(() => import('./components/VendedorLayout'));
 const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'));
 const GerenciarVendedores = lazy(() => import('./pages/GerenciarVendedores'));
 const GerenciarGuindastes = lazy(() => import('./pages/GerenciarGuindastes'));
@@ -40,35 +41,45 @@ function App() {
           {/* Rota pública */}
           <Route path="/" element={<Login />} />
           
-          {/* Rotas do Vendedor */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
+          {/* Rotas do Vendedor - Com Layout Compartilhado e Lazy Loading */}
+          <Route element={
+            <ProtectedRoute requireVendedor={true}>
+              <LazyRoute loadingMessage="Carregando Painel Vendedor...">
+                <VendedorLayout />
+              </LazyRoute>
+            </ProtectedRoute>
+          }>
+            <Route path="/dashboard" element={
               <LazyRoute loadingMessage="Carregando Dashboard...">
                 <DashboardVendedor />
               </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/novo-pedido" element={
-            <ProtectedRoute>
+            } />
+            <Route path="/novo-pedido" element={
               <LazyRoute loadingMessage="Carregando Novo Pedido...">
                 <NovoPedido />
               </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/historico" element={
-            <ProtectedRoute>
+            } />
+            <Route path="/historico" element={
               <LazyRoute loadingMessage="Carregando Histórico...">
                 <Historico />
               </LazyRoute>
-            </ProtectedRoute>
-          } />
-          <Route path="/pronta-entrega" element={
-            <ProtectedRoute>
+            } />
+            <Route path="/pronta-entrega" element={
               <LazyRoute loadingMessage="Carregando Pronta Entrega...">
                 <ProntaEntrega />
               </LazyRoute>
-            </ProtectedRoute>
-          } />
+            } />
+            <Route path="/graficos-carga" element={
+              <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
+                <GraficosCarga />
+              </LazyRoute>
+            } />
+            <Route path="/alterar-senha" element={
+              <LazyRoute loadingMessage="Carregando Alterar Senha...">
+                <AlterarSenha />
+              </LazyRoute>
+            } />
+          </Route>
           
           {/* Rotas do Admin - Com Layout Compartilhado e Lazy Loading */}
           <Route element={
@@ -120,24 +131,6 @@ function App() {
             <LazyRoute loadingMessage="Carregando Suporte...">
               <Support />
             </LazyRoute>
-          } />
-          
-          {/* Rota de Alterar Senha */}
-          <Route path="/alterar-senha" element={
-            <ProtectedRoute>
-              <LazyRoute loadingMessage="Carregando Alterar Senha...">
-                <AlterarSenha />
-              </LazyRoute>
-            </ProtectedRoute>
-          } />
-          
-          {/* Rota de Gráficos de Carga */}
-          <Route path="/graficos-carga" element={
-            <ProtectedRoute>
-              <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
-                <GraficosCarga />
-              </LazyRoute>
-            </ProtectedRoute>
           } />
           
           {/* Rota de Detalhes do Guindaste */}
