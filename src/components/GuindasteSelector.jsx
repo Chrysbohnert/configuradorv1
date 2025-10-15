@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { extrairConfiguracoes } from '../utils/guindasteHelper';
 import '../styles/GuindasteSelector.css';
 
 const GuindasteSelector = ({
@@ -270,6 +271,7 @@ const GuindasteSelector = ({
                 const isPopular = index === 0; // Primeiro item como mais popular
                 const hasRemoteControl = guindaste.tem_contr === 'Sim';
                 const configName = guindaste.peso_kg || 'Configuração Padrão';
+                const configuracoes = extrairConfiguracoes(guindaste.subgrupo);
                 
                 return (
                   <div
@@ -322,9 +324,11 @@ const GuindasteSelector = ({
                     </div>
                     
                     <div className="config-features">
-                      {hasRemoteControl && (
-                        <span className="config-feature remote">📱 Controle Remoto</span>
-                      )}
+                      {configuracoes.map((config, idx) => (
+                        <span key={idx} className="config-feature optional" title={config.text}>
+                          {config.icon} {config.text}
+                        </span>
+                      ))}
                       {guindaste.codigo_finame && (
                         <span className="config-feature finame">🏦 FINAME</span>
                       )}
@@ -334,9 +338,6 @@ const GuindasteSelector = ({
                     </div>
                     
                     <div className="config-footer">
-                      <div className="config-price">
-                        {formatPrice(guindaste.preco)}
-                      </div>
                       <div className="config-action">
                         Selecionar →
                       </div>
