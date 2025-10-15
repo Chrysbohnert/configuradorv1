@@ -368,6 +368,10 @@ const GerenciarGuindastes = () => {
         finame: formData.finame.trim(),
         ncm: formData.ncm.trim()
       };
+      
+      console.log('📋 [handleSubmit] Dados do formulário:', formData);
+      console.log('📋 [handleSubmit] Dados preparados para envio:', guindasteData);
+      console.log('📋 [handleSubmit] Campo configuração:', guindasteData.configuração);
 
       if (editingGuindaste) {
         // LÓGICA DE ATUALIZAÇÃO
@@ -1003,7 +1007,7 @@ const GerenciarGuindastes = () => {
 
               <div className="form-actions">
                 <button type="submit" className="submit-btn" disabled={isLoading}>
-                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Atualizar Guindaste' : 'Cadastrar Guindaste')}
+                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Salvar Alterações' : 'Cadastrar Guindaste')}
                 </button>
                 {editingGuindaste && (
                   <button type="button" className="cancel-btn" onClick={() => {

@@ -320,6 +320,7 @@ class DatabaseService {
         // Garantir que campos de texto sejam strings válidas
         subgrupo: guindasteData.subgrupo || '',
         modelo: guindasteData.modelo || '',
+        grupo: guindasteData.grupo || '',
         peso_kg: guindasteData.peso_kg || '',
         configuração: guindasteData.configuração || '',
         tem_contr: guindasteData.tem_contr || 'Não',
@@ -338,11 +339,13 @@ class DatabaseService {
       // Remover qualquer campo que possa conter UUID
       console.log('🔧 [updateGuindaste] Dados limpos:', cleanData);
       
-      // Verificar se há algum campo com UUID
+      // Verificar se há algum campo com UUID (formato: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+      // UUIDs têm exatamente 36 caracteres e 4 hífens em posições específicas
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       Object.keys(cleanData).forEach(key => {
-        if (typeof cleanData[key] === 'string' && cleanData[key].includes('-') && cleanData[key].length > 20) {
-          console.log('⚠️ [updateGuindaste] Campo com possível UUID encontrado:', key, cleanData[key]);
-          // Remover campos que parecem ser UUIDs
+        if (typeof cleanData[key] === 'string' && uuidRegex.test(cleanData[key])) {
+          console.log('⚠️ [updateGuindaste] Campo com UUID encontrado:', key, cleanData[key]);
+          // Remover campos que são UUIDs
           delete cleanData[key];
         }
       });

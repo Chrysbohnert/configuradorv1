@@ -625,6 +625,12 @@
   color: #7c3aed;
 }
 
+.config-feature.optional {
+  background: rgba(255, 193, 7, 0.1);
+  border-color: #ffc107;
+  color: #f57c00;
+}
+
 .config-card:hover .config-feature,
 .config-card.selected .config-feature {
   background: rgba(255, 215, 0, 0.1);
@@ -635,7 +641,7 @@
 /* Config Footer */
 .config-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: auto;
   padding-top: 1rem;
@@ -658,7 +664,7 @@
   font-size: 0.875rem;
   color: #666666;
   font-weight: 600;
-  opacity: 0;
+  opacity: 1;
   transition: all 0.3s ease;
 }
 
