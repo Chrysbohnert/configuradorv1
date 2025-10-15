@@ -4,7 +4,7 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import { db, supabase } from '../config/supabase';
 import { verifyPassword } from '../utils/passwordHash';
 import { showError } from '../utils/errorHandler';
-import { debugLogin } from '../utils/debugAuth';
+import { debugLogin } from '../utils/debug/authDebug';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import '../styles/Login.css';
 

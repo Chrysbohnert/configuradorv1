@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLogin } from '../hooks/useLogin';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import { showError } from '../utils/errorHandler';
-import { debugAuth } from '../utils/debugAuth';
+import { debugLogin } from '../utils/debug/authDebug';
 import { supabase } from '../config/supabase';
 import '../styles/Login.css';
 
@@ -91,7 +91,7 @@ const LoginWithReducer = () => {
 
       if (authError) {
         // Fallback para autenticação local
-        const debugResult = await debugAuth(email, senha);
+        const debugResult = await debugLogin(email, senha);
         
         if (debugResult.user && debugResult.isValidPassword) {
           // Login bem-sucedido
