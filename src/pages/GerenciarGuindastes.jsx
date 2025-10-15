@@ -16,12 +16,14 @@ const GerenciarGuindastes = () => {
   const [total, setTotal] = useState(0);
   const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
   const pageSize = 100; // Aumentado para pegar todos os 51 guindastes
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
   const [formData, setFormData] = useState({
     subgrupo: '',
     modelo: '',
+    grupo: '',
     peso_kg: '',
     configuração: '',
     tem_contr: 'Sim',
@@ -39,12 +41,23 @@ const GerenciarGuindastes = () => {
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
   useEffect(() => {
     if (user) {
-      loadData(1);
+      loadData(1, false); // Usar cache quando possível para melhor performance
     }
   }, [user]);
+
+  // Auto-esconde o toast após alguns segundos
+  useEffect(() => {
+    if (toast.visible) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, visible: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.visible]);
 
   // Memoizar extração de capacidades para evitar recálculos
   const extractCapacidades = React.useCallback((data) => {
@@ -61,7 +74,7 @@ const GerenciarGuindastes = () => {
   const loadData = async (pageToLoad = page, forceRefresh = false) => {
     try {
       setIsLoading(true);
-      
+
       // Verificar autenticação (Supabase Auth ou localStorage)
       const userData = localStorage.getItem('user');
       if (!userData) {
@@ -70,22 +83,10 @@ const GerenciarGuindastes = () => {
         return;
       }
 
-      // Tentar garantir sessão Supabase (opcional, não crítico)
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          console.log('⚠️ Sessão Supabase não encontrada, mas prosseguindo com autenticação local');
-        }
-      } catch (error) {
-        console.log('⚠️ Erro ao verificar sessão Supabase, mas prosseguindo:', error);
-      }
-      
+      // Verificação de sessão removida para melhor performance
+
       console.log('🔄 [loadData] Carregando dados da página:', pageToLoad);
-      const { data, count } = await db.getGuindastesLite({
-        page: pageToLoad,
-        pageSize,
-        forceRefresh
-      });
+      const { data, count } = await db.getGuindastesLite(pageToLoad, pageSize, forceRefresh);
 
       console.log('📊 [loadData] Dados carregados:', data?.length || 0, 'registros');
       console.log('📊 [loadData] Total de registros:', count);
@@ -111,8 +112,10 @@ const GerenciarGuindastes = () => {
         setCapacidadesDisponiveis(capacidades);
       }
     } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+      console.error('❌ Erro ao carregar dados:', error);
+      console.error('❌ Detalhes do erro:', error.message);
+      console.error('❌ Stack trace:', error.stack);
+      alert(`Erro ao carregar dados: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -188,25 +191,26 @@ const GerenciarGuindastes = () => {
 
   const handleEdit = async (item) => {
     console.log('🔧 [handleEdit] Item recebido:', item);
-    
+
     try {
       // Buscar dados completos do guindaste
       console.log('🔍 Buscando dados completos do guindaste ID:', item.id);
       const guindasteCompleto = await db.getGuindastes();
       const guindasteData = guindasteCompleto.find(g => g.id === item.id);
-      
+
       if (!guindasteData) {
         console.error('❌ Guindaste não encontrado:', item.id);
         alert('Erro: Guindaste não encontrado');
         return;
       }
-      
+
       console.log('✅ Dados completos encontrados:', guindasteData);
-      
+
       setEditingGuindaste(guindasteData);
       const newFormData = {
         subgrupo: guindasteData.subgrupo || '',
         modelo: guindasteData.modelo || '',
+        grupo: guindasteData.grupo || '',
         peso_kg: guindasteData.peso_kg || '',
         configuração: guindasteData.configuração || '',
         tem_contr: guindasteData.tem_contr || 'Sim',
@@ -236,15 +240,17 @@ const GerenciarGuindastes = () => {
     document.body.classList.add('modal-open');
   };
 
-  const confirmDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (guindasteToDelete) {
       try {
         await db.deleteGuindaste(guindasteToDelete);
-        await loadData(page);
+        await loadData(page, true); // forceRefresh = true para limpar cache
         setShowDeleteModal(false);
         setGuindasteToDelete(null);
         // Restaurar scroll do body
         document.body.classList.remove('modal-open');
+        // Notificação de sucesso
+        setToast({ visible: true, message: 'Guindaste removido com sucesso!', type: 'success' });
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
         alert('Erro ao remover guindaste. Tente novamente.');
@@ -266,6 +272,7 @@ const GerenciarGuindastes = () => {
     setFormData({
       subgrupo: '',
       modelo: '',
+      grupo: '',
       peso_kg: '',
       configuração: '',
       tem_contr: 'Sim',
@@ -286,6 +293,7 @@ const GerenciarGuindastes = () => {
     setFormData({
       subgrupo: '',
       modelo: '',
+      grupo: '',
       peso_kg: '',
       configuração: '',
       tem_contr: 'Sim',
@@ -305,14 +313,14 @@ const GerenciarGuindastes = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('🚀 [handleSubmit] Iniciando submit do formulário');
-    console.log('🚀 [handleSubmit] editingGuindaste:', editingGuindaste);
-    console.log('🚀 [handleSubmit] formData:', formData);
-    
+    setIsLoading(true);
+
     try {
       // Validação completa de todos os campos obrigatórios
       const requiredFields = [
         { field: 'subgrupo', name: 'Subgrupo' },
         { field: 'modelo', name: 'Modelo' },
+        { field: 'grupo', name: 'Grupo' },
         { field: 'codigo_referencia', name: 'Código de Referência' },
         { field: 'peso_kg', name: 'Configuração de Lanças' },
         { field: 'configuração', name: 'Configuração Completa' },
@@ -323,34 +331,21 @@ const GerenciarGuindastes = () => {
         { field: 'ncm', name: 'Código NCM' }
       ];
 
-      const missingFields = [];
-      
-      for (const { field, name } of requiredFields) {
-        const value = formData[field];
-        if (!value || (typeof value === 'string' && value.trim() === '')) {
-          missingFields.push(name);
-        }
-      }
+      const missingFields = requiredFields
+        .filter(({ field }) => !formData[field] || String(formData[field]).trim() === '')
+        .map(({ name }) => name);
 
       if (missingFields.length > 0) {
-        console.log('❌ [handleSubmit] Campos obrigatórios faltando:', missingFields);
         alert(`Por favor, preencha todos os campos obrigatórios:\n\n• ${missingFields.join('\n• ')}`);
         return;
       }
-      
-      console.log('✅ [handleSubmit] Validação passou, prosseguindo...');
-      
-      // Converter peso_kg para string e validar
-      const configuracaoLancas = String(formData.peso_kg).trim();
-      if (!configuracaoLancas) {
-        alert('Por favor, insira a configuração de lanças (ex: 3h1m, 4h2m).');
-        return;
-      }
-      
+
+      // Monta o objeto de dados com base no formulário
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
-        peso_kg: configuracaoLancas, // Agora é texto (ex: "3h1m")
+        grupo: formData.grupo.trim(),
+        peso_kg: String(formData.peso_kg).trim(),
         configuração: formData.configuração.trim(),
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url.trim(),
@@ -361,25 +356,37 @@ const GerenciarGuindastes = () => {
         finame: formData.finame.trim(),
         ncm: formData.ncm.trim()
       };
-      
+
       if (editingGuindaste) {
-        console.log('🔧 [handleSubmit] Atualizando guindaste com ID:', editingGuindaste.id, 'Tipo:', typeof editingGuindaste.id);
-        console.log('🔧 [handleSubmit] Dados sendo enviados:', guindasteData);
-        console.log('🔧 [handleSubmit] Objeto editingGuindaste completo:', editingGuindaste);
+        // LÓGICA DE ATUALIZAÇÃO
+        console.log('🔧 [handleSubmit] Atualizando guindaste ID:', editingGuindaste.id);
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
+        // LÓGICA DE CRIAÇÃO
         console.log('🔧 [handleSubmit] Criando novo guindaste');
         await db.createGuindaste(guindasteData);
+        setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
-      
-      console.log('🔄 [handleSubmit] Recarregando dados...');
-      await loadData(page);
-      console.log('✅ [handleSubmit] Dados recarregados com sucesso');
+
+      // Recarregar apenas a página atual, não voltar para página 1
+      await loadData(page, true);
       handleCloseModal();
-      alert('Guindaste salvo com sucesso!');
+
     } catch (error) {
-      console.error('Erro ao salvar guindaste:', error);
-      alert(`Erro ao salvar guindaste: ${error.message}`);
+      console.error('❌ Erro ao salvar guindaste:', error);
+      if (error.code === '23505') {
+        if (error.message.includes('codigo_referencia')) {
+          alert('Erro: Já existe um guindaste com este Código de Referência. Use um código único.');
+        } else {
+          alert('Erro: Dados duplicados. Verifique se todos os valores únicos são diferentes.');
+        }
+      } else {
+        alert(`Erro ao salvar guindaste: ${error.message}`);
+      }
+      setToast({ visible: true, message: 'Erro ao salvar guindaste', type: 'error' });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -387,88 +394,41 @@ const GerenciarGuindastes = () => {
 
   // Validar se uma URL de imagem é válida
   const isValidImageUrl = (url) => {
-    if (!url || typeof url !== 'string') return false;
-    const trimmed = url.trim();
-    if (trimmed === '') return false;
-    
-    // Rejeitar base64 truncadas (que terminam com ... ou são muito curtas)
-    if (trimmed.startsWith('data:image/')) {
-      // Base64 truncada geralmente termina com ... ou é muito curta
-      if (trimmed.endsWith('...') || trimmed.endsWith('..')) {
-        console.warn('🚫 Imagem base64 truncada rejeitada:', trimmed.substring(0, 100) + '...');
-        return false;
-      }
-      
-      // Verificar estrutura mínima: data:image/tipo;base64,dados
-      const parts = trimmed.split(',');
-      if (parts.length !== 2 || !parts[0].includes('base64')) {
-        console.warn('🚫 Base64 com estrutura inválida:', trimmed.substring(0, 100));
-        return false;
-      }
-      
-      // Base64 válida deve ter pelo menos 1000 caracteres (uma imagem mínima)
-      // Isso filtra base64s truncadas que têm poucos dados
-      if (trimmed.length < 1000) {
-        console.warn('🚫 Base64 muito curta (provavelmente truncada):', trimmed.length, 'caracteres');
-        return false;
-      }
-      
-      // Verificar se os dados base64 são válidos (apenas caracteres base64)
-      const base64Data = parts[1];
-      const base64Regex = /^[A-Za-z0-9+/]*={0,2}$/;
-      
-      // Verificar apenas os primeiros 100 caracteres (performance)
-      const sampleData = base64Data.substring(0, 100);
-      if (!base64Regex.test(sampleData)) {
-        console.warn('🚫 Dados base64 contêm caracteres inválidos');
-        return false;
-      }
-      
+    try {
+      new URL(url);
       return true;
+    } catch (e) {
+      return false;
     }
-    
-    // Aceitar URLs http/https
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      try {
-        new URL(trimmed);
-        return true;
-      } catch {
-        return false;
-      }
-    }
-    
-    // Aceitar caminhos relativos que começam com /
-    if (trimmed.startsWith('/')) {
-      return true;
-    }
-    
-    return false;
   };
 
-  // Resolver imagem do guindaste com validação e fallback seguro
-  const resolveGuindasteImage = (g) => {
-    // Tentar imagem principal
-    if (g?.imagem_url && isValidImageUrl(g.imagem_url)) {
-      return g.imagem_url;
-    }
-    
-    // Tentar primeira imagem adicional
-    if (Array.isArray(g?.imagens_adicionais) && g.imagens_adicionais.length > 0) {
-      const firstExtra = g.imagens_adicionais[0];
-      if (isValidImageUrl(firstExtra)) {
-        return firstExtra;
+  // Função para resolver a imagem do guindaste, com fallback (otimizada)
+  const resolveGuindasteImage = (guindaste) => {
+    // Verificar se tem imagem_url válida
+    if (guindaste.imagem_url && typeof guindaste.imagem_url === 'string') {
+      // Se é uma URL HTTP válida, usar diretamente
+      if (guindaste.imagem_url.startsWith('http')) {
+        return guindaste.imagem_url;
+      }
+
+      // Se é base64 válido e completo, usar diretamente
+      if (guindaste.imagem_url.startsWith('data:image/') && guindaste.imagem_url.length > 50) {
+        return guindaste.imagem_url;
+      }
+
+      // Se parece ser um caminho relativo válido (não contém base64 corrompido)
+      if (!guindaste.imagem_url.includes('base64') && guindaste.imagem_url.length < 200) {
+        return guindaste.imagem_url;
       }
     }
-    
-    // Fallback para placeholder
+
+    // Fallback final para placeholder
     return '/header-bg.jpg';
   };
 
-  const totalPages = Math.max(1, Math.ceil(total / pageSize));
-
   return (
     <>
-      <UnifiedHeader 
+      <UnifiedHeader
         showBackButton={false}
         showSupportButton={true}
         showUserInfo={true}
@@ -476,115 +436,194 @@ const GerenciarGuindastes = () => {
         title="Gerenciar Guindastes"
         subtitle="Cadastre e edite os guindastes"
       />
-        <div className="gerenciar-guindastes-container">
-          <div className="gerenciar-guindastes-content">
-            <div className="page-header">
-              <div className="header-info">
-                <h1>Gerenciar Guindastes</h1>
-                <p>Configure guindastes disponíveis</p>
-              </div>
+      <div className="gerenciar-guindastes-container">
+        <div className="gerenciar-guindastes-content">
+          <div className="page-header">
+            <div className="header-info">
+              <h1>Gerenciar Guindastes</h1>
+              <p>Configure guindastes disponíveis</p>
             </div>
+          </div>
 
-            <div className="tabs-container">
-              <div className="tabs">
-                <button 
-                  className={`tab ${activeTab === 'guindastes' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('guindastes')}
-                >
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                  </svg>
-                  Guindastes
-                </button>
-              </div>
+          <div className="tabs-container">
+            <div className="tabs">
+              <button
+                className={`tab ${activeTab === 'guindastes' ? 'active' : ''}`}
+                onClick={() => setActiveTab('guindastes')}
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                </svg>
+                Guindastes
+              </button>
             </div>
+          </div>
 
-            {activeTab === 'guindastes' && (
-              <div className="tab-content">
-                {isLoading ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '20px' }}>
-                    <div style={{ width: '48px', height: '48px', border: '4px solid #f3f4f6', borderTop: '4px solid #111827', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
-                    <p style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>Carregando guindastes...</p>
-                    <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
-                  </div>
-                ) : (
-                  <>
-                    <div className="content-header">
-                      <h2>Guindastes Cadastrados</h2>
-                      <div className="header-actions">
-                        <button
-                          onClick={() => loadData(page, true)}
-                          className="refresh-btn"
-                          title="Atualizar dados"
-                          disabled={isLoading}
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <polyline points="1 20 1 14 7 14"/>
-                            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
-                          </svg>
-                          Atualizar
-                        </button>
-                        <button onClick={handleAddNew} className="add-btn">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                          </svg>
-                          Novo Guindaste
-                        </button>
-                      </div>
-                    </div>
-
-                <div className="filtro-container">
-                  <div className="capacity-chips">
-                    {getCapacidadesUnicas().map((capacidade) => (
-                      <button
-                        key={capacidade}
-                        type="button"
-                        className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
-                        onClick={() => setFiltroCapacidade(capacidade)}
-                      >
-                        {capacidade}
-                      </button>
-                    ))}
-                    <button
-                      type="button"
-                      className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
-                      onClick={() => setFiltroCapacidade('todos')}
-                    >
-                      Todos
-                    </button>
-                  </div>
-                  <div className="filtro-info">
-                    <span className="resultado-count">
-                      {getGuindastesFiltrados().length} guindaste(s) listado(s)
-                    </span>
-                  </div>
+          {activeTab === 'guindastes' && (
+            <div className="tab-content">
+              {isLoading ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: '20px' }}>
+                  <div style={{ width: '48px', height: '48px', border: '4px solid #f3f4f6', borderTop: '4px solid #111827', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }}></div>
+                  <p style={{ color: '#6b7280', fontSize: '14px', fontWeight: '500' }}>Carregando guindastes...</p>
+                  <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
                 </div>
+              ) : (
+                <>
+                  <div className="content-header">
+                    <h2>Guindastes Cadastrados</h2>
+                    <div className="header-actions">
+                      <button
+                        onClick={() => loadData(page, true)}
+                        className="refresh-btn"
+                        title="Atualizar dados"
+                        disabled={isLoading}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <polyline points="23 4 23 10 17 10" />
+                          <polyline points="1 20 1 14 7 14" />
+                          <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+                        </svg>
+                        Atualizar
+                      </button>
+                      <button onClick={handleAddNew} className="add-btn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                        </svg>
+                        Novo Guindaste
+                      </button>
+                    </div>
+                  </div>
 
-                {filtroCapacidade === 'todos' ? (
-                  getCapacidadesUnicas().map((capacidade) => {
-                    const items = guindastes.filter(g => extractCapacidade(g) === capacidade);
-                    if (items.length === 0) return null;
-                    return (
-                      <section key={capacidade} className="capacity-section">
-                        <div className="capacity-header">
-                          <h3>{capacidade}</h3>
-                          <span className="capacity-count">{items.length}</span>
-                        </div>
-                        <div className="guindastes-grid">
-                          {items.map((guindaste) => {
-                            return (
+                  <div className="filtro-container">
+                    <div className="capacity-chips">
+                      {getCapacidadesUnicas().map((capacidade) => (
+                        <button
+                          key={capacidade}
+                          type="button"
+                          className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
+                          onClick={() => setFiltroCapacidade(capacidade)}
+                        >
+                          {capacidade}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
+                        onClick={() => setFiltroCapacidade('todos')}
+                      >
+                        Todos
+                      </button>
+                    </div>
+                    <div className="filtro-info">
+                      <span className="resultado-count">
+                        {getGuindastesFiltrados().length} guindaste(s) listado(s)
+                      </span>
+                    </div>
+                  </div>
+
+                  {filtroCapacidade === 'todos' ? (
+                    getCapacidadesUnicas().map((capacidade) => {
+                      const items = guindastes.filter(g => extractCapacidade(g) === capacidade);
+                      if (items.length === 0) return null;
+                      return (
+                        <section key={capacidade} className="capacity-section">
+                          <div className="capacity-header">
+                            <h3>{capacidade}</h3>
+                            <span className="capacity-count">{items.length}</span>
+                          </div>
+                          <div className="guindastes-grid">
+                            {items.map((guindaste) => {
+                              return (
+                                <div key={guindaste.id} className="guindaste-card">
+                                  <div className="guindaste-image">
+                                    <img
+                                      src={resolveGuindasteImage(guindaste)}
+                                      alt={guindaste.subgrupo}
+                                      className="guindaste-thumbnail"
+                                      onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                    />
+                                    <div className="guindaste-icon" style={{ display: 'none' }}>
+                                      <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                      </svg>
+                                    </div>
+                                  </div>
+                                  <div className="guindaste-header">
+                                    <div className="guindaste-info">
+                                      <h3>{guindaste.subgrupo}</h3>
+                                      <p>{guindaste.modelo}</p>
+                                      {guindaste.codigo_referencia && (
+                                        <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="guindaste-actions">
+                                    <button
+                                      onClick={() => handleEdit(guindaste)}
+                                      className="action-btn edit-btn"
+                                      title="Editar Guindaste"
+                                      aria-label="Editar"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                      </svg>
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteClick(guindaste.id)}
+                                      className="action-btn delete-btn"
+                                      title="Remover Guindaste"
+                                      aria-label="Remover"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        <line x1="10" y1="11" x2="10" y2="17" />
+                                        <line x1="14" y1="11" x2="14" y2="17" />
+                                      </svg>
+                                      Excluir
+                                    </button>
+                                    <button
+                                      className="action-btn price-btn"
+                                      title="Preços por Região"
+                                      aria-label="Preços por Região"
+                                      onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="1" x2="12" y2="23" />
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                      </svg>
+                                      Preços
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </section>
+                      );
+                    })
+                  ) : (
+                    <section className="capacity-section">
+                      <div className="capacity-header">
+                        <h3>{filtroCapacidade}</h3>
+                        <span className="capacity-count">{getGuindastesFiltrados().length}</span>
+                      </div>
+                      <div className="guindastes-grid">
+                        {getGuindastesFiltrados().map((guindaste) => {
+                          return (
                             <div key={guindaste.id} className="guindaste-card">
                               <div className="guindaste-image">
-                                <img 
-                                  src={resolveGuindasteImage(guindaste)} 
+                                <img
+                                  src={resolveGuindasteImage(guindaste)}
                                   alt={guindaste.subgrupo}
                                   className="guindaste-thumbnail"
                                   onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
                                 />
                                 <div className="guindaste-icon" style={{ display: 'none' }}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                   </svg>
                                 </div>
                               </div>
@@ -605,8 +644,8 @@ const GerenciarGuindastes = () => {
                                   aria-label="Editar"
                                 >
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                   </svg>
                                   Editar
                                 </button>
@@ -617,10 +656,10 @@ const GerenciarGuindastes = () => {
                                   aria-label="Remover"
                                 >
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6"/>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                    <line x1="10" y1="11" x2="10" y2="17"/>
-                                    <line x1="14" y1="11" x2="14" y2="17"/>
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                    <line x1="10" y1="11" x2="10" y2="17" />
+                                    <line x1="14" y1="11" x2="14" y2="17" />
                                   </svg>
                                   Excluir
                                 </button>
@@ -631,126 +670,47 @@ const GerenciarGuindastes = () => {
                                   onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
                                 >
                                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="12" y1="1" x2="12" y2="23"/>
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                   </svg>
                                   Preços
                                 </button>
                               </div>
                             </div>
-                            );
-                          })}
-                        </div>
-                      </section>
-                    );
-                  })
-                ) : (
-                  <section className="capacity-section">
-                    <div className="capacity-header">
-                      <h3>{filtroCapacidade}</h3>
-                      <span className="capacity-count">{getGuindastesFiltrados().length}</span>
-                    </div>
-                    <div className="guindastes-grid">
-                      {getGuindastesFiltrados().map((guindaste) => {
-                        return (
-                        <div key={guindaste.id} className="guindaste-card">
-                          <div className="guindaste-image">
-                            <img 
-                              src={resolveGuindasteImage(guindaste)} 
-                              alt={guindaste.subgrupo}
-                              className="guindaste-thumbnail"
-                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
-                            />
-                            <div className="guindaste-icon" style={{ display: 'none' }}>
-                              <svg viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                              </svg>
-                            </div>
-                          </div>
-                          <div className="guindaste-header">
-                            <div className="guindaste-info">
-                              <h3>{guindaste.subgrupo}</h3>
-                              <p>{guindaste.modelo}</p>
-                              {guindaste.codigo_referencia && (
-                                <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="guindaste-actions">
-                            <button
-                              onClick={() => handleEdit(guindaste)}
-                              className="action-btn edit-btn"
-                              title="Editar Guindaste"
-                              aria-label="Editar"
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                              </svg>
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => handleDeleteClick(guindaste.id)}
-                              className="action-btn delete-btn"
-                              title="Remover Guindaste"
-                              aria-label="Remover"
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <polyline points="3 6 5 6 21 6"/>
-                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
-                                <line x1="10" y1="11" x2="10" y2="17"/>
-                                <line x1="14" y1="11" x2="14" y2="17"/>
-                              </svg>
-                              Excluir
-                            </button>
-                            <button
-                              className="action-btn price-btn"
-                              title="Preços por Região"
-                              aria-label="Preços por Região"
-                              onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
-                            >
-                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <line x1="12" y1="1" x2="12" y2="23"/>
-                                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                              </svg>
-                              Preços
-                            </button>
-                          </div>
-                        </div>
-                        );
-                      })}
-                    </div>
-                  </section>
-                )}
-
-                    {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
-                    {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
-                      <div className="pagination">
-                        <button 
-                          className="page-btn ghost"
-                          disabled={page <= 1}
-                          onClick={() => loadData(page - 1)}
-                        >
-                          Anterior
-                        </button>
-                        <div className="page-info">Página {page} de {totalPages}</div>
-                        <button 
-                          className="page-btn primary"
-                          disabled={page >= totalPages}
-                          onClick={() => loadData(page + 1)}
-                        >
-                          Próxima
-                        </button>
+                          );
+                        })}
                       </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
+                    </section>
+                  )}
+
+                  {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
+                  {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
+                    <div className="pagination">
+                      <button
+                        className="page-btn ghost"
+                        disabled={page <= 1}
+                        onClick={() => loadData(page - 1)}
+                      >
+                        Anterior
+                      </button>
+                      <div className="page-info">Página {page} de {totalPages}</div>
+                      <button
+                        className="page-btn primary"
+                        disabled={page >= totalPages}
+                        onClick={() => loadData(page + 1)}
+                      >
+                        Próxima
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
 
-          </div>
         </div>
+      </div>
 
       {showModal && (
         <div className="modal-overlay">
@@ -804,6 +764,21 @@ const GerenciarGuindastes = () => {
                       className="form-input"
                     />
                     <small className="form-help">Nome/identificação do modelo</small>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🏷️</span>
+                      Grupo *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.grupo}
+                      onChange={e => handleInputChange('grupo', e.target.value)}
+                      placeholder="Ex: Interno, Externo"
+                      required
+                      className="form-input"
+                    />
+                    <small className="form-help">Categoria do grupo do guindaste</small>
                   </div>
                   <div className="form-group">
                     <label>
@@ -903,39 +878,61 @@ const GerenciarGuindastes = () => {
                     Imagem Principal *
                   </label>
                   <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
-                  {formData.imagem_url ? (
-                    <small className="form-help success">✅ Imagem já cadastrada</small>
-                  ) : (
-                    <small className="form-help error">⚠️ Imagem obrigatória - faça o upload</small>
+                  {formData.imagem_url && (
+                    <div className="image-preview">
+                      <img
+                        src={resolveGuindasteImage({ imagem_url: formData.imagem_url })}
+                        alt="Preview da Imagem Principal"
+                        className="uploaded-image-thumbnail"
+                        onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                      />
+                      <small className="form-help">Preview da imagem principal</small>
+                    </div>
                   )}
+                </div>
+
+                <div className="form-group full-width">
+                  <label>Imagens Adicionais:</label>
+                  <input
+                    type="file"
+                    multiple
+                    onChange={handleImagensAdicionaisChange}
+                    accept="image/*"
+                  />
+                  <div className="additional-images-preview">
+                    {formData.imagens_adicionais.map((imgUrl, index) => (
+                      <div key={index} className="additional-image-item">
+                        <img src={imgUrl} alt={`Adicional ${index + 1}`} className="uploaded-image-thumbnail" />
+                        <button type="button" onClick={() => removeImagemAdicional(index)} className="remove-image-btn">X</button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Upload de gráfico de carga removido: agora os PDFs técnicos são gerenciados em Gráficos de Carga e anexados automaticamente na proposta. */}
-
-              {/* Seção: Descrições */}
+              {/* Seção: Descrições e Especificações */}
               <div className="form-section">
                 <div className="section-header">
-                  <h3>📝 Descrições</h3>
+                  <h3>📝 Descrições e Especificações</h3>
                   <div className="section-divider"></div>
                 </div>
-                <div className="form-group">
+                <div className="form-group full-width">
                   <label>
-                    <span className="label-icon">📋</span>
+                    <span className="label-icon">📄</span>
                     Descrição Técnica *
                   </label>
                   <textarea
                     value={formData.descricao}
                     onChange={e => handleInputChange('descricao', e.target.value)}
-                    rows="6"
-                    placeholder="Descreva as características técnicas, especificações, materiais, funcionalidades e qualquer informação relevante sobre o equipamento..."
+                    placeholder="Descreva as características técnicas do guindaste..."
                     required
                     className="form-textarea"
+                    rows="4"
                   />
-                  <small className="form-help">Descrição completa do equipamento para os vendedores</small>
+                  <small className="form-help">Descrição detalhada das especificações técnicas</small>
                 </div>
 
-                <div className="form-group">
+                <div className="form-group full-width">
                   <label>
                     <span className="label-icon">❌</span>
                     O que NÃO está incluído *
@@ -943,32 +940,24 @@ const GerenciarGuindastes = () => {
                   <textarea
                     value={formData.nao_incluido}
                     onChange={e => handleInputChange('nao_incluido', e.target.value)}
-                    rows="4"
-                    placeholder="Ex: Instalação, transporte, documentação, treinamento, peças de reposição, etc..."
+                    placeholder="Liste os itens que não estão incluídos no produto..."
                     required
                     className="form-textarea"
+                    rows="3"
                   />
-                  <small className="form-help">Itens que NÃO estão incluídos na proposta para evitar mal-entendidos</small>
+                  <small className="form-help">Especifique claramente o que não está incluído</small>
                 </div>
               </div>
 
-              {/* Seção: Informações Financeiras */}
-              <div className="form-section financial-section">
+              {/* Seção: Códigos e Classificações */}
+              <div className="form-section">
                 <div className="section-header">
-                  <h3>💰 Informações Financeiras</h3>
+                  <h3>🏷️ Códigos e Classificações</h3>
                   <div className="section-divider"></div>
                 </div>
-                <div className="financial-warning">
-                  <div className="warning-icon">⚠️</div>
-                  <div className="warning-text">
-                    <strong>Informações Obrigatórias para Financiamento</strong>
-                    <p>Estes códigos são necessários para financiamento FINAME e importação</p>
-                  </div>
-                </div>
-                
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="financial-label">
+                    <label>
                       <span className="label-icon">🏦</span>
                       Código FINAME *
                     </label>
@@ -976,127 +965,107 @@ const GerenciarGuindastes = () => {
                       type="text"
                       value={formData.finame}
                       onChange={e => handleInputChange('finame', e.target.value)}
-                      placeholder="Ex: 03795187"
+                      placeholder="Ex: 01.01.01.001"
                       required
-                      className="form-input financial-input"
+                      className="form-input"
                     />
-                    <small className="form-help financial-help">
-                      Código obrigatório para financiamento FINAME
-                    </small>
+                    <small className="form-help">Código para financiamento FINAME</small>
                   </div>
-                  
                   <div className="form-group">
-                    <label className="financial-label">
-                      <span className="label-icon">🌍</span>
+                    <label>
+                      <span className="label-icon">📊</span>
                       Código NCM *
                     </label>
                     <input
                       type="text"
                       value={formData.ncm}
                       onChange={e => handleInputChange('ncm', e.target.value)}
-                      placeholder="Ex: 8436.80.00"
+                      placeholder="Ex: 8426.41.00"
                       required
-                      className="form-input financial-input"
+                      className="form-input"
                     />
-                    <small className="form-help financial-help">
-                      Nomenclatura Comum do Mercosul (obrigatório)
-                    </small>
+                    <small className="form-help">Nomenclatura Comum do Mercosul</small>
                   </div>
                 </div>
               </div>
 
-              {/* Seção: Galeria de Imagens */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>🖼️ Galeria de Imagens</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-group">
-                  <label>
-                    <span className="label-icon">📷</span>
-                    Imagens Adicionais
-                  </label>
-                  <div className="imagens-adicionais-container">
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      onChange={handleImagensAdicionaisChange}
-                      className="file-input"
-                    />
-                    <small className="form-help">
-                      Selecione múltiplas imagens para criar uma galeria. A primeira imagem será a foto principal.
-                    </small>
-                  </div>
-                  {formData.imagens_adicionais.length > 0 && (
-                    <div className="imagens-preview">
-                      <h4>Imagens Selecionadas:</h4>
-                      <div className="imagens-grid">
-                        {formData.imagens_adicionais.map((img, index) => (
-                          <div key={index} className="imagem-preview-item">
-                            <img 
-                              src={img} 
-                              alt={`Preview ${index + 1}`}
-                              onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => removeImagemAdicional(index)}
-                              className="remove-imagem-btn"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" onClick={handleCloseModal} className="cancel-btn">Cancelar</button>
-                <button type="submit" className="save-btn">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                    <polyline points="17,21 17,13 7,13 7,21"/>
-                    <polyline points="7,3 7,8 15,8"/>
-                  </svg>
-                  Salvar Guindaste
+              <div className="form-actions">
+                <button type="submit" className="submit-btn" disabled={isLoading}>
+                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Atualizar Guindaste' : 'Cadastrar Guindaste')}
                 </button>
+                {editingGuindaste && (
+                  <button type="button" className="cancel-btn" onClick={() => {
+                    setEditingGuindaste(null);
+                    setFormData({
+                      subgrupo: '',
+                      modelo: '',
+                      peso_kg: '',
+                      configuração: '',
+                      tem_contr: 'Sim',
+                      imagem_url: '',
+                      descricao: '',
+                      nao_incluido: '',
+                      imagens_adicionais: [],
+                      finame: '',
+                      ncm: '',
+                      codigo_referencia: ''
+                    });
+                    setActiveTab('guindastes');
+                  }}>Cancelar Edição</button>
+                )}
               </div>
             </form>
           </div>
         </div>
       )}
 
-      <PrecosPorRegiaoModal guindasteId={guindasteIdPrecos} open={showPrecosModal} onClose={() => setShowPrecosModal(false)} />
+      {/* Modal de Preços por Região */}
+      {showPrecosModal && (
+        <PrecosPorRegiaoModal
+          guindasteId={guindasteIdPrecos}
+          onClose={() => {
+            setShowPrecosModal(false);
+            setGuindasteIdPrecos(null);
+          }}
+        />
+      )}
 
       {/* Modal de Confirmação de Exclusão */}
       {showDeleteModal && (
-        <div className="modal-overlay" onClick={cancelDelete}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay">
+          <div className="modal-content delete-modal">
             <div className="modal-header">
-              <h2>Confirmar Exclusão</h2>
-              <button onClick={cancelDelete} className="close-btn">×</button>
+              <h2>⚠️ Confirmar Exclusão</h2>
+              <button onClick={() => setShowDeleteModal(false)} className="close-btn">×</button>
             </div>
-            <div className="modal-form">
-              <p>Tem certeza que deseja remover este guindaste?</p>
-              <p style={{ color: '#dc3545', fontSize: '14px', marginTop: '8px' }}>
-                ⚠️ Esta ação não pode ser desfeita.
-              </p>
-              <div className="modal-actions">
-                <button type="button" onClick={cancelDelete} className="cancel-btn">
-                  Cancelar
-                </button>
-                <button type="button" onClick={confirmDelete} className="save-btn delete-confirm-btn">
-                  Remover
-                </button>
-              </div>
+            <div className="modal-body">
+              <p>Tem certeza que deseja excluir este guindaste?</p>
+              <p className="warning-text">Esta ação não pode ser desfeita.</p>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowDeleteModal(false)} className="cancel-btn">
+                Cancelar
+              </button>
+              <button onClick={handleConfirmDelete} className="delete-btn">
+                Excluir
+              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Toast Notification */}
+      {toast.visible && (
+        <div className={`toast ${toast.type}`}>
+          <div className="toast-content">
+            <span className="toast-icon">
+              {toast.type === 'success' ? '✅' : '❌'}
+            </span>
+            <span className="toast-message">{toast.message}</span>
+          </div>
+        </div>
+      )}
+
     </>
   );
 };
