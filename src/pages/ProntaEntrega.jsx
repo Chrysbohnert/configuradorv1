@@ -67,20 +67,20 @@ const ProntaEntrega = () => {
         {/* Card de Descrição de Pronta Entrega */}
         {descricao && (
           <div style={{
-            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+            background: 'linear-gradient(135deg,rgb(221, 213, 167) 0%,rgb(219, 215, 192) 100%)',
             borderRadius: 16,
             padding: 24,
             marginBottom: 24,
-            border: '2px solid #10b981',
-            boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)'
+            border: '2px solidrgb(167, 186, 24)',
+            boxShadow: '0 4px 16px rgba(54, 52, 42, 0.9)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-              <span style={{ fontSize: 32 }}>📦</span>
+              <span style={{ fontSize: 32 }}></span>
               <div>
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: '#065f46', margin: 0 }}>
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: 'black', margin: 0 }}>
                   Itens Disponíveis em Pronta Entrega
                 </h3>
-                <p style={{ fontSize: 14, color: '#059669', margin: '4px 0 0 0' }}>
+                <p style={{ fontSize: 14, color: 'black', margin: '4px 0 0 0' }}>
                   Guindastes disponíveis para venda imediata
                 </p>
               </div>
@@ -89,11 +89,11 @@ const ProntaEntrega = () => {
               background: '#ffffff',
               borderRadius: 12,
               padding: 16,
-              border: '1px solid #d1fae5',
+              border: '1px solidrgb(179, 140, 43)',
               whiteSpace: 'pre-wrap',
               fontSize: 14,
               lineHeight: 1.6,
-              color: '#374151'
+              color: 'black'
             }}>
               {descricao}
             </div>
@@ -102,7 +102,7 @@ const ProntaEntrega = () => {
 
         {!descricao && (
           <div style={{
-            background: '#f9fafb',
+            background: 'black',
             borderRadius: 16,
             padding: 24,
             marginBottom: 24,
@@ -110,10 +110,10 @@ const ProntaEntrega = () => {
             textAlign: 'center'
           }}>
             <span style={{ fontSize: 48, opacity: 0.5 }}>📦</span>
-            <p style={{ fontSize: 16, color: '#6b7280', margin: '12px 0 0 0' }}>
+            <p style={{ fontSize: 16, color: 'black', margin: '12px 0 0 0' }}>
               Nenhum item em pronta entrega no momento
             </p>
-            <p style={{ fontSize: 14, color: '#9ca3af', margin: '8px 0 0 0' }}>
+            <p style={{ fontSize: 14, color: 'black', margin: '8px 0 0 0' }}>
               Aguarde atualizações do administrador
             </p>
           </div>

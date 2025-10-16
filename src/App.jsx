@@ -74,11 +74,12 @@ function App() {
                 <GraficosCarga />
               </LazyRoute>
             } />
-            <Route path="/alterar-senha" element={
-              <LazyRoute loadingMessage="Carregando Alterar Senha...">
-                <AlterarSenha />
+            <Route path="/configuracoes" element={
+              <LazyRoute loadingMessage="Carregando Configurações...">
+                <Configuracoes />
               </LazyRoute>
             } />
+            
           </Route>
           
           {/* Rotas do Admin - Com Layout Compartilhado e Lazy Loading */}

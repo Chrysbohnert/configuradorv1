@@ -90,7 +90,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       footerElement.style.backgroundColor = 'white';
       footerElement.innerHTML = `
         <img src="/rodapé.png" alt="Rodapé STARK" style="width: 100%; height: auto; display: block;">
-        <div style="text-align: center; font-size: 11px; color:rgb(0, 0, 0); padding: 5px; background: white;">
+        <div style="text-align: center; font-size: 8px; color:rgb(0, 0, 0); padding: 5px; background: white;">
           Proposta gerada automaticamente pelo sistema em ${new Date().toLocaleString('pt-BR')}
         </div>
       `;
@@ -103,7 +103,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       contentElement.style.backgroundColor = 'white';
       contentElement.style.padding = '10px';
       contentElement.style.fontFamily = 'Arial, sans-serif';
-      contentElement.style.fontSize = '20px';
+      contentElement.style.fontSize = '30px';
       contentElement.style.lineHeight = '1.5';
       
       const propostaNumero = getNextProposalNumber();
@@ -133,7 +133,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
+          <h3 style="color:rgb(11, 11, 11); font-size: 24px; margin-bottom: 10px;">DADOS DO CLIENTE</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
             <div style="margin-bottom: 8px; font-size: 18px;">
               <strong>Nome:</strong> ${pedidoData.clienteData.nome || 'Não informado'}
@@ -172,39 +172,26 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           </div>
         </div>
 
-        <div style="margin-bottom: 30px; display: none;">
-          <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO VEÍCULO</h3>
+        <div style="margin-bottom: 30px;">
+          <h3 style="color:rgb(0, 0, 0); font-size: 20px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
           <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <div style="margin-bottom: 8px; font-size: 18px;">
-              <strong>Tipo:</strong> ${pedidoData.caminhaoData.tipo || 'Não informado'}
+            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom: 8px; font-size: 15px;">
+              <div><strong>Prazo de Entrega:</strong> Conforme disponibilidade</div>
+              <div><strong>Validade da Proposta:</strong> 30 dias</div>
+              <div><strong>Vendedor:</strong> ${pedidoData.vendedor || 'Não informado'}</div>
+              <div><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</div>
             </div>
-            <div style="margin-bottom: 8px; font-size: 18px;">
-              <strong>Marca:</strong> ${pedidoData.caminhaoData.marca || 'Não informado'}
+            <div style="font-size: 15px;">
+              <strong>Observações:</strong> ${pedidoData.clienteData.observacoes || 'Nenhuma observação adicional.'}
             </div>
-            <div style="margin-bottom: 8px; font-size: 18px;">
-              <strong>Modelo:</strong> ${pedidoData.caminhaoData.modelo || 'Não informado'}
-            </div>
-            ${pedidoData.caminhaoData.ano ? `
-            <div style=\"margin-bottom: 8px; font-size: 18px;\">
-              <strong>Ano:</strong> ${pedidoData.caminhaoData.ano}
-            </div>
-            ` : ''}
-            <div style="margin-bottom: 8px; font-size: 18px;">
-              <strong>Voltagem:</strong> ${pedidoData.caminhaoData.voltagem || 'Não informado'}
-            </div>
-            ${pedidoData.caminhaoData.observacoes ? `
-            <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #dee2e6; font-size: 16px;">
-              <strong>Observações:</strong> ${pedidoData.caminhaoData.observacoes}
-            </div>
-            ` : ''}
           </div>
         </div>
 
         <div style="margin-bottom: 30px;">
-          <h3 style="color: #495057; font-size: 24px; margin-bottom: 15px;">ITENS DA PROPOSTA</h3>
+          <h3 style="color:rgb(29, 29, 29); font-size: 24px; margin-bottom: 15px;">ITENS DA PROPOSTA</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
             <thead>
-              <tr style="background: #374151; color: white;">
+              <tr style="background:rgb(0, 0, 0); color: white;">
                 <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Item</th>
                 <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Tipo</th>
                 <th style="padding: 12px; text-align: left; border: 1px solid #dee2e6; font-size: 18px;">Código</th>
@@ -237,12 +224,23 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           ${(() => {
             const guindastes = pedidoData.carrinho.filter(item => item.tipo === 'guindaste');
             const guindastesCompletos = guindastes.map(item => {
-              const guindasteCompleto = (pedidoData.guindastes || []).find(g => g.nome === item.nome);
+              const guindasteCompleto = (pedidoData.guindastes || []).find(g => (
+                (g?.id && item?.id && g.id === item.id) ||
+                (g?.nome && item?.nome && g.nome === item.nome) ||
+                (g?.modelo && item?.modelo && g.modelo === item.modelo) ||
+                (g?.subgrupo && item?.subgrupo && g.subgrupo === item.subgrupo)
+              ));
               return {
                 ...item,
                 ...guindasteCompleto
               };
             });
+            try {
+              console.log('🔎 Itens com possíveis detalhes (guindastesCompletos):', guindastesCompletos.map(g => ({
+                nome: g?.nome, modelo: g?.modelo, temDescricao: Boolean(g?.descricao || g?.descricao_tecnica || g?.descr || g?.descricaoTecnica || g?.descricaoTecnicaHtml || g?.observacoes),
+                temNaoIncluido: Boolean(g?.nao_incluido || g?.nao_incluso || g?.naoIncluido || g?.naoIncluso)
+              })));
+            } catch (_) {}
             
             // Seção de FINAME e NCM (destacada e personalizada)
             const guindasteComCodigos = guindastesCompletos.find(g => g.finame || g.ncm);
@@ -342,32 +340,64 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               </div>
             ` : '';
             
-            // Seção de detalhes dos equipamentos
-            const guindastesComDetalhes = guindastesCompletos.filter(g => g.descricao || g.nao_incluido);
-            const detalhesSection = guindastesComDetalhes.length > 0 ? `
+            // Seção de detalhes dos equipamentos (inclui guindaste e equipamento)
+            const itensDetalhesBase = [
+              ...guindastesCompletos,
+              ...pedidoData.carrinho.filter(i => i.tipo === 'equipamento')
+            ];
+            // Derivar campos de descrição e não incluído de múltiplas fontes (inclui aninhados)
+            const itensDetalhes = itensDetalhesBase.map(i => {
+              const desc = i?.descricao || i?.descricao_tecnica || i?.descr || i?.descricaoTecnica || i?.descricaoTecnicaHtml || i?.observacoes ||
+                           i?.detalhes?.descricao || i?.detalhes?.descricao_tecnica || i?.detalhes?.descricaoTecnica || i?.detalhes?.descricaoTecnicaHtml;
+              const naoIncl = i?.nao_incluido || i?.nao_incluso || i?.naoIncluido || i?.naoIncluso ||
+                               i?.detalhes?.nao_incluido || i?.detalhes?.naoIncluido || i?.detalhes?.nao_incluso || i?.detalhes?.naoIncluso;
+              return { ...i, descricao_derived: desc, nao_incluido_derived: naoIncl };
+            });
+            const itensComDetalhes = itensDetalhes.filter(i => i && (
+              i.descricao_derived || i.nao_incluido_derived || i.modelo || i.nome
+            ));
+            const detalhesSection = itensComDetalhes.length > 0 ? `
               <div style="margin-top: 20px;">
-                <h4 style="color: #374151; font-size: 20px; margin-bottom: 15px;">Detalhes dos Equipamentos</h4>
-                ${guindastesComDetalhes.map(guindaste => `
+                <h4 style="color:rgb(0, 0, 0); font-size: 20px; margin-bottom: 15px;">Detalhes dos Equipamentos</h4>
+                ${itensComDetalhes.map(item => `
                   <div style="margin-bottom: 20px; padding: 15px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px;">
-                    <h5 style="color: #1f2937; font-size: 18px; margin-bottom: 12px;">${guindaste.nome}</h5>
-                    ${guindaste.modelo ? `
+                    <h5 style="color: #1f2937; font-size: 18px; margin-bottom: 12px;">${item.nome || item.modelo || 'Equipamento'}</h5>
+                    ${item.modelo ? `
                       <div style="margin-bottom: 10px;">
-                        <strong style="color: #374151; font-size: 16px;">Modelo:</strong>
-                        <span style="color: #4b5563; font-size: 16px;"> ${guindaste.modelo}</span>
+                        <strong style="color:rgb(0, 0, 0); font-size: 16px;">Modelo:</strong>
+                        <span style="color:rgb(0, 0, 0); font-size: 16px;"> ${item.modelo}</span>
                       </div>
                     ` : ''}
-                    ${guindaste.descricao ? `
-                      <div style="margin-bottom: 10px;">
-                        <strong style="color: #374151; font-size: 16px;">Descrição Técnica:</strong>
-                        <div style="margin-top: 5px; color: #4b5563; font-size: 15px; line-height: 1.6;">${guindaste.descricao}</div>
-                      </div>
-                    ` : ''}
-                    ${guindaste.nao_incluido ? `
-                      <div style="padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; margin-top: 10px;">
-                        <strong style="color: #92400e; font-size: 16px;">⚠️ Não está incluído neste equipamento:</strong>
-                        <div style="margin-top: 5px; color: #92400e; font-size: 15px; line-height: 1.6;">${guindaste.nao_incluido}</div>
-                      </div>
-                    ` : ''}
+                    ${(() => {
+                      const desc = item.descricao_derived || item.descricao || item.descricao_tecnica || item.descr || item.descricaoTecnica || item.descricaoTecnicaHtml || item.observacoes ||
+                                   item?.detalhes?.descricao || item?.detalhes?.descricao_tecnica || item?.detalhes?.descricaoTecnica || item?.detalhes?.descricaoTecnicaHtml;
+                      if (desc) {
+                        return `
+                          <div style="margin-bottom: 10px;">
+                            <strong style="color:rgb(0, 0, 0); font-size: 16px;">Descrição Técnica:</strong>
+                            <div style="margin-top: 5px; color:rgb(0, 0, 0); font-size: 15px; line-height: 1.6;">${desc}</div>
+                          </div>
+                        `;
+                      }
+                      return `
+                        <div style=\"margin-bottom: 10px;\">
+                          <strong style=\"color:rgb(0, 0, 0); font-size: 16px;\">Descrição Técnica:</strong>
+                          <div style=\"margin-top: 5px; color:rgb(0, 0, 0); font-size: 15px; line-height: 1.6;\">Não informado</div>
+                        </div>
+                      `;
+                    })()}
+                    ${(() => {
+                      const naoIncl = item.nao_incluido_derived || item.nao_incluido || item.nao_incluso || item.naoIncluido || item.naoIncluso ||
+                                      item?.detalhes?.nao_incluido || item?.detalhes?.naoIncluido || item?.detalhes?.nao_incluso || item?.detalhes?.naoIncluso;
+                      if (naoIncl) {
+                        return `
+                          <div style=\"padding: 12px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px; margin-top: 10px;\">\n                            <strong style=\"color: #92400e; font-size: 16px;\">⚠️ Não está incluído neste equipamento:</strong>\n                            <div style=\"margin-top: 5px; color: #92400e; font-size: 15px; line-height: 1.6;\">${naoIncl}</div>\n                          </div>
+                        `;
+                      }
+                      return `
+                        <div style=\"padding: 12px; background: #fffbea; border-left: 4px solid #fbbf24; border-radius: 4px; margin-top: 10px;\">\n                          <strong style=\"color: #92400e; font-size: 16px;\">⚠️ Não está incluído neste equipamento:</strong>\n                          <div style=\"margin-top: 5px; color: #92400e; font-size: 15px; line-height: 1.6;\">Não informado</div>\n                        </div>
+                      `;
+                    })()}
                   </div>
                 `).join('')}
               </div>
@@ -409,20 +439,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           </div>
         </div>
 
-        <div style="margin-bottom: 30px;">
-          <h3 style="color:rgb(0, 0, 0); font-size: 20px; margin-bottom: 10px;">CONDIÇÕES COMERCIAIS</h3>
-          <div style="background: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <div style="display:flex; gap:20px; flex-wrap:wrap; margin-bottom: 8px; font-size: 15px;">
-              <div><strong>Prazo de Entrega:</strong> Conforme disponibilidade</div>
-              <div><strong>Validade da Proposta:</strong> 30 dias</div>
-              <div><strong>Vendedor:</strong> ${pedidoData.vendedor || 'Não informado'}</div>
-              <div><strong>Data:</strong> ${new Date().toLocaleDateString('pt-BR')}</div>
-            </div>
-            <div style="font-size: 15px;">
-              <strong>Observações:</strong> ${pedidoData.clienteData.observacoes || 'Nenhuma observação adicional.'}
-            </div>
-          </div>
-        </div>
+        
 
         <div style="margin-bottom: 30px;">
           <h3 style="color:rgb(0, 0, 0); font-size: 24px; margin-bottom: 10px;">DADOS DO VEÍCULO</h3>
@@ -468,25 +485,25 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                   ${pedidoData.caminhaoData.medidaA ? `
                     <div style="padding: 10px; background: white; border-radius: 6px;">
                       <strong style="font-size: 18px;">Medida A:</strong> 
-                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaA} mm</span>
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaA}</span>
                     </div>
                   ` : ''}
                   ${pedidoData.caminhaoData.medidaB ? `
                     <div style="padding: 10px; background: white; border-radius: 6px;">
                       <strong style="font-size: 18px;">Medida B:</strong> 
-                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaB} mm</span>
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaB}</span>
                     </div>
                   ` : ''}
                   ${pedidoData.caminhaoData.medidaC ? `
                     <div style="padding: 10px; background: white; border-radius: 6px;">
                       <strong style="font-size: 18px;">Medida C:</strong> 
-                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaC} mm</span>
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaC}</span>
                     </div>
                   ` : ''}
                   ${pedidoData.caminhaoData.medidaD ? `
                     <div style="padding: 10px; background: white; border-radius: 6px;">
                       <strong style="font-size: 18px;">Medida D:</strong> 
-                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaD} mm</span>
+                      <span style="font-size: 18px;">${pedidoData.caminhaoData.medidaD}</span>
                     </div>
                   ` : ''}
                 </div>
@@ -537,16 +554,16 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               <strong>Valor Total:</strong> ${formatCurrency(pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
             </div>
             ${pedidoData.pagamentoData?.desconto > 0 ? `
-            <div style="margin-bottom: 10px; color: #28a745;">
+            <div style="margin-bottom: 10px; color: #000;">
               <strong>Desconto (${pedidoData.pagamentoData.desconto}%):</strong> -${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.desconto) / 100)}
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.acrescimo > 0 ? `
-            <div style="margin-bottom: 10px; color: #dc3545;">
+            <div style="margin-bottom: 10px; color:#000;">
               <strong>Acréscimo (${pedidoData.pagamentoData.acrescimo}%):</strong> +${formatCurrency((pedidoData.carrinho.reduce((total, item) => total + item.preco, 0) * pedidoData.pagamentoData.acrescimo) / 100)}
             </div>
             ` : ''}
-            <div style="margin-bottom: 10px; font-weight: bold; color: #007bff;">
+            <div style="margin-bottom: 10px; font-weight: bold; color:#000;">
               <strong>Valor Final:</strong> ${formatCurrency(pedidoData.pagamentoData?.valorFinal || pedidoData.carrinho.reduce((total, item) => total + item.preco, 0))}
             </div>
             ${pedidoData.pagamentoData?.tipoCliente === 'cliente' && pedidoData.pagamentoData?.percentualEntrada > 0 ? `
@@ -555,7 +572,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                 <strong>Entrada Total (${pedidoData.pagamentoData.percentualEntrada}%):</strong> ${formatCurrency(pedidoData.pagamentoData.entradaTotal || 0)}
               </div>
               ${pedidoData.pagamentoData?.valorSinal > 0 ? `
-              <div style="margin-left: 15px; margin-bottom: 5px; font-size: 16px; color: #28a745;">
+              <div style="margin-left: 15px; margin-bottom: 5px; font-size: 16px; color: #000;">
                 ↳ Sinal (já pago): <strong>- ${formatCurrency(pedidoData.pagamentoData.valorSinal)}</strong>
               </div>
               <div style="margin-left: 15px; font-size: 16px;">
@@ -569,7 +586,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               ` : ''}
             </div>
             <div style="margin: 15px 0; padding: 15px; background: #e3f2fd; border-left: 4px solid #007bff; font-weight: bold; font-size: 20px;">
-              <strong style="color: #007bff;">Saldo a Pagar (após entrada):</strong> <span style="color: #007bff;">${formatCurrency(pedidoData.pagamentoData.saldoAPagar || pedidoData.pagamentoData.valorFinal || 0)}</span>
+              <strong style="color:rgb(123, 138, 153);">Saldo a Pagar (após entrada):</strong> <span style="color: #000;">${formatCurrency(pedidoData.pagamentoData.saldoAPagar || pedidoData.pagamentoData.valorFinal || 0)}</span>
             </div>
             ` : ''}
             ${pedidoData.pagamentoData?.tipoCliente === 'cliente' ? `
@@ -665,7 +682,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = 210;
       const pageHeight = 297;
-      const margin = 5;
+      const margin = 2;
       const contentWidth = pageWidth - (2 * margin);
       
       // Calcular dimensões
@@ -886,7 +903,11 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         console.log(`📈 Total de PDFs a incluir: ${modeloParaPdf.size}`);
 
         if (modeloParaPdf.size > 0) {
+          const urlsJaIncluidas = new Set();
           for (const [modelo, pdfUrl] of modeloParaPdf.entries()) {
+            if (urlsJaIncluidas.has(pdfUrl)) {
+              continue;
+            }
             try {
               const loadingTask = pdfjsLib.getDocument({ url: pdfUrl });
               const pdfExternal = await loadingTask.promise;
@@ -918,6 +939,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
                 const offsetY = (pageHeight - drawH) / 2;
                 pdf.addImage(imgData, 'PNG', offsetX, offsetY, drawW, drawH);
               }
+              urlsJaIncluidas.add(pdfUrl);
             } catch (e) {
               console.error('Erro ao incorporar PDF de gráfico:', modelo, e);
               // Em caso de erro, seguir para o próximo

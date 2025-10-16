@@ -67,7 +67,6 @@
 
 .nav-header {
   padding: 32px 24px 24px;
-  border-bottom: 1px solid rgba(255, 193, 7, 0.12);
   background: rgba(255, 193, 7, 0.03);
 }
 
@@ -533,7 +532,6 @@
   .nav-header {
     padding: 24px 20px 20px;
     background: rgba(255, 193, 7, 0.08) !important;
-    border-bottom: 1px solid rgba(255, 193, 7, 0.2) !important;
     position: relative;
   }
 
@@ -822,7 +820,6 @@
 
   .nav-header {
     background: rgba(255, 193, 7, 0.08) !important;
-    border-bottom: 1px solid rgba(255, 193, 7, 0.2) !important;
   }
 
   /* Melhorar legibilidade dos itens */
