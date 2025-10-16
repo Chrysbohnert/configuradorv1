@@ -1710,42 +1710,42 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                 <div className="form-group">
-                  <label>Medida A (mm)</label>
+                  <label>Medida A "CHASSI AO ASSOALHO" (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaA || ''}
                     onChange={(e) => handleChange('medidaA', e.target.value)}
-                    placeholder="Ex: 150"
+                    placeholder="Ex: 63cm"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida B (mm)</label>
+                  <label>Medida B "CHASSI" (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaB || ''}
                     onChange={(e) => handleChange('medidaB', e.target.value)}
-                    placeholder="Ex: 200"
+                    placeholder="Ex: 70cm"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida C (mm)</label>
+                  <label>Medida C "SOLO AO CHASSI" (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
                     onChange={(e) => handleChange('medidaC', e.target.value)}
-                    placeholder="Ex: 350"
+                    placeholder="Ex: 58cm"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida D (mm)</label>
+                  <label>Medida D QUANDO GSE "DIST ENTRE EIXOS" (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
                     onChange={(e) => handleChange('medidaD', e.target.value)}
-                    placeholder="Ex: 400"
+                    placeholder="Ex: 30cm"
                   />
                 </div>
               </div>
@@ -1827,14 +1827,18 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       // Verificar se todos os campos obrigatórios estão preenchidos
       const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
       const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
-      
       if (camposFaltando.length > 0) {
         throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
       }
       
-      // Filtrar apenas campos válidos da tabela caminhoes
+      // Filtrar apenas campos válidos da tabela caminhoes (inline para evitar dependência de helper)
       const caminhaoDataToSave = {
-        ...filterCaminhaoDataForDB(caminhaoData),
+        tipo: caminhaoData.tipo,
+        marca: caminhaoData.marca,
+        modelo: caminhaoData.modelo,
+        ano: caminhaoData.ano || null,
+        voltagem: caminhaoData.voltagem,
+        observacoes: caminhaoData.observacoes || null,
         cliente_id: cliente.id,
         // Campo placa é obrigatório no banco mas não usado no formulário
         placa: 'N/A'
