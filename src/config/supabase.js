@@ -128,10 +128,11 @@ class DatabaseService {
     try {
       console.log('🔍 [getGuindastesLite] Executando query otimizada...');
       
-      // Query otimizada - sem count para evitar timeout
+      // Query otimizada - SEM imagem_url para evitar timeout (imagens base64 são muito pesadas)
+      // As imagens serão carregadas sob demanda quando necessário
       const { data, error } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, imagem_url, codigo_referencia, peso_kg')
+        .select('id, subgrupo, modelo, codigo_referencia, peso_kg')
         .order('subgrupo')
         .range(from, to);
 
@@ -179,6 +180,40 @@ class DatabaseService {
     } catch (error) {
       console.error('❌ [getGuindastesLite] Erro geral:', error);
       throw error;
+    }
+  }
+
+  // ⚡ OTIMIZAÇÃO: Buscar apenas imagem do guindaste por ID
+  async getGuindasteImagem(id) {
+    const cacheKey = `imagem_${id}`;
+    
+    // Verificar cache primeiro
+    if (this._guindastesCache.has(cacheKey)) {
+      const cached = this._guindastesCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < 30 * 60 * 1000) { // 30 minutos de cache para imagens
+        return cached.data;
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('guindastes')
+        .select('id, imagem_url')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      // Armazenar no cache
+      this._guindastesCache.set(cacheKey, {
+        data: data?.imagem_url || null,
+        timestamp: Date.now()
+      });
+      
+      return data?.imagem_url || null;
+    } catch (error) {
+      console.error(`❌ Erro ao carregar imagem do guindaste ${id}:`, error);
+      return null;
     }
   }
 
