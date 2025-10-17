@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AdminNavigation from './AdminNavigation';
+import '../styles/AdminLayout.css';
 
 const AdminLayout = () => {
   const [user, setUser] = useState(null);
