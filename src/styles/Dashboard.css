@@ -31,9 +31,9 @@ html {
 .admin-content,
 .admin-main-content {
   flex: 1;
-  margin-left: 280px;
+  /* Removida a margem esquerda para evitar deslocamento */
   background: #f8f9fa;
-  width: calc(100% - 280px);
+  width: 100%; /* Ajustado para ocupar toda a largura */
   min-height: 100vh;
   position: relative;
   z-index: 1;
@@ -65,8 +65,8 @@ html {
   /* Conteúdo principal */
   .admin-content,
   .admin-main-content {
-    margin-left: 270px !important;
-    width: calc(100% - 270px) !important;
+    /* Removida a margem esquerda para evitar deslocamento */
+    width: 100% !important;
     position: relative !important;
     z-index: 1 !important;
     min-height: 100vh !important;

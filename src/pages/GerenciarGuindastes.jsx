@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import ImageUpload from '../components/ImageUpload';
+import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
-import { db, supabase } from '../config/supabase';
+import { db } from '../config/supabase';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
@@ -270,13 +271,6 @@ const GerenciarGuindastes = () => {
     }
   };
 
-  const cancelDelete = () => {
-    setShowDeleteModal(false);
-    setGuindasteToDelete(null);
-    // Restaurar scroll do body
-    document.body.classList.remove('modal-open');
-  };
-
   const handleCloseModal = () => {
     console.log('🚪 [handleCloseModal] Fechando modal e resetando formData');
     setShowModal(false);
@@ -412,16 +406,6 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
-  // Validar se uma URL de imagem é válida
-  const isValidImageUrl = (url) => {
-    try {
-      new URL(url);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  };
-
   // Função para resolver a imagem do guindaste, com fallback (otimizada)
   const resolveGuindasteImage = (guindaste) => {
     // Verificar se tem imagem_url válida
@@ -556,11 +540,11 @@ const GerenciarGuindastes = () => {
                               return (
                                 <div key={guindaste.id} className="guindaste-card">
                                   <div className="guindaste-image">
-                                    <img
-                                      src={resolveGuindasteImage(guindaste)}
-                                      alt={guindaste.subgrupo}
+                                    <LazyGuindasteImage
+                                      guindasteId={guindaste.id}
+                                      subgrupo={guindaste.subgrupo}
                                       className="guindaste-thumbnail"
-                                      onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                      alt={guindaste.subgrupo}
                                     />
                                     <div className="guindaste-icon" style={{ display: 'none' }}>
                                       <svg viewBox="0 0 24 24" fill="currentColor">
@@ -635,11 +619,11 @@ const GerenciarGuindastes = () => {
                           return (
                             <div key={guindaste.id} className="guindaste-card">
                               <div className="guindaste-image">
-                                <img
-                                  src={resolveGuindasteImage(guindaste)}
-                                  alt={guindaste.subgrupo}
+                                <LazyGuindasteImage
+                                  guindasteId={guindaste.id}
+                                  subgrupo={guindaste.subgrupo}
                                   className="guindaste-thumbnail"
-                                  onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                                  alt={guindaste.subgrupo}
                                 />
                                 <div className="guindaste-icon" style={{ display: 'none' }}>
                                   <svg viewBox="0 0 24 24" fill="currentColor">
