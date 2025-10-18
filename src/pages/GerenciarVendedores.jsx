@@ -92,9 +92,11 @@ const GerenciarVendedores = () => {
         await db.createUser(vendedorData);
       }
       
-      // Recarregar dados
-      await loadVendedores();
+      // ⚡ OTIMIZADO: Fechar modal imediatamente para feedback rápido
       handleCloseModal();
+      
+      // Recarregar dados em segundo plano
+      loadVendedores();
       
     } catch (error) {
       console.error('Erro ao salvar vendedor:', error);

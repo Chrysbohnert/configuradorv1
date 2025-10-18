@@ -194,10 +194,9 @@ const GerenciarGuindastes = () => {
     console.log('🔧 [handleEdit] Item recebido:', item);
 
     try {
-      // Buscar dados completos do guindaste
+      // ⚡ OTIMIZADO: Buscar apenas o guindaste específico por ID
       console.log('🔍 Buscando dados completos do guindaste ID:', item.id);
-      const guindasteCompleto = await db.getGuindastes();
-      const guindasteData = guindasteCompleto.find(g => g.id === item.id);
+      const guindasteData = await db.getGuindasteById(item.id);
 
       if (!guindasteData) {
         console.error('❌ Guindaste não encontrado:', item.id);
@@ -380,9 +379,11 @@ const GerenciarGuindastes = () => {
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
-      // Recarregar dados com forceRefresh para limpar cache
-      await loadData(page, true);
+      // ⚡ OTIMIZADO: Fechar modal imediatamente para feedback rápido
       handleCloseModal();
+      
+      // Recarregar dados em segundo plano com forceRefresh para limpar cache
+      loadData(page, true);
       
       // Scroll suave para o topo para mostrar o novo guindaste
       window.scrollTo({ top: 0, behavior: 'smooth' });

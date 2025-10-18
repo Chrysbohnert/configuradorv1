@@ -34,6 +34,23 @@ class DatabaseService {
     return data || [];
   }
 
+  // Buscar um usuário específico por ID (otimizado)
+  async getUserById(id) {
+    console.log('🔍 [getUserById] Buscando usuário ID:', id);
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('❌ [getUserById] Erro:', error);
+      throw error;
+    }
+    console.log('✅ [getUserById] Usuário encontrado');
+    return data;
+  }
+
   async createUser(userData) {
     // Se a senha não estiver em hash, fazer hash automaticamente
     if (userData.senha && !this.isPasswordHashed(userData.senha)) {
@@ -92,6 +109,23 @@ class DatabaseService {
     
     if (error) throw error;
     return data || [];
+  }
+
+  // Buscar um guindaste específico por ID (otimizado)
+  async getGuindasteById(id) {
+    console.log('🔍 [getGuindasteById] Buscando guindaste ID:', id);
+    const { data, error } = await supabase
+      .from('guindastes')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('❌ [getGuindasteById] Erro:', error);
+      throw error;
+    }
+    console.log('✅ [getGuindasteById] Guindaste encontrado');
+    return data;
   }
 
   // Cache para evitar múltiplas requisições
@@ -829,6 +863,23 @@ class DatabaseService {
     
     if (error) throw error;
     return data || [];
+  }
+
+  // Buscar um gráfico de carga específico por ID (otimizado)
+  async getGraficoCargaById(id) {
+    console.log('🔍 [getGraficoCargaById] Buscando gráfico ID:', id);
+    const { data, error } = await supabase
+      .from('graficos_carga')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('❌ [getGraficoCargaById] Erro:', error);
+      throw error;
+    }
+    console.log('✅ [getGraficoCargaById] Gráfico encontrado');
+    return data;
   }
 
   // ===== FRETES POR CIDADE/OFICINA =====
