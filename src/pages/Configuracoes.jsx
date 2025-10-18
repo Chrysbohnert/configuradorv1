@@ -41,6 +41,20 @@ const Configuracoes = () => {
         cpf: contextUser.cpf || ''
       });
       setPhotoPreview(contextUser.foto_perfil || null);
+    } else {
+      // Fallback: pegar usuário do localStorage se contexto não estiver disponível
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        const parsedUser = JSON.parse(userData);
+        setUser(parsedUser);
+        setProfileData({
+          nome: parsedUser.nome || '',
+          email: parsedUser.email || '',
+          telefone: parsedUser.telefone || '',
+          cpf: parsedUser.cpf || ''
+        });
+        setPhotoPreview(parsedUser.foto_perfil || null);
+      }
     }
   }, [contextUser]);
 

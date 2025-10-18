@@ -74,7 +74,7 @@ function App() {
                 <GraficosCarga />
               </LazyRoute>
             } />
-            <Route path="/configuracoes" element={
+            <Route path="/vendedor/configuracoes" element={
               <LazyRoute loadingMessage="Carregando Configurações...">
                 <Configuracoes />
               </LazyRoute>
@@ -120,7 +120,7 @@ function App() {
                 <GerenciarGraficosCarga />
               </LazyRoute>
             } />
-            <Route path="/configuracoes" element={
+            <Route path="/admin/configuracoes" element={
               <LazyRoute loadingMessage="Carregando Configurações...">
                 <Configuracoes />
               </LazyRoute>
