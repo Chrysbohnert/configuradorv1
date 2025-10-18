@@ -25,6 +25,9 @@ const UnifiedHeader = ({
     navigate('/suporte');
   };
 
+  // Oculta o botão Voltar automaticamente para usuários vendedores
+  const shouldShowBack = showBackButton && !(user && user.tipo === 'vendedor');
+
   return (
     <div className="unified-header">
       {/* Decorative Elements */}
@@ -35,7 +38,7 @@ const UnifiedHeader = ({
       
       <div className="header-container">
         <div className="header-left">
-          {showBackButton && (
+          {shouldShowBack && (
             <button onClick={handleBack} className="back-button" aria-label="Voltar">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M19 12H5M12 19l-7-7 7-7"/>

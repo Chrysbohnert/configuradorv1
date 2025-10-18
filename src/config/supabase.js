@@ -606,10 +606,7 @@ class DatabaseService {
   async getProntaEntrega() {
     const { data, error } = await supabase
       .from('pronta_entrega')
-      .select(`
-        *,
-        guindaste:guindastes(*)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data || [];

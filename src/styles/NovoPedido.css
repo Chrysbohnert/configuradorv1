@@ -235,7 +235,7 @@
 }
 
 .politica-pagamento .react-select__option--is-selected {
-  background: #fff1b8 !important; /* amarelo claro */
+  background: #e5e7eb !important;
   color: #000000 !important;
 }
 
@@ -315,20 +315,27 @@
     right: 20px;
     left: 20px;
     justify-content: space-between;
+    gap: 8px;
   }
   
   .floating-nav-btn {
-    padding: 14px 20px;
-    font-size: 13px;
+    padding: 16px 24px;
+    font-size: 14px;
+    min-height: 56px;
+    border-radius: 28px;
+    flex: 1;
+    justify-content: center;
   }
   
   .floating-nav-btn span {
-    display: none;
+    display: inline;
+    font-weight: 600;
   }
   
   .floating-nav-btn svg {
     width: 20px;
     height: 20px;
+    margin-right: 8px;
   }
   
   .politica-pagamento {
@@ -355,9 +362,13 @@
   padding: 24px 16px;
 }
 
-/* Novo Pedido: Normalização de paleta (branco, cinza, preto e amarelo) */
+/* Novo Pedido: Paleta Corporativa (preto, branco, cinza) */
 :root {
-  --np-yellow: #ffcc00;
+  --np-yellow: #111827;
+  --np-primary: #111827;
+  --np-secondary: #6b7280;
+  --np-border: #e5e7eb;
+  --np-bg: #ffffff;
 }
 
 /* Textos de desconto/acréscimo e mensagens de erro */
@@ -406,7 +417,7 @@
 
 .novo-pedido-container .capacidade-card.selected {
   border-color: #000000 !important;
-  background: #fffbe6 !important;
+  background: #f8fafc !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -425,14 +436,14 @@
 }
 
 .novo-pedido-container .guindaste-card.selected {
-  border-color: var(--np-yellow) !important;
-  background: #fffbe6 !important;
+  border-color: #111827 !important;
+  background: #f8fafc !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
 }
 
 .novo-pedido-container .guindaste-card::before,
 .novo-pedido-container .guindaste-card.selected::before {
-  background: var(--np-yellow) !important;
+  background: #111827 !important;
 }
 
 .novo-pedido-container .guindaste-icon {
@@ -463,13 +474,13 @@
 }
 
 .novo-pedido-container .opcional-card.selected {
-  border-color: var(--np-yellow) !important;
-  background: #fffbe6 !important;
+  border-color: #111827 !important;
+  background: #f8fafc !important;
 }
 
 .novo-pedido-container .opcional-card.selected .checkmark {
-  background: var(--np-yellow) !important;
-  border-color: var(--np-yellow) !important;
+  background: #111827 !important;
+  border-color: #111827 !important;
 }
 
 .novo-pedido-container .form-group input:focus,
@@ -504,8 +515,8 @@
 
 .novo-pedido-container .opcional-item.selected,
 .novo-pedido-container .combinacao-item.selected {
-  border-color: var(--np-yellow) !important;
-  background: #fffbe6 !important;
+  border-color: #111827 !important;
+  background: #f8fafc !important;
 }
 
 .novo-pedido-container .combinacao-checkbox input,
@@ -529,9 +540,9 @@
 }
 
 .novo-pedido-container .btn-select.selected {
-  background: var(--np-yellow) !important;
-  border-color: var(--np-yellow) !important;
-  color: #000000 !important;
+  background: #111827 !important;
+  border-color: #111827 !important;
+  color: #ffffff !important;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2) !important;
 }
 
@@ -552,12 +563,12 @@
 
 /* Progress Bar */
 .progress-bar-container {
-  background: rgb(234, 233, 233);
-  border-radius: 10px;
-  padding: 0.75rem;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
   margin-bottom: 1rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 2px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.08);
+  border: 1px solid #e5e7eb;
 }
 
 .progress-bar-background {
@@ -572,11 +583,11 @@
 
 .progress-bar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #000000, #333333);
+  background: #111827;
   border-radius: 6px;
   transition: none;
   position: relative;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
 }
 
 .progress-info {
@@ -894,9 +905,9 @@
   align-items: stretch;
   margin-bottom: 1rem;
   background: #ffffff;
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 0.5rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
   border: 1px solid #e5e7eb;
   position: relative;
   overflow: hidden;
@@ -912,8 +923,8 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
-  background: #e5e5e5;
+  height: 3px;
+  background: #f1f5f9;
   z-index: 1;
 }
 
@@ -922,8 +933,8 @@
   position: absolute;
   top: 0;
   left: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #000000, #333333);
+  height: 3px;
+  background: #111827;
   transition: none;
   z-index: 2;
 }
@@ -958,12 +969,12 @@
   flex: 1;
   position: relative;
   padding: 0.5rem 0.375rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  min-height: 80px;
+  transition: none;
+  min-height: 76px;
   background: #ffffff;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+  box-shadow: none;
   overflow: hidden;
 }
 
@@ -973,9 +984,7 @@
 }
 
 .step.clickable:hover {
-  border-color: #6b7280;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-  transform: translateY(-3px);
+  border-color: #d1d5db;
 }
 
 .step.clickable:hover .step-number {
@@ -999,18 +1008,18 @@
 }
 
 .step-number {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 0.75rem;
-  background: #f4f4ff;
-  color: #242525;
-  border: 2px solid #141618;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #f8fafc;
+  color: #111827;
+  border: 1.5px solid #e5e7eb;
+  transition: none;
   position: relative;
   z-index: 2;
   box-shadow: 0 1px 2px #0000000a;
@@ -1139,18 +1148,19 @@
 }
 
 .progress-step.active .step-number {
-  background: #000000;
-  color: rgb(39, 39, 39);
+  background: #111827;
+  color: #ffffff;
 }
 
 .progress-step.completed .step-number {
-  background: #50ae53;
-  color: rgb(0, 0, 0);
+  background: #111827;
+  color: #ffffff;
 }
 
 .progress-step:not(.active):not(.completed) .step-number {
-  background: #292929;
-  color: #000000;
+  background: #f8fafc;
+  color: #111827;
+  border: 1px solid #e5e7eb;
 }
 
 .step-number {
@@ -1449,22 +1459,38 @@
 /* Responsividade para mobile */
 @media (max-width: 768px) {
   .progress-indicator {
-    gap: 8px;
-    padding: 16px;
+    gap: 12px;
+    padding: 20px 16px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  
+  .progress-indicator::-webkit-scrollbar {
+    display: none;
   }
   
   .progress-line {
-    width: 20px;
+    width: 24px;
+    height: 2px;
   }
   
   .step-number {
-    width: 28px;
-    height: 28px;
-    font-size: 12px;
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  
+  .progress-step {
+    min-width: 60px;
+    text-align: center;
   }
   
   .progress-step span {
-    font-size: 10px;
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1.2;
   }
 }
 
@@ -1499,7 +1525,24 @@
 @media (max-width: 768px) {
   .capacidades-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
+  }
+  
+  .capacidade-card {
+    padding: 20px;
+    border-radius: 16px;
+    min-height: 80px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .capacidade-card:hover {
+    transform: none;
+  }
+  
+  .capacidade-card:active {
+    transform: scale(0.98);
   }
 }
 
@@ -1598,7 +1641,24 @@
 @media (max-width: 768px) {
   .modelos-grid {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
+  }
+  
+  .modelo-card {
+    padding: 24px;
+    border-radius: 16px;
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  
+  .modelo-card:hover {
+    transform: none;
+  }
+  
+  .modelo-card:active {
+    transform: scale(0.98);
   }
 }
 
@@ -2473,22 +2533,26 @@
 
 @media (max-width: 768px) {
   .novo-pedido-content {
-    padding: 16px;
+    padding: 20px 16px;
+    min-height: calc(100vh - 200px);
   }
   
   .progress-bar-container {
-    padding: 0.875rem;
-    margin-bottom: 1.25rem;
-    border-radius: 12px;
+    padding: 20px 16px;
+    margin-bottom: 24px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   }
   
   .progress-bar-background {
-    height: 8px;
-    margin-bottom: 0.625rem;
+    height: 10px;
+    margin-bottom: 12px;
+    border-radius: 5px;
   }
   
   .progress-text {
-    font-size: 1rem;
+    font-size: 16px;
+    font-weight: 600;
   }
   
   .progress-percentage {
@@ -2725,37 +2789,89 @@
   }
 }
 
+/* Melhorias específicas para mobile */
 @media (max-width: 480px) {
   .content-area {
-    padding: 20px;
+    padding: 16px;
   }
   
   .cart-summary,
   .step-navigation {
-    padding: 20px;
+    padding: 20px 16px;
   }
   
   .step-header h2 {
-    font-size: 24px;
+    font-size: 22px;
+    line-height: 1.3;
   }
   
   .guindaste-card {
-    margin: 0 -20px;
+    margin: 0 -16px;
     border-radius: 0;
+    padding: 20px 16px;
   }
 
   .card-badge {
-    top: 8px;
-    right: 8px;
+    top: 12px;
+    right: 12px;
   }
 
   .badge-selected, .badge-codigo {
-    font-size: 9px;
-    padding: 4px 8px;
+    font-size: 10px;
+    padding: 6px 10px;
+    border-radius: 12px;
   }
 
   .guindaste-title {
     font-size: 18px;
+    line-height: 1.3;
+  }
+  
+  /* Melhorar botões para touch */
+  .btn-primary, .btn-secondary {
+    min-height: 48px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 12px 24px;
+  }
+  
+  /* Melhorar inputs para mobile */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    min-height: 48px;
+    font-size: 16px;
+    border-radius: 12px;
+    padding: 12px 16px;
+  }
+  
+  /* Melhorar cards de seleção */
+  .capacidade-card,
+  .modelo-card {
+    min-height: 88px;
+    padding: 20px 16px;
+    border-radius: 16px;
+    border-width: 2px;
+  }
+  
+  /* Melhorar floating nav para mobile pequeno */
+  .floating-nav {
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    gap: 12px;
+  }
+  
+  .floating-nav-btn {
+    padding: 14px 20px;
+    font-size: 13px;
+    min-height: 52px;
+  }
+  
+  .floating-nav-btn span {
+    font-size: 13px;
+  }
   }
 
   .spec-item {
@@ -3297,4 +3413,380 @@
   font-size: 14px;
   font-weight: 600;
   margin: 0;
+}
+
+/* ========================================
+   STEPPER CORPORATIVO - OVERRIDE FINAL
+   ======================================== */
+
+/* Forçar stepper cards a serem brancos/cinza sem amarelo */
+.novo-pedido-container .progress-steps .step {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.novo-pedido-container .progress-steps .step.active {
+  background: #f8fafc !important;
+  border: 2px solid #111827 !important;
+}
+
+.novo-pedido-container .progress-steps .step.completed {
+  background: #f8fafc !important;
+  border: 1px solid #d1d5db !important;
+}
+
+/* Numeradores do stepper */
+.novo-pedido-container .progress-steps .step .step-number {
+  background: #f8fafc !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.novo-pedido-container .progress-steps .step.active .step-number {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #111827 !important;
+}
+
+.novo-pedido-container .progress-steps .step.completed .step-number {
+  background: #d1d5db !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Textos do stepper */
+.novo-pedido-container .progress-steps .step .step-title,
+.novo-pedido-container .progress-steps .step .step-description {
+  color: #6b7280 !important;
+}
+
+.novo-pedido-container .progress-steps .step.active .step-title {
+  color: #111827 !important;
+  font-weight: 700 !important;
+}
+
+.novo-pedido-container .progress-steps .step.active .step-description {
+  color: #6b7280 !important;
+}
+
+.novo-pedido-container .progress-steps .step.completed .step-title,
+.novo-pedido-container .progress-steps .step.completed .step-description {
+  color: #9ca3af !important;
+}
+
+/* Barra de progresso no topo */
+.novo-pedido-container .progress-steps::before {
+  background: #f1f5f9 !important;
+}
+
+.novo-pedido-container .progress-steps::after {
+  background: #111827 !important;
+}
+
+/* Indicador mini (Capacidade/Modelo/Configuração) */
+.novo-pedido-container .progress-indicator {
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.novo-pedido-container .progress-indicator .progress-step .step-number {
+  background: #f8fafc !important;
+  color: #6b7280 !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+.novo-pedido-container .progress-indicator .progress-step.active .step-number {
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #111827 !important;
+}
+
+.novo-pedido-container .progress-indicator .progress-step.completed .step-number {
+  background: #d1d5db !important;
+  color: #111827 !important;
+  border-color: #d1d5db !important;
+}
+
+.novo-pedido-container .progress-indicator .progress-step span {
+  color: #6b7280 !important;
+}
+
+.novo-pedido-container .progress-indicator .progress-step.active span {
+  color: #111827 !important;
+  font-weight: 600 !important;
+}
+
+.novo-pedido-container .progress-line {
+  background: #e5e7eb !important;
+}
+
+.novo-pedido-container .progress-line.completed {
+  background: #111827 !important;
+}
+
+/* ========================================
+   REDESIGN STEPPER - MINIMALISTA CORPORATIVO
+   ======================================== */
+
+/* Container do Stepper */
+.novo-pedido-container .progress-steps {
+  background: transparent !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  border: none !important;
+  border-bottom: 2px solid #e5e7eb !important;
+  gap: 0 !important;
+  overflow: visible !important;
+}
+
+/* Barra de progresso inferior */
+.novo-pedido-container .progress-steps::before {
+  display: none !important;
+}
+
+.novo-pedido-container .progress-steps::after {
+  bottom: -2px !important;
+  top: auto !important;
+  height: 3px !important;
+  background: #111827 !important;
+  border-radius: 2px 2px 0 0 !important;
+}
+
+/* Cards dos Steps - Design Corporativo */
+.novo-pedido-container .progress-steps .step {
+  background: #000000 !important; /* CARD PRETO */
+  border: 2px solid #000000 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  padding: 1rem 0.75rem 1.25rem !important;
+  min-height: auto !important;
+  gap: 0.5rem !important;
+  border-bottom: none !important;
+  margin-bottom: 0 !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  margin: 0 0.25rem !important;
+}
+
+/* Step Ativo - Mantém Preto com Destaque */
+.novo-pedido-container .progress-steps .step.active {
+  background: #000000 !important; /* Mantém preto */
+  border: 2px solid #ffffff !important; /* Borda branca para destaque */
+  border-bottom: 3px solid #ffffff !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Step Completado - Preto com Opacidade */
+.novo-pedido-container .progress-steps .step.completed {
+  background: #000000 !important; /* Mantém preto */
+  border: 2px solid #4a4a4a !important; /* Borda cinza escura */
+  opacity: 0.8 !important;
+}
+
+/* Step Hover - Preto Mais Claro */
+.novo-pedido-container .progress-steps .step.clickable:hover {
+  background: #1a1a1a !important; /* Preto mais claro no hover */
+  border-color: #ffffff !important; /* Borda branca no hover */
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Números dos Steps - Contraste Alto */
+.novo-pedido-container .progress-steps .step .step-number {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #ffffff !important; /* Fundo branco */
+  color: #000000 !important; /* Número preto */
+  border: 2px solid #ffffff !important; /* Borda branca */
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.novo-pedido-container .progress-steps .step.active .step-number {
+  background: #000000 !important; /* Preto para step ativo */
+  color: #ffffff !important; /* Texto branco */
+  border-color: #ffffff !important; /* Borda branca */
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.novo-pedido-container .progress-steps .step.completed .step-number {
+  background: #4a4a4a !important; /* Cinza escuro para completado */
+  color: #ffffff !important; /* Texto branco */
+  border-color: #4a4a4a !important; /* Borda cinza escura */
+}
+
+/* Textos dos Steps - Contraste Alto */
+.novo-pedido-container .progress-steps .step .step-title {
+  font-size: 0.8125rem !important;
+  font-weight: 600 !important;
+  color: #ffffff !important; /* TEXTO BRANCO */
+  line-height: 1.2 !important;
+  text-align: center !important;
+  margin: 0 !important;
+}
+
+.novo-pedido-container .progress-steps .step.active .step-title {
+  color: #ffffff !important; /* Mantém branco para ativo */
+  font-weight: 700 !important;
+}
+
+.novo-pedido-container .progress-steps .step.completed .step-title {
+  color: #d1d5db !important; /* Cinza claro para completado */
+}
+
+.novo-pedido-container .progress-steps .step .step-description {
+  font-size: 0.6875rem !important;
+  color: #d1d5db !important; /* Cinza claro para descrição */
+  line-height: 1.2 !important;
+  text-align: center !important;
+  display: none !important;
+}
+
+/* Remover efeitos visuais desnecessários */
+.novo-pedido-container .progress-steps .step::before,
+.novo-pedido-container .progress-steps .step::after {
+  display: none !important;
+}
+
+/* Forçar TODOS os steps cards a serem brancos sem amarelo */
+.novo-pedido-container .step[style*="background"] {
+  background: transparent !important;
+}
+
+.novo-pedido-container .step[style*="yellow"],
+.novo-pedido-container .step[style*="#ffd"],
+.novo-pedido-container .step[style*="#ffe"] {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* ========================================
+   RESPONSIVE - MOBILE OPTIMIZATION
+   ======================================== */
+
+/* Tablet - 768px e abaixo */
+@media (max-width: 768px) {
+  .novo-pedido-container {
+    padding: 0.75rem;
+  }
+  
+  /* Progress Bar */
+  .progress-bar-container {
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+  
+  .progress-bar-text {
+    font-size: 0.75rem;
+  }
+  
+  .progress-percentage {
+    font-size: 0.75rem;
+  }
+  
+  /* Stepper */
+  .novo-pedido-container .progress-steps {
+    padding-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .novo-pedido-container .progress-steps::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .novo-pedido-container .progress-steps .step {
+    padding: 0.75rem 0.375rem 1rem !important;
+    min-width: 80px;
+    flex-shrink: 0;
+  }
+  
+  .novo-pedido-container .progress-steps .step .step-number {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .novo-pedido-container .progress-steps .step .step-title {
+    font-size: 0.75rem !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Main Content */
+  .main-content {
+    padding: 0.75rem;
+  }
+  
+  .content-area {
+    padding: 0;
+  }
+}
+
+/* Mobile - 480px e abaixo */
+@media (max-width: 480px) {
+  .novo-pedido-container {
+    padding: 0.5rem;
+  }
+  
+  /* Progress Bar */
+  .progress-bar-container {
+    padding: 0.5rem;
+    border-radius: 8px;
+  }
+  
+  .progress-bar-text {
+    font-size: 0.6875rem;
+  }
+  
+  .progress-percentage {
+    font-size: 0.6875rem;
+  }
+  
+  /* Stepper */
+  .novo-pedido-container .progress-steps .step {
+    padding: 0.625rem 0.25rem 0.875rem !important;
+    min-width: 70px;
+  }
+  
+  .novo-pedido-container .progress-steps .step .step-number {
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 0.6875rem !important;
+  }
+  
+  .novo-pedido-container .progress-steps .step .step-title {
+    font-size: 0.6875rem !important;
+  }
+  
+  /* Main Content */
+  .main-content {
+    padding: 0.5rem;
+  }
+}
+
+/* ========================================
+   OVERRIDE AGRESSIVO - REMOVER TODO AMARELO
+   ======================================== */
+
+/* Aplicar em TUDO que tiver amarelo */
+*[style*="#ffd"],
+*[style*="#ffe"],
+*[style*="#fff1"],
+*[style*="#fff3"],
+*[style*="#fff4"],
+*[style*="#fff5"],
+*[style*="#fff6"],
+*[style*="#fffbe6"],
+*[style*="yellow"],
+.novo-pedido-container *[class*="step"][class*="active"]:not([class*="step-number"]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  background-image: none !important;
 } 
