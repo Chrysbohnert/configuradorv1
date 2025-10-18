@@ -97,9 +97,12 @@ const GerenciarGraficosCarga = () => {
         alert('Gráfico criado com sucesso!');
       }
       
+      // ⚡ OTIMIZADO: Fechar modal imediatamente para feedback rápido
       setShowModal(false);
       setEditingGrafico(null);
       resetForm();
+      
+      // Recarregar dados em segundo plano
       loadGraficos();
       
     } catch (error) {
