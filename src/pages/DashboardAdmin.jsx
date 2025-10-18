@@ -12,6 +12,7 @@ const DashboardAdmin = () => {
   const [users, setUsers] = useState([]);
   const [pedidos, setPedidos] = useState([]);
   const [guindastes, setGuindastes] = useState([]);
+  const [guindastesCount, setGuindastesCount] = useState(0);
   const [periodo, setPeriodo] = useState('30'); // 7, 30, 90, all
 
   useEffect(() => {
@@ -19,16 +20,40 @@ const DashboardAdmin = () => {
       if (!user) return;
       try {
         setIsLoading(true);
-        const [usersResp, pedidosResp, guindastesResp] = await Promise.all([
-          db.getUsers(),
-          db.getPedidos(),
-          db.getGuindastes()
+        console.log('🔄 Carregando dados reais do dashboard...');
+        
+        // Carrega dados reais do banco em paralelo (versões otimizadas)
+        const [usersResp, pedidosResp, guindastesCountResp] = await Promise.all([
+          db.getUsers().catch(err => {
+            console.error('❌ Erro ao carregar usuários:', err);
+            return [];
+          }),
+          db.getPedidos().catch(err => {
+            console.error('❌ Erro ao carregar pedidos:', err);
+            return [];
+          }),
+          db.getGuindastesCountForDashboard().catch(err => {
+            console.error('❌ Erro ao carregar contagem de guindastes:', err);
+            return 0;
+          })
         ]);
-        setUsers(usersResp);
-        setPedidos(pedidosResp);
-        setGuindastes(guindastesResp);
+        
+        console.log('📊 Dados carregados:', {
+          usuarios: usersResp.length,
+          pedidos: pedidosResp.length,
+          guindastes: guindastesCountResp
+        });
+        
+        setUsers(usersResp || []);
+        setPedidos(pedidosResp || []);
+        setGuindastesCount(guindastesCountResp || 0);
+        
+        console.log('✅ Dashboard carregado com dados reais!');
       } catch (error) {
-        console.error('Erro ao carregar dashboard:', error);
+        console.error('❌ Erro geral ao carregar dashboard:', error);
+        setUsers([]);
+        setPedidos([]);
+        setGuindastes([]);
       } finally {
         setIsLoading(false);
       }
@@ -50,7 +75,7 @@ const DashboardAdmin = () => {
 
   const kpis = useMemo(() => {
     const totalVendedores = users.filter(u => u.tipo === 'vendedor').length;
-    const totalGuindastes = guindastes.length;
+    const totalGuindastes = guindastesCount; // Usa a contagem direta
     const totalPedidos = pedidosFiltrados.length;
     const resultado = pedidosFiltrados.reduce((s, p) => s + (p.valor_total || 0), 0);
 
@@ -80,7 +105,7 @@ const DashboardAdmin = () => {
       varPedidos: variacao(totalPedidos, totalPedidosAnt),
       varResultado: variacao(resultado, resultadoAnt)
     };
-  }, [users, guindastes, pedidos, pedidosFiltrados, periodo]);
+  }, [users, guindastesCount, pedidos, pedidosFiltrados, periodo]);
 
   // Pipeline simples por status
   const pipeline = useMemo(() => {
@@ -94,28 +119,12 @@ const DashboardAdmin = () => {
     return counts;
   }, [pedidosFiltrados]);
 
-  // Top capacidades
+  // Top capacidades - desabilitado temporariamente (requer carregar lista completa)
   const topCapacidades = useMemo(() => {
-    const map = new Map();
-    guindastes.forEach(g => {
-      const sub = g.subgrupo || '';
-      const modeloBase = sub.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      const cap = match ? match[1] : 'N/A';
-      map.set(cap, (map.get(cap) || 0) + 1);
-    });
-    const arr = Array.from(map.entries()).map(([cap, q]) => ({ cap, q }));
-    arr.sort((a, b) => b.q - a.q);
-    return arr.slice(0, 5);
-  }, [guindastes]);
+    // TODO: Implementar query otimizada no backend para obter top capacidades
+    return [];
+  }, []);
 
-  // Alertas de dados
-  const alertas = useMemo(() => {
-    const semImagem = guindastes.filter(g => !g.imagem_url).length;
-    return [
-      { id: 'img', label: 'Guindastes sem imagem', value: semImagem },
-    ];
-  }, [guindastes]);
 
   // Série temporal de pedidos (por dia)
   const seriePedidos = useMemo(() => {
@@ -177,6 +186,27 @@ const DashboardAdmin = () => {
       />
         <div className="dashboard-container">
           <div className="dashboard-content">
+            {isLoading ? (
+              <div style={{ 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                height: '60vh',
+                flexDirection: 'column',
+                gap: '16px'
+              }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  border: '4px solid #e0e0e0', 
+                  borderTop: '4px solid #000', 
+                  borderRadius: '50%', 
+                  animation: 'spin 1s linear infinite' 
+                }} />
+                <p style={{ color: '#666', fontSize: '14px' }}>Carregando dashboard...</p>
+              </div>
+            ) : (
+              <>
             <div className="dashboard-header">
               <div className="welcome-section">
                 <h1>Dashboard</h1>
@@ -195,34 +225,54 @@ const DashboardAdmin = () => {
 
             <div className="stats-grid">
               <div className="stat-card">
+                <div className="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>
+                  </svg>
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{kpis.totalGuindastes}</div>
                   <div className="stat-label">Guindastes</div>
                 </div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                  </svg>
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{kpis.totalVendedores}</div>
                   <div className="stat-label">Vendedores</div>
                 </div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.11 0 2-.9 2-2V5c0-1.1-.89-2-2-2zm-9 14H7v-5h3v5zm4 0h-3V8h3v9zm4 0h-3v-7h3v7z"/>
+                  </svg>
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{kpis.totalPedidos}</div>
                   <div className="stat-label">Pedidos</div>
                 </div>
-              <div className={`stat-trend ${kpis.varPedidos >= 0 ? 'up' : 'down'}`}>
-                {kpis.varPedidos >= 0 ? '↑' : '↓'} {Math.abs(kpis.varPedidos)}%
-              </div>
+                <div className={`stat-trend ${kpis.varPedidos >= 0 ? 'up' : 'down'}`}>
+                  {kpis.varPedidos >= 0 ? '↑' : '↓'} {Math.abs(kpis.varPedidos)}%
+                </div>
               </div>
               <div className="stat-card">
+                <div className="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
+                  </svg>
+                </div>
                 <div className="stat-info">
                   <div className="stat-value">{formatCurrency(kpis.resultado)}</div>
                   <div className="stat-label">Resultado</div>
                 </div>
-              <div className={`stat-trend ${kpis.varResultado >= 0 ? 'up' : 'down'}`}>
-                {kpis.varResultado >= 0 ? '↑' : '↓'} {Math.abs(kpis.varResultado)}%
-              </div>
+                <div className={`stat-trend ${kpis.varResultado >= 0 ? 'up' : 'down'}`}>
+                  {kpis.varResultado >= 0 ? '↑' : '↓'} {Math.abs(kpis.varResultado)}%
+                </div>
               </div>
             </div>
           
@@ -309,30 +359,31 @@ const DashboardAdmin = () => {
 
             <div className="section-card">
               <div className="section-header">
-                <h3>Alertas de Dados</h3>
-              </div>
-              <ul className="alerts-list">
-                {alertas.map(a => (
-                  <li key={a.id} className="alert-item">
-                    <span>{a.label}</span>
-                    <strong className={a.value > 0 ? 'text-warning' : 'text-success'}>{a.value}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div className="section-card">
-              <div className="section-header">
                 <h3>Ranking de Vendedores</h3>
               </div>
-              <div className="tops">
-                {rankingVendedores.map(v => (
-                  <div key={v.nome} className="top-row">
-                    <span className="top-label">{v.nome}</span>
-                    <div className="top-bar">
-                      <div className="top-fill" style={{ width: `${(v.valor / (rankingVendedores[0]?.valor || 1)) * 100}%` }} />
+              <div className="ranking-vendedores">
+                {rankingVendedores.map((v, index) => (
+                  <div key={v.nome} className="ranking-row">
+                    <div className="ranking-info">
+                      <span className="ranking-position">{index + 1}</span>
+                      <div className="ranking-name-container">
+                        <span className="ranking-name">{v.nome}</span>
+                      </div>
                     </div>
-                    <span className="top-value">{formatCurrency(v.valor)}</span>
+                    <div className="ranking-bar-container">
+                      <div className="ranking-bar">
+                        <div 
+                          className="ranking-fill" 
+                          style={{ 
+                            width: `${(v.valor / (rankingVendedores[0]?.valor || 1)) * 100}%`,
+                            background: index === 0 ? 'linear-gradient(90deg, #4f46e5, #6366f1)' : 
+                                      index === 1 ? 'linear-gradient(90deg, #4b5563, #6b7280)' :
+                                      'linear-gradient(90deg, #9ca3af, #d1d5db)'
+                          }} 
+                        />
+                      </div>
+                      <span className="ranking-value">{formatCurrency(v.valor)}</span>
+                    </div>
                   </div>
                 ))}
                 {rankingVendedores.length === 0 && (<div className="empty">Sem dados</div>)}
@@ -361,9 +412,10 @@ const DashboardAdmin = () => {
                 {recentes.length === 0 && (<div className="empty">Sem atividades</div>)}
               </ul>
             </div>
-            
 
           </div>
+              </>
+            )}
         </div>
       </div>
     </>
