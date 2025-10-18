@@ -99,6 +99,8 @@ const AdminNavigation = ({ user }) => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('supabaseSession');
     localStorage.removeItem('carrinho');
+    // Reset flag de boas-vindas para próxima sessão
+    sessionStorage.removeItem('welcomeShownAdmin');
     navigate('/');
   };
 

@@ -1,0 +1,329 @@
+/* Welcome Loading Component Styles */
+.welcome-loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Branding STARK: preto (fundo escuro), amarelo (destaques), branco (texto) */
+  background: radial-gradient(1200px 600px at 50% -100%, rgba(255, 213, 0, 0.12), transparent), #0b0c0f;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.welcome-container {
+  background: linear-gradient(180deg, rgba(16, 17, 20, 0.9) 0%, rgba(12, 12, 14, 0.9) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(14px);
+  border-radius: 16px;
+  padding: 40px;
+  max-width: 500px;
+  width: 90%;
+  text-align: center;
+  animation: slideInUp 0.6s ease-out;
+  overflow: hidden; /* impede ícones/efeitos de saírem do cartão */
+  position: relative;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+.welcome-header {
+  margin-bottom: 30px;
+  position: relative;
+}
+
+.welcome-header::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -12px;
+  transform: translateX(-50%);
+  width: 140px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #ffd300, transparent);
+  opacity: 0.9;
+}
+
+.logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-image {
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 6px 12px rgba(255, 213, 0, 0.25));
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+.logo-text {
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: 1.5px;
+}
+
+.logo-subtitle {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+/* Content */
+.welcome-content {
+  margin-bottom: 30px;
+}
+
+/* Removidos emojis/ícones - usamos indicadores discretos */
+.steps {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 10px 0 18px;
+}
+.step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+.step-dot.active {
+  background: #ffd300;
+  box-shadow: 0 0 0 4px rgba(255, 211, 0, 0.15), 0 8px 14px rgba(255, 211, 0, 0.25);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.welcome-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 10px 0;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.welcome-description {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 0 0 30px 0;
+  line-height: 1.5;
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Progress Bar */
+.progress-container {
+  margin-bottom: 30px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd300, #ffb700);
+  box-shadow: 0 8px 18px rgba(255, 215, 0, 0.25);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.progress-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffd300;
+}
+
+/* User Info */
+.user-info {
+  margin-bottom: 20px;
+}
+
+.user-role {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 15px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.role-icon {
+  font-size: 16px;
+}
+
+.loading-tips {
+  background: rgba(255, 211, 0, 0.08);
+  border: 1px solid rgba(255, 211, 0, 0.25);
+  border-radius: 12px;
+  padding: 14px 16px;
+  line-height: 1.5;
+}
+.values-title {
+  margin: 0 0 4px 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: #ffd300;
+}
+.values-text {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.loading-tips p {
+  margin: 0;
+}
+
+/* Footer */
+.welcome-footer {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 20px;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: #ffd300;
+  border-radius: 50%;
+  animation: dotPulse 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+@keyframes dotPulse {
+  0%, 80%, 100% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.footer-text {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
+  font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .welcome-container {
+    padding: 30px 20px;
+    margin: 20px;
+  }
+  
+  .logo-text {
+    font-size: 28px;
+  }
+  
+  .welcome-title {
+    font-size: 20px;
+  }
+  
+  .welcome-description {
+    font-size: 14px;
+  }
+}
