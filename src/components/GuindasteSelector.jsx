@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { extrairConfiguracoes } from '../utils/guindasteHelper';
+import LazyGuindasteImage from './LazyGuindasteImage';
 import '../styles/GuindasteSelector.css';
 
 const GuindasteSelector = ({
@@ -52,11 +53,53 @@ const GuindasteSelector = ({
 
   const handleCapacidadeClick = (capacidade) => {
     onCapacidadeSelect(capacidade);
+    
+    // Adicionar animação de transição
+    const container = document.querySelector('.guindaste-selector');
+    container.classList.add('step-changing');
+    
+    // Mostrar indicador de carregamento
+    const progressStep = document.querySelector('.progress-step:nth-child(3)');
+    if (progressStep) {
+      progressStep.classList.add('loading');
+    }
+    
+    // Navegação automática para a próxima etapa após 500ms
+    setTimeout(() => {
+      if (currentStep === 1) {
+        setCurrentStep(2);
+        container.classList.remove('step-changing');
+        if (progressStep) {
+          progressStep.classList.remove('loading');
+        }
+      }
+    }, 500);
   };
 
   const handleModeloClick = (modelo) => {
     const modeloBase = modelo.subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
     onModeloSelect(modeloBase);
+    
+    // Adicionar animação de transição
+    const container = document.querySelector('.guindaste-selector');
+    container.classList.add('step-changing');
+    
+    // Mostrar indicador de carregamento
+    const progressStep = document.querySelector('.progress-step:nth-child(5)');
+    if (progressStep) {
+      progressStep.classList.add('loading');
+    }
+    
+    // Navegação automática para a próxima etapa após 500ms
+    setTimeout(() => {
+      if (currentStep === 2) {
+        setCurrentStep(3);
+        container.classList.remove('step-changing');
+        if (progressStep) {
+          progressStep.classList.remove('loading');
+        }
+      }
+    }, 500);
   };
 
   const handleNext = (e) => {
@@ -155,7 +198,7 @@ const GuindasteSelector = ({
 
       {/* Renderizar apenas o step atual */}
       {currentStep === 1 && (
-        <div className="selection-step visible">
+        <div className="selection-step visible fade-in">
           <div className="step-header">
             <h2 className="step-title">
               <span className="step-number">1</span>
@@ -185,7 +228,7 @@ const GuindasteSelector = ({
 
       {/* Step 2: Modelo */}
       {currentStep === 2 && (
-        <div className="selection-step visible">
+        <div className="selection-step visible fade-in">
           <div className="step-header">
             <h2 className="step-title">
               <span className="step-number">2</span>
@@ -254,7 +297,7 @@ const GuindasteSelector = ({
 
       {/* Step 3: Configuração */}
       {currentStep === 3 && (
-        <div className="selection-step visible">
+        <div className="selection-step visible fade-in">
           <div className="step-header">
             <h2 className="step-title">
               <span className="step-number">3</span>
@@ -268,7 +311,6 @@ const GuindasteSelector = ({
           {guindastesDisponiveis.length > 0 ? (
             <div className="config-grid">
               {guindastesDisponiveis.map((guindaste, index) => {
-                const isPopular = index === 0; // Primeiro item como mais popular
                 const hasRemoteControl = guindaste.tem_contr === 'Sim';
                 const configName = guindaste.peso_kg || 'Configuração Padrão';
                 const configuracoes = extrairConfiguracoes(guindaste.subgrupo);
@@ -279,17 +321,13 @@ const GuindasteSelector = ({
                     className="config-card"
                     onClick={() => onGuindasteSelect(guindaste)}
                   >
-                    {isPopular && <div className="config-badge">Mais Vendido</div>}
-                    
                     <div className="config-header">
                       <div className="config-image-container">
-                        <img 
-                          src={guindaste.imagem_url || '/header-bg.jpg'} 
-                          alt={configName}
+                        <LazyGuindasteImage 
+                          guindasteId={guindaste.id}
+                          subgrupo={guindaste.subgrupo}
                           className="config-image-photo"
-                          onError={(e) => {
-                            e.currentTarget.src = '/header-bg.jpg';
-                          }}
+                          alt={configName}
                         />
                       </div>
                       

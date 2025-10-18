@@ -135,18 +135,27 @@ const LazyGuindasteImage = ({ guindasteId, subgrupo, className = '', alt = '' })
         }}
       />
       
-      {/* Indicador de carregamento melhorado */}
+      {/* Loading Skeleton Profissional */}
       {isLoading && isInView && (
         <div className="loading-skeleton">
           <div className="skeleton-content">
+            {/* Ícone de guindaste animado */}
             <div className="skeleton-crane">
               <div className="skeleton-base"></div>
               <div className="skeleton-tower"></div>
               <div className="skeleton-arm"></div>
+              <div className="skeleton-hook"></div>
             </div>
+            
+            {/* Texto de loading */}
             <div className="skeleton-text">
               <div className="skeleton-line skeleton-title"></div>
               <div className="skeleton-line skeleton-subtitle"></div>
+            </div>
+            
+            {/* Indicador de progresso */}
+            <div className="skeleton-progress">
+              <div className="skeleton-progress-bar"></div>
             </div>
           </div>
           <div className="loading-pulse"></div>
