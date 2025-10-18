@@ -2,15 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../config/supabase';
 import '../styles/LazyGuindasteImage.css';
 
+// Cache global para imagens
+const imageCache = new Map();
+
 /**
  * Componente otimizado para carregar imagens de guindastes sob demanda
  * Isso evita carregar todas as imagens base64 de uma vez, melhorando performance
  */
 const LazyGuindasteImage = ({ guindasteId, subgrupo, className = '', alt = '' }) => {
-  const [imageSrc, setImageSrc] = useState('/header-bg.jpg');
+  const [imageSrc, setImageSrc] = useState('/guindaste-default.svg');
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isInView, setIsInView] = useState(false);
+  const [hasNoImage, setHasNoImage] = useState(false);
+  const [currentGuindasteId, setCurrentGuindasteId] = useState(null);
   const imgRef = useRef(null);
 
   // Intersection Observer para lazy loading
@@ -35,31 +40,77 @@ const LazyGuindasteImage = ({ guindasteId, subgrupo, className = '', alt = '' })
   // Carregar imagem quando estiver em view
   useEffect(() => {
     if (!isInView || !guindasteId) return;
+    
+    // Evitar recarregar se for o mesmo guindaste
+    if (currentGuindasteId === guindasteId) return;
 
     const loadImage = async () => {
       try {
-        setIsLoading(true);
+        // Verificar cache primeiro
+        if (imageCache.has(guindasteId)) {
+          const cachedData = imageCache.get(guindasteId);
+          setImageSrc(cachedData.imageSrc);
+          setHasError(cachedData.hasError);
+          setHasNoImage(cachedData.hasNoImage);
+          setCurrentGuindasteId(guindasteId);
+          setIsLoading(false);
+          return;
+        }
+        
+        // Só mostrar loading se for um guindaste diferente
+        if (currentGuindasteId !== guindasteId) {
+          setIsLoading(true);
+        }
+        
         const imageUrl = await db.getGuindasteImagem(guindasteId);
         
-        if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '') {
-          setImageSrc(imageUrl);
-          setHasError(false);
+        let newImageSrc, newHasError, newHasNoImage;
+        
+        if (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '' && 
+            imageUrl !== 'null' && imageUrl !== 'undefined' && imageUrl.length > 10) {
+          newImageSrc = imageUrl;
+          newHasError = false;
+          newHasNoImage = false;
         } else {
-          // Sem imagem disponível
-          setImageSrc('/header-bg.jpg');
-          setHasError(true);
+          // Sem imagem disponível - usar imagem padrão
+          newImageSrc = '/guindaste-default.svg';
+          newHasError = false;
+          newHasNoImage = true;
         }
+        
+        // Salvar no cache
+        imageCache.set(guindasteId, {
+          imageSrc: newImageSrc,
+          hasError: newHasError,
+          hasNoImage: newHasNoImage
+        });
+        
+        setImageSrc(newImageSrc);
+        setHasError(newHasError);
+        setHasNoImage(newHasNoImage);
+        setCurrentGuindasteId(guindasteId);
       } catch (error) {
         console.error(`❌ Erro ao carregar imagem do guindaste ${guindasteId}:`, error);
-        setImageSrc('/header-bg.jpg');
-        setHasError(true);
+        const errorData = {
+          imageSrc: '/guindaste-default.svg',
+          hasError: true,
+          hasNoImage: true
+        };
+        
+        // Salvar erro no cache também
+        imageCache.set(guindasteId, errorData);
+        
+        setImageSrc(errorData.imageSrc);
+        setHasError(errorData.hasError);
+        setHasNoImage(errorData.hasNoImage);
+        setCurrentGuindasteId(guindasteId);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadImage();
-  }, [isInView, guindasteId]);
+  }, [isInView, guindasteId, currentGuindasteId]);
 
   return (
     <div 
@@ -77,19 +128,33 @@ const LazyGuindasteImage = ({ guindasteId, subgrupo, className = '', alt = '' })
           setIsLoading(false);
         }}
         onError={() => {
-          setImageSrc('/header-bg.jpg');
+          setImageSrc('/guindaste-default.svg');
           setHasError(true);
+          setHasNoImage(true);
           setIsLoading(false);
         }}
       />
       
-      {/* Indicador de carregamento */}
+      {/* Indicador de carregamento melhorado */}
       {isLoading && isInView && (
-        <div className="loading-spinner" />
+        <div className="loading-skeleton">
+          <div className="skeleton-content">
+            <div className="skeleton-crane">
+              <div className="skeleton-base"></div>
+              <div className="skeleton-tower"></div>
+              <div className="skeleton-arm"></div>
+            </div>
+            <div className="skeleton-text">
+              <div className="skeleton-line skeleton-title"></div>
+              <div className="skeleton-line skeleton-subtitle"></div>
+            </div>
+          </div>
+          <div className="loading-pulse"></div>
+        </div>
       )}
       
       {/* Badge para imagens sem foto */}
-      {hasError && !isLoading && imageSrc === '/header-bg.jpg' && (
+      {hasNoImage && !isLoading && (
         <div className="no-image-badge">
           Sem Foto
         </div>

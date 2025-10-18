@@ -111,6 +111,29 @@ class DatabaseService {
     return data || [];
   }
 
+  // Versão super otimizada para dashboard (apenas contagem)
+  async getGuindastesCountForDashboard() {
+    console.log('📊 [getGuindastesCountForDashboard] Obtendo contagem...');
+    
+    try {
+      // Query otimizada: apenas contagem sem carregar dados
+      const { count, error } = await supabase
+        .from('guindastes')
+        .select('*', { count: 'exact', head: true }); // head: true = apenas count, sem dados
+      
+      if (error) {
+        console.error('❌ [getGuindastesCountForDashboard] Erro:', error);
+        throw error;
+      }
+      
+      console.log('✅ [getGuindastesCountForDashboard] Total:', count);
+      return count || 0;
+    } catch (err) {
+      console.error('❌ [getGuindastesCountForDashboard] Exceção:', err);
+      return 0; // Retorna 0 em caso de erro
+    }
+  }
+  
   // Buscar um guindaste específico por ID (otimizado)
   async getGuindasteById(id) {
     console.log('🔍 [getGuindasteById] Buscando guindaste ID:', id);

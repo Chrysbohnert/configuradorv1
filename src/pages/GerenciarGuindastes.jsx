@@ -50,6 +50,7 @@ const GerenciarGuindastes = () => {
     }
   }, [user]);
 
+
   // Auto-esconde o toast após alguns segundos
   useEffect(() => {
     if (toast.visible) {
@@ -967,7 +968,7 @@ const GerenciarGuindastes = () => {
                     <input
                       type="text"
                       value={formData.finame}
-                      onChange={e => handleInputChange('FINAME', e.target.value)}
+                      onChange={e => handleInputChange('finame', e.target.value)}
                       placeholder="Ex: 123456789"
                       required
                       className="form-input"
@@ -982,7 +983,7 @@ const GerenciarGuindastes = () => {
                     <input
                       type="text"
                       value={formData.ncm}
-                      onChange={e => handleInputChange('NCM', e.target.value)}
+                      onChange={e => handleInputChange('ncm', e.target.value)}
                       placeholder="Ex: 84264100"
                       required
                       className="form-input"

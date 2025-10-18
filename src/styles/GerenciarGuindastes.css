@@ -369,6 +369,8 @@
   padding: 16px 20px 20px 20px;
   border-top: 1px solid #f1f3f5;
   background: linear-gradient(180deg, #fafbfc 0%, #ffffff 100%);
+  justify-content: space-between;
+  align-items: stretch;
 }
 
 .action-btn {
@@ -379,6 +381,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 0;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   font-size: 12px;
@@ -1691,6 +1694,28 @@ textarea:focus {
   border-color: #000000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
+}
+
+.chip-warning {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.chip-warning:hover {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #f59e0b;
+}
+
+.chip-warning.active {
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  color: white;
+  border-color: #f59e0b;
+}
+
+.filtro-ativo {
+  color: #f59e0b;
+  font-weight: 600;
 }
 
 .filtro-capacidade {
