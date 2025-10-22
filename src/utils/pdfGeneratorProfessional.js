@@ -105,7 +105,6 @@ const addFooter = (doc, pageNumber, totalPages) => {
 export const generatePropostaComercialPDF = async (dadosProposta) => {
   const doc = new jsPDF();
   let currentY = 40;
-  let pageNumber = 1;
   
   const {
     numeroProposta,
@@ -186,7 +185,6 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 
   // ==================== PÁGINA: DADOS DO VEÍCULO ====================
   doc.addPage();
-  pageNumber++;
   currentY = 50;
   addHeader(doc, numeroProposta, data);
   
@@ -196,39 +194,40 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.text('DADOS DO VEÍCULO', 20, currentY);
   currentY += 15;
   
-  // Caixa profissional para dados do veículo
+  // Caixa profissional para dados do veículo - ajustada para caber em uma página
   doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 60, 'F');
+  doc.rect(15, currentY - 5, 180, 180, 'F'); // Altura aumentada para caber tudo
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 60, 'S');
+  doc.rect(15, currentY - 5, 180, 180, 'S');
   
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
   doc.text('INFORMAÇÕES BÁSICAS:', 20, currentY);
-  currentY += 10;
+  currentY += 12;
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text(`Tipo de Veículo: ${caminhao.tipo}`, 20, currentY);
-  currentY += 8;
+  currentY += 6;
   doc.text(`Marca: ${caminhao.marca}`, 20, currentY);
-  currentY += 8;
+  currentY += 6;
   doc.text(`Modelo: ${caminhao.modelo}`, 20, currentY);
-  currentY += 8;
+  currentY += 6;
   doc.text(`Ano: ${caminhao.ano || 'Não informado'}`, 20, currentY);
-  currentY += 8;
+  currentY += 6;
   doc.text(`Voltagem: ${caminhao.voltagem}`, 20, currentY);
-  currentY += 8;
+  currentY += 6;
   
   if (caminhao.placa) {
     doc.text(`Placa: ${caminhao.placa}`, 20, currentY);
-    currentY += 8;
+    currentY += 6;
   }
   
+  // Seção de observações com espaço adequado
   if (caminhao.observacoes) {
-    currentY += 10;
+    currentY += 8;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.text('OBSERVAÇÕES:', 20, currentY);
@@ -236,14 +235,20 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170, 6);
+    // Limitar altura das observações para caber na página
+    currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170, 5);
+    
+    // Garantir que não ultrapasse o limite da página
+    if (currentY > 200) {
+      currentY = 200;
+    }
   }
   
-  currentY += 20;
+  // Garantir que tudo caiba em uma página
+  currentY = Math.min(currentY, 200);
 
   // ==================== PÁGINA 2: EQUIPAMENTO ====================
   doc.addPage();
-  pageNumber++;
   currentY = 50;
   addHeader(doc, numeroProposta, data);
   
@@ -343,7 +348,6 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   // ==================== GRÁFICO DE CARGA ====================
   if (equipamento.grafico_carga_url) {
     doc.addPage();
-    pageNumber++;
     currentY = 40;
     addHeader(doc, numeroProposta, data);
     
@@ -382,7 +386,6 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 
   // ==================== PÁGINA: CONDIÇÕES DE PAGAMENTO ====================
   doc.addPage();
-  pageNumber++;
   currentY = 50;
   addHeader(doc, numeroProposta, data);
   
@@ -530,7 +533,6 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 
   // ==================== PÁGINA: CLÁUSULAS CONTRATUAIS ====================
   doc.addPage();
-  pageNumber++;
   currentY = 40;
   addHeader(doc, numeroProposta, data);
   
@@ -576,7 +578,7 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   ];
   
   doc.setFontSize(9);
-  clausulas.forEach((clausula, index) => {
+  clausulas.forEach((clausula) => {
     currentY = checkPageBreak(doc, currentY, 25);
     
     // Caixa para cada cláusula
@@ -621,7 +623,6 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 
   // ==================== PÁGINA FINAL: ASSINATURAS E QR CODE ====================
   doc.addPage();
-  pageNumber++;
   currentY = 40;
   addHeader(doc, numeroProposta, data);
   
