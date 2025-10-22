@@ -184,44 +184,61 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.text(`CEP: ${cliente.cep}`, 20, currentY);
   currentY += 25;
 
-  // DADOS DO VEÍCULO (ESTUDO VEICULAR)
-  currentY = checkPageBreak(doc, currentY, 50);
+  // ==================== PÁGINA: DADOS DO VEÍCULO ====================
+  doc.addPage();
+  pageNumber++;
+  currentY = 50;
+  addHeader(doc, numeroProposta, data);
   
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(0, 0, 0);
-  doc.text('ESTUDO VEICULAR', 20, currentY);
-  currentY += 10;
+  doc.text('DADOS DO VEÍCULO', 20, currentY);
+  currentY += 15;
   
   // Caixa profissional para dados do veículo
   doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 40, 'F');
+  doc.rect(15, currentY - 5, 180, 60, 'F');
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 40, 'S');
+  doc.rect(15, currentY - 5, 180, 60, 'S');
+  
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('INFORMAÇÕES BÁSICAS:', 20, currentY);
+  currentY += 10;
   
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0, 0, 0);
   doc.text(`Tipo de Veículo: ${caminhao.tipo}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
   doc.text(`Marca: ${caminhao.marca}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
   doc.text(`Modelo: ${caminhao.modelo}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
   doc.text(`Ano: ${caminhao.ano || 'Não informado'}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
   doc.text(`Voltagem: ${caminhao.voltagem}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
+  
   if (caminhao.placa) {
     doc.text(`Placa: ${caminhao.placa}`, 20, currentY);
-    currentY += 6;
+    currentY += 8;
   }
+  
   if (caminhao.observacoes) {
-    doc.text('Observações:', 20, currentY);
-    currentY += 6;
-    currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170);
+    currentY += 10;
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text('OBSERVAÇÕES:', 20, currentY);
+    currentY += 8;
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170, 6);
   }
+  
   currentY += 20;
 
   // ==================== PÁGINA 2: EQUIPAMENTO ====================
