@@ -98,7 +98,14 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('DADOS DO VENDEDOR', 20, currentY);
-  currentY += 7;
+  currentY += 8;
+  
+  // Caixa de fundo para dados do vendedor
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 25, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 25, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -110,16 +117,23 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.text(`Telefone: ${vendedor.telefone || 'Não informado'}`, 20, currentY);
   currentY += 5;
   doc.text(`Região: ${vendedor.regiao || 'Não informado'}`, 20, currentY);
-  currentY += 10;
+  currentY += 15;
 
   // DADOS DO CLIENTE
-  currentY = checkPageBreak(doc, currentY, 50);
+  currentY = checkPageBreak(doc, currentY, 60);
   
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('DADOS DO CLIENTE', 20, currentY);
-  currentY += 7;
+  currentY += 8;
+  
+  // Caixa de fundo para dados do cliente
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 40, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 40, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -139,16 +153,23 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.text(`Cidade/UF: ${cliente.cidade}/${cliente.uf}`, 20, currentY);
   currentY += 5;
   doc.text(`CEP: ${cliente.cep}`, 20, currentY);
-  currentY += 10;
+  currentY += 20;
 
   // DADOS DO VEÍCULO (ESTUDO VEICULAR)
-  currentY = checkPageBreak(doc, currentY, 40);
+  currentY = checkPageBreak(doc, currentY, 50);
   
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('ESTUDO VEICULAR', 20, currentY);
-  currentY += 7;
+  currentY += 8;
+  
+  // Caixa de fundo para dados do veículo
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 35, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 35, 'S');
   
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
@@ -172,7 +193,7 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
     currentY += 5;
     currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170);
   }
-  currentY += 10;
+  currentY += 15;
 
   // ==================== PÁGINA 2: EQUIPAMENTO ====================
   doc.addPage();
@@ -184,7 +205,14 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('ESPECIFICAÇÃO DO EQUIPAMENTO', 20, currentY);
-  currentY += 10;
+  currentY += 12;
+  
+  // Caixa principal para informações do equipamento
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 45, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 45, 'S');
   
   // Informações principais do equipamento
   doc.setFontSize(11);
@@ -216,40 +244,54 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
     currentY += 5;
   }
   
-  currentY += 5;
+  currentY += 10;
 
   // DESCRIÇÃO TÉCNICA
   if (equipamento.descricao) {
-    currentY = checkPageBreak(doc, currentY, 30);
+    currentY = checkPageBreak(doc, currentY, 40);
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(41, 98, 255);
     doc.text('DESCRIÇÃO TÉCNICA:', 20, currentY);
-    currentY += 7;
+    currentY += 8;
+    
+    // Caixa para descrição técnica
+    doc.setFillColor(248, 249, 250);
+    doc.rect(15, currentY - 5, 180, 30, 'F');
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.rect(15, currentY - 5, 180, 30, 'S');
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     currentY = addWrappedText(doc, equipamento.descricao, 20, currentY, 170, 4);
-    currentY += 5;
+    currentY += 10;
   }
 
   // NÃO INCLUÍDO
   if (equipamento.nao_incluido) {
-    currentY = checkPageBreak(doc, currentY, 30);
+    currentY = checkPageBreak(doc, currentY, 40);
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(220, 53, 69);
     doc.text('NÃO INCLUÍDO:', 20, currentY);
-    currentY += 7;
+    currentY += 8;
+    
+    // Caixa para não incluído
+    doc.setFillColor(255, 248, 248);
+    doc.rect(15, currentY - 5, 180, 30, 'F');
+    doc.setDrawColor(220, 53, 69);
+    doc.setLineWidth(0.5);
+    doc.rect(15, currentY - 5, 180, 30, 'S');
     
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
     currentY = addWrappedText(doc, equipamento.nao_incluido, 20, currentY, 170, 4);
-    currentY += 5;
+    currentY += 10;
   }
 
   // ==================== GRÁFICO DE CARGA ====================
@@ -302,17 +344,32 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('CONDIÇÕES DE PAGAMENTO', 20, currentY);
-  currentY += 10;
+  currentY += 12;
+  
+  // Caixa para tipo de negociação
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 15, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 15, 'S');
   
   // Tipo de Cliente
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(60, 60, 60);
   doc.text(`Tipo de Negociação: ${pagamento.tipoPagamento === 'revenda' ? 'REVENDA' : 'CLIENTE FINAL'}`, 20, currentY);
-  currentY += 7;
+  currentY += 12;
+  
+  // Caixa para valores
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 50, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 50, 'S');
   
   // Valores
   doc.setFont('helvetica', 'normal');
+  doc.setTextColor(60, 60, 60);
   doc.text(`Valor Base do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, currentY);
   currentY += 5;
   
@@ -345,14 +402,21 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.setFontSize(12);
   doc.setTextColor(41, 98, 255);
   doc.text(`VALOR TOTAL: ${formatCurrency(pagamento.valorFinal || 0)}`, 20, currentY);
-  currentY += 10;
+  currentY += 15;
   
   // Forma de Pagamento
   doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(60, 60, 60);
   doc.text('FORMA DE PAGAMENTO:', 20, currentY);
-  currentY += 6;
+  currentY += 8;
+  
+  // Caixa para forma de pagamento
+  doc.setFillColor(248, 249, 250);
+  doc.rect(15, currentY - 5, 180, 40, 'F');
+  doc.setDrawColor(220, 220, 220);
+  doc.setLineWidth(0.5);
+  doc.rect(15, currentY - 5, 180, 40, 'S');
   
   doc.setFont('helvetica', 'normal');
   doc.text(`Prazo: ${pagamento.prazoPagamento || 'À vista'}`, 20, currentY);
@@ -423,11 +487,11 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   currentY = 40;
   addHeader(doc, numeroProposta, data);
   
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(41, 98, 255);
   doc.text('CLÁUSULAS CONTRATUAIS', 20, currentY);
-  currentY += 10;
+  currentY += 12;
   
   const clausulas = [
     {
@@ -465,26 +529,41 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   ];
   
   doc.setFontSize(9);
-  clausulas.forEach((clausula) => {
-    currentY = checkPageBreak(doc, currentY, 20);
+  clausulas.forEach((clausula, index) => {
+    currentY = checkPageBreak(doc, currentY, 25);
+    
+    // Caixa para cada cláusula
+    doc.setFillColor(248, 249, 250);
+    doc.rect(15, currentY - 5, 180, 20, 'F');
+    doc.setDrawColor(220, 220, 220);
+    doc.setLineWidth(0.5);
+    doc.rect(15, currentY - 5, 180, 20, 'S');
     
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(41, 98, 255);
     doc.text(clausula.titulo, 20, currentY);
-    currentY += 5;
+    currentY += 6;
     
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(60, 60, 60);
     currentY = addWrappedText(doc, clausula.texto, 20, currentY, 170, 4);
-    currentY += 6;
+    currentY += 8;
   });
 
   // Observações adicionais
   if (observacoes) {
-    currentY = checkPageBreak(doc, currentY, 20);
+    currentY = checkPageBreak(doc, currentY, 30);
     currentY += 5;
     
+    // Caixa para observações
+    doc.setFillColor(255, 248, 248);
+    doc.rect(15, currentY - 5, 180, 25, 'F');
+    doc.setDrawColor(220, 53, 69);
+    doc.setLineWidth(0.5);
+    doc.rect(15, currentY - 5, 180, 25, 'S');
+    
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 98, 255);
+    doc.setTextColor(220, 53, 69);
     doc.text('OBSERVAÇÕES:', 20, currentY);
     currentY += 6;
     
