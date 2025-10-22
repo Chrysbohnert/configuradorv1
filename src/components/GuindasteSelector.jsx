@@ -254,13 +254,11 @@ const GuindasteSelector = ({
                   >
                     <div className="model-header">
                       <div className="model-icon">
-                        <img
-                          src={modelo.imagem_url || '/header-bg.jpg'}
-                          alt={modeloBase}
+                        <LazyGuindasteImage 
+                          guindasteId={modelo.id}
+                          subgrupo={modelo.subgrupo}
                           className="model-image"
-                          onError={(e) => {
-                            e.currentTarget.src = '/header-bg.jpg';
-                          }}
+                          alt={modeloBase}
                         />
                       </div>
                       <div className="model-info">
