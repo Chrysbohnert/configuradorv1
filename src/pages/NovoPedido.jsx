@@ -25,10 +25,7 @@ const NovoPedido = () => {
     const savedCart = localStorage.getItem('carrinho');
     return savedCart ? JSON.parse(savedCart) : [];
   });
-  const [clienteData, setClienteData] = useState(() => {
-    const saved = localStorage.getItem('novoPedido_clienteData');
-    return saved ? JSON.parse(saved) : {};
-  });
+  const [clienteData, setClienteData] = useState({});
   const [caminhaoData, setCaminhaoData] = useState(() => {
     const saved = localStorage.getItem('novoPedido_caminhaoData');
     return saved ? JSON.parse(saved) : {};
@@ -47,10 +44,14 @@ const NovoPedido = () => {
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
 
-  // Salvar dados no localStorage sempre que mudarem
+  // Limpar dados do cliente ao montar o componente
   React.useEffect(() => {
-    localStorage.setItem('novoPedido_clienteData', JSON.stringify(clienteData));
-  }, [clienteData]);
+    setClienteData({});
+    // Limpar também do localStorage se existir
+    localStorage.removeItem('novoPedido_clienteData');
+  }, []);
+
+  // Salvar dados no localStorage sempre que mudarem (exceto clienteData)
 
   React.useEffect(() => {
     localStorage.setItem('novoPedido_caminhaoData', JSON.stringify(caminhaoData));
