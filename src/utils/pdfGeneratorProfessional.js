@@ -31,44 +31,72 @@ const addWrappedText = (doc, text, x, y, maxWidth, lineHeight = 5) => {
 
 // Função para verificar se precisa adicionar nova página
 const checkPageBreak = (doc, currentY, spaceNeeded = 30) => {
-  if (currentY + spaceNeeded > 270) {
+  if (currentY + spaceNeeded > 250) { // Ajustado para considerar o novo rodapé
     doc.addPage();
-    return 20; // Retorna posição Y inicial da nova página
+    return 50; // Retorna posição Y inicial da nova página após cabeçalho
   }
   return currentY;
 };
 
-// Função para adicionar cabeçalho em cada página
+// Função para adicionar cabeçalho profissional em cada página
 const addHeader = (doc, numeroProposta, data) => {
-  // Logo/Título
-  doc.setFontSize(18);
-  doc.setTextColor(41, 98, 255);
-  doc.setFont('helvetica', 'bold');
-  doc.text('STARK GUINDASTES', 105, 15, { align: 'center' });
+  // Fundo do cabeçalho
+  doc.setFillColor(255, 193, 7); // Amarelo STARK
+  doc.rect(0, 0, 210, 35, 'F');
   
-  doc.setFontSize(10);
-  doc.setTextColor(100, 100, 100);
+  // Logo STARK
+  doc.setFontSize(24);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.text('STARK', 20, 20);
+  
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'normal');
-  doc.text('Proposta Comercial', 105, 22, { align: 'center' });
+  doc.text('INDUSTRIAL', 20, 28);
+  
+  // Título da proposta
+  doc.setFontSize(16);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(0, 0, 0);
+  doc.text('PROPOSTA COMERCIAL', 105, 20, { align: 'center' });
+  
+  // Informações da proposta
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Proposta Nº: ${numeroProposta}`, 160, 15);
+  doc.text(`Data: ${data}`, 160, 25);
   
   // Linha separadora
-  doc.setDrawColor(41, 98, 255);
-  doc.setLineWidth(0.5);
-  doc.line(20, 25, 190, 25);
-  
-  // Número da proposta e data
-  doc.setFontSize(9);
-  doc.setTextColor(60, 60, 60);
-  doc.text(`Proposta Nº: ${numeroProposta}`, 20, 32);
-  doc.text(`Data: ${data}`, 160, 32);
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.line(20, 35, 190, 35);
 };
 
-// Função para adicionar rodapé
+// Função para adicionar rodapé profissional
 const addFooter = (doc, pageNumber, totalPages) => {
+  // Fundo do rodapé
+  doc.setFillColor(255, 193, 7); // Amarelo STARK
+  doc.rect(0, 270, 210, 30, 'F');
+  
+  // Informações da empresa
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
+  doc.text('STARK INDUSTRIAL', 20, 280);
+  
   doc.setFontSize(8);
-  doc.setTextColor(150, 150, 150);
-  doc.text('STARK Guindastes - Soluções em Equipamentos de Elevação', 105, 285, { align: 'center' });
-  doc.text(`Página ${pageNumber} de ${totalPages}`, 105, 290, { align: 'center' });
+  doc.setFont('helvetica', 'normal');
+  doc.text('WWW.STARKINDUSTRIAL.IND.BR', 20, 285);
+  doc.text('55 2120-9961', 20, 290);
+  
+  // Redes sociais
+  doc.text('@stark_industrial_stark', 120, 280);
+  doc.text('@starkindustrialsr', 120, 285);
+  
+  // Número da página
+  doc.setFontSize(8);
+  doc.setTextColor(0, 0, 0);
+  doc.text(`Página ${pageNumber} de ${totalPages}`, 190, 290, { align: 'right' });
 };
 
 /**
@@ -92,206 +120,207 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 
   // ==================== PÁGINA 1: DADOS GERAIS ====================
   addHeader(doc, numeroProposta, data);
+  currentY = 50; // Ajustar posição após cabeçalho
   
   // DADOS DO VENDEDOR
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
+  doc.setTextColor(0, 0, 0);
   doc.text('DADOS DO VENDEDOR', 20, currentY);
-  currentY += 8;
+  currentY += 10;
   
-  // Caixa de fundo para dados do vendedor
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 25, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 25, 'S');
+  // Caixa profissional para dados do vendedor
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 30, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 30, 'S');
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Nome: ${vendedor.nome}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Email: ${vendedor.email || 'Não informado'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Telefone: ${vendedor.telefone || 'Não informado'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Região: ${vendedor.regiao || 'Não informado'}`, 20, currentY);
-  currentY += 15;
+  currentY += 20;
 
   // DADOS DO CLIENTE
   currentY = checkPageBreak(doc, currentY, 60);
   
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
+  doc.setTextColor(0, 0, 0);
   doc.text('DADOS DO CLIENTE', 20, currentY);
-  currentY += 8;
+  currentY += 10;
   
-  // Caixa de fundo para dados do cliente
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 40, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 40, 'S');
+  // Caixa profissional para dados do cliente
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 50, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 50, 'S');
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Razão Social: ${cliente.nome}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`CNPJ/CPF: ${cliente.documento}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Inscrição Estadual: ${cliente.inscricao_estadual || 'ISENTO'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Email: ${cliente.email}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Telefone: ${cliente.telefone}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Endereço: ${cliente.endereco}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Cidade/UF: ${cliente.cidade}/${cliente.uf}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`CEP: ${cliente.cep}`, 20, currentY);
-  currentY += 20;
+  currentY += 25;
 
   // DADOS DO VEÍCULO (ESTUDO VEICULAR)
   currentY = checkPageBreak(doc, currentY, 50);
   
-  doc.setFontSize(12);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
+  doc.setTextColor(0, 0, 0);
   doc.text('ESTUDO VEICULAR', 20, currentY);
-  currentY += 8;
+  currentY += 10;
   
-  // Caixa de fundo para dados do veículo
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 35, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 35, 'S');
+  // Caixa profissional para dados do veículo
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 40, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 40, 'S');
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Tipo de Veículo: ${caminhao.tipo}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Marca: ${caminhao.marca}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Modelo: ${caminhao.modelo}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Ano: ${caminhao.ano || 'Não informado'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Voltagem: ${caminhao.voltagem}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   if (caminhao.placa) {
     doc.text(`Placa: ${caminhao.placa}`, 20, currentY);
-    currentY += 5;
+    currentY += 6;
   }
   if (caminhao.observacoes) {
     doc.text('Observações:', 20, currentY);
-    currentY += 5;
+    currentY += 6;
     currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170);
   }
-  currentY += 15;
+  currentY += 20;
 
   // ==================== PÁGINA 2: EQUIPAMENTO ====================
   doc.addPage();
   pageNumber++;
-  currentY = 40;
+  currentY = 50;
   addHeader(doc, numeroProposta, data);
   
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
+  doc.setTextColor(0, 0, 0);
   doc.text('ESPECIFICAÇÃO DO EQUIPAMENTO', 20, currentY);
-  currentY += 12;
+  currentY += 15;
   
   // Caixa principal para informações do equipamento
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 45, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 45, 'S');
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 50, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 50, 'S');
   
   // Informações principais do equipamento
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Modelo: ${equipamento.modelo}`, 20, currentY);
-  currentY += 6;
+  currentY += 8;
   
-  doc.setFontSize(10);
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.text(`Capacidade: ${equipamento.subgrupo}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Código de Referência: ${equipamento.codigo_referencia || 'N/A'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Peso: ${equipamento.peso_kg}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Configuração: ${equipamento.configuracao || 'Padrão'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   doc.text(`Possui CONTR: ${equipamento.tem_contr || 'Não'}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   
   if (equipamento.finame) {
     doc.text(`FINAME: ${equipamento.finame}`, 20, currentY);
-    currentY += 5;
+    currentY += 6;
   }
   
   if (equipamento.ncm) {
     doc.text(`NCM: ${equipamento.ncm}`, 20, currentY);
-    currentY += 5;
+    currentY += 6;
   }
   
-  currentY += 10;
+  currentY += 15;
 
   // DESCRIÇÃO TÉCNICA
   if (equipamento.descricao) {
     currentY = checkPageBreak(doc, currentY, 40);
     
-    doc.setFontSize(11);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 98, 255);
+    doc.setTextColor(0, 0, 0);
     doc.text('DESCRIÇÃO TÉCNICA:', 20, currentY);
-    currentY += 8;
+    currentY += 10;
     
     // Caixa para descrição técnica
-    doc.setFillColor(248, 249, 250);
-    doc.rect(15, currentY - 5, 180, 30, 'F');
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.5);
-    doc.rect(15, currentY - 5, 180, 30, 'S');
+    doc.setFillColor(255, 255, 255);
+    doc.rect(15, currentY - 5, 180, 35, 'F');
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(1);
+    doc.rect(15, currentY - 5, 180, 35, 'S');
     
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(60, 60, 60);
-    currentY = addWrappedText(doc, equipamento.descricao, 20, currentY, 170, 4);
-    currentY += 10;
+    doc.setTextColor(0, 0, 0);
+    currentY = addWrappedText(doc, equipamento.descricao, 20, currentY, 170, 5);
+    currentY += 15;
   }
 
   // NÃO INCLUÍDO
   if (equipamento.nao_incluido) {
     currentY = checkPageBreak(doc, currentY, 40);
     
-    doc.setFontSize(11);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(220, 53, 69);
     doc.text('NÃO INCLUÍDO:', 20, currentY);
-    currentY += 8;
+    currentY += 10;
     
     // Caixa para não incluído
     doc.setFillColor(255, 248, 248);
-    doc.rect(15, currentY - 5, 180, 30, 'F');
+    doc.rect(15, currentY - 5, 180, 35, 'F');
     doc.setDrawColor(220, 53, 69);
-    doc.setLineWidth(0.5);
-    doc.rect(15, currentY - 5, 180, 30, 'S');
+    doc.setLineWidth(1);
+    doc.rect(15, currentY - 5, 180, 35, 'S');
     
-    doc.setFontSize(9);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(60, 60, 60);
-    currentY = addWrappedText(doc, equipamento.nao_incluido, 20, currentY, 170, 4);
-    currentY += 10;
+    doc.setTextColor(0, 0, 0);
+    currentY = addWrappedText(doc, equipamento.nao_incluido, 20, currentY, 170, 5);
+    currentY += 15;
   }
 
   // ==================== GRÁFICO DE CARGA ====================
@@ -337,72 +366,73 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   // ==================== PÁGINA: CONDIÇÕES DE PAGAMENTO ====================
   doc.addPage();
   pageNumber++;
-  currentY = 40;
+  currentY = 50;
   addHeader(doc, numeroProposta, data);
   
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
+  doc.setTextColor(0, 0, 0);
   doc.text('CONDIÇÕES DE PAGAMENTO', 20, currentY);
-  currentY += 12;
+  currentY += 15;
   
   // Caixa para tipo de negociação
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 15, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 15, 'S');
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 20, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 20, 'S');
   
   // Tipo de Cliente
-  doc.setFontSize(10);
+  doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Tipo de Negociação: ${pagamento.tipoPagamento === 'revenda' ? 'REVENDA' : 'CLIENTE FINAL'}`, 20, currentY);
-  currentY += 12;
+  currentY += 20;
   
   // Caixa para valores
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 50, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 50, 'S');
+  doc.setFillColor(255, 255, 255);
+  doc.rect(15, currentY - 5, 180, 60, 'F');
+  doc.setDrawColor(0, 0, 0);
+  doc.setLineWidth(1);
+  doc.rect(15, currentY - 5, 180, 60, 'S');
   
   // Valores
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
+  doc.setTextColor(0, 0, 0);
   doc.text(`Valor Base do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, currentY);
-  currentY += 5;
+  currentY += 6;
   
   if (pagamento.desconto > 0) {
     doc.setTextColor(40, 167, 69);
     doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
-    doc.setTextColor(60, 60, 60);
-    currentY += 5;
+    doc.setTextColor(0, 0, 0);
+    currentY += 6;
   }
   
   if (pagamento.acrescimo > 0) {
     doc.setTextColor(220, 53, 69);
     doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
-    doc.setTextColor(60, 60, 60);
-    currentY += 5;
+    doc.setTextColor(0, 0, 0);
+    currentY += 6;
   }
   
   if (pagamento.valorFrete > 0) {
     doc.text(`Frete (${pagamento.tipoFrete?.toUpperCase()}): ${formatCurrency(pagamento.valorFrete)}`, 20, currentY);
-    currentY += 5;
+    currentY += 6;
   }
   
   if (pagamento.valorInstalacao > 0) {
     doc.text(`Instalação: ${formatCurrency(pagamento.valorInstalacao)}`, 20, currentY);
-    currentY += 5;
+    currentY += 6;
   }
   
-  currentY += 3;
+  currentY += 5;
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.setTextColor(41, 98, 255);
+  doc.setFontSize(14);
+  doc.setTextColor(0, 0, 0);
   doc.text(`VALOR TOTAL: ${formatCurrency(pagamento.valorFinal || 0)}`, 20, currentY);
-  currentY += 15;
+  currentY += 20;
   
   // Forma de Pagamento
   doc.setFontSize(10);
