@@ -289,7 +289,20 @@ const PaymentPolicy = ({
     }
 
     try {
-      const plan = getPlanByDescription(prazoSelecionado, tipoCliente);
+      // Buscar o plano correto considerando o percentual de entrada para clientes
+      let plan;
+      if (tipoCliente === 'cliente' && percentualEntrada) {
+        // Para cliente, buscar o plano que corresponde ao percentual de entrada selecionado
+        const percentualNum = parseFloat(percentualEntrada) / 100;
+        const todosPlanos = getPaymentPlans(tipoCliente);
+        plan = todosPlanos.find(p => 
+          p.description === prazoSelecionado && 
+          p.entry_percent_required === percentualNum
+        );
+      } else {
+        // Para revenda ou cliente sem percentual, buscar normalmente
+        plan = getPlanByDescription(prazoSelecionado, tipoCliente);
+      }
       
       if (!plan) {
         setErroCalculo('Plano não encontrado');
@@ -1146,6 +1159,22 @@ const PaymentPolicy = ({
                 {percentualEntrada === '50' && 'Planos específicos para 50% de entrada (com descontos de 1% a 5%)'}
               </small>
             </div>
+
+            {percentualEntrada && (
+              <div className="form-group">
+                <label htmlFor="formaEntrada">
+                  Forma de pagamento da entrada
+                </label>
+                <input
+                  id="formaEntrada"
+                  type="text"
+                  value={formaEntrada}
+                  onChange={(e) => setFormaEntrada(e.target.value)}
+                  placeholder="Ex: Boleto, Pix, Transferência..."
+                  maxLength="100"
+                />
+              </div>
+            )}
           </>
       )}
 
@@ -1391,22 +1420,6 @@ const PaymentPolicy = ({
                         <span className="calc-label">↳ Falta pagar de entrada:</span>
                         <span className="calc-value" style={{ fontWeight: 'bold' }}>{formatCurrency(Math.max(0, faltaEntrada))}</span>
                       </div>
-                      
-                      {/* Campo para forma de pagamento da entrada */}
-                      <div className="form-group" style={{ marginTop: '12px', marginLeft: '10px' }}>
-                        <label htmlFor="formaEntrada" style={{ fontSize: '0.9em', marginBottom: '5px' }}>
-                          Forma de pagamento da entrada:
-                        </label>
-                        <input
-                          id="formaEntrada"
-                          type="text"
-                          value={formaEntrada}
-                          onChange={(e) => setFormaEntrada(e.target.value)}
-                          placeholder="Ex: Boleto, Pix, Transferência..."
-                          maxLength="100"
-                          style={{ fontSize: '0.9em' }}
-                        />
-                      </div>
                     </>
                   )}
                 </>
@@ -1437,16 +1450,6 @@ const PaymentPolicy = ({
                 <span className="calc-label">Total:</span>
                 <span className="calc-value bold">{formatCurrency(calculoAtual.valorFinalComFrete)}</span>
               </div>
-
-              {/* Mostrar saldo restante (apenas para cliente com entrada) */}
-              {tipoCliente === 'cliente' && entradaTotal > 0 && (
-                <div className="calc-row separator" style={{ marginTop: '12px', borderTop: '2px solid #007bff', paddingTop: '12px' }}>
-                  <span className="calc-label" style={{ fontSize: '1.05em' }}>Saldo a Pagar (após entrada):</span>
-                  <span className="calc-value bold" style={{ color: '#007bff', fontSize: '1.1em' }}>
-                    {formatCurrency(saldo)}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         );

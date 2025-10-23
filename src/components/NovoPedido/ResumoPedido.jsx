@@ -131,12 +131,28 @@ const ResumoPedido = ({
       
       // 4. Criar pedido
       console.log('4️⃣ Criando pedido...');
+      console.log('🔍 [DEBUG] Carrinho completo:', carrinho);
+      
+      // Buscar o ID do guindaste principal no carrinho (para controle de estoque)
+      const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
+      const guindasteId = guindasteNoCarrinho?.id || null;
+      
+      console.log('🔍 [DEBUG] Guindaste no carrinho:', guindasteNoCarrinho);
+      console.log('🔍 [DEBUG] ID do guindaste:', guindasteId);
+      
+      if (guindasteId) {
+        console.log('📦 Guindaste encontrado no carrinho - ID:', guindasteId);
+      } else {
+        console.warn('⚠️ ATENÇÃO: Nenhum guindaste encontrado no carrinho!');
+      }
+      
       const pedidoDataToSave = {
         numero_pedido: numeroPedido,
         cliente_id: cliente.id,
         vendedor_id: user.id,
         caminhao_id: caminhao.id,
-        status: 'em_andamento',
+        id_guindaste: guindasteId, // ← ADICIONADO para controle de estoque
+        status: 'finalizado', // Proposta comercial gerada = venda finalizada
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
         observacoes: [
           `Proposta gerada em ${new Date().toLocaleString('pt-BR')}.`,
@@ -145,8 +161,18 @@ const ResumoPedido = ({
         ].join(' ')
       };
       
+      console.log('🔍 [DEBUG] Dados do pedido a salvar:', pedidoDataToSave);
+      
       const pedido = await db.createPedido(pedidoDataToSave);
       console.log('✅ Pedido criado:', pedido);
+      console.log('🔍 [DEBUG] estoque_descontado:', pedido.estoque_descontado);
+      
+      // Verificar se o estoque foi descontado
+      if (pedido.estoque_descontado) {
+        console.log('✅ Estoque descontado automaticamente!');
+      } else {
+        console.warn('⚠️ ATENÇÃO: Estoque NÃO foi descontado!');
+      }
       
       // 5. Criar itens do pedido
       console.log('5️⃣ Criando itens do pedido...');
@@ -332,25 +358,25 @@ const ResumoPedido = ({
               {caminhaoData.medidaA && (
                 <div className="data-row">
                   <span className="label">Medida A:</span>
-                  <span className="value">{caminhaoData.medidaA} mm</span>
+                  <span className="value">{caminhaoData.medidaA} cm</span>
                 </div>
               )}
               {caminhaoData.medidaB && (
                 <div className="data-row">
                   <span className="label">Medida B:</span>
-                  <span className="value">{caminhaoData.medidaB} mm</span>
+                  <span className="value">{caminhaoData.medidaB} cm </span>
                 </div>
               )}
               {caminhaoData.medidaC && (
                 <div className="data-row">
                   <span className="label">Medida C:</span>
-                  <span className="value">{caminhaoData.medidaC} mm</span>
+                  <span className="value">{caminhaoData.medidaC} cm </span>
                 </div>
               )}
               {caminhaoData.medidaD && (
                 <div className="data-row">
                   <span className="label">Medida D:</span>
-                  <span className="value">{caminhaoData.medidaD} mm</span>
+                  <span className="value">{caminhaoData.medidaD} cm </span>
                 </div>
               )}
             </>

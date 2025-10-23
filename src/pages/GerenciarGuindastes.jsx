@@ -34,7 +34,8 @@ const GerenciarGuindastes = () => {
     imagens_adicionais: [],
     finame: '',
     ncm: '',
-    codigo_referencia: ''
+    codigo_referencia: '',
+    quantidade_disponivel: 0
   });
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
@@ -221,7 +222,8 @@ const GerenciarGuindastes = () => {
         imagens_adicionais: guindasteData.imagens_adicionais || [],
         finame: guindasteData.finame || '',
         ncm: guindasteData.ncm || '',
-        codigo_referencia: guindasteData.codigo_referencia || ''
+        codigo_referencia: guindasteData.codigo_referencia || '',
+        quantidade_disponivel: guindasteData.quantidade_disponivel || 0
       };
       console.log('📝 [handleEdit] FormData sendo definido:', newFormData);
       setFormData(newFormData);
@@ -288,7 +290,8 @@ const GerenciarGuindastes = () => {
       imagens_adicionais: [],
       finame: '',
       ncm: '',
-      codigo_referencia: ''
+      codigo_referencia: '',
+      quantidade_disponivel: 0
     });
     // Restaurar scroll do body
     document.body.classList.remove('modal-open');
@@ -309,7 +312,8 @@ const GerenciarGuindastes = () => {
       imagens_adicionais: [],
       finame: '',
       ncm: '',
-      codigo_referencia: ''
+      codigo_referencia: '',
+      quantidade_disponivel: 0
     });
     setShowModal(true);
     // Bloquear scroll do body
@@ -360,12 +364,14 @@ const GerenciarGuindastes = () => {
         imagens_adicionais: formData.imagens_adicionais || [],
         codigo_referencia: formData.codigo_referencia.trim(),
         finame: formData.finame.trim(),
-        ncm: formData.ncm.trim()
+        ncm: formData.ncm.trim(),
+        quantidade_disponivel: formData.quantidade_disponivel
       };
       
       console.log('📋 [handleSubmit] Dados do formulário:', formData);
       console.log('📋 [handleSubmit] Dados preparados para envio:', guindasteData);
       console.log('📋 [handleSubmit] Campo configuração:', guindasteData.configuração);
+      console.log('📦 [handleSubmit] Quantidade disponível:', guindasteData.quantidade_disponivel);
 
       if (editingGuindaste) {
         // LÓGICA DE ATUALIZAÇÃO
@@ -990,33 +996,48 @@ const GerenciarGuindastes = () => {
                     />
                     <small className="form-help">Nomenclatura Comum do Mercosul</small>
                   </div>
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">📦</span>
+                      Quantidade Disponível
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={formData.quantidade_disponivel}
+                      onChange={e => {
+                        const val = e.target.value;
+                        // Permitir campo vazio durante a digitação
+                        if (val === '') {
+                          handleInputChange('quantidade_disponivel', '');
+                          return;
+                        }
+                        const num = parseInt(val, 10);
+                        handleInputChange('quantidade_disponivel', isNaN(num) ? 0 : num);
+                      }}
+                      onBlur={e => {
+                        // Ao sair do campo, garantir que seja número
+                        const val = e.target.value;
+                        if (val === '' || val === null || val === undefined) {
+                          handleInputChange('quantidade_disponivel', 0);
+                        }
+                      }}
+                      placeholder="Ex: 5"
+                      className="form-input"
+                    />
+                    <small className="form-help">Quantidade em estoque para pronta entrega</small>
+                  </div>
                 </div>
               </div>
 
               <div className="form-actions">
                 <button type="submit" className="submit-btn" disabled={isLoading}>
-                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Salvar Alterações' : 'Cadastrar Guindaste')}
+                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Atualizar Guindaste' : 'Criar Guindaste')}
                 </button>
-                {editingGuindaste && (
-                  <button type="button" className="cancel-btn" onClick={() => {
-                    setEditingGuindaste(null);
-                    setFormData({
-                      subgrupo: '',
-                      modelo: '',
-                      peso_kg: '',
-                      configuração: '',
-                      tem_contr: 'Sim',
-                      imagem_url: '',
-                      descricao: '',
-                      nao_incluido: '',
-                      imagens_adicionais: [],
-                      finame: '',
-                      ncm: '',
-                      codigo_referencia: ''
-                    });
-                    setActiveTab('guindastes');
-                  }}>Cancelar Edição</button>
-                )}
+                <button type="button" className="cancel-btn" onClick={handleCloseModal}>
+                  Cancelar
+                </button>
               </div>
             </form>
           </div>
