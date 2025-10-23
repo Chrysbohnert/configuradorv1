@@ -31,16 +31,20 @@ const DashboardVendedor = () => {
         // Filtrar pedidos do usuário atual
         const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id);
         
-        // Calcular estatísticas do mês atual apenas de pedidos finalizados
+        // Calcular estatísticas do mês atual (apenas pedidos finalizados)
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
         const pedidosFinalizadosMes = pedidosDoVendedor.filter(pedido => {
+          // Contar apenas pedidos finalizados (proposta comercial gerada)
           if (pedido.status !== 'finalizado') return false;
           const d = new Date(pedido.created_at);
           return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
         });
         const valorTotalMes = pedidosFinalizadosMes.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
+
+        console.log('📊 [Dashboard] Pedidos finalizados do mês:', pedidosFinalizadosMes.length);
+        console.log('💰 [Dashboard] Valor total:', valorTotalMes);
 
         setStats({
           totalPedidos: pedidosFinalizadosMes.length,

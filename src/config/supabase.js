@@ -189,7 +189,7 @@ class DatabaseService {
       // As imagens serão carregadas sob demanda quando necessário
       const { data, error } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, codigo_referencia, peso_kg')
+        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel')
         .order('subgrupo')
         .range(from, to);
 
@@ -340,7 +340,10 @@ class DatabaseService {
       imagens_adicionais: guindasteData.imagens_adicionais,
       codigo_referencia: guindasteData.codigo_referencia,
       finame: guindasteData.finame,
-      ncm: guindasteData.ncm
+      ncm: guindasteData.ncm,
+      quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined) 
+        ? 0 
+        : parseInt(guindasteData.quantidade_disponivel, 10)
     };
     
     console.log('🔧 [createGuindaste] Dados limpos para inserção:', cleanData);
@@ -430,6 +433,9 @@ class DatabaseService {
         codigo_referencia: guindasteData.codigo_referencia || null,
         finame: guindasteData.finame || null,
         ncm: guindasteData.ncm || null,
+        quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined) 
+          ? 0 
+          : parseInt(guindasteData.quantidade_disponivel, 10),
         // Garantir que arrays sejam válidos
         imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
           ? guindasteData.imagens_adicionais 
@@ -556,6 +562,98 @@ class DatabaseService {
     // Limpar cache após operação de delete
     this.clearGuindastesCache();
     return { success: true };
+  }
+
+  // ===== CONTROLE DE ESTOQUE =====
+  async descontarEstoque(guindasteId) {
+    try {
+      console.log('📦 [descontarEstoque] Descontando 1 unidade do guindaste ID:', guindasteId);
+      
+      // 1. Buscar quantidade atual
+      const { data: guindaste, error: fetchError } = await supabase
+        .from('guindastes')
+        .select('quantidade_disponivel')
+        .eq('id', guindasteId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar guindaste:', fetchError);
+        throw fetchError;
+      }
+
+      const quantidadeAtual = guindaste.quantidade_disponivel || 0;
+      console.log('📊 [descontarEstoque] Quantidade atual:', quantidadeAtual);
+
+      // 2. Verificar se tem estoque
+      if (quantidadeAtual <= 0) {
+        console.warn('⚠️ [descontarEstoque] Sem estoque disponível');
+        return { success: false, message: 'Sem estoque disponível' };
+      }
+
+      // 3. Descontar 1 unidade
+      const novaQuantidade = quantidadeAtual - 1;
+      const { error: updateError } = await supabase
+        .from('guindastes')
+        .update({ quantidade_disponivel: novaQuantidade })
+        .eq('id', guindasteId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar estoque:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ [descontarEstoque] Estoque atualizado:', quantidadeAtual, '→', novaQuantidade);
+      
+      // Limpar cache
+      this.clearGuindastesCache();
+      
+      return { success: true, quantidadeAnterior: quantidadeAtual, quantidadeNova: novaQuantidade };
+    } catch (error) {
+      console.error('❌ [descontarEstoque] Erro:', error);
+      throw error;
+    }
+  }
+
+  async devolverEstoque(guindasteId) {
+    try {
+      console.log('📦 [devolverEstoque] Devolvendo 1 unidade ao guindaste ID:', guindasteId);
+      
+      // 1. Buscar quantidade atual
+      const { data: guindaste, error: fetchError } = await supabase
+        .from('guindastes')
+        .select('quantidade_disponivel')
+        .eq('id', guindasteId)
+        .single();
+
+      if (fetchError) {
+        console.error('❌ Erro ao buscar guindaste:', fetchError);
+        throw fetchError;
+      }
+
+      const quantidadeAtual = guindaste.quantidade_disponivel || 0;
+      
+      // 2. Adicionar 1 unidade
+      const novaQuantidade = quantidadeAtual + 1;
+      const { error: updateError } = await supabase
+        .from('guindastes')
+        .update({ quantidade_disponivel: novaQuantidade })
+        .eq('id', guindasteId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar estoque:', updateError);
+        throw updateError;
+      }
+
+      console.log('✅ [devolverEstoque] Estoque devolvido:', quantidadeAtual, '→', novaQuantidade);
+      
+      // Limpar cache
+      this.clearGuindastesCache();
+      
+      return { success: true, quantidadeAnterior: quantidadeAtual, quantidadeNova: novaQuantidade };
+    } catch (error) {
+      console.error('❌ [devolverEstoque] Erro:', error);
+      throw error;
+    }
   }
 
   // ===== LOGÍSTICA: CALENDÁRIO =====
@@ -772,14 +870,56 @@ class DatabaseService {
   }
 
   async createPedido(pedidoData) {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .insert([pedidoData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      console.log('📝 [createPedido] Criando pedido:', pedidoData);
+      
+      // 1. Criar o pedido
+      const { data, error } = await supabase
+        .from('pedidos')
+        .insert([pedidoData])
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      console.log('✅ [createPedido] Pedido criado com ID:', data.id);
+      
+      // 2. Se o pedido tem um guindaste associado, descontar do estoque
+      if (pedidoData.id_guindaste) {
+        console.log('📦 [createPedido] Descontando estoque do guindaste:', pedidoData.id_guindaste);
+        
+        try {
+          const resultado = await this.descontarEstoque(pedidoData.id_guindaste);
+          
+          if (resultado.success) {
+            console.log('✅ [createPedido] Estoque descontado:', resultado);
+            
+            // Marcar que o estoque foi descontado
+            const { data: updatedData } = await supabase
+              .from('pedidos')
+              .update({ estoque_descontado: true })
+              .eq('id', data.id)
+              .select()
+              .single();
+            
+            // Atualizar o objeto data com o campo atualizado
+            if (updatedData) {
+              data.estoque_descontado = true;
+            }
+          } else {
+            console.warn('⚠️ [createPedido] Não foi possível descontar estoque:', resultado.message);
+          }
+        } catch (estoqueError) {
+          console.error('❌ [createPedido] Erro ao descontar estoque:', estoqueError);
+          // Não falhar o pedido se houver erro no estoque, apenas logar
+        }
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('❌ [createPedido] Erro:', error);
+      throw error;
+    }
   }
 
   async updatePedido(id, pedidoData) {

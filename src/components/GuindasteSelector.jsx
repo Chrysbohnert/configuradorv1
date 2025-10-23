@@ -339,6 +339,25 @@ const GuindasteSelector = ({
                         <div className="config-code">
                           Cód: {guindaste.codigo_referencia || 'N/A'}
                         </div>
+                        {guindaste.quantidade_disponivel !== undefined && (
+                          <div 
+                            className="config-stock" 
+                            style={{
+                              marginTop: '8px',
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              display: 'inline-block',
+                              backgroundColor: guindaste.quantidade_disponivel > 0 ? '#10b981' : '#f59e0b',
+                              color: '#ffffff'
+                            }}
+                          >
+                            📦 {guindaste.quantidade_disponivel > 0 
+                              ? `${guindaste.quantidade_disponivel} ${guindaste.quantidade_disponivel === 1 ? 'disponível' : 'disponíveis'}` 
+                              : 'Sob encomenda'}
+                          </div>
+                        )}
                       </div>
                     </div>
                     
