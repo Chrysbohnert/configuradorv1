@@ -202,19 +202,50 @@ export const calcularValorTotalComExtras = ({
 };
 
 /**
- * Determina o valor da instalação baseado nas condições
+ * Determina o valor da instalação baseado nas condições e modelo do guindaste
+ * @param {Object} params
+ * @param {string} params.tipoCliente - Tipo de cliente ('cliente' ou 'revenda')
+ * @param {string} params.pagamentoInstalacaoPorConta - Tipo de pagamento da instalação
+ * @param {string} params.localInstalacao - Local de instalação selecionado
+ * @param {boolean} params.temGuindasteGSI - Se há guindaste GSI no carrinho
+ * @param {boolean} params.temGuindasteGSE - Se há guindaste GSE no carrinho
+ * @returns {Object} { valor, valorInformativo, soma }
  */
 export const calcularValorInstalacao = ({
   tipoCliente,
   pagamentoInstalacaoPorConta,
-  localInstalacao
+  localInstalacao,
+  temGuindasteGSI = false,
+  temGuindasteGSE = false
 }) => {
-  if (tipoCliente === 'cliente' && 
-      pagamentoInstalacaoPorConta === 'fabrica' && 
-      localInstalacao) {
-    return 4000; // Valor fixo da instalação
+  if (tipoCliente !== 'cliente' || !localInstalacao || !pagamentoInstalacaoPorConta) {
+    return { valor: 0, valorInformativo: 0, soma: false };
   }
-  return 0;
+
+  const clientePagaDireto = pagamentoInstalacaoPorConta === 'cliente paga direto';
+  const inclusoNoPedido = pagamentoInstalacaoPorConta === 'Incluso no pedido';
+
+  // GSI
+  if (temGuindasteGSI) {
+    if (clientePagaDireto) {
+      return { valor: 0, valorInformativo: 5500, soma: false }; // Apenas informativo
+    }
+    if (inclusoNoPedido) {
+      return { valor: 6350, valorInformativo: 6350, soma: true }; // Soma na proposta
+    }
+  }
+
+  // GSE
+  if (temGuindasteGSE) {
+    if (clientePagaDireto) {
+      return { valor: 0, valorInformativo: 6500, soma: false }; // Apenas informativo
+    }
+    if (inclusoNoPedido) {
+      return { valor: 7500, valorInformativo: 7500, soma: true }; // Soma na proposta
+    }
+  }
+
+  return { valor: 0, valorInformativo: 0, soma: false };
 };
 
 /**

@@ -527,7 +527,7 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
     doc.setFont('helvetica', 'normal');
     doc.text(pagamento.localInstalacao, 20, currentY);
     currentY += 5;
-    doc.text(`Tipo de Instalação: ${pagamento.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' : 'Por conta do cliente'}`, 20, currentY);
+    doc.text(`Tipo de Instalação: ${pagamento.tipoInstalacao === 'Incluso no pedido' ? 'Incluso no pedido' : 'Cliente paga direto'}`, 20, currentY);
     currentY += 8;
   }
 
