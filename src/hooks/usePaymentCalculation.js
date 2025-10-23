@@ -22,6 +22,7 @@ export const usePaymentCalculation = ({
   revendaTemIE,
   descontoRevendaIE,
   temGuindasteGSE,
+  temGuindasteGSI,
   aplicarRegraGSISemParticipacao,
   tipoFreteSelecionado,
   dadosFreteAtual,
@@ -69,10 +70,38 @@ export const usePaymentCalculation = ({
         aplicarRegraGSISemParticipacao
       });
 
-      // Calcular valores de instalação e frete
-      const valorInstalacao = tipoCliente === 'cliente' && 
-                             pagamentoInstalacaoPorConta === 'fabrica' && 
-                             localInstalacao ? 4000 : 0;
+      // Calcular valores de instalação baseado no modelo
+      let valorInstalacao = 0;
+      let valorInformativoInstalacao = 0;
+      let somaInstalacao = false;
+
+      if (tipoCliente === 'cliente' && localInstalacao && pagamentoInstalacaoPorConta) {
+        const clientePagaDireto = pagamentoInstalacaoPorConta === 'cliente paga direto';
+        const inclusoNoPedido = pagamentoInstalacaoPorConta === 'Incluso no pedido';
+
+        // GSI
+        if (temGuindasteGSI) {
+          if (clientePagaDireto) {
+            valorInformativoInstalacao = 5500;
+            somaInstalacao = false;
+          } else if (inclusoNoPedido) {
+            valorInstalacao = 6350;
+            valorInformativoInstalacao = 6350;
+            somaInstalacao = true;
+          }
+        }
+        // GSE
+        else if (temGuindasteGSE) {
+          if (clientePagaDireto) {
+            valorInformativoInstalacao = 6500;
+            somaInstalacao = false;
+          } else if (inclusoNoPedido) {
+            valorInstalacao = 7500;
+            valorInformativoInstalacao = 7500;
+            somaInstalacao = true;
+          }
+        }
+      }
 
       const valorFrete = tipoFrete === 'cif' && dadosFreteAtual && tipoFreteSelecionado ?
         (tipoFreteSelecionado === 'prioridade' ?
@@ -100,6 +129,8 @@ export const usePaymentCalculation = ({
         saldo: saldoComDesconto,
         valorFrete,
         valorInstalacao,
+        valorInformativoInstalacao,
+        somaInstalacao,
         valorFinalComFrete: valorFinalComFreteEInstalacao,
         entradaTotal,
         faltaEntrada: Math.max(0, faltaEntrada),

@@ -165,8 +165,8 @@ const ResumoForm = ({
           <div className="data-row">
             <span className="label">Pagamento por Conta de:</span>
             <span className="value">
-              {pagamentoData.tipoInstalacao === 'cliente' && 'Cliente'}
-              {pagamentoData.tipoInstalacao === 'fabrica' && 'Fábrica'}
+              {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
+              {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
               {!pagamentoData.tipoInstalacao && 'Não informado'}
             </span>
           </div>

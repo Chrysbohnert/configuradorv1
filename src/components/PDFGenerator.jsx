@@ -224,16 +224,26 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           ${(() => {
             const guindastes = pedidoData.carrinho.filter(item => item.tipo === 'guindaste');
             const guindastesCompletos = guindastes.map(item => {
+              // Tentar encontrar dados completos do guindaste
               const guindasteCompleto = (pedidoData.guindastes || []).find(g => (
                 (g?.id && item?.id && g.id === item.id) ||
                 (g?.nome && item?.nome && g.nome === item.nome) ||
                 (g?.modelo && item?.modelo && g.modelo === item.modelo) ||
                 (g?.subgrupo && item?.subgrupo && g.subgrupo === item.subgrupo)
               ));
-              return {
+              
+              // Mesclar dados, priorizando os dados completos do banco
+              const merged = {
                 ...item,
-                ...guindasteCompleto
+                ...(guindasteCompleto || {}),
+                // Garantir que campos críticos não sejam sobrescritos por undefined
+                descricao: guindasteCompleto?.descricao || item?.descricao || '',
+                nao_incluido: guindasteCompleto?.nao_incluido || item?.nao_incluido || '',
+                finame: guindasteCompleto?.finame || item?.finame || '',
+                ncm: guindasteCompleto?.ncm || item?.ncm || ''
               };
+              
+              return merged;
             });
             try {
               console.log('🔎 Itens com possíveis detalhes (guindastesCompletos):', guindastesCompletos.map(g => ({
@@ -595,8 +605,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             </div>
             <div style="margin-bottom: 10px;">
               <strong>Tipo de Instalação:</strong> ${
-                pedidoData.pagamentoData?.tipoInstalacao === 'cliente' ? 'Por conta do cliente' :
-                pedidoData.pagamentoData?.tipoInstalacao === 'fabrica' ? 'Por conta da fábrica' :
+                pedidoData.pagamentoData?.tipoInstalacao === 'cliente paga direto' ? 'Cliente paga direto' :
+                pedidoData.pagamentoData?.tipoInstalacao === 'Incluso no pedido' ? 'Incluso no pedido' :
                 'Não informado'
               }
             </div>

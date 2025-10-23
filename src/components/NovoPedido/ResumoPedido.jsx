@@ -489,8 +489,8 @@ const ResumoPedido = ({
               <div className="data-row">
                 <span className="label">Tipo de Instalação:</span>
                 <span className="value">
-                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
-                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
+                  {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
                   {!pagamentoData.tipoInstalacao && 'Não informado'}
                 </span>
               </div>

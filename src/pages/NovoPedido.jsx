@@ -425,8 +425,10 @@ const NovoPedido = () => {
         codigo_produto: guindasteCompleto.codigo_referencia,
         grafico_carga_url: guindasteCompleto.grafico_carga_url,
         configuracao_lancas: guindasteCompleto.peso_kg,
-        descricao: guindasteCompleto.descricao,
-        nao_incluido: guindasteCompleto.nao_incluido,
+        descricao: guindasteCompleto.descricao || '',
+        nao_incluido: guindasteCompleto.nao_incluido || '',
+        finame: guindasteCompleto.finame || '',
+        ncm: guindasteCompleto.ncm || '',
         preco: precoGuindaste,
         tipo: 'guindaste'
       };
@@ -1948,14 +1950,22 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   const guindastesCompletos = carrinho
     .filter(item => item.tipo === 'guindaste')
     .map(item => {
-      // Buscar guindaste completo da lista carregada
+      // Buscar guindaste completo da lista carregada (fallback)
       const guindasteCompleto = guindastes.find(g => g.id === item.id);
       return {
+        id: item.id,
         nome: item.nome,
         modelo: item.modelo || guindasteCompleto?.modelo,
+        subgrupo: item.nome,
         codigo_produto: item.codigo_produto,
-        descricao: guindasteCompleto?.descricao || '',
-        nao_incluido: guindasteCompleto?.nao_incluido || ''
+        codigo_referencia: item.codigo_produto,
+        peso_kg: item.configuracao_lancas,
+        grafico_carga_url: item.grafico_carga_url,
+        // PRIORIZAR dados do carrinho (que já vêm completos do banco)
+        descricao: item.descricao || guindasteCompleto?.descricao || '',
+        nao_incluido: item.nao_incluido || guindasteCompleto?.nao_incluido || '',
+        finame: item.finame || guindasteCompleto?.finame || '',
+        ncm: item.ncm || guindasteCompleto?.ncm || ''
       };
     });
 
@@ -2183,8 +2193,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
               <div className="data-row">
                 <span className="label">Tipo de Instalação:</span>
                 <span className="value">
-                  {pagamentoData.tipoInstalacao === 'cliente' && 'Por conta do cliente'}
-                  {pagamentoData.tipoInstalacao === 'fabrica' && 'Por conta da fábrica'}
+                  {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
+                  {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
                   {!pagamentoData.tipoInstalacao && 'Não informado'}
                 </span>
               </div>
