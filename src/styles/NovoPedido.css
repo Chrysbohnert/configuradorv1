@@ -2533,20 +2533,20 @@
 
 @media (max-width: 768px) {
   .novo-pedido-content {
-    padding: 20px 16px;
+    padding: 16px 12px;
     min-height: calc(100vh - 200px);
   }
   
   .progress-bar-container {
-    padding: 20px 16px;
-    margin-bottom: 24px;
-    border-radius: 16px;
+    padding: 16px 12px;
+    margin-bottom: 20px;
+    border-radius: 12px;
     background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   }
   
   .progress-bar-background {
-    height: 10px;
-    margin-bottom: 12px;
+    height: 8px;
+    margin-bottom: 10px;
     border-radius: 5px;
   }
   
@@ -2566,6 +2566,10 @@
     margin-bottom: 1.25rem;
     overflow-x: auto;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
   }
 
   .progress-steps::-webkit-scrollbar {
@@ -2574,10 +2578,16 @@
 
   .step {
     min-height: 85px;
-    min-width: 90px;
-    padding: 0.625rem 0.375rem;
+    min-width: 0;
+    flex: 1;
+    max-width: calc(20% - 0.3rem);
+    padding: 0.625rem 0.25rem;
     border-radius: 8px;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
   }
 
   .step.has-data::after {
@@ -3703,9 +3713,11 @@
   }
   
   .novo-pedido-container .progress-steps .step {
-    padding: 0.75rem 0.375rem 1rem !important;
-    min-width: 80px;
-    flex-shrink: 0;
+    padding: 0.75rem 0.25rem 1rem !important;
+    min-width: 0;
+    flex: 1;
+    max-width: calc(20% - 0.2rem);
+    flex-shrink: 1;
   }
   
   .novo-pedido-container .progress-steps .step .step-number {
@@ -3751,8 +3763,11 @@
   
   /* Stepper */
   .novo-pedido-container .progress-steps .step {
-    padding: 0.625rem 0.25rem 0.875rem !important;
-    min-width: 70px;
+    padding: 0.625rem 0.2rem 0.875rem !important;
+    min-width: 0;
+    flex: 1;
+    max-width: calc(20% - 0.1rem);
+    flex-shrink: 1;
   }
   
   .novo-pedido-container .progress-steps .step .step-number {
@@ -3789,4 +3804,417 @@
   background: transparent !important;
   background-color: transparent !important;
   background-image: none !important;
+}
+
+/* Melhorias para telas muito pequenas (480px) */
+@media (max-width: 480px) {
+  .novo-pedido-content {
+    padding: 12px 8px;
+  }
+  
+  .progress-bar-container {
+    padding: 12px 8px;
+    margin-bottom: 16px;
+  }
+  
+  .progress-text {
+    font-size: 14px;
+  }
+  
+  .progress-percentage {
+    font-size: 12px;
+  }
+  
+  /* Melhorias específicas para indicador de progresso mobile */
+  .progress-steps {
+    gap: 8px;
+    padding: 12px 8px;
+    margin-bottom: 16px;
+  }
+  
+  .step {
+    min-width: 65px;
+    padding: 8px 6px 12px;
+    border-radius: 8px;
+  }
+  
+  .step-number {
+    width: 24px !important;
+    height: 24px !important;
+    font-size: 0.6rem !important;
+  }
+  
+  .step-title {
+    font-size: 0.6rem !important;
+    line-height: 1.1 !important;
+    margin-bottom: 2px !important;
+  }
+  
+  .step-description {
+    font-size: 0.5rem !important;
+    line-height: 1.1 !important;
+  }
+  
+  .capacidade-card {
+    padding: 16px;
+    min-height: 70px;
+  }
+  
+  .capacidade-card h3 {
+    font-size: 16px;
+  }
+  
+  .capacidade-card p {
+    font-size: 13px;
+  }
+  
+  .modelo-card {
+    padding: 20px;
+    min-height: 90px;
+  }
+  
+  .modelo-card h3 {
+    font-size: 18px;
+  }
+  
+  .modelo-card p {
+    font-size: 14px;
+  }
+  
+  .floating-nav {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    padding: 12px;
+  }
+  
+  .floating-nav-btn {
+    padding: 14px 20px;
+    font-size: 13px;
+    min-height: 50px;
+  }
+}
+
+/* ============================================
+   ESTUDO VEHICULAR - RESPONSIVO PERFEITO
+   ============================================ */
+
+.estudo-veicular-container {
+  display: flex;
+  gap: 30px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.estudo-veicular-image {
+  flex: 1;
+  min-width: 300px;
+  text-align: center;
+}
+
+.estudo-veicular-img {
+  width: 100%;
+  max-width: 500px;
+  height: auto;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.estudo-veicular-fallback {
+  display: none;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+}
+
+.estudo-veicular-fallback p {
+  color: #6c757d;
+  margin: 0;
+}
+
+.estudo-veicular-form {
+  flex: 1;
+  min-width: 300px;
+}
+
+.estudo-veicular-instructions {
+  margin-bottom: 15px;
+  color: #6c757d;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.estudo-veicular-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+/* Responsividade Estudo Veicular */
+@media (max-width: 768px) {
+  .estudo-veicular-container {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .estudo-veicular-image,
+  .estudo-veicular-form {
+    min-width: 100%;
+    flex: none;
+  }
+  
+  .estudo-veicular-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .estudo-veicular-instructions {
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .estudo-veicular-container {
+    gap: 16px;
+  }
+  
+  .estudo-veicular-img {
+    max-width: 100%;
+    border-radius: 6px;
+  }
+  
+  .estudo-veicular-fallback {
+    padding: 16px;
+  }
+  
+  .estudo-veicular-instructions {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+  
+  .estudo-veicular-grid {
+    gap: 10px;
+  }
+}
+
+/* Melhorias específicas para formulários mobile */
+@media (max-width: 768px) {
+  .form-section {
+    margin-bottom: 20px;
+  }
+  
+  .section-header {
+    margin-bottom: 16px;
+  }
+  
+  .section-header h3 {
+    font-size: 18px;
+    margin-bottom: 4px;
+  }
+  
+  .section-header p {
+    font-size: 14px;
+  }
+  
+  .form-group {
+    margin-bottom: 16px;
+  }
+  
+  .form-group label {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 12px;
+    font-size: 16px; /* Previne zoom no iOS */
+    border-radius: 8px;
+  }
+  
+  .form-group textarea {
+    min-height: 80px;
+  }
+  
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .form-row .form-group {
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .form-section {
+    margin-bottom: 16px;
+  }
+  
+  .section-header {
+    margin-bottom: 12px;
+  }
+  
+  .section-header h3 {
+    font-size: 16px;
+  }
+  
+  .section-header p {
+    font-size: 13px;
+  }
+  
+  .form-group {
+    margin-bottom: 12px;
+  }
+  
+  .form-group label {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+  
+  .form-group textarea {
+    min-height: 70px;
+  }
+  
+  .form-row {
+    gap: 12px;
+  }
+}
+
+/* Melhorias para telas muito pequenas (360px) */
+@media (max-width: 360px) {
+  .form-section {
+    margin-bottom: 12px;
+  }
+  
+  .section-header h3 {
+    font-size: 15px;
+  }
+  
+  .section-header p {
+    font-size: 12px;
+  }
+  
+  .form-group label {
+    font-size: 12px;
+  }
+  
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 8px;
+    font-size: 16px;
+    border-radius: 4px;
+  }
+  
+  .form-group textarea {
+    min-height: 60px;
+  }
+}
+
+/* Melhorias para telas muito pequenas (360px) - Indicador de Progresso */
+@media (max-width: 360px) {
+  .progress-bar-container {
+    padding: 10px 6px;
+    margin-bottom: 12px;
+  }
+  
+  .progress-text {
+    font-size: 12px;
+  }
+  
+  .progress-percentage {
+    font-size: 11px;
+  }
+  
+  .progress-steps {
+    gap: 6px;
+    padding: 10px 6px;
+    margin-bottom: 12px;
+  }
+  
+  .step {
+    min-width: 0;
+    flex: 1;
+    max-width: calc(20% - 0.1rem);
+    padding: 6px 2px 10px;
+    border-radius: 6px;
+    flex-shrink: 1;
+  }
+  
+  .step-number {
+    width: 20px !important;
+    height: 20px !important;
+    font-size: 0.5rem !important;
+  }
+  
+  .step-title {
+    font-size: 0.5rem !important;
+    line-height: 1.0 !important;
+    margin-bottom: 1px !important;
+  }
+  
+  .step-description {
+    font-size: 0.4rem !important;
+    line-height: 1.0 !important;
+  }
+  
+  .step.active .step-title {
+    font-size: 0.55rem !important;
+  }
+}
+
+/* Correção definitiva para overflow - Garantir que sempre caiba na tela */
+@media (max-width: 768px) {
+  .progress-steps {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+  
+  .step {
+    flex: 1 !important;
+    min-width: 0 !important;
+    max-width: calc(20% - 0.2rem) !important;
+    flex-shrink: 1 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .progress-steps {
+    gap: 4px !important;
+    padding: 8px 4px !important;
+  }
+  
+  .step {
+    max-width: calc(20% - 0.1rem) !important;
+    padding: 6px 2px 8px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .progress-steps {
+    gap: 2px !important;
+    padding: 6px 2px !important;
+  }
+  
+  .step {
+    max-width: calc(20% - 0.05rem) !important;
+    padding: 4px 1px 6px !important;
+  }
 } 
