@@ -23,7 +23,6 @@ export const CODIGOS_MODELOS = {
 export const CODIGOS_OPCIONAIS = {
   "CR": "10",
   "EH": "20", 
-  "ECL": "20",
   "ECS": "25",
   "Caminhão 3/4": "05"
 };
@@ -39,25 +38,19 @@ export const CODIGOS_COMPLETOS = {
   
   // GSI 8.0
   'GSI 8.0|Caminhão 3/4': '800260',
-  'GSI 8.0|ECL': '800220',
   'GSI 8.0|ECS': '800230',
   'GSI 8.0|CR': '800210',
-  'GSI 8.0|CR/ECL': '800240',
   'GSI 8.0|CR/ECS': '800250',
   'GSI 8.0|Caminhão 3/4 CR': '800270',
   
   // GSI 10.8
-  'GSI 10.8|ECL': '108820',
   'GSI 10.8|ECS': '108830',
   'GSI 10.8|CR': '108810',
-  'GSI 10.8|CR/ECL': '108840',
   'GSI 10.8|CR/ECS': '108850',
   
   // GSI 8.0C (Canivete)
   'GSI 8.0C|CR': '800810',
-  'GSI 8.0C|CR/ECL': '800820',
   'GSI 8.0C|CR/ECS': '800830',
-  'GSI 8.0C|ECL': '800840',
   'GSI 8.0C|ECS': '800850',
   'GSI 8.0C|CR/EH': '800860',
   'GSI 8.0C|EH': '800870',
@@ -66,9 +59,7 @@ export const CODIGOS_COMPLETOS = {
   
   // GSI 10.8C (Canivete)
   'GSI 10.8C|CR': '108910',
-  'GSI 10.8C|CR/ECL': '108920',
   'GSI 10.8C|CR/ECS': '108930',
-  'GSI 10.8C|ECL': '108940',
   'GSI 10.8C|ECS': '108950',
   
   // GSE 8.0C
@@ -123,10 +114,8 @@ export const CODIGOS_COMPLETOS = {
 export const DESCRICOES_OPCIONAIS = {
   "CR": "Controle Remoto",
   "EH": "Extensiva Hidráulica",
-  "ECL": "Extensiva Cilindro Lateral", 
   "ECS": "Extensiva Cilindro Superior",
   "Caminhão 3/4": "Caminhão 3/4",
-  "CR/ECL": "Controle Remoto + Extensiva Cilindro Lateral",
   "CR/ECS": "Controle Remoto + Extensiva Cilindro Superior",
   "CR/EH": "Controle Remoto + Extensiva Hidráulica",
   "EH/P": "Extensiva Hidráulica + Patola",
@@ -136,9 +125,8 @@ export const DESCRICOES_OPCIONAIS = {
 
 // Combinações válidas de opcionais baseadas na tabela real
 export const COMBINACOES_VALIDAS = {
-  "CR": ["ECL", "ECS", "EH"],
+  "CR": ["ECS", "EH"],
   "EH": ["CR", "P", "GR"],
-  "ECL": ["CR"],
   "ECS": ["CR"],
   "Caminhão 3/4": ["CR", "EH"]
 };
@@ -147,14 +135,12 @@ export const COMBINACOES_VALIDAS = {
 export const OPCIONAIS_DISPONIVEIS = [
   { codigo: 'CR', nome: 'Controle Remoto' },
   { codigo: 'EH', nome: 'Extensiva Hidráulica' },
-  { codigo: 'ECL', nome: 'Extensiva Cilindro Lateral' },
   { codigo: 'ECS', nome: 'Extensiva Cilindro Superior' },
   { codigo: 'Caminhão 3/4', nome: 'Caminhão 3/4' }
 ];
 
 // Combinações pré-definidas baseadas na tabela real
 export const COMBINACOES_PREDEFINIDAS = [
-  { codigo: 'CR/ECL', nome: 'Controle Remoto + Extensiva Cilindro Lateral' },
   { codigo: 'CR/ECS', nome: 'Controle Remoto + Extensiva Cilindro Superior' },
   { codigo: 'CR/EH', nome: 'Controle Remoto + Extensiva Hidráulica' },
   { codigo: 'EH/P', nome: 'Extensiva Hidráulica + Patola' },
