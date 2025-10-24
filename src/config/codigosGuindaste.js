@@ -119,7 +119,7 @@ export const DESCRICOES_OPCIONAIS = {
   "CR/ECS": "Controle Remoto + Extensiva Cilindro Superior",
   "CR/EH": "Controle Remoto + Extensiva Hidráulica",
   "EH/P": "Extensiva Hidráulica + Patola",
-  "EH/GR": "Extensiva Hidráulica + Garra",
+  "EH/GR": "Extensiva Hidráulica + Preparação p/ Garra + Rotador",
   "CR/EH/P": "Controle Remoto + Extensiva Hidráulica + Patola"
 };
 
@@ -144,7 +144,7 @@ export const COMBINACOES_PREDEFINIDAS = [
   { codigo: 'CR/ECS', nome: 'Controle Remoto + Extensiva Cilindro Superior' },
   { codigo: 'CR/EH', nome: 'Controle Remoto + Extensiva Hidráulica' },
   { codigo: 'EH/P', nome: 'Extensiva Hidráulica + Patola' },
-  { codigo: 'EH/GR', nome: 'Extensiva Hidráulica + Garra' },
+  { codigo: 'EH/GR', nome: 'Extensiva Hidráulica + Preparação p/ Garra + Rotador' },
   { codigo: 'CR/EH/P', nome: 'Controle Remoto + Extensiva Hidráulica + Patola' }
 ];
 
