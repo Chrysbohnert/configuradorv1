@@ -870,6 +870,7 @@ const GerenciarGuindastes = () => {
                     <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
                     <option value="CR/ECL - Controle Remoto e Extensiva Cilindro Lateral">🎮⚙️ CR/ECL - Controle Remoto e Extensiva Cilindro Lateral</option>
                     <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
+                    <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
                     <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
                   </select>
                   <small className="form-help">Selecione a configuração completa do guindaste</small>
