@@ -868,7 +868,7 @@ const GerenciarGuindastes = () => {
                     <option value="Caminhão 3/4">🚛 Caminhão 3/4</option>
                     <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
                     <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
-                    <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
+                    <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">🔧🔨 EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
                     <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
                     <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">🔧🦾 EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador</option>
                   </select>
