@@ -60,7 +60,39 @@
 @media (max-width: 768px) {
   .vendedor-content {
     margin-left: 0;
-    padding-top: 60px; /* Espaço para o botão mobile */
+    padding-top: 80px; /* Mais espaço para o botão mobile */
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  
+  /* Melhorar espaçamento mobile */
+  .vendedor-layout {
+    min-height: 100vh;
+    background-color: #f8fafc;
+  }
+}
+
+/* Melhorias específicas para telas pequenas */
+@media (max-width: 480px) {
+  .vendedor-content {
+    padding-top: 70px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  
+  /* Melhorar touch targets */
+  .mobile-toggle {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    top: 12px;
+    left: 12px;
+  }
+  
+  /* Melhorar overlay */
+  .nav-overlay {
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
   }
 }
 

@@ -26,9 +26,6 @@ export const extrairConfiguracoes = (subgrupo) => {
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
     configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
   }
-  if (subgrupo.includes(' ECL') || subgrupo.includes('ECL ') || subgrupo.includes('/ECL')) {
-    configuracoes.push({ icon: '⊓', text: 'ECL - Extensiva Cilindro Lateral' });
-  }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
     configuracoes.push({ icon: '⊓', text: 'ECS - Extensiva Cilindro Superior' });
   }
