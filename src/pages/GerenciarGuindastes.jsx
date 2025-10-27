@@ -863,15 +863,14 @@ const GerenciarGuindastes = () => {
                     <option value="STANDARD - Pedido Padrão">📦 STANDARD - Pedido Padrão</option>
                     <option value="CR - Controle Remoto">🎮 CR - Controle Remoto</option>
                     <option value="EH - Extensiva Hidráulica">🔧 EH - Extensiva Hidráulica</option>
-                    <option value="ECL - Extensiva Cilindro Lateral">⚙️ ECL - Extensiva Cilindro Lateral</option>
                     <option value="P - Preparação p/ Perfuratriz">🔨 P - Preparação p/ Perfuratriz</option>
                     <option value="GR - Preparação p/ Garra e Rotator">🦾 GR - Preparação p/ Garra e Rotator</option>
                     <option value="Caminhão 3/4">🚛 Caminhão 3/4</option>
                     <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
-                    <option value="CR/ECL - Controle Remoto e Extensiva Cilindro Lateral">🎮⚙️ CR/ECL - Controle Remoto e Extensiva Cilindro Lateral</option>
                     <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
                     <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
                     <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
+                    <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">🔧🦾 EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador</option>
                   </select>
                   <small className="form-help">Selecione a configuração completa do guindaste</small>
                 </div>

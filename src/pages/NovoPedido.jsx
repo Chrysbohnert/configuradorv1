@@ -1013,9 +1013,6 @@ const extrairConfiguracoes = (subgrupo) => {
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
     configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
   }
-  if (subgrupo.includes(' ECL') || subgrupo.includes('ECL ') || subgrupo.includes('/ECL')) {
-    configuracoes.push({ icon: '⊓', text: 'ECL - Extensiva Cilindro Lateral' });
-  }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
     configuracoes.push({ icon: '⊓', text: 'ECS - Extensiva Cilindro Superior' });
   }
@@ -1678,37 +1675,30 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           <p>Medidas técnicas para instalação do guindaste</p>
         </div>
           
-          <div style={{ display: 'flex', gap: '30px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="estudo-veicular-container">
             {/* Imagem do Estudo Veicular */}
-            <div style={{ flex: '1', minWidth: '300px', textAlign: 'center' }}>
+            <div className="estudo-veicular-image">
               <img 
                 src="/estudoveicular.png" 
                 alt="Estudo Veicular" 
-                style={{ 
-                  width: '100%', 
-                  maxWidth: '500px', 
-                  height: 'auto', 
-                  border: '2px solid #dee2e6',
-                  borderRadius: '8px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                }}
+                className="estudo-veicular-img"
                 onError={(e) => {
                   e.target.style.display = 'none';
                   e.target.nextSibling.style.display = 'block';
                 }}
               />
-              <div style={{ display: 'none', padding: '20px', background: '#f8f9fa', border: '2px dashed #dee2e6', borderRadius: '8px' }}>
-                <p style={{ color: '#6c757d', margin: '0' }}>Imagem não disponível</p>
+              <div className="estudo-veicular-fallback">
+                <p>Imagem não disponível</p>
               </div>
             </div>
 
             {/* Campos de Medidas */}
-            <div style={{ flex: '1', minWidth: '300px' }}>
-              <p style={{ marginBottom: '15px', color: '#6c757d', fontSize: '14px' }}>
+            <div className="estudo-veicular-form">
+              <p className="estudo-veicular-instructions">
                 Preencha as medidas conforme indicado na imagem, Caminhão 1 Guindaste GSI Interno, caminhão 2 GUindaste GSE Externo:
               </p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+              <div className="estudo-veicular-grid">
                 <div className="form-group">
                   <label>Medida A "CHASSI AO ASSOALHO" (cm)</label>
                   <input
