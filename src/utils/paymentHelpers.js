@@ -94,11 +94,11 @@ export const deveMostrarDescontoAdicional = ({
 
   // Cliente COM participação de revenda
   if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
-    // Se for produtor rural (com IE) e NÃO houver GSE: mostra como "Desconto do Vendedor"
-    if (revendaTemIE === 'sim' && !temGuindasteGSE) {
+    // Se for produtor rural (com IE): mostra como "Desconto do Vendedor"
+    // GSE: até 3% | Outros: até 5%
+    if (revendaTemIE === 'sim') {
       return true;
     }
-    // Se houver GSE: não mostra (desconto zerado automaticamente)
     return false;
   }
 

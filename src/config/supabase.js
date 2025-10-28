@@ -1194,6 +1194,142 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  // ===== PROPOSTAS =====
+  
+  /**
+   * Criar nova proposta/orçamento
+   */
+  async createProposta(propostaData) {
+    const { data, error } = await supabase
+      .from('propostas')
+      .insert([propostaData])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Erro ao criar proposta:', error);
+      throw error;
+    }
+    console.log('✅ Proposta criada:', data.numero_proposta);
+    return data;
+  }
+
+  /**
+   * Listar propostas com filtros
+   */
+  async getPropostas(filters = {}) {
+    let query = supabase
+      .from('propostas')
+      .select('*')
+      .order('data', { ascending: false });
+
+    if (filters.vendedor_id) {
+      query = query.eq('vendedor_id', filters.vendedor_id);
+    }
+    if (filters.status) {
+      query = query.eq('status', filters.status);
+    }
+    if (filters.tipo) {
+      query = query.eq('tipo', filters.tipo);
+    }
+
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('❌ Erro ao listar propostas:', error);
+      throw error;
+    }
+    return data || [];
+  }
+
+  /**
+   * Buscar proposta por número
+   */
+  async getPropostaByNumero(numeroProposta) {
+    const { data, error } = await supabase
+      .from('propostas')
+      .select('*')
+      .eq('numero_proposta', numeroProposta)
+      .single();
+    
+    if (error) {
+      console.error('❌ Erro ao buscar proposta:', error);
+      throw error;
+    }
+    return data;
+  }
+
+  /**
+   * Buscar proposta por ID
+   */
+  async getPropostaById(id) {
+    const { data, error } = await supabase
+      .from('propostas')
+      .select('*')
+      .eq('id', id)
+      .single();
+    
+    if (error) {
+      console.error('❌ Erro ao buscar proposta:', error);
+      throw error;
+    }
+    return data;
+  }
+
+  /**
+   * Atualizar proposta (ex: mudar de pendente para finalizado)
+   */
+  async updateProposta(id, updates) {
+    const { data, error } = await supabase
+      .from('propostas')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Erro ao atualizar proposta:', error);
+      throw error;
+    }
+    console.log('✅ Proposta atualizada:', data.numero_proposta);
+    return data;
+  }
+
+  /**
+   * Excluir proposta (soft delete - muda status para 'excluido')
+   */
+  async deleteProposta(id) {
+    const { data, error } = await supabase
+      .from('propostas')
+      .update({ status: 'excluido' })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ Erro ao excluir proposta:', error);
+      throw error;
+    }
+    console.log('✅ Proposta excluída:', data.numero_proposta);
+    return data;
+  }
+
+  /**
+   * Excluir proposta permanentemente (hard delete)
+   */
+  async deletePropostaPermanente(id) {
+    const { error } = await supabase
+      .from('propostas')
+      .delete()
+      .eq('id', id);
+    
+    if (error) {
+      console.error('❌ Erro ao excluir proposta permanentemente:', error);
+      throw error;
+    }
+    console.log('✅ Proposta excluída permanentemente');
+  }
+
   async uploadGraficoCarga(file, fileName) {
     try {
       console.log('Iniciando upload do arquivo:', fileName);

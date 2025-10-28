@@ -135,7 +135,6 @@ const PaymentPolicy = ({
   // Estados para Participação de Revenda (apenas para Cliente)
   const [participacaoRevenda, setParticipacaoRevenda] = useState(''); // 'sim' | 'nao'
   const [revendaTemIE, setRevendaTemIE] = useState(''); // 'sim' | 'nao' (se participacaoRevenda === 'sim')
-  const [descontoRevendaIE, setDescontoRevendaIE] = useState(0); // Desconto do vendedor: 1-5% (se cliente COM participação de revenda - Produtor rural)
 
   // ← NOVO: Log quando estados internos mudam
   useEffect(() => {
@@ -145,10 +144,10 @@ const PaymentPolicy = ({
         prazoSelecionado,
         participacaoRevenda,
         revendaTemIE,
-        descontoRevendaIE
+        descontoAdicional
       });
     }
-  }, [tipoCliente, prazoSelecionado, participacaoRevenda, revendaTemIE, descontoRevendaIE, debug]);
+  }, [tipoCliente, prazoSelecionado, participacaoRevenda, revendaTemIE, descontoAdicional, debug]);
 
   // Verificar se há guindastes GSE no carrinho
   const temGuindasteGSE = useMemo(() => {
@@ -286,16 +285,8 @@ const PaymentPolicy = ({
       if (onClienteIEChange) {
         onClienteIEChange(true);
       }
-      setDescontoRevendaIE(1); // Default: 1%
     }
   }, [tipoCliente, participacaoRevenda, temGuindasteGSI, revendaTemIE, onClienteIEChange]);
-
-  // Zerar desconto do vendedor quando houver GSE (Cliente + Participação de Revenda + Produtor rural)
-  useEffect(() => {
-    if (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && descontoRevendaIE > 0) {
-      setDescontoRevendaIE(0);
-    }
-  }, [tipoCliente, participacaoRevenda, revendaTemIE, temGuindasteGSE, descontoRevendaIE]);
 
   // Efeito para recalcular quando mudar o tipo, prazo ou preço base
   useEffect(() => {
@@ -353,15 +344,8 @@ const PaymentPolicy = ({
       // - Cliente COM participação de revenda - Rodoviário → vendedor NÃO pode dar desconto
       // - Cliente SEM participação de revenda → vendedor pode dar 0-3% (OU até 12% se houver GSI e for produtor rural)
       // - Revenda → vendedor pode dar 0-12% (ou até 15% para GSI com múltiplas unidades)
-      let descontoFinal = 0;
-      if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
-        if (revendaTemIE === 'sim' && !temGuindasteGSE) {
-          descontoFinal = descontoRevendaIE; // Vendedor aplica: 1-5% (apenas se NÃO houver GSE)
-        }
-        // Se for Rodoviário OU se houver GSE, vendedor não pode dar desconto (descontoFinal permanece 0)
-      } else {
-        descontoFinal = descontoAdicional; // Vendedor aplica: 0-3% (cliente) ou 0-15% (revenda com GSI)
-      }
+      // Sempre usa descontoAdicional
+      let descontoFinal = descontoAdicional;
 
       // Aplicar desconto adicional do vendedor (sobre o PREÇO BASE, não sobre o valor ajustado)
       const descontoAdicionalValor = precoBase * (descontoFinal / 100);
@@ -450,7 +434,7 @@ const PaymentPolicy = ({
           faltaEntrada: Math.max(0, faltaEntrada),
           saldoAPagar: saldo,
           formaEntrada: formaEntrada, // Forma de pagamento da entrada
-          descontoAdicional: descontoFinal, // Percentual do desconto aplicado (pode ser descontoAdicional ou descontoRevendaIE)
+          descontoAdicional: descontoFinal, // Percentual do desconto aplicado
           descontoAdicionalValor: descontoAdicionalValor, // Valor do desconto adicional
           parcelas: parcelasAtualizadas, // Parcelas recalculadas com desconto adicional
           saldo: saldoComDesconto, // Saldo atualizado
@@ -458,7 +442,6 @@ const PaymentPolicy = ({
           // Informações sobre participação de revenda
           participacaoRevenda: participacaoRevenda, // 'sim' | 'nao'
           revendaTemIE: revendaTemIE, // 'sim' | 'nao'
-          descontoRevendaIE: descontoRevendaIE, // 1-5%
           // Informações sobre frete
           tipoFreteSelecionado: tipoFreteSelecionado, // 'prioridade' | 'reaproveitamento'
           dadosFreteAtual: dadosFreteAtual, // Dados completos do frete selecionado
@@ -491,7 +474,7 @@ const PaymentPolicy = ({
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, descontoRevendaIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
+  }, [tipoCliente, prazoSelecionado, precoBase, localInstalacao, pagamentoPorConta, valorSinal, formaEntrada, descontoAdicional, percentualEntrada, tipoFrete, participacaoRevenda, revendaTemIE, temGuindasteGSE, aplicarRegraGSISemParticipacao, tipoFreteSelecionado, dadosFreteAtual]);
 
   // Resetar prazo quando mudar tipo de cliente
   const handleTipoClienteChange = (novoTipo) => {
@@ -801,8 +784,6 @@ const PaymentPolicy = ({
                         if (onClienteIEChange) {
                           onClienteIEChange(false);
                         }
-                        // Rodoviário = vendedor NÃO pode aplicar desconto (se houver participação de revenda)
-                        setDescontoRevendaIE(0);
                       }}
                     style={{ 
                       display: 'flex', 
@@ -845,47 +826,6 @@ const PaymentPolicy = ({
                   )}
                 </div>
 
-                {/* Se houver participação de revenda E revenda tem IE, o vendedor pode aplicar desconto de 1% a 5% */}
-                {/* MAS NÃO aparece se houver GSE no carrinho */}
-                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && !temGuindasteGSE && (
-                  <div className="form-group" style={{ marginTop: '12px' }}>
-                    <label htmlFor="descontoRevendaIE" style={{ fontWeight: '500', fontSize: '14px', marginBottom: '6px', display: 'block', color: '#495057' }}>
-                      Desconto do Vendedor (1% a 5%) <span style={{ color: '#dc3545' }}>*</span>
-                    </label>
-                    <select
-                      id="descontoRevendaIE"
-                      value={descontoRevendaIE}
-                      onChange={(e) => setDescontoRevendaIE(parseFloat(e.target.value))}
-                      style={{ 
-                        width: '100%', 
-                        padding: '10px', 
-                        fontSize: '14px', 
-                        borderRadius: '6px', 
-                        border: '2px solid #ced4da',
-                        background: '#ffffff',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <option value="1">1%</option>
-                      <option value="2">2%</option>
-                      <option value="3">3%</option>
-                      <option value="4">4%</option>
-                      <option value="5">5%</option>
-                    </select>
-                    <small style={{ display: 'block', marginTop: '5px', color: '#28a745', fontSize: '0.875em' }}>
-                      Desconto que você (vendedor) pode aplicar sobre o valor total do pedido
-                    </small>
-                  </div>
-                )}
-
-                {/* Mensagem informativa quando GSE bloqueia o desconto */}
-                {participacaoRevenda === 'sim' && revendaTemIE === 'sim' && temGuindasteGSE && (
-                  <div style={{ marginTop: '12px', padding: '12px', background: '#fff3cd', borderRadius: '6px', border: '1px solid #ffc107' }}>
-                    <small style={{ color: '#856404', fontSize: '0.875em', fontWeight: '600' }}>
-                      ⚠️ Guindastes GSE não permitem desconto adicional do vendedor
-                    </small>
-                  </div>
-                )}
 
               </div>
             )}
@@ -1066,8 +1006,8 @@ const PaymentPolicy = ({
         </div>
       </div>
       
-      {/* Local de Instalação - aparece após selecionar o tipo de frete */}
-      {tipoCliente === 'cliente' && tipoFrete && (
+      {/* Local de Instalação - aparece sempre que tipoCliente estiver selecionado */}
+      {tipoCliente && (
         <>
           <div className="form-group" style={{ marginTop: '20px' }}>
             <label htmlFor="localInstalacao">
@@ -1108,7 +1048,16 @@ const PaymentPolicy = ({
               <span className="error-message">{errors.localInstalacao}</span>
             )}
           </div>
-          {/* Tipo de Entrega visível apenas quando CIF e dados disponíveis */}
+          
+          {/* DEBUG TEMPORÁRIO */}
+          <div style={{ padding: '10px', background: '#ffebee', border: '1px solid #f44336', borderRadius: '4px', marginTop: '10px' }}>
+            <strong>🐛 Debug:</strong><br/>
+            tipoFrete: {tipoFrete || 'não definido'}<br/>
+            dadosFreteAtual: {dadosFreteAtual ? 'SIM' : 'NÃO'}<br/>
+            Condição (tipoFrete === 'cif' && dadosFreteAtual): {(tipoFrete === 'cif' && dadosFreteAtual) ? 'TRUE ✅' : 'FALSE ❌'}
+          </div>
+          
+          {/* Tipo de Entrega visível quando CIF e dados disponíveis (Cliente ou Revenda) */}
           {tipoFrete === 'cif' && dadosFreteAtual && (
             <div className="form-group" style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '6px', border: '2px solid #007bff' }}>
               <label style={{ fontWeight: '600', fontSize: '14px', marginBottom: '10px', display: 'block', color: '#007bff' }}>
@@ -1300,13 +1249,12 @@ const PaymentPolicy = ({
       {/* Só aparece quando:
           1. Tipo for revenda (sempre) - até 3% (com GSE) ou 12% (sem GSE)
           2. Tipo for cliente SEM participação de revenda - até 3%
-          3. Tipo for cliente COM participação de revenda mas Rodoviário - até 3%
-          NÃO aparece quando for cliente com participação de revenda - Produtor rural
+          3. Tipo for cliente COM participação de revenda (Rodoviário OU Produtor rural) - até 3%
       */}
       {prazoSelecionado && (
         tipoCliente === 'revenda' || 
         (tipoCliente === 'cliente' && participacaoRevenda === 'nao') ||
-        (tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'nao')
+        (tipoCliente === 'cliente' && participacaoRevenda === 'sim')
       ) && (
           <div className="form-group">
             <label htmlFor="descontoAdicional">
@@ -1455,9 +1403,7 @@ const PaymentPolicy = ({
               {calculoAtual.descontoAdicionalValor > 0 && (
                 <div className="calc-row discount">
                   <span className="calc-label">
-                    {tipoCliente === 'cliente' && participacaoRevenda === 'sim' && revendaTemIE === 'sim'
-                      ? `Desconto do Vendedor (${descontoRevendaIE}%):`
-                      : `Desconto Adicional do Vendedor (${descontoAdicional}%):`}
+                    Desconto Adicional do Vendedor ({descontoAdicional}%):
                   </span>
                   <span className="calc-value">- {formatCurrency(calculoAtual.descontoAdicionalValor)}</span>
                 </div>

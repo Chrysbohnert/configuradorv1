@@ -44,17 +44,8 @@ export const usePaymentCalculation = ({
       const percentualEntradaNum = parseFloat(percentualEntrada) || 0;
       const entradaParaCalculo = (percentualEntradaNum / 100) * precoBase;
 
-      // Calcular desconto adicional
-      let descontoFinal = 0;
-      if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
-        if (revendaTemIE === 'sim' && !temGuindasteGSE) {
-          descontoFinal = descontoRevendaIE;
-        }
-      } else if (tipoCliente === 'cliente' && participacaoRevenda === 'nao') {
-        descontoFinal = descontoAdicional;
-      } else if (tipoCliente === 'revenda') {
-        descontoFinal = descontoAdicional;
-      }
+      // Calcular desconto adicional - sempre usa descontoAdicional
+      let descontoFinal = descontoAdicional;
 
       const descontoAdicionalValor = precoBase * (descontoFinal / 100);
       const precoComDescontoAdicional = precoBase - descontoAdicionalValor;
