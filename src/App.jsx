@@ -28,6 +28,7 @@ const AlterarSenha = lazy(() => import('./pages/AlterarSenha'));
 const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
 const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
 const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
+const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
 
 
 function App() {
@@ -59,9 +60,9 @@ function App() {
                 <NovoPedido />
               </LazyRoute>
             } />
-            <Route path="/historico" element={
-              <LazyRoute loadingMessage="Carregando Histórico...">
-                <Historico />
+            <Route path="/propostas" element={
+              <LazyRoute loadingMessage="Carregando Propostas...">
+                <HistoricoPropostas />
               </LazyRoute>
             } />
             <Route path="/pronta-entrega" element={
