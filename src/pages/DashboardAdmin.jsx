@@ -28,8 +28,8 @@ const DashboardAdmin = () => {
             console.error('❌ Erro ao carregar usuários:', err);
             return [];
           }),
-          db.getPedidos().catch(err => {
-            console.error('❌ Erro ao carregar pedidos:', err);
+          db.getPropostas().catch(err => {
+            console.error('❌ Erro ao carregar propostas:', err);
             return [];
           }),
           db.getGuindastesCountForDashboard().catch(err => {
@@ -40,7 +40,7 @@ const DashboardAdmin = () => {
         
         console.log('📊 Dados carregados:', {
           usuarios: usersResp.length,
-          pedidos: pedidosResp.length,
+          propostas: pedidosResp.length,
           guindastes: guindastesCountResp
         });
         
