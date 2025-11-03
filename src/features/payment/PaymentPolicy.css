@@ -1,4 +1,7 @@
-/* Payment Policy - Design STARK (Preto, Branco, Amarelo) */
+/* =======================================================
+   🌟 STARK Payment Policy - Tema Preto, Branco e Dourado
+   Versão final unificada (com stepper, navegação e banners)
+   ======================================================= */
 
 .payment-policy {
   display: flex;
@@ -11,6 +14,55 @@
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
 }
+
+/* =======================================================
+   🪧 Stepper (etapas)
+   ======================================================= */
+
+.pp-stepper {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.pp-step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.pp-step.active {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  border-color: #ffd700;
+  transform: scale(1.1);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
+}
+
+.pp-step.done {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+}
+
+.pp-step:hover:not(.active):not(.done) {
+  border-color: #ffd700;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
+}
+
+/* =======================================================
+   📦 Seções principais
+   ======================================================= */
 
 .payment-section {
   background: white;
@@ -40,180 +92,14 @@
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 0.5rem;
 }
 
-.payment-section h3::before {
-  content: '💳';
-  font-size: 1.25rem;
-}
+/* =======================================================
+   🧾 Campos e formulários
+   ======================================================= */
 
-/* Bank Financing Info Card */
-.bank-financing-info {
-  background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin: 1rem 0;
-  color: white;
-  box-shadow: 0 4px 15px rgba(0, 102, 204, 0.3);
-  border: 2px solid #0052a3;
-}
-
-.bank-financing-info h4 {
-  margin: 0 0 0.75rem 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.bank-financing-info p {
-  margin: 0.5rem 0;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  opacity: 0.95;
-}
-
-.bank-financing-info ul {
-  margin: 0.75rem 0 0 1.25rem;
-  padding: 0;
-  list-style: none;
-}
-
-.bank-financing-info ul li {
-  margin: 0.5rem 0;
-  padding-left: 1.5rem;
-  position: relative;
-  font-size: 0.9rem;
-}
-
-.bank-financing-info ul li::before {
-  content: '✓';
-  position: absolute;
-  left: 0;
-  color: #ffd700;
-  font-weight: bold;
-  font-size: 1.1rem;
-}
-
-/* Summary Card */
-.summary-card {
-  background: linear-gradient(135deg, #fffbf0, #fff8e1);
-  border-radius: 16px;
-  padding: 2rem;
-  margin-top: 1.5rem;
-  border: 2px solid #ffd700;
-  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.2);
-}
-
-.summary-header {
-  margin-bottom: 1.5rem;
-}
-
-.summary-header h4 {
-  margin: 0;
-  color: #000000;
-  font-size: 1.25rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.summary-header h4::before {
-  content: '📊';
-  font-size: 1rem;
-}
-
-.summary-content {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1rem 1.5rem;
-  background: white;
-  border-radius: 12px;
-  border-left: 4px solid #ffd700;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-.summary-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-}
-
-.summary-label {
-  font-size: 0.875rem;
-  color: #666666;
-  font-weight: 600;
-}
-
-.summary-value {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: #000000;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Info Cards */
-.info-card {
-  background: #f8f9fa;
-  border-radius: 16px;
-  padding: 1.5rem;
-  margin-top: 1rem;
-  border-left: 4px solid #ffd700;
-  border: 2px solid #e5e5e5;
-  transition: all 0.3s ease;
-}
-
-.info-card:hover {
-  border-color: #ffd700;
-  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);
-}
-
-.info-card.highlight {
-  background: linear-gradient(135deg, #fffbf0, #fff8e1);
-  border-left-color: #ffd700;
-  border-color: #ffd700;
-}
-
-.info-header {
-  margin-bottom: 1rem;
-}
-
-.info-header h4 {
-  margin: 0 0 0.5rem 0;
-  color: #000000;
-  font-size: 1.125rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.info-header h4::before {
-  content: 'ℹ️';
-  font-size: 1rem;
-}
-
-.info-header p {
-  margin: 0;
-  color: #666666;
-  font-size: 0.875rem;
-  line-height: 1.5;
-  font-weight: 500;
-}
-
-/* Form Layout */
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -228,34 +114,8 @@
   }
 }
 
-.required {
-  color: #dc3545;
-  font-weight: 600;
-}
-
-.form-help {
-  margin-top: 8px;
-  font-size: 12px;
-  line-height: 1.4;
-}
-
-.help-success {
-  color: #28a745;
-  font-weight: 500;
-}
-
-.help-info {
-  color: #007bff;
-  font-weight: 500;
-}
-
-/* Form Groups */
 .form-group {
-  margin-bottom: 16px;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
+  margin-bottom: 1rem;
 }
 
 .form-group label {
@@ -289,25 +149,10 @@
   transform: translateY(-1px);
 }
 
-.form-group select:disabled {
-  background: #f8f9fa;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
+/* =======================================================
+   ⚪ Opções de rádio (botões bonitos)
+   ======================================================= */
 
-.form-group select.error,
-.form-group input.error {
-  border-color: #dc3545;
-}
-
-.error-message {
-  display: block;
-  margin-top: 4px;
-  font-size: 12px;
-  color: #dc3545;
-}
-
-/* Radio Group */
 .radio-group {
   display: flex;
   gap: 1rem;
@@ -349,10 +194,6 @@
   box-shadow: 0 4px 15px rgba(255, 215, 0, 0.1);
 }
 
-.radio-option:hover::before {
-  transform: scaleX(1);
-}
-
 .radio-option.selected {
   border-color: #ffd700;
   background: linear-gradient(135deg, #fffbf0, #fff8e1);
@@ -363,260 +204,106 @@
   transform: scaleX(1);
 }
 
-.radio-option input[type="radio"] {
-  margin: 0;
-  cursor: pointer;
-}
+/* =======================================================
+   📢 Banners informativos (instalação / alertas)
+   ======================================================= */
 
-.radio-option span {
-  font-size: 0.875rem;
-  color: #000000;
+.pp-banner {
+  border: 2px solid;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-top: 1rem;
   font-weight: 600;
-}
-
-/* Error Box */
-.error-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: #fff3cd;
-  border: 1px solid #ffc107;
-  border-radius: 8px;
-  color: #856404;
-}
-
-.error-box svg {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-}
-
-.error-box span {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-/* Calculation Box */
-.calculation-box {
-  background: linear-gradient(135deg, #f8f9fa, #ffffff);
-  border-radius: 16px;
-  padding: 1.5rem;
-  border: 2px solid #e5e5e5;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-}
-
-.calc-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
   transition: all 0.3s ease;
 }
 
-.calc-row:hover {
-  background: rgba(255, 215, 0, 0.05);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin: 0 -1rem;
+.pp-banner.ok {
+  border-color: #28a745;
+  background: linear-gradient(135deg, #e6f4ea, #d1f2d1);
+  color: #155724;
 }
 
-.calc-row.separator {
-  border-top: 1px solid #e5e5e5;
-  margin-top: 0.5rem;
-  padding-top: 1rem;
+.pp-banner.warn {
+  border-color: #ffc107;
+  background: linear-gradient(135deg, #fff9e6, #fff3cd);
+  color: #856404;
 }
 
-.calc-row.total {
-  border-top: 3px solid #ffd700;
-  margin-top: 1rem;
-  padding-top: 1rem;
+/* =======================================================
+   📊 Cartão de Resumo Final
+   ======================================================= */
+
+.summary-card {
   background: linear-gradient(135deg, #fffbf0, #fff8e1);
-  margin: 1rem -1.5rem -1.5rem -1.5rem;
-  padding: 1rem 1.5rem;
-  border-radius: 0 0 16px 16px;
-  box-shadow: 0 -2px 10px rgba(255, 215, 0, 0.1);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+  border: 2px solid #000000;
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.2);
 }
 
-.calc-label {
+.summary-header {
+  margin-bottom: 1.5rem;
+}
+
+.summary-header h4 {
+  margin: 0;
+  color: #000000;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.summary-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: white;
+  border-radius: 12px;
+  border-left: 4px solid #000000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.summary-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.summary-label {
   font-size: 0.875rem;
   color: #666666;
   font-weight: 600;
 }
 
-.calc-value {
-  font-size: 1rem;
-  color: #000000;
-  font-weight: 700;
-}
-
-.calc-value.bold {
-  font-weight: 800;
+.summary-value {
   font-size: 1.25rem;
-  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  font-weight: 800;
+  color: #000000;
+  background: linear-gradient(135deg, #0f0f0f, #000000);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
-.calc-row.discount .calc-value {
-  color: #28a745;
-}
+/* =======================================================
+   🧭 Navegação (botões de voltar / continuar)
+   ======================================================= */
 
-.calc-row.surcharge .calc-value {
-  color: #dc3545;
-}
-
-.calc-row.entry .calc-value {
-  color: #007bff;
-}
-
-.calc-row.freight .calc-value {
-  color: #17a2b8;
-  font-weight: 600;
-}
-
-/* Parcelas */
-.calc-parcelas {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #dee2e6;
-}
-
-.calc-parcelas > .calc-label {
-  display: block;
-  margin-bottom: 12px;
-  font-weight: 500;
-  color: #1a1a1a;
-}
-
-.parcelas-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.parcela-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 12px;
-  background: white;
-  border-radius: 6px;
-  border: 1px solid #e9ecef;
-}
-
-.parcela-numero {
-  font-size: 13px;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.parcela-valor {
-  font-size: 14px;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .payment-policy {
-    gap: 1.5rem;
-    padding: 1rem;
-    border-radius: 16px;
-  }
-
-  .payment-section {
-    padding: 1.5rem;
-  }
-
-  .payment-section h3 {
-    font-size: 1.25rem;
-    margin-bottom: 1rem;
-  }
-
-  .summary-card {
-    padding: 1.5rem;
-  }
-
-  /* Melhorias específicas para cálculo de pagamento mobile */
-  .calculation-box {
-    padding: 1rem;
-    border-radius: 12px;
-  }
-
-  .calc-row {
-    padding: 0.5rem 0;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-  }
-
-  .calc-row:hover {
-    background: rgba(255, 215, 0, 0.05);
-    border-radius: 6px;
-    padding: 0.5rem;
-    margin: 0;
-  }
-
-  .calc-label {
-    font-size: 0.8rem;
-    margin-bottom: 0.25rem;
-  }
-
-  .calc-value {
-    font-size: 0.9rem;
-    font-weight: 700;
-  }
-
-  .calc-value.bold {
-    font-size: 1.1rem;
-  }
-
-  .calc-row.total {
-    margin: 0.75rem -1rem -1rem -1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 0 0 12px 12px;
-  }
-
-  .summary-item {
-    padding: 0.75rem 1rem;
-  }
-
-  .radio-group {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .radio-option {
-    min-width: 100%;
-    padding: 0.75rem 1rem;
-  }
-
-  .parcela-item {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.25rem;
-    padding: 0.75rem 1rem;
-  }
-
-  .parcela-valor {
-    font-size: 1.125rem;
-  }
-
-  .calc-row:hover {
-    margin: 0;
-    padding: 0.75rem 0;
-  }
-}
-
-/* Payment Navigation Button */
 .payment-navigation {
   margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 2px solid #e5e5e5;
   display: flex;
   justify-content: flex-end;
+  gap: 1rem;
 }
 
 .payment-nav-btn {
@@ -669,35 +356,52 @@
   display: none;
 }
 
-.payment-nav-btn svg {
-  width: 20px;
-  height: 20px;
-  transition: transform 0.3s ease;
-}
-
-.payment-nav-btn:hover svg {
-  transform: translateX(3px);
-}
+/* =======================================================
+   📱 Responsividade
+   ======================================================= */
 
 @media (max-width: 768px) {
+  .payment-policy {
+    gap: 1.5rem;
+    padding: 1rem;
+    border-radius: 16px;
+  }
+
+  .payment-section {
+    padding: 1.5rem;
+  }
+
+  .payment-section h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+
   .payment-navigation {
     justify-content: center;
   }
-  
+
   .payment-nav-btn {
     width: 100%;
     justify-content: center;
     padding: 0.875rem 1.5rem;
     font-size: 0.875rem;
   }
+
+  .radio-group {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .radio-option {
+    width: 100%;
+  }
 }
 
-/* Melhorias para telas muito pequenas (480px) */
 @media (max-width: 480px) {
   .payment-policy {
     gap: 1rem;
     padding: 0.75rem;
-    border-radius: 12px;
   }
 
   .payment-section {
@@ -709,102 +413,189 @@
     margin-bottom: 0.75rem;
   }
 
-  .calculation-box {
-    padding: 0.75rem;
-    border-radius: 8px;
-  }
-
-  .calc-row {
-    padding: 0.4rem 0;
-  }
-
-  .calc-label {
-    font-size: 0.75rem;
-  }
-
-  .calc-value {
-    font-size: 0.85rem;
-  }
-
-  .calc-value.bold {
-    font-size: 1rem;
-  }
-
-  .calc-row.total {
-    margin: 0.5rem -0.75rem -0.75rem -0.75rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0 0 8px 8px;
-  }
-
-  .summary-card {
-    padding: 1rem;
-  }
-
   .summary-item {
+    padding: 0.75rem 1rem;
+  }
+
+  .payment-nav-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* =======================================================
+   💰 Card Flutuante de Valor em Tempo Real
+   ======================================================= */
+
+.floating-price-card {
+  position: sticky;
+  top: 20px;
+  background: linear-gradient(135deg, #000000, #1a1a1a);
+  border: 3px solid #ffd700;
+  border-radius: 20px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 10px 40px rgba(255, 215, 0, 0.3);
+  z-index: 100;
+  animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.floating-price-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid #ffd700;
+}
+
+.floating-price-icon {
+  font-size: 1.5rem;
+}
+
+.floating-price-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.floating-price-value {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.floating-price-value .price {
+  font-size: 2.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: block;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.floating-price-value .loading {
+  font-size: 1.25rem;
+  color: #ffd700;
+  font-weight: 600;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.floating-price-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.breakdown-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #ffffff;
+  transition: all 0.3s ease;
+}
+
+.breakdown-line:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(5px);
+}
+
+.breakdown-line.discount {
+  border-left: 3px solid #ff4444;
+}
+
+.breakdown-line.addition {
+  border-left: 3px solid #44ff44;
+}
+
+.breakdown-line span:first-child {
+  color: #cccccc;
+}
+
+.breakdown-line span:last-child {
+  color: #ffd700;
+  font-weight: 700;
+}
+
+/* Botão primário (Continuar para Dados do Cliente) */
+.payment-nav-btn.primary {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000000;
+  border-color: #ffd700;
+  font-weight: 800;
+}
+
+.payment-nav-btn.primary:hover {
+  background: linear-gradient(135deg, #ffed4e, #ffd700);
+  transform: translateY(-3px) scale(1.05);
+  box-shadow: 0 10px 30px rgba(255, 215, 0, 0.5);
+}
+
+.payment-nav-btn.primary:disabled {
+  background: #cccccc;
+  color: #666666;
+  border-color: #cccccc;
+}
+
+/* Responsividade do card flutuante */
+@media (max-width: 768px) {
+  .floating-price-card {
+    position: relative;
+    top: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .floating-price-value .price {
+    font-size: 2rem;
+  }
+
+  .breakdown-line {
+    font-size: 0.75rem;
     padding: 0.5rem 0.75rem;
   }
-
-  .bank-financing-info {
-    padding: 1rem;
-    border-radius: 8px;
-  }
-
-  .bank-financing-info h4 {
-    font-size: 1rem;
-  }
-
-  .bank-financing-info p {
-    font-size: 0.85rem;
-  }
-
-  .bank-financing-info ul li {
-    font-size: 0.8rem;
-  }
 }
 
-/* Melhorias específicas para seção "Política de Pagamento" mobile */
-@media (max-width: 768px) {
-  .payment-section h3 {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-    text-align: center;
-    padding: 0.5rem;
-    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
-    border-radius: 8px;
-    border: 1px solid #dee2e6;
-  }
-  
-  .payment-section h3::before {
-    font-size: 1rem;
-    margin-right: 0.5rem;
-  }
+/* Helper text styles */
+.form-help {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
 }
 
-@media (max-width: 480px) {
-  .payment-section h3 {
-    font-size: 1.1rem;
-    margin-bottom: 0.75rem;
-    padding: 0.4rem;
-    border-radius: 6px;
-  }
-  
-  .payment-section h3::before {
-    font-size: 0.9rem;
-    margin-right: 0.4rem;
-  }
+.form-help.help-info {
+  color: #666666;
 }
 
-@media (max-width: 360px) {
-  .payment-section h3 {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
-    padding: 0.3rem;
-    border-radius: 4px;
-  }
-  
-  .payment-section h3::before {
-    font-size: 0.8rem;
-    margin-right: 0.3rem;
-  }
+.form-help.help-warn {
+  color: #ff9800;
+  font-weight: 600;
 }
-

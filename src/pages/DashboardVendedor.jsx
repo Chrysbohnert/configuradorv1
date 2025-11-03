@@ -25,29 +25,26 @@ const DashboardVendedor = () => {
       try {
         setIsLoading(true);
         
-        // Carregar pedidos do vendedor
-        const pedidos = await db.getPedidos();
+        // Carregar propostas do vendedor
+        const propostas = await db.getPropostas({ vendedor_id: user?.id });
         
-        // Filtrar pedidos do usuário atual
-        const pedidosDoVendedor = pedidos.filter(pedido => pedido.vendedor_id === user?.id);
-        
-        // Calcular estatísticas do mês atual (apenas pedidos finalizados)
+        // Calcular estatísticas do mês atual (apenas propostas finalizadas)
         const now = new Date();
         const currentMonth = now.getMonth();
         const currentYear = now.getFullYear();
-        const pedidosFinalizadosMes = pedidosDoVendedor.filter(pedido => {
-          // Contar apenas pedidos finalizados (proposta comercial gerada)
-          if (pedido.status !== 'finalizado') return false;
-          const d = new Date(pedido.created_at);
+        const propostasFinalizadasMes = propostas.filter(proposta => {
+          // Contar apenas propostas finalizadas
+          if (proposta.status !== 'finalizado') return false;
+          const d = new Date(proposta.data || proposta.created_at);
           return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
         });
-        const valorTotalMes = pedidosFinalizadosMes.reduce((total, pedido) => total + (pedido.valor_total || 0), 0);
+        const valorTotalMes = propostasFinalizadasMes.reduce((total, proposta) => total + (proposta.valor_total || 0), 0);
 
-        console.log('📊 [Dashboard] Pedidos finalizados do mês:', pedidosFinalizadosMes.length);
+        console.log('📊 [Dashboard] Propostas finalizadas do mês:', propostasFinalizadasMes.length);
         console.log('💰 [Dashboard] Valor total:', valorTotalMes);
 
         setStats({
-          totalPedidos: pedidosFinalizadosMes.length,
+          totalPedidos: propostasFinalizadasMes.length,
           valorTotal: valorTotalMes
         });
 

@@ -30,7 +30,7 @@ export const calcularLimiteDesconto = ({
   if (tipoCliente === 'cliente') {
     // Cliente SEM participação de revenda
     if (participacaoRevenda === 'nao') {
-      // Se houver GSI e for produtor rural: até 12%
+      // Se houver GSI e for Produtor Rural: até 12%
       if (aplicarRegraGSISemParticipacao) {
         return 12;
       }
@@ -94,7 +94,7 @@ export const deveMostrarDescontoAdicional = ({
 
   // Cliente COM participação de revenda
   if (tipoCliente === 'cliente' && participacaoRevenda === 'sim') {
-    // Se for produtor rural (com IE): mostra como "Desconto do Vendedor"
+    // Se for Produtor Rural (com IE): mostra como "Desconto do Vendedor"
     // GSE: até 3% | Outros: até 5%
     if (revendaTemIE === 'sim') {
       return true;

@@ -577,6 +577,7 @@ const NovoPedido = () => {
               key={`payment-${carrinho.find(item => item.tipo === 'guindaste')?.id || 'none'}`}
               precoBase={getTotalCarrinho()}
               onPaymentComputed={setPagamentoData}
+              onFinish={handleNext}
               errors={validationErrors}
               user={user}
               clienteTemIE={clienteTemIE}
@@ -647,6 +648,29 @@ const NovoPedido = () => {
             </div>
             
             <div className="vehicle-form-container">
+              {/* Banner informativo sobre Proposta Rápida */}
+              <div style={{
+                background: 'linear-gradient(135deg, #fff9e6, #fff3cd)',
+                border: '2px solid #ffc107',
+                borderRadius: '12px',
+                padding: '16px',
+                marginBottom: '20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px'
+              }}>
+                <span style={{ fontSize: '24px' }}>⚡</span>
+                <div>
+                  <strong style={{ color: '#856404', display: 'block', marginBottom: '4px' }}>
+                    Precisa de uma proposta rápida?
+                  </strong>
+                  <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
+                    Clique em "Gerar Proposta Rápida" para criar um orçamento preliminar. 
+                    Os dados do veículo serão marcados como "A PREENCHER" e você poderá completá-los depois.
+                  </p>
+                </div>
+              </div>
+
               <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
               
               <div className="form-actions">
@@ -658,6 +682,52 @@ const NovoPedido = () => {
                     <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
                   </svg>
                   Voltar
+                </button>
+                
+                <button 
+                  style={{
+                    background: 'linear-gradient(135deg, #ffc107, #ff9800)',
+                    color: '#000',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.3s ease',
+                    boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
+                  }}
+                  onClick={() => {
+                    console.log('⚡ Gerando Proposta Rápida...');
+                    // Preencher com dados placeholder
+                    setCaminhaoData({
+                      tipo: 'A PREENCHER',
+                      marca: 'A PREENCHER',
+                      modelo: 'A PREENCHER',
+                      ano: '',
+                      voltagem: 'A PREENCHER',
+                      placa: '',
+                      observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
+                    });
+                    // Avançar para próxima etapa
+                    setTimeout(() => {
+                      handleNext();
+                    }, 300);
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
+                  }}
+                >
+                  <span>⚡</span>
+                  <span>Gerar Proposta Rápida</span>
                 </button>
                 
                 <button 
@@ -703,6 +773,8 @@ const NovoPedido = () => {
   const validateStep = (step) => {
     const errors = {};
     
+    console.log('🔎 validateStep chamado para step:', step);
+    
     switch (step) {
       case 1:
         if (guindastesSelecionados.length === 0) {
@@ -710,31 +782,50 @@ const NovoPedido = () => {
         }
         break;
       case 2:
+        console.log('🔎 Validando case 2...');
+        console.log('  tipoPagamento:', pagamentoData.tipoPagamento, '| vazio?', !pagamentoData.tipoPagamento);
         if (!pagamentoData.tipoPagamento) {
+          console.log('  ❌ Erro: tipoPagamento vazio');
           errors.tipoPagamento = 'Selecione o tipo de pagamento';
         }
+        
         // Prazo de pagamento NÃO é obrigatório se houver financiamento bancário
+        console.log('  prazoPagamento:', pagamentoData.prazoPagamento, '| financiamento:', pagamentoData.financiamentoBancario);
         if (!pagamentoData.prazoPagamento && pagamentoData.financiamentoBancario !== 'sim') {
+          console.log('  ❌ Erro: prazoPagamento vazio (sem financiamento)');
           errors.prazoPagamento = 'Selecione o prazo de pagamento';
         }
+        
         // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
+        console.log('  É cliente?', pagamentoData.tipoPagamento === 'cliente');
         if (pagamentoData.tipoPagamento === 'cliente') {
+          console.log('  localInstalacao:', pagamentoData.localInstalacao, '| vazio?', !pagamentoData.localInstalacao);
           if (!pagamentoData.localInstalacao) {
+            console.log('  ❌ Erro: localInstalacao vazio');
             errors.localInstalacao = 'Informe o local de instalação';
           }
+          console.log('  tipoInstalacao:', pagamentoData.tipoInstalacao, '| vazio?', !pagamentoData.tipoInstalacao);
           if (!pagamentoData.tipoInstalacao) {
+            console.log('  ❌ Erro: tipoInstalacao vazio');
             errors.tipoInstalacao = 'Selecione o tipo de instalação';
           }
           // Participação de revenda é obrigatória para cliente
+          console.log('  participacaoRevenda:', pagamentoData.participacaoRevenda, '| vazio?', !pagamentoData.participacaoRevenda);
           if (!pagamentoData.participacaoRevenda) {
+            console.log('  ❌ Erro: participacaoRevenda vazio');
             errors.participacaoRevenda = 'Selecione se há participação de revenda';
           }
           // Se respondeu participação, IE/Tipo é obrigatório
+          console.log('  revendaTemIE:', pagamentoData.revendaTemIE, '| vazio?', !pagamentoData.revendaTemIE);
           if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
+            console.log('  ❌ Erro: revendaTemIE vazio');
             errors.revendaTemIE = 'Selecione o tipo de cliente/revenda';
           }
         }
+        
+        console.log('  tipoFrete:', pagamentoData.tipoFrete, '| vazio?', !pagamentoData.tipoFrete);
         if (!pagamentoData.tipoFrete) {
+          console.log('  ❌ Erro: tipoFrete vazio');
           errors.tipoFrete = 'Selecione o tipo de frete';
         }
         break;
@@ -760,6 +851,9 @@ const NovoPedido = () => {
         }
         break;
     }
+    
+    console.log('🔎 Total de erros encontrados:', Object.keys(errors).length);
+    console.log('🔎 Erros:', errors);
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -813,11 +907,37 @@ const NovoPedido = () => {
   };
 
   const handleNext = () => {
-    if (validateStep(currentStep) && currentStep < 5) {
+    console.log('🚀🚀🚀 VERSÃO NOVA DO CÓDIGO - handleNext chamado 🚀🚀🚀');
+    console.log('📍 currentStep:', currentStep);
+    console.log('📊 pagamentoData:', JSON.stringify(pagamentoData, null, 2));
+    
+    // Adicionar log detalhado ANTES da validação
+    if (currentStep === 2) {
+      console.log('🔍 Validando Step 2:');
+      console.log('  - tipoPagamento:', pagamentoData.tipoPagamento);
+      console.log('  - prazoPagamento:', pagamentoData.prazoPagamento);
+      console.log('  - financiamentoBancario:', pagamentoData.financiamentoBancario);
+      console.log('  - localInstalacao:', pagamentoData.localInstalacao);
+      console.log('  - tipoInstalacao:', pagamentoData.tipoInstalacao);
+      console.log('  - participacaoRevenda:', pagamentoData.participacaoRevenda);
+      console.log('  - revendaTemIE:', pagamentoData.revendaTemIE);
+      console.log('  - tipoFrete:', pagamentoData.tipoFrete);
+    }
+    
+    const isValid = validateStep(currentStep);
+    console.log('✅ Validação passou?', isValid);
+    console.log('❌ Erros de validação (estado antigo):', JSON.stringify(validationErrors, null, 2));
+    console.log('⚠️ ATENÇÃO: Os erros reais foram logados dentro do validateStep acima ☝️');
+    
+    if (isValid && currentStep < 5) {
       const nextStep = currentStep + 1;
+      console.log('➡️ Avançando para step:', nextStep);
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
       setValidationErrors({}); // Limpar erros ao avançar
+    } else {
+      console.warn('⚠️ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
+      console.warn('📋 Campos obrigatórios faltando:', Object.keys(validationErrors));
     }
   };
 
@@ -930,7 +1050,7 @@ const NovoPedido = () => {
                     participacaoRevenda: 'sim',
                     revendaTemIE: 'nao'
                   });
-                  console.log('✅ Simulado contexto: cliente + rodoviário');
+                  console.log('✅ Simulado contexto: cliente + CNPJ/CPF');
                 }}
                 style={{
                   background: '#ffc107',

@@ -19,10 +19,10 @@ const RelatorioCompleto = () => {
     if (!user) return;
     try {
       setIsLoading(true);
-      const [users, pedidos] = await Promise.all([db.getUsers(), db.getPedidos()]);
+      const [users, propostas] = await Promise.all([db.getUsers(), db.getPropostas()]);
       const vendedoresData = users.filter(u => u.tipo === 'vendedor');
       setVendedores(vendedoresData);
-      setTodosPedidos(pedidos);
+      setTodosPedidos(propostas);
     } catch (error) {
       console.error('Erro ao carregar relatório:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');

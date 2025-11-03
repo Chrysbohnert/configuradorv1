@@ -33,10 +33,10 @@ const GerenciarVendedores = () => {
   const loadVendedores = async () => {
     try {
       setIsLoading(true);
-      // Buscar usuários e pedidos
-      const [vendedoresData, pedidos] = await Promise.all([
+      // Buscar usuários e propostas
+      const [vendedoresData, propostas] = await Promise.all([
         db.getUsers(),
-        db.getPedidos()
+        db.getPropostas()
       ]);
       
       // Filtrar apenas vendedores (não admins)
@@ -44,9 +44,9 @@ const GerenciarVendedores = () => {
       
       // Calcular vendas e valor total para cada vendedor
       const vendedoresComVendas = vendedoresOnly.map(vendedor => {
-        const pedidosDoVendedor = pedidos.filter(p => p.vendedor_id === vendedor.id);
-        const vendas = pedidosDoVendedor.length;
-        const valorTotal = pedidosDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
+        const propostasDoVendedor = propostas.filter(p => p.vendedor_id === vendedor.id);
+        const vendas = propostasDoVendedor.length;
+        const valorTotal = propostasDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
         return {
           ...vendedor,
           vendas,

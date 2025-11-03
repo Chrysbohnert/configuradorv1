@@ -142,6 +142,12 @@ const renderImageToDataURL = async (src) => {
 
 // Desenha uma página no PDF com header/footer + um conteúdo (canvas) centralizado e paginado se precisar
 const addSectionCanvasPaginated = (pdf, sectionCanvas, headerDataURL, footerDataURL, timestampText) => {
+  // Validar dimensões do canvas antes de processar
+  if (sectionCanvas.width === 0 || sectionCanvas.height === 0) {
+    console.warn('⚠️ Pulando seção com canvas de dimensões zero');
+    return; // Pular esta seção
+  }
+  
   // Converter px→mm desta seção
   const sectionWpx = sectionCanvas.width;
   const sectionHpx = sectionCanvas.height;
@@ -202,6 +208,16 @@ const htmlToCanvas = async (container) => {
   document.body.appendChild(container);
   const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
   document.body.removeChild(container);
+  
+  // Validar dimensões do canvas
+  if (canvas.width === 0 || canvas.height === 0) {
+    console.warn('⚠️ Canvas gerado com dimensões zero:', {
+      width: canvas.width,
+      height: canvas.height,
+      containerHTML: container.innerHTML.substring(0, 200)
+    });
+  }
+  
   return canvas;
 };
 
@@ -655,46 +671,58 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
        */
       // CAPA + CLIENTE + EQUIPAMENTO (mesma página)
       {
+        console.log('📄 Gerando seção: CAPA + CLIENTE + EQUIPAMENTO');
         const el = document.createElement('div');
-        el.appendChild(renderCapa(pedidoData, numeroProposta, modo));
+        el.appendChild(renderCapa(pedidoData, numeroProposta));
         el.appendChild(renderCliente(pedidoData));
         el.appendChild(renderEquipamento(pedidoData));
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // 4) VEÍCULO
       {
+        console.log('📄 Gerando seção: VEÍCULO');
         const el = renderCaminhao(pedidoData);
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // 5) ESTUDO VEICULAR
       {
+        console.log('📄 Gerando seção: ESTUDO VEICULAR');
         const el = renderEstudoVeicular(pedidoData);
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // 6) FINANCEIRO
       {
+        console.log('📄 Gerando seção: FINANCEIRO');
         const el = renderFinanceiro(pedidoData);
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // 7) CLÁUSULAS
       {
+        console.log('📄 Gerando seção: CLÁUSULAS');
         const el = renderClausulas(pedidoData);
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // 8) ASSINATURAS
       {
+        console.log('📄 Gerando seção: ASSINATURAS');
         const el = renderAssinaturas(pedidoData);
         const cv = await htmlToCanvas(el);
+        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
@@ -809,7 +837,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes spin { 
           0% { transform: rotate(0deg); } 
           100% { transform: rotate(360deg); } 

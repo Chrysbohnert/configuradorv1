@@ -6,7 +6,7 @@ const regioes = [
   { id: 'centro-oeste', nome: 'Centro Oeste', descricao: 'MT, MS, GO, DF' },
   { id: 'sul-sudeste', nome: 'Sul-Sudeste', descricao: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
   { id: 'rs-com-ie', nome: 'RS com Inscrição Estadual', descricao: '🚜 Produtor Rural (Com IE)', destaque: true },
-  { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual', descricao: '🚛 Rodoviário (Sem IE)', destaque: true },
+  { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual', descricao: '📄 CNPJ/CPF (Sem IE)', destaque: true },
 ];
 
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
@@ -82,7 +82,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
         <div style={{ padding: '15px', background: '#e7f3ff', borderBottom: '2px solid #0056b3', marginBottom: '15px' }}>
           <p style={{ margin: 0, fontSize: '13px', color: '#004085', lineHeight: '1.6' }}>
             <strong>💡 Dica:</strong> Configure preços diferentes para cada região. Para o <strong>Rio Grande do Sul</strong>, 
-            há duas opções: <strong>Com IE</strong> (Produtor Rural) e <strong>Sem IE</strong> (Rodoviário).
+            há duas opções: <strong>Com IE</strong> (Produtor Rural) e <strong>Sem IE</strong> (CNPJ/CPF).
           </p>
         </div>
         <div className="modal-form">

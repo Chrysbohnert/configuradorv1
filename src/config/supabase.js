@@ -855,18 +855,27 @@ class DatabaseService {
 
   // ===== PEDIDOS =====
   async getPedidos() {
-    const { data, error } = await supabase
-      .from('pedidos')
-      .select(`
-        *,
-        cliente:clientes(*),
-        vendedor:users(*),
-        caminhao:caminhoes(*)
-      `)
-      .order('created_at', { ascending: false });
+    console.log('🔍 [getPedidos] Buscando pedidos...');
     
-    if (error) throw error;
-    return data || [];
+    try {
+      // Query simplificada sem joins para evitar erro 400
+      // Os IDs das relações ainda estarão disponíveis (cliente_id, vendedor_id, caminhao_id)
+      const { data, error } = await supabase
+        .from('pedidos')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('❌ [getPedidos] Erro na query:', error);
+        throw error;
+      }
+      
+      console.log('✅ [getPedidos] Pedidos carregados:', data?.length || 0);
+      return data || [];
+    } catch (err) {
+      console.error('❌ [getPedidos] Exceção:', err);
+      throw err;
+    }
   }
 
   async createPedido(pedidoData) {
@@ -1094,16 +1103,59 @@ class DatabaseService {
     return data;
   }
 
-  // Buscar pontos de instalação filtrados por grupo de região
-  async getPontosInstalacaoPorRegiao(grupoRegiao) {
-    console.log('🔍 [DB] Buscando pontos de instalação para grupo:', grupoRegiao);
-    
+    async getFretePorOficina(oficina) {
     const { data, error } = await supabase
       .from('fretes')
       .select('*')
-      .eq('regiao_grupo', grupoRegiao)
+      .eq('oficina', oficina)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar frete por oficina:', error);
+      return null;
+    }
+
+    return data;
+  }
+
+  // Buscar pontos de instalação, com ou sem filtro de região
+  async getPontosInstalacaoPorRegiao(grupoRegiao = null) {
+    console.log('🔍 [DB] Buscando pontos de instalação. Grupo:', grupoRegiao || 'TODOS');
+
+    // Cria a query base
+    let query = supabase
+      .from('fretes')
+      .select('*')
       .order('cidade');
 
+    // Se foi informada uma região, aplica o filtro pela UF (estado)
+    if (grupoRegiao) {
+      // Normalizar: "Rio Grande do Sul" → "RS", "rio grande do sul" → "RS"
+      const ufNormalizada = grupoRegiao.toUpperCase().trim();
+      
+      // Mapear nomes completos para siglas
+      const mapeamentoEstados = {
+        'RIO GRANDE DO SUL': 'RS',
+        'SANTA CATARINA': 'SC',
+        'PARANÁ': 'PR',
+        'SÃO PAULO': 'SP',
+        'RIO DE JANEIRO': 'RJ',
+        'MINAS GERAIS': 'MG',
+        'ESPÍRITO SANTO': 'ES',
+        'MATO GROSSO': 'MT',
+        'MATO GROSSO DO SUL': 'MS',
+        'GOIÁS': 'GO',
+        'DISTRITO FEDERAL': 'DF'
+      };
+      
+      const uf = mapeamentoEstados[ufNormalizada] || ufNormalizada;
+      
+      console.log(`🎯 [DB] Filtrando por UF: ${uf} (original: ${grupoRegiao})`);
+      query = query.eq('uf', uf);
+    }
+
+    // Executa a query final
+    const { data, error } = await query;
     if (error) {
       console.error('❌ [DB] Erro ao buscar pontos de instalação:', error);
       throw error;
@@ -1111,6 +1163,56 @@ class DatabaseService {
 
     console.log('✅ [DB] Pontos encontrados:', data?.length || 0);
     return data || [];
+  }
+
+    // Buscar pontos de instalação automaticamente pela região do vendedor
+  async getPontosInstalacaoPorVendedor(vendedorId) {
+    try {
+      console.log('🧭 [DB] Buscando pontos de instalação para vendedor:', vendedorId);
+
+      // 1️⃣ Buscar dados do vendedor
+      const { data: vendedor, error: vendedorError } = await supabase
+        .from('users')
+        .select('id, nome, estado, regiao_grupo')
+        .eq('id', vendedorId)
+        .single();
+
+      if (vendedorError || !vendedor) {
+        console.warn('⚠️ [DB] Vendedor não encontrado, carregando todos os pontos');
+        return await this.getPontosInstalacaoPorRegiao(); // fallback → todos
+      }
+
+      // 2️⃣ Determinar o filtro (estado → RS, PR, SC...) ou grupo de região
+      const grupo = vendedor.regiao_grupo || vendedor.estado;
+      console.log('📍 [DB] Região detectada do vendedor:', grupo);
+
+      // 3️⃣ Buscar pontos correspondentes à região detectada
+      const pontos = await this.getPontosInstalacaoPorRegiao(grupo);
+
+      console.log(`✅ [DB] ${pontos.length} pontos encontrados para ${grupo}`);
+      return pontos;
+    } catch (error) {
+      console.error('❌ [DB] Erro ao buscar pontos de instalação do vendedor:', error);
+      return [];
+    }
+  }
+
+  // Buscar frete específico por oficina, cidade e UF (evita ambiguidade)
+  async getFretePorOficinaCidadeUF(oficina, cidade, uf) {
+    const { data, error } = await supabase
+      .from('fretes')
+      .select('*')
+      .eq('oficina', oficina)
+      .eq('cidade', cidade)
+      .eq('uf', uf)
+      .single();
+
+    if (error) {
+      console.error('Erro ao buscar frete específico:', error);
+      return null;
+    }
+
+    return data;
   }
 
   // Buscar frete específico por oficina, cidade e UF (evita ambiguidade)

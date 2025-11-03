@@ -195,6 +195,31 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   currentY += 15;
   
   // Caixa profissional para dados do veículo - ajustada para caber em uma página
+  // Verificar se é proposta preliminar
+  const isPropostaPreliminar = caminhao.tipo === 'A PREENCHER' || 
+                                caminhao.marca === 'A PREENCHER' || 
+                                caminhao.modelo === 'A PREENCHER';
+  
+  // Banner de alerta para proposta preliminar
+  if (isPropostaPreliminar) {
+    doc.setFillColor(255, 243, 205); // Amarelo claro
+    doc.rect(15, currentY - 5, 180, 25, 'F');
+    doc.setDrawColor(255, 193, 7); // Amarelo
+    doc.setLineWidth(2);
+    doc.rect(15, currentY - 5, 180, 25, 'S');
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(133, 100, 4); // Marrom escuro
+    doc.text('⚠️ PROPOSTA PRELIMINAR - DADOS DO VEÍCULO A CONFIRMAR', 20, currentY + 5);
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Os dados técnicos do veículo serão preenchidos após confirmação com o cliente', 20, currentY + 12);
+    
+    currentY += 30;
+  }
+  
   doc.setFillColor(255, 255, 255);
   doc.rect(15, currentY - 5, 180, 180, 'F'); // Altura aumentada para caber tudo
   doc.setDrawColor(0, 0, 0);
@@ -420,31 +445,55 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(0, 0, 0);
-  doc.text(`Valor Base do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, currentY);
-  currentY += 6;
   
-  if (pagamento.desconto > 0) {
-    doc.setTextColor(40, 167, 69);
-    doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
-    doc.setTextColor(0, 0, 0);
+  // Se for Financiamento Bancário, unificar tudo no valor do produto
+  if (pagamento.financiamentoBancario === 'sim') {
+    // Valor unificado (base + frete + instalação)
+    const valorUnificado = (pagamento.valorBase || 0) + (pagamento.valorFrete || 0) + (pagamento.valorInstalacao || 0);
+    doc.text(`Valor Total do Produto: ${formatCurrency(valorUnificado)}`, 20, currentY);
     currentY += 6;
-  }
-  
-  if (pagamento.acrescimo > 0) {
-    doc.setTextColor(220, 53, 69);
-    doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
-    doc.setTextColor(0, 0, 0);
+    
+    if (pagamento.desconto > 0) {
+      doc.setTextColor(40, 167, 69);
+      doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
+      doc.setTextColor(0, 0, 0);
+      currentY += 6;
+    }
+    
+    if (pagamento.acrescimo > 0) {
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
+      doc.setTextColor(0, 0, 0);
+      currentY += 6;
+    }
+  } else {
+    // Discriminar valores separadamente (padrão)
+    doc.text(`Valor Base do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, currentY);
     currentY += 6;
-  }
-  
-  if (pagamento.valorFrete > 0) {
-    doc.text(`Frete (${pagamento.tipoFrete?.toUpperCase()}): ${formatCurrency(pagamento.valorFrete)}`, 20, currentY);
-    currentY += 6;
-  }
-  
-  if (pagamento.valorInstalacao > 0) {
-    doc.text(`Instalação: ${formatCurrency(pagamento.valorInstalacao)}`, 20, currentY);
-    currentY += 6;
+    
+    if (pagamento.desconto > 0) {
+      doc.setTextColor(40, 167, 69);
+      doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
+      doc.setTextColor(0, 0, 0);
+      currentY += 6;
+    }
+    
+    if (pagamento.acrescimo > 0) {
+      doc.setTextColor(220, 53, 69);
+      doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
+      doc.setTextColor(0, 0, 0);
+      currentY += 6;
+    }
+    
+    if (pagamento.valorFrete > 0) {
+      doc.text(`Frete (${pagamento.tipoFrete?.toUpperCase()}): ${formatCurrency(pagamento.valorFrete)}`, 20, currentY);
+      currentY += 6;
+    }
+    
+    if (pagamento.valorInstalacao > 0) {
+      doc.text(`Instalação: ${formatCurrency(pagamento.valorInstalacao)}`, 20, currentY);
+      currentY += 6;
+    }
   }
   
   currentY += 5;

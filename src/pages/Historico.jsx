@@ -20,25 +20,26 @@ const Historico = () => {
       return;
     }
 
-    // Buscar pedidos reais do banco
+    // Buscar propostas reais do banco
     const fetchPedidos = async () => {
       try {
-        const pedidosData = await db.getPedidos();
+        let propostasData;
         
-        // Filtrar pedidos do vendedor logado (se for vendedor)
-        let pedidosFiltrados = pedidosData;
+        // Filtrar propostas do vendedor logado (se for vendedor)
         if (userData) {
           const user = JSON.parse(userData);
           if (user.tipo === 'vendedor') {
-            pedidosFiltrados = pedidosData.filter(pedido => 
-              pedido.vendedor_id === user.id
-            );
+            propostasData = await db.getPropostas({ vendedor_id: user.id });
+          } else {
+            propostasData = await db.getPropostas();
           }
+        } else {
+          propostasData = await db.getPropostas();
         }
         
-        setPedidos(pedidosFiltrados);
+        setPedidos(propostasData);
       } catch (error) {
-        console.error('Erro ao buscar pedidos:', error);
+        console.error('Erro ao buscar propostas:', error);
         setPedidos([]);
       } finally {
         setIsLoading(false);
