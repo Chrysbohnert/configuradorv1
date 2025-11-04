@@ -1569,6 +1569,255 @@ class DatabaseService {
       throw error;
     }
   }
+
+  // ===== SOLICITAÇÕES DE DESCONTO =====
+  
+  /**
+   * Criar nova solicitação de desconto
+   * @param {Object} dados - Dados da solicitação
+   * @returns {Object} Solicitação criada
+   */
+  async criarSolicitacaoDesconto(dados) {
+    console.log('📝 [criarSolicitacaoDesconto] Criando solicitação:', dados);
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .insert([{
+        pedido_id: dados.pedidoId || null,
+        numero_proposta: dados.numeroProposta || null,
+        vendedor_id: dados.vendedorId,
+        vendedor_nome: dados.vendedorNome,
+        vendedor_email: dados.vendedorEmail || null,
+        equipamento_descricao: dados.equipamentoDescricao,
+        valor_base: dados.valorBase,
+        desconto_atual: dados.descontoAtual || 7,
+        justificativa: dados.justificativa || null,
+        status: 'pendente'
+      }])
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ [criarSolicitacaoDesconto] Erro:', error);
+      throw error;
+    }
+    
+    console.log('✅ [criarSolicitacaoDesconto] Solicitação criada:', data);
+    return data;
+  }
+
+  /**
+   * Buscar solicitações pendentes (para o gestor)
+   * @returns {Array} Lista de solicitações pendentes
+   */
+  async getSolicitacoesPendentes() {
+    console.log('🔍 [getSolicitacoesPendentes] Buscando solicitações pendentes...');
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .select('*')
+      .eq('status', 'pendente')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ [getSolicitacoesPendentes] Erro:', error);
+      throw error;
+    }
+    
+    console.log(`✅ [getSolicitacoesPendentes] ${data?.length || 0} solicitações encontradas`);
+    return data || [];
+  }
+
+  /**
+   * Buscar solicitações de um vendedor específico
+   * @param {string} vendedorId - ID do vendedor
+   * @returns {Array} Lista de solicitações do vendedor
+   */
+  async getSolicitacoesPorVendedor(vendedorId) {
+    console.log('🔍 [getSolicitacoesPorVendedor] Buscando para vendedor:', vendedorId);
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .select('*')
+      .eq('vendedor_id', vendedorId)
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('❌ [getSolicitacoesPorVendedor] Erro:', error);
+      throw error;
+    }
+    
+    console.log(`✅ [getSolicitacoesPorVendedor] ${data?.length || 0} solicitações encontradas`);
+    return data || [];
+  }
+
+  /**
+   * Buscar solicitação por ID
+   * @param {string} solicitacaoId - ID da solicitação
+   * @returns {Object} Solicitação encontrada
+   */
+  async getSolicitacaoPorId(solicitacaoId) {
+    console.log('🔍 [getSolicitacaoPorId] Buscando solicitação:', solicitacaoId);
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .select('*')
+      .eq('id', solicitacaoId)
+      .single();
+    
+    if (error) {
+      console.error('❌ [getSolicitacaoPorId] Erro:', error);
+      throw error;
+    }
+    
+    console.log('✅ [getSolicitacaoPorId] Solicitação encontrada:', data);
+    return data;
+  }
+
+  /**
+   * Aprovar solicitação de desconto (apenas gestor)
+   * @param {string} solicitacaoId - ID da solicitação
+   * @param {number} descontoAprovado - Percentual aprovado (8-12)
+   * @param {string} aprovadorId - ID do gestor
+   * @param {string} aprovadorNome - Nome do gestor
+   * @param {string} observacao - Observação opcional
+   * @returns {Object} Solicitação atualizada
+   */
+  async aprovarSolicitacaoDesconto(solicitacaoId, descontoAprovado, aprovadorId, aprovadorNome, observacao = null) {
+    console.log('✅ [aprovarSolicitacaoDesconto] Aprovando:', {
+      solicitacaoId,
+      descontoAprovado,
+      aprovadorNome
+    });
+    
+    // Validar desconto (8-12%)
+    if (descontoAprovado < 8 || descontoAprovado > 12) {
+      throw new Error('Desconto deve estar entre 8% e 12%');
+    }
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .update({
+        status: 'aprovado',
+        desconto_aprovado: descontoAprovado,
+        aprovador_id: aprovadorId,
+        aprovador_nome: aprovadorNome,
+        observacao_gestor: observacao,
+        respondido_at: new Date().toISOString()
+      })
+      .eq('id', solicitacaoId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ [aprovarSolicitacaoDesconto] Erro:', error);
+      throw error;
+    }
+    
+    console.log('✅ [aprovarSolicitacaoDesconto] Aprovado com sucesso');
+    return data;
+  }
+
+  /**
+   * Negar solicitação de desconto (apenas gestor)
+   * @param {string} solicitacaoId - ID da solicitação
+   * @param {string} aprovadorId - ID do gestor
+   * @param {string} aprovadorNome - Nome do gestor
+   * @param {string} observacao - Motivo da negação
+   * @returns {Object} Solicitação atualizada
+   */
+  async negarSolicitacaoDesconto(solicitacaoId, aprovadorId, aprovadorNome, observacao = null) {
+    console.log('❌ [negarSolicitacaoDesconto] Negando:', {
+      solicitacaoId,
+      aprovadorNome
+    });
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .update({
+        status: 'negado',
+        aprovador_id: aprovadorId,
+        aprovador_nome: aprovadorNome,
+        observacao_gestor: observacao,
+        respondido_at: new Date().toISOString()
+      })
+      .eq('id', solicitacaoId)
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ [negarSolicitacaoDesconto] Erro:', error);
+      throw error;
+    }
+    
+    console.log('✅ [negarSolicitacaoDesconto] Negado com sucesso');
+    return data;
+  }
+
+  /**
+   * Cancelar solicitação (apenas vendedor, apenas pendentes)
+   * @param {string} solicitacaoId - ID da solicitação
+   * @returns {Object} Solicitação atualizada
+   */
+  async cancelarSolicitacaoDesconto(solicitacaoId) {
+    console.log('🚫 [cancelarSolicitacaoDesconto] Cancelando:', solicitacaoId);
+    
+    const { data, error } = await supabase
+      .from('solicitacoes_desconto')
+      .update({
+        status: 'cancelado'
+      })
+      .eq('id', solicitacaoId)
+      .eq('status', 'pendente') // Só cancela se estiver pendente
+      .select()
+      .single();
+    
+    if (error) {
+      console.error('❌ [cancelarSolicitacaoDesconto] Erro:', error);
+      throw error;
+    }
+    
+    console.log('✅ [cancelarSolicitacaoDesconto] Cancelado com sucesso');
+    return data;
+  }
+
+  /**
+   * Buscar histórico completo de solicitações (para relatórios)
+   * @param {Object} filtros - Filtros opcionais (status, vendedorId, dataInicio, dataFim)
+   * @returns {Array} Lista de solicitações
+   */
+  async getHistoricoSolicitacoes(filtros = {}) {
+    console.log('📊 [getHistoricoSolicitacoes] Buscando histórico:', filtros);
+    
+    let query = supabase
+      .from('solicitacoes_desconto')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    // Aplicar filtros
+    if (filtros.status) {
+      query = query.eq('status', filtros.status);
+    }
+    if (filtros.vendedorId) {
+      query = query.eq('vendedor_id', filtros.vendedorId);
+    }
+    if (filtros.dataInicio) {
+      query = query.gte('created_at', filtros.dataInicio);
+    }
+    if (filtros.dataFim) {
+      query = query.lte('created_at', filtros.dataFim);
+    }
+    
+    const { data, error } = await query;
+    
+    if (error) {
+      console.error('❌ [getHistoricoSolicitacoes] Erro:', error);
+      throw error;
+    }
+    
+    console.log(`✅ [getHistoricoSolicitacoes] ${data?.length || 0} registros encontrados`);
+    return data || [];
+  }
 }
 
 // Instância única do serviço

@@ -68,21 +68,21 @@ const createOffscreenContainer = (id = 'pdf-section') => {
     <style>
       * { box-sizing: border-box; }
       body, div, p, table, td, th, h1, h2, h3 { margin: 0; padding: 0; }
-      .wrap { font-family: Arial, Helvetica, sans-serif; color: #000; }
+      .wrap { font-family: Arial, Helvetica, sans-serif; color: #000; padding: 20px; }
       .title { 
         text-transform: uppercase; 
         font-weight: 700; 
         letter-spacing: 0.6px; 
         font-size: 28px; 
         text-align: center; 
-        margin-bottom: 22px; 
+        margin-bottom: 12px;
       }
       .subtitle {
         text-transform: uppercase;
         font-weight: 700;
         letter-spacing: 0.4px;
         font-size: 16px;
-        margin: 18px 0 8px 0;
+        margin: 10px 0 4px 0;
       }
       .kvs {
         text-transform: uppercase;
@@ -99,7 +99,7 @@ const createOffscreenContainer = (id = 'pdf-section') => {
       font-size: 15px;
       }
       .rule {
-        height: 1px; background: #000; margin: 18px 0;
+        height: 1px; background: #000; margin: 10px 0;
       }
       .table {
         width: 100%;
@@ -554,11 +554,11 @@ const renderAssinaturas = (pedidoData) => {
       <div class="title">ASSINATURAS</div>
       <div style="margin-top:30px; display:grid; grid-template-columns: 1fr 1fr; gap: 24px;">
         <div class="center">
-          <div style="height: 72px;"></div>
+          <div style="height: 48px;"></div>
           <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">CLIENTE: ${cliente.toUpperCase()}</div>
         </div>
         <div class="center">
-          <div style="height: 72px;"></div>
+          <div style="height: 48px;"></div>
           <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">VENDEDOR: ${vendedor.toUpperCase()}</div>
         </div>
       </div>
@@ -709,22 +709,17 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       }
 
       // 7) CLÁUSULAS
+     // 7) CLÁUSULAS + ASSINATURAS (mesma página)
       {
-        console.log('📄 Gerando seção: CLÁUSULAS');
-        const el = renderClausulas(pedidoData);
+        console.log('📄 Gerando seção: CLÁUSULAS + ASSINATURAS');
+        const el = document.createElement('div');
+        el.appendChild(renderClausulas(pedidoData));
+        el.appendChild(renderAssinaturas(pedidoData)); // ← agora no mesmo canvas!
         const cv = await htmlToCanvas(el);
         console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // 8) ASSINATURAS
-      {
-        console.log('📄 Gerando seção: ASSINATURAS');
-        const el = renderAssinaturas(pedidoData);
-        const cv = await htmlToCanvas(el);
-        console.log('✅ Canvas gerado:', cv.width, 'x', cv.height);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-      }
 
       // 9) ANEXAR PDFs DE GRÁFICO DE CARGA (SEM HEADER/FOOTER)
       await appendGraficosDeCarga(pdf, pedidoData);
