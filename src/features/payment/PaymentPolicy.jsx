@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { getPaymentPlans, getPlanLabel, getPlanByDescription } from '../../services/paymentPlans';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
-import { db } from '../../config/supabase';
+import { db, supabase } from '../../config/supabase';
 import { useFretes } from '../../hooks/useFretes';
+import SolicitarDescontoModal from '../../components/SolicitarDescontoModal';
 import './PaymentPolicy.css';
 
 /**
@@ -74,6 +75,11 @@ export default function PaymentPolicy({
 
   // 7) Resumo: calculado a partir das escolhas
   const [resultado, setResultado] = useState(null);
+
+  // Estados para solicitação de desconto adicional
+  const [modalSolicitacaoOpen, setModalSolicitacaoOpen] = useState(false);
+  const [solicitacaoId, setSolicitacaoId] = useState(null);
+  const [aguardandoAprovacao, setAguardandoAprovacao] = useState(false);
 
   // Hook para buscar dados de frete baseado no local de instalação
   const { dadosFreteAtual } = useFretes(localInstalacao);
@@ -165,6 +171,63 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     buscarPrecoCorreto();
   }, [tipoCliente, participacaoRevenda, tipoIE, itens, precoBase]);
+
+  // =============== LISTENER REALTIME PARA APROVAÇÃO DE DESCONTO ==
+  useEffect(() => {
+    if (!solicitacaoId) return;
+
+    console.log('🔔 [PaymentPolicy] Iniciando listener para solicitação:', solicitacaoId);
+
+    const channel = supabase
+      .channel(`solicitacao-${solicitacaoId}`)
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'solicitacoes_desconto',
+        filter: `id=eq.${solicitacaoId}`
+      }, (payload) => {
+        console.log('🔔 [PaymentPolicy] Atualização recebida:', payload);
+
+        if (payload.new.status === 'aprovado') {
+          const descontoAprovado = payload.new.desconto_aprovado;
+          const aprovadorNome = payload.new.aprovador_nome;
+
+          console.log(`✅ [PaymentPolicy] Desconto de ${descontoAprovado}% aprovado por ${aprovadorNome}`);
+
+          // Aplica o desconto automaticamente
+          setDescontoVendedor(descontoAprovado);
+
+          // Fecha modal e limpa estados
+          setModalSolicitacaoOpen(false);
+          setAguardandoAprovacao(false);
+          setSolicitacaoId(null);
+
+          // Mostra notificação de sucesso
+          alert(`✅ Desconto de ${descontoAprovado}% aprovado por ${aprovadorNome}!\n\nVocê pode continuar preenchendo a proposta.`);
+
+        } else if (payload.new.status === 'negado') {
+          const aprovadorNome = payload.new.aprovador_nome;
+          const observacao = payload.new.observacao_gestor;
+
+          console.log(`❌ [PaymentPolicy] Solicitação negada por ${aprovadorNome}`);
+
+          // Fecha modal e limpa estados
+          setModalSolicitacaoOpen(false);
+          setAguardandoAprovacao(false);
+          setSolicitacaoId(null);
+
+          // Mostra notificação de negação
+          alert(`❌ Solicitação negada por ${aprovadorNome}${observacao ? `\n\nMotivo: ${observacao}` : ''}`);
+        }
+      })
+      .subscribe();
+
+    // Cleanup: remove listener quando componente desmonta ou solicitacaoId muda
+    return () => {
+      console.log('🔕 [PaymentPolicy] Removendo listener');
+      supabase.removeChannel(channel);
+    };
+  }, [solicitacaoId]);
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
@@ -363,6 +426,90 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
   const next = () => setEtapa(e => Math.min(e + 1, 7));
   const prev = () => setEtapa(e => Math.max(e - 1, 1));
+
+  // =============== SOLICITAR DESCONTO ADICIONAL AO GESTOR ========
+  const handleSolicitarDesconto = async (justificativa) => {
+    try {
+      setAguardandoAprovacao(true);
+
+      const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        alert('❌ Erro: Usuário não identificado');
+        return;
+      }
+
+      // Pegar descrição do equipamento
+      const equipamento = itens[0];
+      const equipamentoDescricao = equipamento 
+        ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
+        : 'Equipamento não identificado';
+
+      console.log('📝 [PaymentPolicy] Criando solicitação de desconto:', {
+        vendedorId: user.id,
+        vendedorNome: user.nome,
+        equipamentoDescricao,
+        valorBase: precoAjustadoPorRegiao,
+        descontoAtual: descontoVendedor || 7,
+        justificativa
+      });
+
+      // Criar solicitação no banco
+      const solicitacao = await db.criarSolicitacaoDesconto({
+        vendedorId: user.id,
+        vendedorNome: user.nome,
+        vendedorEmail: user.email,
+        equipamentoDescricao,
+        valorBase: precoAjustadoPorRegiao,
+        descontoAtual: descontoVendedor || 7,
+        justificativa
+      });
+
+      console.log('✅ [PaymentPolicy] Solicitação criada:', solicitacao);
+
+      // Guardar ID da solicitação para o listener
+      setSolicitacaoId(solicitacao.id);
+
+      // TODO: Enviar notificação WhatsApp (implementar depois)
+      // await enviarNotificacaoWhatsApp(solicitacao);
+
+      alert('✅ Solicitação enviada!\n\nO gestor foi notificado e você será avisado assim que ele responder.');
+
+    } catch (error) {
+      console.error('❌ [PaymentPolicy] Erro ao solicitar desconto:', error);
+      alert('❌ Erro ao enviar solicitação. Tente novamente.');
+      setAguardandoAprovacao(false);
+      setModalSolicitacaoOpen(false);
+    }
+  };
+
+  // Função para verificar status manualmente
+  const handleVerificarStatus = async () => {
+    if (!solicitacaoId) return;
+
+    try {
+      console.log('🔄 [PaymentPolicy] Verificando status da solicitação:', solicitacaoId);
+      
+      const solicitacao = await db.getSolicitacaoPorId(solicitacaoId);
+      
+      if (solicitacao.status === 'aprovado') {
+        console.log('✅ [PaymentPolicy] Desconto aprovado:', solicitacao.desconto_aprovado);
+        setDescontoVendedor(solicitacao.desconto_aprovado);
+        setAguardandoAprovacao(false);
+        setModalSolicitacaoOpen(false);
+        alert(`✅ Desconto de ${solicitacao.desconto_aprovado}% aprovado por ${solicitacao.aprovador_nome}!\n\nVocê pode continuar preenchendo a proposta.`);
+      } else if (solicitacao.status === 'negado') {
+        console.log('❌ [PaymentPolicy] Solicitação negada');
+        setAguardandoAprovacao(false);
+        setModalSolicitacaoOpen(false);
+        alert(`❌ Solicitação negada por ${solicitacao.aprovador_nome}.\n\n${solicitacao.observacao_gestor || 'Sem justificativa'}`);
+      } else {
+        alert('⏳ Solicitação ainda está pendente.\n\nO gestor ainda não respondeu.');
+      }
+    } catch (error) {
+      console.error('❌ [PaymentPolicy] Erro ao verificar status:', error);
+      alert('❌ Erro ao verificar status. Tente novamente.');
+    }
+  };
 
   // =============== CALCULAR VALOR FLUTUANTE EM TEMPO REAL ========
   const valorFlutuante = useMemo(() => {
@@ -949,7 +1096,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {/* GSI - CLIENTE SEM PARTICIPAÇÃO REVENDA */}
                 {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
                   <div style={{ marginTop: '12px' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
                       {[1, 2, 3, 4, 5, 6, 7].map(valor => (
                         <button
                           key={valor}
@@ -982,9 +1129,45 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                           {valor}%
                         </button>
                       ))}
+                      
+                      {/* Botão [+] para solicitar desconto adicional */}
+                      <button
+                        type="button"
+                        onClick={() => setModalSolicitacaoOpen(true)}
+                        disabled={aguardandoAprovacao}
+                        style={{
+                          padding: '10px 20px',
+                          border: '2px dashed #667eea',
+                          background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
+                          color: aguardandoAprovacao ? '#6c757d' : '#667eea',
+                          borderRadius: '6px',
+                          cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
+                          fontWeight: '600',
+                          fontSize: '14px',
+                          transition: 'all 0.2s ease',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px'
+                        }}
+                        onMouseOver={(e) => {
+                          if (!aguardandoAprovacao) {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.background = '#f0f3ff';
+                          }
+                        }}
+                        onMouseOut={(e) => {
+                          if (!aguardandoAprovacao) {
+                            e.currentTarget.style.borderColor = '#667eea';
+                            e.currentTarget.style.background = '#fff';
+                          }
+                        }}
+                        title="Solicitar desconto extra"
+                      >
+                        {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar'}
+                      </button>
                     </div>
                     <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Desconto máximo: 7%
+                      ℹ️ Desconto máximo padrão: 7%. Para valores maiores, clique em [+]
                     </small>
                   </div>
                 )}
@@ -1205,6 +1388,22 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           </div>
         </section>
       )}
+
+      {/* Modal de Solicitação de Desconto */}
+      <SolicitarDescontoModal
+        isOpen={modalSolicitacaoOpen}
+        onClose={() => {
+          if (!aguardandoAprovacao) {
+            setModalSolicitacaoOpen(false);
+          }
+        }}
+        onSolicitar={handleSolicitarDesconto}
+        onVerificarStatus={handleVerificarStatus}
+        equipamentoDescricao={itens[0] ? `${itens[0].subgrupo || ''} ${itens[0].modelo || ''}`.trim() : 'Equipamento'}
+        valorBase={precoAjustadoPorRegiao}
+        descontoAtual={descontoVendedor || 7}
+        isLoading={aguardandoAprovacao}
+      />
     </div>
   );
 }

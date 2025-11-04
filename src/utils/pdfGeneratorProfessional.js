@@ -2,11 +2,6 @@ import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import { formatCurrency } from './formatters';
 
-/**
- * Gerador de PDF Profissional para Proposta Comercial
- * Inclui todas as informações: cliente, caminhão, equipamento, pagamento, cláusulas
- */
-
 // Função auxiliar para carregar imagem
 const loadImage = (url) => {
   return new Promise((resolve, reject) => {
@@ -19,727 +14,196 @@ const loadImage = (url) => {
 };
 
 // Função para adicionar texto com quebra de linha automática
-const addWrappedText = (doc, text, x, y, maxWidth, lineHeight = 5) => {
+const addWrappedText = (doc, text, x, y, maxWidth, lineHeight = 4.2) => {
   if (!text) return y;
-  
   const lines = doc.splitTextToSize(text, maxWidth);
-  lines.forEach((line, index) => {
-    doc.text(line, x, y + (index * lineHeight));
-  });
-  return y + (lines.length * lineHeight);
+  lines.forEach((line, i) => doc.text(line, x, y + i * lineHeight));
+  return y + lines.length * lineHeight;
 };
 
-// Função para verificar se precisa adicionar nova página
-const checkPageBreak = (doc, currentY, spaceNeeded = 30) => {
-  if (currentY + spaceNeeded > 250) { // Ajustado para considerar o novo rodapé
+// Controle de quebra de página
+const checkPageBreak = (doc, currentY, spaceNeeded = 20) => {
+  if (currentY + spaceNeeded > 260) {
     doc.addPage();
-    return 50; // Retorna posição Y inicial da nova página após cabeçalho
+    addHeader(doc);
+    return 50;
   }
   return currentY;
 };
 
-// Função para adicionar cabeçalho profissional em cada página
+// Cabeçalho
 const addHeader = (doc, numeroProposta, data) => {
-  // Fundo do cabeçalho
-  doc.setFillColor(255, 193, 7); // Amarelo STARK
-  doc.rect(0, 0, 210, 35, 'F');
-  
-  // Logo STARK
+  doc.setFillColor(255, 193, 7);
+  doc.rect(0, 0, 210, 32, 'F');
+  doc.setTextColor(0, 0, 0);
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(24);
-  doc.setTextColor(0, 0, 0);
-  doc.setFont('helvetica', 'bold');
-  doc.text('STARK', 20, 20);
-  
+  doc.text('STARK', 20, 19);
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
-  doc.setFont('helvetica', 'normal');
-  doc.text('INDUSTRIAL', 20, 28);
-  
-  // Título da proposta
-  doc.setFontSize(16);
+  doc.text('INDUSTRIAL', 20, 27);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(15);
   doc.text('PROPOSTA COMERCIAL', 105, 20, { align: 'center' });
-  
-  // Informações da proposta
-  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
   doc.text(`Proposta Nº: ${numeroProposta}`, 160, 15);
   doc.text(`Data: ${data}`, 160, 25);
-  
-  // Linha separadora
   doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.line(20, 35, 190, 35);
+  doc.line(20, 32, 190, 32);
 };
 
-// Função para adicionar rodapé profissional
-const addFooter = (doc, pageNumber, totalPages) => {
-  // Fundo do rodapé
-  doc.setFillColor(255, 193, 7); // Amarelo STARK
-  doc.rect(0, 270, 210, 30, 'F');
-  
-  // Informações da empresa
-  doc.setFontSize(10);
+// Rodapé
+const addFooter = (doc, page, total) => {
+  doc.setFillColor(255, 193, 7);
+  doc.rect(0, 270, 210, 25, 'F');
+  doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
   doc.setFont('helvetica', 'bold');
-  doc.text('STARK INDUSTRIAL', 20, 280);
-  
-  doc.setFontSize(8);
+  doc.text('STARK INDUSTRIAL', 20, 282);
   doc.setFont('helvetica', 'normal');
-  doc.text('WWW.STARKINDUSTRIAL.IND.BR', 20, 285);
-  doc.text('55 2120-9961', 20, 290);
-  
-  // Redes sociais
-  doc.text('@stark_industrial_stark', 120, 280);
-  doc.text('@starkindustrialsr', 120, 285);
-  
-  // Número da página
-  doc.setFontSize(8);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Página ${pageNumber} de ${totalPages}`, 190, 290, { align: 'right' });
+  doc.text('WWW.STARKINDUSTRIAL.IND.BR  |  (55) 2120-9961', 20, 287);
+  doc.text(`Página ${page} de ${total}`, 190, 287, { align: 'right' });
 };
 
 /**
- * Gera PDF completo da proposta comercial
+ * Geração do PDF da Proposta Comercial
  */
 export const generatePropostaComercialPDF = async (dadosProposta) => {
   const doc = new jsPDF();
-  let currentY = 40;
-  
-  const {
-    numeroProposta,
-    data,
-    vendedor,
-    cliente,
-    caminhao,
-    equipamento,
-    pagamento,
-    observacoes
-  } = dadosProposta;
+  const { numeroProposta, data, vendedor, cliente, caminhao, equipamento, pagamento, observacoes } = dadosProposta;
+  let y = 40;
 
-  // ==================== PÁGINA 1: DADOS GERAIS ====================
+  // ======= Cabeçalho =======
   addHeader(doc, numeroProposta, data);
-  currentY = 50; // Ajustar posição após cabeçalho
-  
-  // DADOS DO VENDEDOR
-  doc.setFontSize(14);
+
+  // ======= BLOCO CLIENTE + EQUIPAMENTO =======
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('DADOS DO VENDEDOR', 20, currentY);
-  currentY += 10;
-  
-  // Caixa profissional para dados do vendedor
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 30, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 30, 'S');
-  
-  doc.setFontSize(11);
+  doc.setFontSize(13);
+  doc.text('DADOS DO CLIENTE', 20, y);
+  y += 7;
   doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Nome: ${vendedor.nome}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Email: ${vendedor.email || 'Não informado'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Telefone: ${vendedor.telefone || 'Não informado'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Região: ${vendedor.regiao || 'Não informado'}`, 20, currentY);
-  currentY += 20;
-
-  // DADOS DO CLIENTE
-  currentY = checkPageBreak(doc, currentY, 60);
-  
-  doc.setFontSize(14);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('DADOS DO CLIENTE', 20, currentY);
-  currentY += 10;
-  
-  // Caixa profissional para dados do cliente
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 50, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 50, 'S');
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Razão Social: ${cliente.nome}`, 20, currentY);
-  currentY += 6;
-  doc.text(`CNPJ/CPF: ${cliente.documento}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Inscrição Estadual: ${cliente.inscricao_estadual || 'ISENTO'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Email: ${cliente.email}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Telefone: ${cliente.telefone}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Endereço: ${cliente.endereco}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Cidade/UF: ${cliente.cidade}/${cliente.uf}`, 20, currentY);
-  currentY += 6;
-  doc.text(`CEP: ${cliente.cep}`, 20, currentY);
-  currentY += 25;
-
-  // ==================== PÁGINA: DADOS DO VEÍCULO ====================
-  doc.addPage();
-  currentY = 50;
-  addHeader(doc, numeroProposta, data);
-  
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('DADOS DO VEÍCULO', 20, currentY);
-  currentY += 15;
-  
-  // Caixa profissional para dados do veículo - ajustada para caber em uma página
-  // Verificar se é proposta preliminar
-  const isPropostaPreliminar = caminhao.tipo === 'A PREENCHER' || 
-                                caminhao.marca === 'A PREENCHER' || 
-                                caminhao.modelo === 'A PREENCHER';
-  
-  // Banner de alerta para proposta preliminar
-  if (isPropostaPreliminar) {
-    doc.setFillColor(255, 243, 205); // Amarelo claro
-    doc.rect(15, currentY - 5, 180, 25, 'F');
-    doc.setDrawColor(255, 193, 7); // Amarelo
-    doc.setLineWidth(2);
-    doc.rect(15, currentY - 5, 180, 25, 'S');
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(133, 100, 4); // Marrom escuro
-    doc.text('⚠️ PROPOSTA PRELIMINAR - DADOS DO VEÍCULO A CONFIRMAR', 20, currentY + 5);
-    
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Os dados técnicos do veículo serão preenchidos após confirmação com o cliente', 20, currentY + 12);
-    
-    currentY += 30;
-  }
-  
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 180, 'F'); // Altura aumentada para caber tudo
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 180, 'S');
-  
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('INFORMAÇÕES BÁSICAS:', 20, currentY);
-  currentY += 12;
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Tipo de Veículo: ${caminhao.tipo}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Marca: ${caminhao.marca}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Modelo: ${caminhao.modelo}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Ano: ${caminhao.ano || 'Não informado'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Voltagem: ${caminhao.voltagem}`, 20, currentY);
-  currentY += 6;
-  
-  if (caminhao.placa) {
-    doc.text(`Placa: ${caminhao.placa}`, 20, currentY);
-    currentY += 6;
-  }
-  
-  // Seção de observações com espaço adequado
-  if (caminhao.observacoes) {
-    currentY += 8;
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.text('OBSERVAÇÕES:', 20, currentY);
-    currentY += 8;
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    // Limitar altura das observações para caber na página
-    currentY = addWrappedText(doc, caminhao.observacoes, 20, currentY, 170, 5);
-    
-    // Garantir que não ultrapasse o limite da página
-    if (currentY > 200) {
-      currentY = 200;
-    }
-  }
-  
-  // Garantir que tudo caiba em uma página
-  currentY = Math.min(currentY, 200);
-
-  // ==================== PÁGINA 2: EQUIPAMENTO ====================
-  doc.addPage();
-  currentY = 50;
-  addHeader(doc, numeroProposta, data);
-  
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('ESPECIFICAÇÃO DO EQUIPAMENTO', 20, currentY);
-  currentY += 15;
-  
-  // Caixa principal para informações do equipamento
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 50, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 50, 'S');
-  
-  // Informações principais do equipamento
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Modelo: ${equipamento.modelo}`, 20, currentY);
-  currentY += 8;
-  
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Capacidade: ${equipamento.subgrupo}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Código de Referência: ${equipamento.codigo_referencia || 'N/A'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Peso: ${equipamento.peso_kg}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Configuração: ${equipamento.configuracao || 'Padrão'}`, 20, currentY);
-  currentY += 6;
-  doc.text(`Possui CONTR: ${equipamento.tem_contr || 'Não'}`, 20, currentY);
-  currentY += 6;
-  
-  if (equipamento.finame) {
-    doc.text(`FINAME: ${equipamento.finame}`, 20, currentY);
-    currentY += 6;
-  }
-  
-  if (equipamento.ncm) {
-    doc.text(`NCM: ${equipamento.ncm}`, 20, currentY);
-    currentY += 6;
-  }
-  
-  currentY += 15;
-
-  // DESCRIÇÃO TÉCNICA
-  if (equipamento.descricao) {
-    currentY = checkPageBreak(doc, currentY, 40);
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(0, 0, 0);
-    doc.text('DESCRIÇÃO TÉCNICA:', 20, currentY);
-    currentY += 10;
-    
-    // Caixa para descrição técnica
-    doc.setFillColor(255, 255, 255);
-    doc.rect(15, currentY - 5, 180, 35, 'F');
-    doc.setDrawColor(0, 0, 0);
-    doc.setLineWidth(1);
-    doc.rect(15, currentY - 5, 180, 35, 'S');
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    currentY = addWrappedText(doc, equipamento.descricao, 20, currentY, 170, 5);
-    currentY += 15;
-  }
-
-  // NÃO INCLUÍDO
-  if (equipamento.nao_incluido) {
-    currentY = checkPageBreak(doc, currentY, 40);
-    
-    doc.setFontSize(14);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(220, 53, 69);
-    doc.text('NÃO INCLUÍDO:', 20, currentY);
-    currentY += 10;
-    
-    // Caixa para não incluído
-    doc.setFillColor(255, 248, 248);
-    doc.rect(15, currentY - 5, 180, 35, 'F');
-    doc.setDrawColor(220, 53, 69);
-    doc.setLineWidth(1);
-    doc.rect(15, currentY - 5, 180, 35, 'S');
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    currentY = addWrappedText(doc, equipamento.nao_incluido, 20, currentY, 170, 5);
-    currentY += 15;
-  }
-
-  // ==================== GRÁFICO DE CARGA ====================
-  if (equipamento.grafico_carga_url) {
-    doc.addPage();
-    currentY = 40;
-    addHeader(doc, numeroProposta, data);
-    
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 98, 255);
-    doc.text('GRÁFICO DE CARGA', 105, currentY, { align: 'center' });
-    currentY += 10;
-    
-    try {
-      const img = await loadImage(equipamento.grafico_carga_url);
-      
-      // Calcular dimensões mantendo proporção
-      const maxWidth = 170;
-      const maxHeight = 200;
-      let imgWidth = img.width;
-      let imgHeight = img.height;
-      
-      const ratio = Math.min(maxWidth / imgWidth, maxHeight / imgHeight);
-      imgWidth = imgWidth * ratio;
-      imgHeight = imgHeight * ratio;
-      
-      // Centralizar
-      const xPosition = (210 - imgWidth) / 2;
-      
-      doc.addImage(img, 'PNG', xPosition, currentY, imgWidth, imgHeight);
-      currentY += imgHeight + 10;
-    } catch (error) {
-      console.error('Erro ao carregar gráfico de carga:', error);
-      doc.setFontSize(10);
-      doc.setTextColor(150, 150, 150);
-      doc.text('Gráfico de carga não disponível', 105, currentY, { align: 'center' });
-      currentY += 10;
-    }
-  }
-
-  // ==================== PÁGINA: CONDIÇÕES DE PAGAMENTO ====================
-  doc.addPage();
-  currentY = 50;
-  addHeader(doc, numeroProposta, data);
-  
-  doc.setFontSize(16);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text('CONDIÇÕES DE PAGAMENTO', 20, currentY);
-  currentY += 15;
-  
-  // Caixa para tipo de negociação
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 20, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 20, 'S');
-  
-  // Tipo de Cliente
-  doc.setFontSize(12);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(0, 0, 0);
-  doc.text(`Tipo de Negociação: ${pagamento.tipoPagamento === 'revenda' ? 'REVENDA' : 'CLIENTE FINAL'}`, 20, currentY);
-  currentY += 20;
-  
-  // Caixa para valores
-  doc.setFillColor(255, 255, 255);
-  doc.rect(15, currentY - 5, 180, 60, 'F');
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(1);
-  doc.rect(15, currentY - 5, 180, 60, 'S');
-  
-  // Valores
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0, 0, 0);
-  
-  // Se for Financiamento Bancário, unificar tudo no valor do produto
-  if (pagamento.financiamentoBancario === 'sim') {
-    // Valor unificado (base + frete + instalação)
-    const valorUnificado = (pagamento.valorBase || 0) + (pagamento.valorFrete || 0) + (pagamento.valorInstalacao || 0);
-    doc.text(`Valor Total do Produto: ${formatCurrency(valorUnificado)}`, 20, currentY);
-    currentY += 6;
-    
-    if (pagamento.desconto > 0) {
-      doc.setTextColor(40, 167, 69);
-      doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 6;
-    }
-    
-    if (pagamento.acrescimo > 0) {
-      doc.setTextColor(220, 53, 69);
-      doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 6;
-    }
-  } else {
-    // Discriminar valores separadamente (padrão)
-    doc.text(`Valor Base do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, currentY);
-    currentY += 6;
-    
-    if (pagamento.desconto > 0) {
-      doc.setTextColor(40, 167, 69);
-      doc.text(`Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 6;
-    }
-    
-    if (pagamento.acrescimo > 0) {
-      doc.setTextColor(220, 53, 69);
-      doc.text(`Acréscimo: ${pagamento.acrescimo.toFixed(2)}%`, 20, currentY);
-      doc.setTextColor(0, 0, 0);
-      currentY += 6;
-    }
-    
-    if (pagamento.valorFrete > 0) {
-      doc.text(`Frete (${pagamento.tipoFrete?.toUpperCase()}): ${formatCurrency(pagamento.valorFrete)}`, 20, currentY);
-      currentY += 6;
-    }
-    
-    if (pagamento.valorInstalacao > 0) {
-      doc.text(`Instalação: ${formatCurrency(pagamento.valorInstalacao)}`, 20, currentY);
-      currentY += 6;
-    }
-  }
-  
-  currentY += 5;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(0, 0, 0);
-  doc.text(`VALOR TOTAL: ${formatCurrency(pagamento.valorFinal || 0)}`, 20, currentY);
-  currentY += 20;
-  
-  // Forma de Pagamento
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.setTextColor(60, 60, 60);
-  doc.text('FORMA DE PAGAMENTO:', 20, currentY);
-  currentY += 8;
-  
-  // Caixa para forma de pagamento
-  doc.setFillColor(248, 249, 250);
-  doc.rect(15, currentY - 5, 180, 40, 'F');
-  doc.setDrawColor(220, 220, 220);
-  doc.setLineWidth(0.5);
-  doc.rect(15, currentY - 5, 180, 40, 'S');
-  
-  doc.setFont('helvetica', 'normal');
-  doc.text(`Prazo: ${pagamento.prazoPagamento || 'À vista'}`, 20, currentY);
-  currentY += 5;
-  
-  if (pagamento.financiamentoBancario === 'sim') {
-    doc.text('Financiamento Bancário: SIM', 20, currentY);
-    currentY += 5;
-  }
-  
-  if (pagamento.entradaTotal > 0) {
-    doc.text(`Entrada: ${formatCurrency(pagamento.entradaTotal)} (${pagamento.percentualEntrada}%)`, 20, currentY);
-    currentY += 5;
-    
-    if (pagamento.valorSinal > 0) {
-      doc.text(`  - Sinal: ${formatCurrency(pagamento.valorSinal)}`, 25, currentY);
-      currentY += 5;
-      doc.text(`  - Restante da entrada: ${formatCurrency(pagamento.faltaEntrada || 0)}`, 25, currentY);
-      currentY += 5;
-    }
-  }
-  
-  if (pagamento.saldoAPagar > 0) {
-    doc.text(`Saldo a Pagar: ${formatCurrency(pagamento.saldoAPagar)}`, 20, currentY);
-    currentY += 5;
-  }
-  
-  // Parcelas
-  if (pagamento.parcelas && pagamento.parcelas.length > 0) {
-    currentY += 3;
-    doc.setFont('helvetica', 'bold');
-    doc.text('PARCELAMENTO:', 20, currentY);
-    currentY += 6;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(9);
-    pagamento.parcelas.slice(0, 10).forEach((parcela, index) => {
-      currentY = checkPageBreak(doc, currentY, 5);
-      doc.text(`${index + 1}ª parcela: ${formatCurrency(parcela.valor)} - Vencimento: ${parcela.vencimento || 'A definir'}`, 25, currentY);
-      currentY += 4;
-    });
-    
-    if (pagamento.parcelas.length > 10) {
-      doc.text(`... e mais ${pagamento.parcelas.length - 10} parcelas`, 25, currentY);
-      currentY += 4;
-    }
-  }
-  
-  currentY += 5;
-  
-  // Local de Instalação
-  if (pagamento.localInstalacao) {
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'bold');
-    doc.text('LOCAL DE INSTALAÇÃO:', 20, currentY);
-    currentY += 6;
-    
-    doc.setFont('helvetica', 'normal');
-    doc.text(pagamento.localInstalacao, 20, currentY);
-    currentY += 5;
-    doc.text(`Tipo de Instalação: ${pagamento.tipoInstalacao === 'Incluso no pedido' ? 'Incluso no pedido' : 'Cliente paga direto'}`, 20, currentY);
-    currentY += 8;
-  }
+  y = addWrappedText(doc, `Razão Social: ${cliente.nome}`, 20, y, 180);
+  y = addWrappedText(doc, `CNPJ/CPF: ${cliente.documento}  |  IE: ${cliente.inscricao_estadual || 'ISENTO'}`, 20, y, 180);
+  y = addWrappedText(doc, `Endereço: ${cliente.endereco} – ${cliente.cidade}/${cliente.uf} – CEP: ${cliente.cep}`, 20, y, 180);
+  y = addWrappedText(doc, `Telefone: ${cliente.telefone}  |  E-mail: ${cliente.email}`, 20, y, 180);
+  y += 5;
 
-  // ==================== PÁGINA: CLÁUSULAS CONTRATUAIS ====================
-  doc.addPage();
-  currentY = 40;
-  addHeader(doc, numeroProposta, data);
-  
-  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(41, 98, 255);
-  doc.text('CLÁUSULAS CONTRATUAIS', 20, currentY);
-  currentY += 12;
-  
+  doc.setFontSize(13);
+  doc.text('DADOS DO EQUIPAMENTO', 20, y);
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  y = addWrappedText(doc, `Modelo: ${equipamento.modelo}`, 20, y, 180);
+  y = addWrappedText(doc, `Capacidade: ${equipamento.subgrupo}`, 20, y, 180);
+  y = addWrappedText(doc, `Código Referência: ${equipamento.codigo_referencia || 'N/A'}  |  Peso: ${equipamento.peso_kg}`, 20, y, 180);
+  y = addWrappedText(doc, `Configuração: ${equipamento.configuracao || 'Padrão'}  |  CONTR: ${equipamento.tem_contr || 'Não'}`, 20, y, 180);
+  if (equipamento.finame) y = addWrappedText(doc, `FINAME: ${equipamento.finame}`, 20, y, 180);
+  if (equipamento.ncm) y = addWrappedText(doc, `NCM: ${equipamento.ncm}`, 20, y, 180);
+  y += 5;
+
+  // ======= CONDIÇÕES COMERCIAIS =======
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(13);
+  doc.text('CONDIÇÕES COMERCIAIS', 20, y);
+  y += 7;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  y = addWrappedText(doc, `Valor do Equipamento: ${formatCurrency(pagamento.valorBase || 0)}`, 20, y, 180);
+  if (pagamento.desconto > 0) y = addWrappedText(doc, `Desconto Aplicado: ${pagamento.desconto.toFixed(2)}% (${formatCurrency(pagamento.valorDesconto || 0)})`, 20, y, 180);
+  if (pagamento.valorFrete > 0) y = addWrappedText(doc, `Frete (${pagamento.tipoFrete?.toUpperCase()}): ${formatCurrency(pagamento.valorFrete)}`, 20, y, 180);
+  if (pagamento.valorInstalacao > 0) y = addWrappedText(doc, `Instalação: ${formatCurrency(pagamento.valorInstalacao)}`, 20, y, 180);
+  y = addWrappedText(doc, `Valor Total: ${formatCurrency(pagamento.valorFinal || 0)}`, 20, y, 180);
+  y = addWrappedText(doc, `Forma de Pagamento: ${pagamento.prazoPagamento || 'À vista'}`, 20, y, 180);
+  y += 10;
+
+  // ======= CLÁUSULAS =======
   const clausulas = [
-    {
-      titulo: '1. VALIDADE DA PROPOSTA',
-      texto: 'Esta proposta tem validade de 30 (trinta) dias corridos a partir da data de emissão.'
-    },
-    {
-      titulo: '2. PRAZO DE ENTREGA',
-      texto: 'O prazo de entrega é de 15 (quinze) dias úteis após a confirmação do pedido e aprovação do crédito, podendo variar conforme disponibilidade de estoque.'
-    },
-    {
-      titulo: '3. GARANTIA',
-      texto: 'O equipamento possui garantia de 12 (doze) meses contra defeitos de fabricação, conforme manual do fabricante.'
-    },
-    {
-      titulo: '4. INSTALAÇÃO',
-      texto: 'A instalação, quando incluída, será realizada por equipe técnica especializada. O cliente deverá fornecer as condições necessárias para a instalação.'
-    },
-    {
-      titulo: '5. FRETE',
-      texto: `Frete ${pagamento.tipoFrete === 'cif' ? 'CIF (por conta da fábrica)' : 'FOB (por conta do cliente)'}.`
-    },
-    {
-      titulo: '6. CONDIÇÕES DE PAGAMENTO',
-      texto: 'As condições de pagamento são as especificadas nesta proposta. Atrasos superiores a 15 dias poderão acarretar em juros de 2% ao mês.'
-    },
-    {
-      titulo: '7. CANCELAMENTO',
-      texto: 'Em caso de cancelamento após a confirmação do pedido, será cobrada multa de 20% sobre o valor total.'
-    },
-    {
-      titulo: '8. RESPONSABILIDADES',
-      texto: 'O cliente é responsável por verificar as condições do veículo e a compatibilidade do equipamento antes da instalação.'
-    }
+    { t: '1. VALIDADE', d: 'Proposta válida por 30 dias corridos a partir da emissão.' },
+    { t: '2. ENTREGA', d: 'Entrega em até 15 dias úteis após confirmação e aprovação de crédito, conforme disponibilidade de estoque.' },
+    { t: '3. GARANTIA', d: '12 meses contra defeitos de fabricação conforme manual.' },
+    { t: '4. INSTALAÇÃO', d: 'Realizada por equipe técnica especializada, sob condições adequadas no local.' },
+    { t: '5. FRETE', d: `Frete ${pagamento.tipoFrete === 'cif' ? 'CIF (por conta da fábrica)' : 'FOB (por conta do cliente)'}.` },
+    { t: '6. PAGAMENTO', d: 'Conforme especificado nesta proposta. Atrasos superiores a 15 dias podem gerar juros de 2% ao mês.' },
+    { t: '7. CANCELAMENTO', d: 'Cancelamentos após confirmação implicam multa de 20% sobre o valor total.' },
+    { t: '8. RESPONSABILIDADES', d: 'Cabe ao cliente verificar condições do veículo e compatibilidade antes da instalação.' }
   ];
-  
+
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CLÁUSULAS CONTRATUAIS', 20, y);
+  y += 6;
+
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  clausulas.forEach((clausula) => {
-    currentY = checkPageBreak(doc, currentY, 25);
-    
-    // Caixa para cada cláusula
-    doc.setFillColor(248, 249, 250);
-    doc.rect(15, currentY - 5, 180, 20, 'F');
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.5);
-    doc.rect(15, currentY - 5, 180, 20, 'S');
-    
+  clausulas.forEach((c) => {
+    y = checkPageBreak(doc, y, 18);
     doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 98, 255);
-    doc.text(clausula.titulo, 20, currentY);
-    currentY += 6;
-    
+    doc.text(c.t, 20, y);
+    y += 4;
     doc.setFont('helvetica', 'normal');
-    doc.setTextColor(60, 60, 60);
-    currentY = addWrappedText(doc, clausula.texto, 20, currentY, 170, 4);
-    currentY += 8;
+    y = addWrappedText(doc, c.d, 25, y, 165, 4.2);
+    y += 3;
   });
 
-  // Observações adicionais
   if (observacoes) {
-    currentY = checkPageBreak(doc, currentY, 30);
-    currentY += 5;
-    
-    // Caixa para observações
-    doc.setFillColor(255, 248, 248);
-    doc.rect(15, currentY - 5, 180, 25, 'F');
-    doc.setDrawColor(220, 53, 69);
-    doc.setLineWidth(0.5);
-    doc.rect(15, currentY - 5, 180, 25, 'S');
-    
+    y = checkPageBreak(doc, y, 15);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(220, 53, 69);
-    doc.text('OBSERVAÇÕES:', 20, currentY);
-    currentY += 6;
-    
+    doc.text('OBSERVAÇÕES:', 20, y);
+    y += 5;
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(60, 60, 60);
-    currentY = addWrappedText(doc, observacoes, 20, currentY, 170, 4);
+    y = addWrappedText(doc, observacoes, 25, y, 165, 4.2);
+    doc.setTextColor(0, 0, 0);
   }
 
-  // ==================== PÁGINA FINAL: ASSINATURAS E QR CODE ====================
-  doc.addPage();
-  currentY = 40;
-  addHeader(doc, numeroProposta, data);
-  
-  currentY += 20;
-  
-  // Assinaturas
+  // ======= ASSINATURAS (na mesma página) =======
+  y += 10;
   doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  
-  doc.text('_________________________________________', 30, currentY);
-  doc.text('_________________________________________', 120, currentY);
-  currentY += 5;
-  doc.text('STARK Guindastes', 30, currentY);
-  doc.text('Cliente', 120, currentY);
-  currentY += 3;
+  doc.text('_____________________________________', 25, y);
+  doc.text('_____________________________________', 115, y);
+  y += 5;
+  doc.text('STARK Guindastes', 35, y);
+  doc.text('Cliente', 125, y);
+  y += 4;
   doc.setFontSize(8);
-  doc.text('Representante Legal', 30, currentY);
-  doc.text(cliente.nome, 120, currentY);
-  
-  currentY += 20;
-  
-  // QR Code para WhatsApp
+  doc.text('Representante Legal', 35, y);
+  doc.text(cliente.nome, 125, y);
+
+  // QR Code pequeno, centralizado
   const telefoneVendedor = vendedor.telefone?.replace(/\D/g, '') || '5555999999999';
   const mensagemWhatsApp = `Olá! Gostaria de mais informações sobre a proposta ${numeroProposta}`;
   const whatsappUrl = `https://wa.me/${telefoneVendedor}?text=${encodeURIComponent(mensagemWhatsApp)}`;
-  
+
   try {
-    const qrCodeDataURL = await QRCode.toDataURL(whatsappUrl, {
-      width: 200,
-      margin: 2,
-      color: {
-        dark: '#2962ff',
-        light: '#ffffff'
-      }
-    });
-    
-    doc.addImage(qrCodeDataURL, 'PNG', 75, currentY, 60, 60);
-    currentY += 65;
-    
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    doc.text('Escaneie o QR Code para entrar em contato via WhatsApp', 105, currentY, { align: 'center' });
-  } catch (error) {
-    console.error('Erro ao gerar QR Code:', error);
+    const qrCodeDataURL = await QRCode.toDataURL(whatsappUrl, { width: 140, margin: 1 });
+    doc.addImage(qrCodeDataURL, 'PNG', 85, 260, 40, 40);
+  } catch (err) {
+    console.error('Erro ao gerar QR:', err);
   }
 
-  // Adicionar rodapés em todas as páginas
-  const totalPages = doc.internal.getNumberOfPages();
-  for (let i = 1; i <= totalPages; i++) {
+  // Rodapé em todas as páginas
+  const total = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= total; i++) {
     doc.setPage(i);
-    addFooter(doc, i, totalPages);
+    addFooter(doc, i, total);
   }
 
   return doc;
 };
 
-/**
- * Função auxiliar para gerar e baixar o PDF
- */
+// Função auxiliar para gerar e baixar
 export const gerarEBaixarProposta = async (dadosProposta) => {
   try {
     const doc = await generatePropostaComercialPDF(dadosProposta);
     const fileName = `Proposta_${dadosProposta.numeroProposta}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
     return { success: true, fileName };
-  } catch (error) {
-    console.error('Erro ao gerar PDF:', error);
-    return { success: false, error: error.message };
+  } catch (e) {
+    console.error('Erro ao gerar PDF:', e);
+    return { success: false, error: e.message };
   }
 };

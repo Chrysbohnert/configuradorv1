@@ -20,6 +20,7 @@ const RelatorioCompleto = lazy(() => import('./pages/RelatorioCompleto'));
 const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga'));
 const Logistica = lazy(() => import('./pages/Logistica'));
 const Configuracoes = lazy(() => import('./pages/Configuracoes'));
+const AprovacoesDescontos = lazy(() => import('./pages/AprovacoesDescontos'));
 const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
 const NovoPedido = lazy(() => import('./pages/NovoPedido'));
 const Historico = lazy(() => import('./pages/Historico'));
@@ -124,6 +125,11 @@ function App() {
             <Route path="/admin/configuracoes" element={
               <LazyRoute loadingMessage="Carregando Configurações...">
                 <Configuracoes />
+              </LazyRoute>
+            } />
+            <Route path="/aprovacoes-descontos" element={
+              <LazyRoute loadingMessage="Carregando Aprovações...">
+                <AprovacoesDescontos />
               </LazyRoute>
             } />
           </Route>
