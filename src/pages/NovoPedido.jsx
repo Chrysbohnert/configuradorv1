@@ -280,7 +280,7 @@ const NovoPedido = () => {
           }
         }
 
-        // Adicionar ao carrinho com TODOS os detalhes (incluindo descricao e nao_incluido)
+        // Adicionar ao carrinho com TODOS os detalhes (incluindo descricao, nao_incluido, finame e ncm)
         const produto = {
           id: guindaste.id,
           nome: guindaste.subgrupo,
@@ -290,9 +290,18 @@ const NovoPedido = () => {
           configuracao_lancas: guindaste.peso_kg,
           descricao: guindaste.descricao,
           nao_incluido: guindaste.nao_incluido,
+          finame: guindaste.finame || '',
+          ncm: guindaste.ncm || '',
           preco: precoGuindaste,
           tipo: 'guindaste'
         };
+
+        console.log('🛒 [adicionarGuindaste] Produto adicionado ao carrinho:', {
+          id: produto.id,
+          nome: produto.nome,
+          finame: produto.finame,
+          ncm: produto.ncm
+        });
 
         adicionarAoCarrinho(produto, 'guindaste');
 
@@ -1868,6 +1877,19 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 
 // Componente Resumo do Pedido
 const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes }) => {
+  // Log para depuração dos dados do equipamento
+  useEffect(() => {
+    if (carrinho && carrinho.length > 0) {
+      console.log('📦 Dados do equipamento no ResumoPedido:', {
+        modelo: carrinho[0]?.modelo,
+        finame: carrinho[0]?.finame,
+        ncm: carrinho[0]?.ncm,
+        codigo_referencia: carrinho[0]?.codigo_referencia,
+        configuracao: carrinho[0]?.configuracao,
+        tem_contr: carrinho[0]?.tem_contr
+      });
+    }
+  }, [carrinho]);
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
   const handlePDFGenerated = async (fileName) => {
@@ -1992,7 +2014,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       };
       console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);
       
-      const pedido = await db.createPedido(pedidoDataToSave);
+      const pedido = await db.createpropostas(pedidoDataToSave);
       console.log('✅ Pedido criado:', pedido);
       console.log('🔍 [DEBUG] estoque_descontado:', pedido.estoque_descontado);
       
@@ -2028,7 +2050,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
         
         try {
-          await db.createPedidoItem(itemDataToSave);
+          await db.createpropostasItem(itemDataToSave);
         } catch (itemError) {
           console.error(`   ❌ Erro ao criar item ${item.nome}:`, itemError);
           throw itemError;

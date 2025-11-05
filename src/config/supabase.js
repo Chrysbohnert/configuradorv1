@@ -147,8 +147,22 @@ class DatabaseService {
       console.error('❌ [getGuindasteById] Erro:', error);
       throw error;
     }
-    console.log('✅ [getGuindasteById] Guindaste encontrado');
-    return data;
+    
+    // Garantir que os campos finame e ncm existam, mesmo que vazios
+    const guindaste = {
+      ...data,
+      finame: data.finame || '',
+      ncm: data.ncm || ''
+    };
+    
+    console.log('✅ [getGuindasteById] Guindaste encontrado:', {
+      id: guindaste.id,
+      nome: guindaste.nome,
+      finame: guindaste.finame,
+      ncm: guindaste.ncm
+    });
+    
+    return guindaste;
   }
 
   // Cache para evitar múltiplas requisições
@@ -294,13 +308,20 @@ class DatabaseService {
     
     if (error) throw error;
     
+    // Garantir que os campos finame e ncm existam, mesmo que vazios
+    const guindasteCompleto = {
+      ...data,
+      finame: data.finame || '',
+      ncm: data.ncm || ''
+    };
+    
     // Armazenar no cache
     this._guindastesCache.set(cacheKey, {
-      data,
+      data: guindasteCompleto,
       timestamp: Date.now()
     });
     
-    return data;
+    return guindasteCompleto;
   }
 
   async createGuindaste(guindasteData) {
@@ -878,30 +899,30 @@ class DatabaseService {
     }
   }
 
-  async createPedido(pedidoData) {
+  async createpropostas(propostasData) {
     try {
-      console.log('📝 [createPedido] Criando pedido:', pedidoData);
+      console.log('📝 [createpropostas] Criando proposta:', propostasData);
       
-      // 1. Criar o pedido
+      // 1. Criar a proposta
       const { data, error } = await supabase
-        .from('pedidos')
-        .insert([pedidoData])
+        .from('propostas')
+        .insert(propostasData)
         .select()
         .single();
       
       if (error) throw error;
       
-      console.log('✅ [createPedido] Pedido criado com ID:', data.id);
+      console.log('✅ [createpropostas] Proposta criada com ID:', data.id);
       
       // 2. Se o pedido tem um guindaste associado, descontar do estoque
-      if (pedidoData.id_guindaste) {
-        console.log('📦 [createPedido] Descontando estoque do guindaste:', pedidoData.id_guindaste);
+      if (propostasData.id_guindaste) {
+        console.log('📦 [createpropostas] Descontando estoque do guindaste:', propostasData.id_guindaste);
         
         try {
-          const resultado = await this.descontarEstoque(pedidoData.id_guindaste);
+          const resultado = await this.descontarEstoque(propostasData.id_guindaste);
           
           if (resultado.success) {
-            console.log('✅ [createPedido] Estoque descontado:', resultado);
+            console.log('✅ [createpropostas] Estoque descontado:', resultado);
             
             // Marcar que o estoque foi descontado
             const { data: updatedData } = await supabase
@@ -913,28 +934,28 @@ class DatabaseService {
             
             // Atualizar o objeto data com o campo atualizado
             if (updatedData) {
-              data.estoque_descontado = true;
+              data.estoque_descontado = false;
             }
           } else {
-            console.warn('⚠️ [createPedido] Não foi possível descontar estoque:', resultado.message);
+            console.warn('⚠️ [createpropostas] Não foi possível descontar estoque:', resultado.message);
           }
         } catch (estoqueError) {
-          console.error('❌ [createPedido] Erro ao descontar estoque:', estoqueError);
+          console.error('❌ [createpropostas] Erro ao descontar estoque:', estoqueError);
           // Não falhar o pedido se houver erro no estoque, apenas logar
         }
       }
       
       return data;
     } catch (error) {
-      console.error('❌ [createPedido] Erro:', error);
+      console.error('❌ [createpropostas] Erro:', error);
       throw error;
     }
   }
 
-  async updatePedido(id, pedidoData) {
+  async   updatepropostas(id, propostasData) {
     const { data, error } = await supabase
-      .from('pedidos')
-      .update(pedidoData)
+      .from('propostas')
+      .update(propostasData)
       .eq('id', id)
       .select()
       .single();
@@ -944,9 +965,9 @@ class DatabaseService {
   }
 
   // ===== ITENS DO PEDIDO =====
-  async createPedidoItem(itemData) {
+  async createpropostasItem(itemData) {
     const { data, error } = await supabase
-      .from('pedido_itens')
+      .from('propostas_itens')
       .insert([itemData])
       .select()
       .single();
@@ -955,15 +976,15 @@ class DatabaseService {
     return data;
   }
 
-  async getPedidoItens(pedidoId) {
+  async getpropostasItens(propostasId) {
     const { data, error } = await supabase
-      .from('pedido_itens')
+      .from('propostas_itens')
       .select(`
         *,
         guindaste:guindastes(*),
         opcional:opcionais(*)
       `)
-      .eq('pedido_id', pedidoId);
+      .eq('propostas_id', propostasId);
     
     if (error) throw error;
     return data || [];

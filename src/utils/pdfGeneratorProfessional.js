@@ -100,8 +100,8 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
   y = addWrappedText(doc, `Capacidade: ${equipamento.subgrupo}`, 20, y, 180);
   y = addWrappedText(doc, `Código Referência: ${equipamento.codigo_referencia || 'N/A'}  |  Peso: ${equipamento.peso_kg}`, 20, y, 180);
   y = addWrappedText(doc, `Configuração: ${equipamento.configuracao || 'Padrão'}  |  CONTR: ${equipamento.tem_contr || 'Não'}`, 20, y, 180);
-  if (equipamento.finame) y = addWrappedText(doc, `FINAME: ${equipamento.finame}`, 20, y, 180);
-  if (equipamento.ncm) y = addWrappedText(doc, `NCM: ${equipamento.ncm}`, 20, y, 180);
+  y = addWrappedText(doc, `FINAME: ${equipamento.finame || 'Não informado'}`, 20, y, 180);
+  y = addWrappedText(doc, `NCM: ${equipamento.ncm || 'Não informado'}`, 20, y, 180);
   y += 5;
 
   // ======= CONDIÇÕES COMERCIAIS =======
