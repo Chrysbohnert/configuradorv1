@@ -107,8 +107,8 @@ export default function AprovacoesDescontos() {
       // Converter para número para garantir o tipo correto
       const descontoNumerico = parseFloat(desconto);
       
-      if (isNaN(descontoNumerico) || descontoNumerico < 8 || descontoNumerico > 12) {
-        alert('⚠️ O desconto deve ser um número entre 8% e 12%!');
+      if (isNaN(descontoNumerico) || descontoNumerico < 8) {
+        alert('⚠️ O desconto deve ser um número maior ou igual a 8%!');
         return;
       }
 
@@ -353,13 +353,12 @@ export default function AprovacoesDescontos() {
                 <div className="card-actions">
                   {/* Input de Desconto Livre */}
                   <div className="form-group">
-                    <label>Desconto a conceder (8% a 12%):</label>
+                    <label>Desconto a conceder (mínimo 8%):</label>
                     <input
                       type="number"
                       className="form-control"
                       placeholder="Ex: 10.5"
                       min="8"
-                      max="12"
                       step="0.1"
                       value={descontoSelecionado[solicitacao.id] || ''}
                       onChange={(e) => setDescontoSelecionado(prev => ({
@@ -369,7 +368,7 @@ export default function AprovacoesDescontos() {
                       disabled={processando === solicitacao.id}
                     />
                     <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                      💡 Digite o percentual desejado (aceita decimais: 8.5, 10.8, etc.)
+                      💡 Digite o percentual desejado (aceita decimais: 8.5, 10.8, 15.0, etc.)
                     </small>
                   </div>
 

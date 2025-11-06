@@ -379,6 +379,17 @@ const ResumoPedido = ({
                   <span className="value">{caminhaoData.medidaD} cm </span>
                 </div>
               )}
+              {caminhaoData.patolamento && (
+                <div className="data-row" style={{ 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  padding: '10px',
+                  borderRadius: '6px',
+                  marginTop: '10px'
+                }}>
+                  <span className="label" style={{ color: 'white', fontWeight: 'bold' }}>🔧 Patolamento:</span>
+                  <span className="value" style={{ color: 'white', fontWeight: 'bold', fontSize: '16px' }}>{caminhaoData.patolamento}</span>
+                </div>
+              )}
             </>
           )}
         </div>

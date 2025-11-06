@@ -1698,7 +1698,7 @@ class DatabaseService {
   /**
    * Aprovar solicitação de desconto (apenas gestor)
    * @param {string} solicitacaoId - ID da solicitação
-   * @param {number} descontoAprovado - Percentual aprovado (8-12)
+   * @param {number} descontoAprovado - Percentual aprovado (mínimo 8%)
    * @param {string} aprovadorId - ID do gestor
    * @param {string} aprovadorNome - Nome do gestor
    * @param {string} observacao - Observação opcional
@@ -1721,8 +1721,8 @@ class DatabaseService {
       
       // Validar e converter desconto para número
       const descontoNumerico = Number(descontoAprovado);
-      if (isNaN(descontoNumerico) || descontoNumerico < 8 || descontoNumerico > 12) {
-        throw new Error('Desconto deve ser um número entre 8 e 12');
+      if (isNaN(descontoNumerico) || descontoNumerico < 8) {
+        throw new Error('Desconto deve ser um número maior ou igual a 8');
       }
       
       console.log('📝 [aprovarSolicitacaoDesconto] Dados validados:', {
