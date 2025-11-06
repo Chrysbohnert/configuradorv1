@@ -9,7 +9,7 @@ export default function SolicitarDescontoModal({
   isOpen, 
   onClose, 
   onSolicitar,
-  onAtualizarProposta,
+  onVerificarStatus,
   equipamentoDescricao,
   valorBase,
   descontoAtual = 7,
@@ -92,7 +92,7 @@ export default function SolicitarDescontoModal({
               <small>Aguarde, você será notificado assim que o gestor responder.</small>
               <button 
                 className="btn-verificar" 
-                onClick={onAtualizarProposta}
+                onClick={onVerificarStatus}
                 type="button"
               >
                 🔄 Atualizar proposta

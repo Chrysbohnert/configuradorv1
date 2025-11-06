@@ -218,54 +218,166 @@ const htmlToCanvas = async (container) => {
  * ==========================
  */
 
-// CAPA + Dados Gerais (aqui já puxo parte dos dados do cliente também)
+// CAPA PADRÃO TKA — texto totalmente alinhado à esquerda e margens otimizadas
 const renderCapa = (pedidoData, numeroProposta, { inline = false } = {}) => {
   const el = createContainer('pdf-capa', { inline });
   const vendedor = pedidoData.vendedor || 'NÃO INFORMADO';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
 
-  const endereco = (() => {
+  const enderecoCliente = (() => {
     const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
     const bairro = c.bairro ? ` - ${c.bairro}` : '';
     const cidadeUf = (c.cidade || c.uf)
       ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}`
       : '';
     const cep = c.cep ? ` - CEP: ${c.cep}` : '';
-    const linha = `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim();
-    return linha || (c.endereco || 'NÃO INFORMADO');
+    return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || 'NÃO INFORMADO';
   })();
 
   el.innerHTML += `
-    <div class="wrap" style="padding:22px;">
-      <div class="title">DADOS DO CLIENTE</div>
-      <div class="rule"></div>
+    <div class="wrap" style="padding:14px 5mm 14px 12mm; width:250mm; margin:0;">
 
-      <div class="kvs" style="margin-top: 8px;">
-        <div class="row"><div class="k">Nº DA PROPOSTA</div><div class="v">#${numeroProposta}</div></div>
-        <div class="row"><div class="k">DATA</div><div class="v">${data}</div></div>
-        <div class="row"><div class="k">VENDEDOR</div><div class="v">${vendedor}</div></div>
-        <div class="row"><div class="k">EMPRESA</div><div class="v">STARK INDUSTRIAL LTDA.</div></div>
+      <!-- Título -->
+      <div style="text-align:center; margin-top:6mm; line-height:1.1;">
+        <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">PROPOSTA COMERCIAL STARK GUINDASTES</div>
+        <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
+          [ ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} ]
+        </div>
       </div>
 
-      <div class="rule"></div>
-
-      <div class="kvs" style="margin-top: 8px;">
-        <div class="row"><div class="k">NOME</div><div class="v">${c.nome || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">CNPJ/CPF</div><div class="v">${c.documento || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">INSCRIÇÃO ESTADUAL</div><div class="v">${c.inscricao_estadual || c.inscricaoEstadual || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">TELEFONE</div><div class="v">${c.telefone || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">E-MAIL</div><div class="v">${c.email || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">ENDEREÇO</div><div class="v">${endereco}</div></div>
+      <!-- BLOCO 1: DADOS STARK -->
+      <div style="margin-top:10mm; font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK INDUSTRIAL LTDA</div>
+        <div><b>RAZÃO SOCIAL:</b> STARK INDUSTRIAL LTDA</div>
+        <div><b>CNPJ:</b> 33.228.312/0001-06</div>
+        <div><b>ENDEREÇO:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
+        <div><b>CONTATO:</b> (55) 99999-9999 / comercial@starkindustrial.com</div>
       </div>
 
-      ${c.observacoes ? `
-        <div class="rule"></div>
-        <div class="subtitle">OBSERVAÇÕES</div>
-        <div class="p caps">${c.observacoes}</div>
-      ` : ''}
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
+
+      <!-- BLOCO 2: REPRESENTANTE -->
+      <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">REPRESENTANTE STARK</div>
+        <div><b>NOME:</b> ${vendedor}</div>
+        <div><b>EMPRESA:</b> STARK INDUSTRIAL LTDA</div>
+      </div>
+
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
+
+      <!-- BLOCO 3: CLIENTE -->
+      <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">CLIENTE STARK</div>
+        <div><b>NOME CLIENTE:</b> ${c.nome || 'NÃO INFORMADO'}</div>
+        <div><b>CNPJ/CPF:</b> ${c.documento || 'NÃO INFORMADO'}</div>
+        <div><b>INSCRIÇÃO ESTADUAL:</b> ${c.inscricao_estadual || c.inscricaoEstadual || 'NÃO INFORMADO'}</div>
+        <div><b>ENDEREÇO:</b> ${enderecoCliente}</div>
+        <div><b>TELEFONE:</b> ${c.telefone || 'NÃO INFORMADO'}</div>
+        <div><b>E-MAIL:</b> ${c.email || 'NÃO INFORMADO'}</div>
+      </div>
+
+      <!-- Linha final e infos da proposta -->
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:8mm 0 5mm;"></div>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        text-align:center;
+        font-size:4mm;
+        letter-spacing:0.1mm;
+      ">
+        <div>
+          <div style="font-weight:700;">Nº PROPOSTA</div>
+          <div style="font-weight:500;">#${numeroProposta}</div>
+        </div>
+        <div>
+          <div style="font-weight:700;">DATA DE EMISSÃO</div>
+          <div style="font-weight:500;">${data}</div>
+        </div>
+        <div>
+          <div style="font-weight:700;">VALIDADE</div>
+          <div style="font-weight:500;">30 DIAS</div>
+        </div>
+       <!-- BLOCO MISSÃO / VISÃO / VALORES - LARGURA TOTAL COMO Nº PROPOSTA -->
+<div style="
+  margin-top: 10mm;
+  width: 100%;
+  text-align: center;
+  font-size: 3.8mm;
+  line-height: 1.35;
+">
+
+  <div style="
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8mm;
+    text-align: center;
+    padding: 0 12mm;
+  ">
+
+    <!-- MISSÃO -->
+    <div>
+      <div style="
+        background:#b7c3c8;
+        width:13mm; height:13mm;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 3mm;
+      ">
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
+          <path d='M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.4-1.4z'/>
+        </svg>
+      </div>
+      <div style="font-weight:700; margin-bottom:1mm;">MISSÃO</div>
+      <div>Tornar eficiente o trabalho no campo e na cidade.</div>
+    </div>
+
+    <!-- VISÃO -->
+    <div>
+      <div style="
+        background:#f2cc00;
+        width:13mm; height:13mm;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 3mm;
+      ">
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
+          <path d='M12 4.5c-7.7 0-12 7.5-12 7.5s4.3 7.5 12 7.5 12-7.5 12-7.5-4.3-7.5-12-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/>
+        </svg>
+      </div>
+      <div style="font-weight:700; margin-bottom:1mm;">VISÃO</div>
+      <div>Ser referência no segmento de elevação e movimentação de cargas, através de produtos inovadores com alta qualidade, confiabilidade e produtividade em todo o território nacional até 2030. Primando por rentabilidade e crescimento financeiro da empresa.</div>
+    </div>
+
+    <!-- VALORES -->
+    <div>
+      <div style="
+        background:#3bb273;
+        width:13mm; height:13mm;
+        border-radius:50%;
+        display:flex; align-items:center; justify-content:center;
+        margin:0 auto 3mm;
+      ">
+        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
+          <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
+            10-4.48 10-10S17.52 2 12 2zm0 18c-4.41
+            0-8-3.59-8-8s3.59-8 8-8 8 3.59
+            8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/>
+        </svg>
+      </div>
+      <div style="font-weight:700; margin-bottom:1mm;">VALORES</div>
+      <div>Ambição em fazer o melhor e crescer juntos, com transparência, honestidade e qualidade.</div>
+    </div>
+  </div>
+</div>
+          </div>
+            </div>
+          </div>
+      </div>
     </div>
   `;
+
   return el;
 };
 
@@ -372,6 +484,7 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   const el = createContainer('pdf-equipamento', { inline });
   let html = `
     <div class="wrap" style="padding:22px;">
+    <div style="page-break-before: always;"></div>
       <div class="title">DADOS DO EQUIPAMENTO</div>
   `;
 
@@ -389,7 +502,6 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
         <div class="kvs">
           <div class="row"><div class="k">NOME / MODELO</div><div class="v">${(g.nome || g.modelo || 'EQUIPAMENTO')}</div></div>
           <div class="row"><div class="k">CÓDIGO</div><div class="v">${codigo}</div></div>
-          ${g.subgrupo ? `<div class="row"><div class="k">SUBGRUPO</div><div class="v">${g.subgrupo}</div></div>` : ''}
           <div class="row"><div class="k">FINAME</div><div class="v">${g.finame || 'NÃO INFORMADO'}</div></div>
           <div class="row"><div class="k">NCM</div><div class="v">${g.ncm || 'NÃO INFORMADO'}</div></div>
         </div>
@@ -401,6 +513,27 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
         <div class="small-gap"></div>
         <div class="subtitle">NÃO INCLUÍDO</div>
         <div class="p p-justify caps">${g.nao_incluido || 'NÃO INFORMADO'}</div>
+        <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
+<div class="small-gap"></div>
+<div class="subtitle">PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK</div>
+<div class="p lower" style="font-size: 18px; line-height: 1.5; text-transform:none;">
+  <ul style="margin-left: 16px; padding-left: 8px; list-style-type: disc;">
+    <li>Para solicitação da garantia, deverão ser apresentados os seguintes documentos:</li>
+    <ul style="margin-left: 20px; list-style-type: circle;">
+      <li>Nota Fiscal de aquisição do equipamento.</li>
+      <li>Certificado de Garantia preenchido e assinado pelo proprietário na hora da entrega.</li>
+    </ul>
+        <li>Comprovante de revisão efetuada pelo representante ou fábrica em Santa Rosa Rs, de acordo com o plano de revisões abaixo:</li>
+        <ul style="margin-left: 20px; list-style-type: circle;">
+          <li>500 horas ou 6 meses;</li>
+          <li>1000 horas ou 12 meses;</li>
+          <li>2000 horas ou 24 meses;</li>
+          <li>3000 horas ou 36 meses.</li>
+        </ul>
+        <li>Comprovante de troca de óleo realizada nas primeiras 500 horas ou primeiros 6 meses de uso do equipamento.</li>
+        <li>Comprovante do relatório de entrega técnica assinado pelo responsável pelo recebimento do equipamento.</li>
+      </ul>
+    </div>
       `;
     });
   }
@@ -482,10 +615,10 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
         temMedidas ? `
           <div class="subtitle">MEDIDAS</div>
           <div class="kvs" style="grid-template-columns: 1fr 1fr;">
-            ${v.medidaA ? `<div class="row"><div class="k">MEDIDA A</div><div class="v">${v.medidaA}</div></div>` : ''}
-            ${v.medidaB ? `<div class="row"><div class="k">MEDIDA B</div><div class="v">${v.medidaB}</div></div>` : ''}
-            ${v.medidaC ? `<div class="row"><div class="k">MEDIDA C</div><div class="v">${v.medidaC}</div></div>` : ''}
-            ${v.medidaD ? `<div class="row"><div class="k">MEDIDA D</div><div class="v">${v.medidaD}</div></div>` : ''}
+            ${v.medidaA ? `<div class="row"><div class="k">MEDIDA A</div><div class="v">${v.medidaA}cm</div></div>` : ''}
+            ${v.medidaB ? `<div class="row"><div class="k">MEDIDA B</div><div class="v">${v.medidaB}cm</div></div>` : ''}
+            ${v.medidaC ? `<div class="row"><div class="k">MEDIDA C</div><div class="v">${v.medidaC}cm</div></div>` : ''}
+            ${v.medidaD ? `<div class="row"><div class="k">MEDIDA D</div><div class="v">${v.medidaD}cm</div></div>` : ''}
           </div>
         ` : `
           <div class="p caps center small-gap">MEDIDAS NÃO INFORMADAS.</div>
@@ -497,16 +630,17 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
 };
 
 // CONDIÇÕES COMERCIAIS E FINANCEIRAS
+// CONDIÇÕES COMERCIAIS E FINANCEIRAS + DADOS BANCÁRIOS COM ÍCONES
 const renderFinanceiro = (pedidoData, { inline = false } = {}) => {
   const p = pedidoData.pagamentoData || {};
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
 
   const el = createContainer('pdf-financeiro', { inline });
   el.innerHTML += `
-    <div class="wrap" style="padding:22px;">
+    <div class="wrap" style="padding:18px 22px;">
       <div class="title">CONDIÇÕES COMERCIAIS E FINANCEIRAS</div>
 
-      <div class="kvs">
+      <div class="kvs" style="margin-top:6px;">
         <div class="row"><div class="k">TIPO DE PAGAMENTO</div><div class="v">${(p.tipoPagamento || 'NÃO INFORMADO').toUpperCase()}</div></div>
         <div class="row"><div class="k">PRAZO</div><div class="v">${(p.prazoPagamento || 'NÃO INFORMADO').replaceAll('_',' ').toUpperCase()}</div></div>
         <div class="row"><div class="k">VALOR BASE</div><div class="v">${formatCurrency(totalBase)}</div></div>
@@ -514,7 +648,7 @@ const renderFinanceiro = (pedidoData, { inline = false } = {}) => {
         <div class="row"><div class="k">ACRÉSCIMO</div><div class="v">${p.acrescimo ? `${p.acrescimo}%` : '0%'}</div></div>
         ${p.valorFrete ? `<div class="row"><div class="k">FRETE</div><div class="v">${formatCurrency(p.valorFrete)}</div></div>` : ''}
         ${p.valorInstalacao ? `<div class="row"><div class="k">INSTALAÇÃO</div><div class="v">${formatCurrency(p.valorInstalacao)}</div></div>` : ''}
-        <div class="row"><div class="k">VALOR FINAL</div><div class="v">${formatCurrency(p.valorFinal || totalBase)}</div></div>
+        <div class="row"><div class="k">VALOR FINAL</div><div class="v">${formatCurrency(p.valorFinal || p.total || totalBase)}</div></div>
       </div>
 
       ${(p.tipoCliente === 'cliente' && p.percentualEntrada > 0) ? `
@@ -529,13 +663,52 @@ const renderFinanceiro = (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
-      <div class="rule"></div>
-      <div class="subtitle">OUTRAS CONDIÇÕES</div>
-      <div class="kvs">
+      <div class="rule" style="margin-top:6mm;"></div>
+      <div class="subtitle" style="font-size:4mm;">OUTRAS CONDIÇÕES</div>
+      <div class="kvs" style="font-size:3.7mm;">
         ${p.tipoFrete ? `<div class="row"><div class="k">TIPO DE FRETE</div><div class="v">${p.tipoFrete.toUpperCase()}</div></div>` : ''}
         ${p.tipoInstalacao ? `<div class="row"><div class="k">TIPO DE INSTALAÇÃO</div><div class="v">${p.tipoInstalacao.toUpperCase()}</div></div>` : ''}
         ${p.localInstalacao ? `<div class="row"><div class="k">LOCAL DE INSTALAÇÃO</div><div class="v">${p.localInstalacao.toUpperCase()}</div></div>` : ''}
         <div class="row"><div class="k">VALIDADE DA PROPOSTA</div><div class="v">30 DIAS</div></div>
+      </div>
+
+      <!-- BLOCO DE DADOS BANCÁRIOS COM ÍCONES -->
+      <div class="rule" style="margin:8mm 0 4mm 0;"></div>
+      <div style="font-weight:700; font-size:4mm; text-transform:uppercase; margin-bottom:3mm;">DADOS BANCÁRIOS – STARK INDUSTRIAL LTDA</div>
+
+      <div style="
+        display:grid;
+        grid-template-columns: repeat(3, 1fr);
+        column-gap:6mm;
+        font-size:3.7mm;
+        line-height:1.4;
+      ">
+        <div style="margin-bottom:3mm;">
+          <div style="font-weight:700;">Banco do Brasil (001)</div>
+          <div>Agência: 0339-5</div>
+          <div>Conta Corrente: 60548-4</div>
+        </div>
+
+        <div style="margin-bottom:3mm;">
+          <div style="font-weight:700;">Banco Sicredi (748)</div>
+          <div>Agência: 0307</div>
+          <div>Conta Corrente: 40771-1</div>
+        </div>
+
+        <div style="margin-bottom:3mm;">
+          <div style="font-weight:700;">Banco Sicoob (756)</div>
+          <div>Agência: 3072-4</div>
+          <div>Conta Corrente: 33276-3</div>
+        </div>
+      </div>
+
+      <div style="margin-top:5mm; font-size:3.7mm;">
+        <div><b>Stark Industrial Ltda</b> (EF Indústria de Máquinas)</div>
+        <div>CNPJ: 33.228.312/0001-06</div>
+        <div style="margin-top:2mm;">
+          Pix CNPJ: <b>33228312000106</b> – Sicredi<br/>
+          Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> – Banco do Brasil
+        </div>
       </div>
     </div>
   `;
@@ -703,13 +876,18 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       pdf.setFont(STYLE.FONT, 'normal');
 
       // ==== PÁGINA 1: CAPA + CLIENTE + EQUIPAMENTO (todos inline)
-      {
-        const root = createContainer('page1-root', { inline: true });
-        root.appendChild(renderCapa(pedidoData, numeroProposta, { inline: true }));
-        root.appendChild(renderEquipamento(pedidoData, { inline: true }));
-        const cv = await htmlToCanvas(root);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-      }
+     {
+  const el = renderCapa(pedidoData, numeroProposta, { inline: false });
+  const cv = await htmlToCanvas(el);
+  addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+}
+
+// ==== PÁGINA 2: DADOS DO EQUIPAMENTO
+{
+  const el = renderEquipamento(pedidoData, { inline: false });
+  const cv = await htmlToCanvas(el);
+  addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+}
 
       // ==== PÁGINA 2: VEÍCULO + ESTUDO VEICULAR (inline para tentar caber)
       {

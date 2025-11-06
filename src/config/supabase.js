@@ -1705,38 +1705,61 @@ class DatabaseService {
    * @returns {Object} Solicitação atualizada
    */
   async aprovarSolicitacaoDesconto(solicitacaoId, descontoAprovado, aprovadorId, aprovadorNome, observacao = null) {
-    console.log('✅ [aprovarSolicitacaoDesconto] Aprovando:', {
+    console.log('✅ [aprovarSolicitacaoDesconto] Iniciando aprovação:', {
       solicitacaoId,
       descontoAprovado,
-      aprovadorNome
+      aprovadorId,
+      aprovadorNome,
+      observacao
     });
     
-    // Validar desconto (8-12%)
-    if (descontoAprovado < 8 || descontoAprovado > 12) {
-      throw new Error('Desconto deve estar entre 8% e 12%');
+    try {
+      // Validar parâmetros
+      if (!solicitacaoId) throw new Error('ID da solicitação é obrigatório');
+      if (!aprovadorId) throw new Error('ID do aprovador é obrigatório');
+      if (!aprovadorNome) throw new Error('Nome do aprovador é obrigatório');
+      
+      // Validar e converter desconto para número
+      const descontoNumerico = Number(descontoAprovado);
+      if (isNaN(descontoNumerico) || descontoNumerico < 8 || descontoNumerico > 12) {
+        throw new Error('Desconto deve ser um número entre 8 e 12');
+      }
+      
+      console.log('📝 [aprovarSolicitacaoDesconto] Dados validados:', {
+        solicitacaoId,
+        descontoNumerico,
+        aprovadorId: Number(aprovadorId),
+        aprovadorNome,
+        observacao
+      });
+      
+      // Fazer a atualização
+      const { data, error } = await supabase
+        .from('solicitacoes_desconto')
+        .update({
+          status: 'aprovado',
+          desconto_aprovado: descontoNumerico,
+          aprovador_id: Number(aprovadorId), // Garantir que é número
+          aprovador_nome: aprovadorNome,
+          observacao_gestor: observacao || null,
+          respondido_at: new Date().toISOString()
+        })
+        .eq('id', solicitacaoId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ [aprovarSolicitacaoDesconto] Erro na atualização:', error);
+        throw new Error(`Erro ao aprovar desconto: ${error.message}`);
+      }
+      
+      console.log('✅ [aprovarSolicitacaoDesconto] Aprovado com sucesso:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('❌ [aprovarSolicitacaoDesconto] Erro geral:', error);
+      throw error; // Re-lança o erro para ser tratado pelo chamador
     }
-    
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .update({
-        status: 'aprovado',
-        desconto_aprovado: descontoAprovado,
-        aprovador_id: aprovadorId,
-        aprovador_nome: aprovadorNome,
-        observacao_gestor: observacao,
-        respondido_at: new Date().toISOString()
-      })
-      .eq('id', solicitacaoId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ [aprovarSolicitacaoDesconto] Erro:', error);
-      throw error;
-    }
-    
-    console.log('✅ [aprovarSolicitacaoDesconto] Aprovado com sucesso');
-    return data;
   }
 
   /**
@@ -1744,35 +1767,59 @@ class DatabaseService {
    * @param {string} solicitacaoId - ID da solicitação
    * @param {string} aprovadorId - ID do gestor
    * @param {string} aprovadorNome - Nome do gestor
-   * @param {string} observacao - Motivo da negação
+   * @param {string} observacao - Motivo da negação (obrigatório)
    * @returns {Object} Solicitação atualizada
    */
   async negarSolicitacaoDesconto(solicitacaoId, aprovadorId, aprovadorNome, observacao = null) {
-    console.log('❌ [negarSolicitacaoDesconto] Negando:', {
+    console.log('❌ [negarSolicitacaoDesconto] Iniciando negação:', {
       solicitacaoId,
-      aprovadorNome
+      aprovadorId,
+      aprovadorNome,
+      temObservacao: !!observacao
     });
     
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .update({
-        status: 'negado',
-        aprovador_id: aprovadorId,
-        aprovador_nome: aprovadorNome,
-        observacao_gestor: observacao,
-        respondido_at: new Date().toISOString()
-      })
-      .eq('id', solicitacaoId)
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ [negarSolicitacaoDesconto] Erro:', error);
-      throw error;
+    try {
+      // Validar parâmetros
+      if (!solicitacaoId) throw new Error('ID da solicitação é obrigatório');
+      if (!aprovadorId) throw new Error('ID do aprovador é obrigatório');
+      if (!aprovadorNome) throw new Error('Nome do aprovador é obrigatório');
+      if (!observacao || observacao.trim() === '') {
+        throw new Error('Por favor, informe o motivo da negação.');
+      }
+      
+      console.log('📝 [negarSolicitacaoDesconto] Dados validados:', {
+        solicitacaoId,
+        aprovadorId: Number(aprovadorId),
+        aprovadorNome,
+        observacao
+      });
+      
+      // Fazer a atualização
+      const { data, error } = await supabase
+        .from('solicitacoes_desconto')
+        .update({
+          status: 'negado',
+          aprovador_id: Number(aprovadorId), // Garantir que é número
+          aprovador_nome: aprovadorNome,
+          observacao_gestor: observacao,
+          respondido_at: new Date().toISOString()
+        })
+        .eq('id', solicitacaoId)
+        .select()
+        .single();
+      
+      if (error) {
+        console.error('❌ [negarSolicitacaoDesconto] Erro na atualização:', error);
+        throw new Error(`Erro ao negar desconto: ${error.message}`);
+      }
+      
+      console.log('✅ [negarSolicitacaoDesconto] Negado com sucesso:', data);
+      return data;
+      
+    } catch (error) {
+      console.error('❌ [negarSolicitacaoDesconto] Erro geral:', error);
+      throw error; // Re-lança o erro para ser tratado pelo chamador
     }
-    
-    console.log('✅ [negarSolicitacaoDesconto] Negado com sucesso');
-    return data;
   }
 
   /**
