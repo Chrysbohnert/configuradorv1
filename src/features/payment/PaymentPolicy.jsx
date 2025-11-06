@@ -215,7 +215,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
             // Calcula frete
-            const valorFrete = tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega
+            const valorFrete = tipoFrete === 'FOB INCLUSO NO PEDIDO' && dadosFreteAtual && tipoEntrega
               ? (tipoEntrega === 'prioridade'
                 ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
                 : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0))
@@ -230,9 +230,42 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
             // Calcular campos de entrada para o PDF
             const valorSinalNum = parseFloat(valorSinal) || 0;
-            const entradaTotalCalc = r.entrada || 0;
+            
+            // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+            const percentualEntradaNum = percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0;
+            const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+            
             const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
-            const saldoAPagarCalc = r.saldo || valorFinal;
+            
+            // CORREÇÃO: Saldo a pagar = Valor Final - Entrada
+            const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+
+            // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
+            const numParcelas = r.parcelas?.length || 1;
+            const valorParcela = saldoAPagarCalc / numParcelas;
+            
+            console.log('🔢 [PaymentPolicy - APROVAÇÃO] CÁLCULO DE PARCELAS:');
+            console.log('   Valor Final:', valorFinal);
+            console.log('   Entrada Total:', entradaTotalCalc);
+            console.log('   Saldo a Pagar:', saldoAPagarCalc);
+            console.log('   Número de Parcelas:', numParcelas);
+            console.log('   Valor por Parcela:', valorParcela);
+            
+            let somaAcumulada = 0;
+            const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
+              const isUltima = idx === numParcelas - 1;
+              const valor = isUltima 
+                ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
+                : Math.round(valorParcela * 100) / 100;
+              somaAcumulada += valor;
+              console.log(`   Parcela ${idx + 1}:`, valor);
+              return {
+                ...parcela,
+                valor
+              };
+            }) || [];
+            
+            console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
             const novoResultado = {
               ...r,
@@ -250,11 +283,15 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
               
               // Campos de entrada
-              percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+              percentualEntrada: percentualEntradaNum,
               entradaTotal: entradaTotalCalc,
               valorSinal: valorSinalNum,
               faltaEntrada: faltaEntradaCalc,
               saldoAPagar: saldoAPagarCalc,
+              
+              // CORREÇÃO: Usar parcelas recalculadas
+              parcelas: parcelasCorrigidas,
+              saldo: saldoAPagarCalc,
               
               tipoCliente,
               participacaoRevenda,
@@ -450,9 +487,42 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
       // Calcular campos de entrada para o PDF
       const valorSinalNum = parseFloat(valorSinal) || 0;
-      const entradaTotalCalc = r.entrada || 0;
+      
+      // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+      const percentualEntradaNum = percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0;
+      const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+      
       const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
-      const saldoAPagarCalc = r.saldo || valorFinal;
+      
+      // CORREÇÃO: Saldo a pagar = Valor Final - Entrada (não considera sinal aqui)
+      const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+
+      // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
+      const numParcelas = r.parcelas?.length || 1;
+      const valorParcela = saldoAPagarCalc / numParcelas;
+      
+      console.log('🔢 [PaymentPolicy] CÁLCULO DE PARCELAS:');
+      console.log('   Valor Final:', valorFinal);
+      console.log('   Entrada Total:', entradaTotalCalc);
+      console.log('   Saldo a Pagar:', saldoAPagarCalc);
+      console.log('   Número de Parcelas:', numParcelas);
+      console.log('   Valor por Parcela:', valorParcela);
+      
+      let somaAcumulada = 0;
+      const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
+        const isUltima = idx === numParcelas - 1;
+        const valor = isUltima 
+          ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
+          : Math.round(valorParcela * 100) / 100;
+        somaAcumulada += valor;
+        console.log(`   Parcela ${idx + 1}:`, valor);
+        return {
+          ...parcela,
+          valor
+        };
+      }) || [];
+      
+      console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
       const resultadoFinal = {
         ...r,
@@ -470,11 +540,15 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100, // % do acréscimo do plano
         
         // Campos de entrada (para o PDF)
-        percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+        percentualEntrada: percentualEntradaNum,
         entradaTotal: entradaTotalCalc,
         valorSinal: valorSinalNum,
         faltaEntrada: faltaEntradaCalc,
         saldoAPagar: saldoAPagarCalc,
+        
+        // CORREÇÃO: Usar parcelas recalculadas
+        parcelas: parcelasCorrigidas,
+        saldo: saldoAPagarCalc,
         
         // Campos internos do PaymentPolicy
         tipoCliente,
@@ -651,9 +725,42 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
         // Calcular campos de entrada para o PDF
         const valorSinalNum = parseFloat(valorSinal) || 0;
-        const entradaTotalCalc = r.entrada || 0;
+        
+        // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+        const percentualEntradaNum = percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0;
+        const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+        
         const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
-        const saldoAPagarCalc = r.saldo || valorFinal;
+        
+        // CORREÇÃO: Saldo a pagar = Valor Final - Entrada
+        const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+
+        // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
+        const numParcelas = r.parcelas?.length || 1;
+        const valorParcela = saldoAPagarCalc / numParcelas;
+        
+        console.log('🔢 [PaymentPolicy - VERIFICAÇÃO] CÁLCULO DE PARCELAS:');
+        console.log('   Valor Final:', valorFinal);
+        console.log('   Entrada Total:', entradaTotalCalc);
+        console.log('   Saldo a Pagar:', saldoAPagarCalc);
+        console.log('   Número de Parcelas:', numParcelas);
+        console.log('   Valor por Parcela:', valorParcela);
+        
+        let somaAcumulada = 0;
+        const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
+          const isUltima = idx === numParcelas - 1;
+          const valor = isUltima 
+            ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
+            : Math.round(valorParcela * 100) / 100;
+          somaAcumulada += valor;
+          console.log(`   Parcela ${idx + 1}:`, valor);
+          return {
+            ...parcela,
+            valor
+          };
+        }) || [];
+        
+        console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
         const novoResultado = {
           ...r,
@@ -671,11 +778,15 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
           
           // Campos de entrada
-          percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+          percentualEntrada: percentualEntradaNum,
           entradaTotal: entradaTotalCalc,
           valorSinal: valorSinalNum,
           faltaEntrada: faltaEntradaCalc,
           saldoAPagar: saldoAPagarCalc,
+          
+          // CORREÇÃO: Usar parcelas recalculadas
+          parcelas: parcelasCorrigidas,
+          saldo: saldoAPagarCalc,
           
           tipoCliente,
           participacaoRevenda,
@@ -871,10 +982,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         </section>
       )}
 
-      {/* 2) Participação & Tipo de IE (só faz sentido para Cliente) */}
+      {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
       {etapa === 2 && (
         <section className="payment-section">
-          <h3>2) Participação da Revenda & Tipo de IE</h3>
+          <h3>2) Participação da Revenda & Escolha de Cliente</h3>
 
           {tipoCliente === 'cliente' ? (
             <>
@@ -906,7 +1017,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
               {!!participacaoRevenda && (
                 <div className="form-group" style={{ marginTop: '12px' }}>
-                  <label>Tipo de IE *</label>
+                  <label>Escolha Cliente*</label>
                   <div className="radio-group">
                     {/* Produtor rural SEMPRE disponível */}
                     <label className={`radio-option ${tipoIE === 'produtor' ? 'selected' : ''}`}>
@@ -930,7 +1041,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                           checked={tipoIE === 'cnpj_cpf'}
                           onChange={() => setTipoIE('cnpj_cpf')}
                         />
-                        <span>CNPJ/CPF</span>
+                        <span>CNPJ</span>
                       </label>
                     )}
                   </div>

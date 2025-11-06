@@ -66,7 +66,12 @@ const NovoPedido = () => {
       modelo: caminhaoData.modelo,
       ano: caminhaoData.ano || null,
       voltagem: caminhaoData.voltagem,
-      observacoes: caminhaoData.observacoes || null
+      observacoes: caminhaoData.observacoes || null,
+      medidaA: caminhaoData.medidaA || null,
+      medidaB: caminhaoData.medidaB || null,
+      medidaC: caminhaoData.medidaC || null,
+      medidaD: caminhaoData.medidaD || null,
+      patolamento: caminhaoData.patolamento || null
     };
   };
 
@@ -841,8 +846,8 @@ const NovoPedido = () => {
       case 3:
         if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
         if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
-        if (!clienteData.email) errors.email = 'Email é obrigatório';
-        if (!clienteData.documento) errors.documento = 'CPF/CNPJ é obrigatório';
+        // Email não é mais obrigatório
+        if (!clienteData.documento) errors.documento = 'CNPJ EMPRESA é obrigatório';
         // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
         if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
           errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
@@ -1345,6 +1350,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const [loadingCidades, setLoadingCidades] = React.useState(false);
   const [manualEndereco, setManualEndereco] = React.useState(false);
   const [isentoIE, setIsentoIE] = React.useState(false);
+  const [semEmail, setSemEmail] = React.useState(false);
 
   const handleChange = (field, value) => {
     setFormData(prev => {
@@ -1471,14 +1477,35 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           <div className="form-group">
             <label>
               <span className="label-icon">📧</span>
-              Email *
+              Email
             </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <input
+                type="checkbox"
+                id="semEmail"
+                checked={semEmail}
+                onChange={(e) => {
+                  setSemEmail(e.target.checked);
+                  if (e.target.checked) {
+                    handleChange('email', 'naopossui@gmail.com');
+                  } else {
+                    handleChange('email', '');
+                  }
+                }}
+                style={{ width: 'auto', margin: '0' }}
+              />
+              <label htmlFor="semEmail" style={{ margin: '0', fontWeight: 'normal' }}>
+                Não possui e-mail
+              </label>
+            </div>
             <input
               type="email"
               value={formData.email || ''}
               onChange={(e) => handleChange('email', e.target.value)}
-              placeholder="email@exemplo.com"
+              placeholder={semEmail ? "naopossui@gmail.com" : "email@exemplo.com"}
               className={errors.email ? 'error' : ''}
+              disabled={semEmail}
+              style={semEmail ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
             />
             {errors.email && <span className="error-message">{errors.email}</span>}
           </div>
@@ -1486,7 +1513,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           <div className="form-group">
             <label>
               <span className="label-icon">🆔</span>
-              CPF/CNPJ *
+              CNPJ EMPRESA *
             </label>
             <input
               type="text"
@@ -1668,6 +1695,19 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+  
+  // Função para calcular o patolamento baseado na medida C
+  const calcularPatolamento = (medidaC) => {
+    if (!medidaC) return '';
+    const medida = parseFloat(medidaC);
+    if (isNaN(medida)) return '';
+    
+    // Regras: >= 70cm → 580mm | 60-69cm → 440mm | < 60cm → 390mm
+    if (medida >= 70) return '580mm';
+    if (medida >= 60) return '440mm';
+    return '390mm';
+  };
+  
   const years = (() => {
     const current = new Date().getFullYear();
     const start = 1960;
@@ -1853,8 +1893,14 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                   <input
                     type="text"
                     value={formData.medidaC || ''}
-                    onChange={(e) => handleChange('medidaC', e.target.value)}
-                    placeholder="Ex: 58cm"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleChange('medidaC', value);
+                      // Calcular e salvar patolamento automaticamente
+                      const patolamento = calcularPatolamento(value);
+                      handleChange('patolamento', patolamento);
+                    }}
+                    placeholder="Ex: 65"
                   />
                 </div>
                 
@@ -1868,6 +1914,51 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                   />
                 </div>
               </div>
+              
+              {/* Patolamento Calculado Automaticamente */}
+              {formData.patolamento && (
+                <div style={{ 
+                  marginTop: '20px', 
+                  padding: '15px', 
+                  background: 'linear-gradient(135deg, #c9ccddff 0%, #caa72aff 100%)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: 'white'
+                  }}>
+                    <span style={{ fontSize: '24px' }}>🔧</span>
+                    <div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        marginBottom: '4px'
+                      }}>
+                        Patolamento Calculado Automaticamente:
+                      </div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: 'bold',
+                        letterSpacing: '1px'
+                      }}>
+                        {formData.patolamento}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        opacity: '0.9',
+                        marginTop: '4px'
+                      }}>
+                        {parseFloat(formData.medidaC) >= 70 && 'Medida C ≥ 70cm'}
+                        {parseFloat(formData.medidaC) >= 60 && parseFloat(formData.medidaC) < 70 && 'Medida C entre 60-69cm'}
+                        {parseFloat(formData.medidaC) < 60 && 'Medida C < 60cm'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -2118,7 +2209,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <span className="value">{clienteData.email || 'Não informado'}</span>
           </div>
           <div className="data-row">
-            <span className="label">CPF/CNPJ:</span>
+            <span className="label">CNPJ EMPRESA:</span>
             <span className="value">{clienteData.documento || 'Não informado'}</span>
           </div>
           <div className="data-row">
@@ -2219,9 +2310,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <span className="label">Tipo de Pagamento:</span>
             <span className="value">
               {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda - Guindastes GSI'}
-              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ/CPF - Guindastes GSE'}
+              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ - Guindastes GSE'}
               {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno - Revenda'}
-              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento - CNPJ/CPF'}
+              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento - CNPJ'}
               {!pagamentoData.tipoPagamento && 'Não informado'}
             </span>
           </div>

@@ -12,6 +12,27 @@ const CaminhaoFormDetalhado = ({ formData, setFormData, errors = {} }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Função para calcular o patolamento baseado na medida C
+  const calcularPatolamento = (medidaC) => {
+    if (!medidaC) return '';
+    
+    // Converter para número (remove texto e converte)
+    const medida = parseFloat(medidaC);
+    
+    if (isNaN(medida)) return '';
+    
+    // Regras de patolamento:
+    // >= 70cm → 580mm
+    // 60-69cm → 440mm
+    // < 60cm → 390mm
+    if (medida >= 70) return '580mm';
+    if (medida >= 60) return '440mm';
+    return '390mm';
+  };
+
+  // Calcular patolamento automaticamente quando medidaC mudar
+  const patolamentoCalculado = calcularPatolamento(formData.medidaC);
+
   // Gerar lista de anos (1960 até ano atual)
   const years = (() => {
     const current = new Date().getFullYear();
@@ -210,25 +231,76 @@ const CaminhaoFormDetalhado = ({ formData, setFormData, errors = {} }) => {
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida C (mm)</label>
+                  <label>Medida C (cm) - Solo ao Chassi</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
-                    onChange={(e) => handleChange('medidaC', e.target.value)}
-                    placeholder="Ex: 350"
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      handleChange('medidaC', value);
+                      // Calcular e salvar patolamento automaticamente
+                      const patolamento = calcularPatolamento(value);
+                      handleChange('patolamento', patolamento);
+                    }}
+                    placeholder="Ex: 65"
                   />
                 </div>
                 
                 <div className="form-group">
-                  <label>Medida D (mm)</label>
+                  <label>Medida D (cm) - Dist. Entre Eixos</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
                     onChange={(e) => handleChange('medidaD', e.target.value)}
-                    placeholder="Ex: 400"
+                    placeholder="Ex: 30"
                   />
                 </div>
               </div>
+              
+              {/* Patolamento Calculado Automaticamente */}
+              {patolamentoCalculado && (
+                <div style={{ 
+                  marginTop: '20px', 
+                  padding: '15px', 
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '10px',
+                    color: 'white'
+                  }}>
+                    <span style={{ fontSize: '24px' }}>🔧</span>
+                    <div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        fontWeight: '600',
+                        marginBottom: '4px'
+                      }}>
+                        Patolamento Calculado Automaticamente:
+                      </div>
+                      <div style={{ 
+                        fontSize: '24px', 
+                        fontWeight: 'bold',
+                        letterSpacing: '1px'
+                      }}>
+                        {patolamentoCalculado}
+                      </div>
+                      <div style={{ 
+                        fontSize: '12px', 
+                        opacity: '0.9',
+                        marginTop: '4px'
+                      }}>
+                        {formData.medidaC >= 70 && 'Medida C ≥ 70cm'}
+                        {formData.medidaC >= 60 && formData.medidaC < 70 && 'Medida C entre 60-69cm'}
+                        {formData.medidaC < 60 && 'Medida C < 60cm'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

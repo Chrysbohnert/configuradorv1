@@ -242,7 +242,7 @@ const renderCapa = (pedidoData, numeroProposta, { inline = false } = {}) => {
       <div style="text-align:center; margin-top:6mm; line-height:1.1;">
         <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">PROPOSTA COMERCIAL STARK GUINDASTES</div>
         <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
-          [ ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} ]
+           ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} 
         </div>
       </div>
 
@@ -278,7 +278,7 @@ const renderCapa = (pedidoData, numeroProposta, { inline = false } = {}) => {
       </div>
 
       <!-- Linha final e infos da proposta -->
-      <div style="height:0.3mm; background:#555; opacity:0.4; margin:8mm 0 5mm;"></div>
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:2mm 0 5mm;"></div>
 
       <div style="
         display:grid;
@@ -286,6 +286,7 @@ const renderCapa = (pedidoData, numeroProposta, { inline = false } = {}) => {
         text-align:center;
         font-size:4mm;
         letter-spacing:0.1mm;
+        gap:8mm;
       ">
         <div>
           <div style="font-weight:700;">Nº PROPOSTA</div>
@@ -299,81 +300,82 @@ const renderCapa = (pedidoData, numeroProposta, { inline = false } = {}) => {
           <div style="font-weight:700;">VALIDADE</div>
           <div style="font-weight:500;">30 DIAS</div>
         </div>
-       <!-- BLOCO MISSÃO / VISÃO / VALORES - LARGURA TOTAL COMO Nº PROPOSTA -->
-<div style="
-  margin-top: 10mm;
-  width: 100%;
-  text-align: center;
-  font-size: 3.8mm;
-  line-height: 1.35;
-">
-
-  <div style="
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8mm;
-    text-align: center;
-    padding: 0 12mm;
-  ">
-
-    <!-- MISSÃO -->
-    <div>
-      <div style="
-        background:#b7c3c8;
-        width:13mm; height:13mm;
-        border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        margin:0 auto 3mm;
-      ">
-        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
-          <path d='M9 16.2l-3.5-3.5L4 14.2l5 5 11-11-1.4-1.4z'/>
-        </svg>
       </div>
-      <div style="font-weight:700; margin-bottom:1mm;">MISSÃO</div>
-      <div>Tornar eficiente o trabalho no campo e na cidade.</div>
-    </div>
 
-    <!-- VISÃO -->
-    <div>
-      <div style="
-        background:#f2cc00;
-        width:13mm; height:13mm;
-        border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        margin:0 auto 3mm;
-      ">
-        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
-          <path d='M12 4.5c-7.7 0-12 7.5-12 7.5s4.3 7.5 12 7.5 12-7.5 12-7.5-4.3-7.5-12-7.5zm0 12.5a5 5 0 1 1 0-10 5 5 0 0 1 0 10z'/>
-        </svg>
-      </div>
-      <div style="font-weight:700; margin-bottom:1mm;">VISÃO</div>
-      <div>Ser referência no segmento de elevação e movimentação de cargas, através de produtos inovadores com alta qualidade, confiabilidade e produtividade em todo o território nacional até 2030. Primando por rentabilidade e crescimento financeiro da empresa.</div>
-    </div>
+      <!-- SEÇÃO MISSÃO, VISÃO E VALORES - LAYOUT HORIZONTAL (3 COLUNAS) -->
+        <div style="
+          margin-top:12mm;
+          display:grid;
+          grid-template-columns:repeat(3, 1fr);
+          gap:50mm;
+          text-align:center;
+          padding:0 5mm;
+        ">
+          
+          <!-- MISSÃO -->
+          <div>
+            <div style="
+              background:#3498db;
+              width:35mm;
+              height:25mm;
+              border-radius:50%;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              margin:0 auto 4mm;
+            ">
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='18mm' height='18mm'>
+                <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 5h2v2h-2V7zm0 4h2v6h-2v-6z'/>
+              </svg>
+            </div>
+            <div style="font-weight:700; font-size:4.5mm; margin-bottom:2mm;">MISSÃO</div>
+            <div style="font-size:3.5mm; line-height:1.4;">Tornar eficiente o trabalho no campo e<br/>na cidade.</div>
+          </div>
 
-    <!-- VALORES -->
-    <div>
-      <div style="
-        background:#3bb273;
-        width:13mm; height:13mm;
-        border-radius:50%;
-        display:flex; align-items:center; justify-content:center;
-        margin:0 auto 3mm;
-      ">
-        <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='7mm' height='7mm'>
-          <path d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10
-            10-4.48 10-10S17.52 2 12 2zm0 18c-4.41
-            0-8-3.59-8-8s3.59-8 8-8 8 3.59
-            8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z'/>
-        </svg>
+          <!-- VISÃO -->
+          <div>
+            <div style="
+              background:#f39c12;
+              width:50mm;
+              height:50mm;
+              border-radius:50%;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              margin:0 auto 4mm;
+            ">
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='18mm' height='18mm'>
+                <path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z'/>
+              </svg>
+            </div>
+            <div style="font-weight:700; font-size:4.5mm; margin-bottom:2mm;">VISÃO</div>
+            <div style="font-size:3.5mm; line-height:1.4;">Ser referência no segmento de elevação e movimentação de cargas, através de produtos inovadores com alta qualidade, confiabilidade e produtividade em todo o território nacional até 2030. Primando por rentabilidade e crescimento financeiro da empresa.</div>
+          </div>
+
+          <!-- VALORES -->
+          <div>
+            <div style="
+              background:#27ae60;
+              width:35mm;
+              height:25mm;
+              border-radius:50%;
+              display:flex;
+              align-items:center;
+              justify-content:center;
+              margin:0 auto 4mm;
+            ">
+              <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white' width='18mm' height='18mm'>
+                <path d='M12 2a10 10 0 1010 10A10 10 0 0012 2zm-1 15l-5-5 1.41-1.41L11 13.17l5.59-5.59L18 9z'/>
+              </svg>
+            </div>
+            <div style="font-weight:700; font-size:4.5mm; margin-bottom:2mm;">VALORES</div>
+            <div style="font-size:3.5mm; line-height:1.4;">Ambição em fazer o melhor e crescer juntos,<br/>com transparência, honestidade e qualidade.</div>
+          </div>
+
+        </div>
       </div>
-      <div style="font-weight:700; margin-bottom:1mm;">VALORES</div>
-      <div>Ambição em fazer o melhor e crescer juntos, com transparência, honestidade e qualidade.</div>
     </div>
   </div>
-</div>
-          </div>
-            </div>
-          </div>
       </div>
     </div>
   `;
@@ -508,32 +510,35 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 
         <div class="small-gap"></div>
         <div class="subtitle">DESCRIÇÃO TÉCNICA</div>
-        <div class="p p-justify caps">${g.descricao || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line;">${g.descricao || 'NÃO INFORMADO'}</div>
 
         <div class="small-gap"></div>
         <div class="subtitle">NÃO INCLUÍDO</div>
-        <div class="p p-justify caps">${g.nao_incluido || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line;">${g.nao_incluido || 'NÃO INFORMADO'}</div>
         <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
 <div class="small-gap"></div>
 <div class="subtitle">PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK</div>
-<div class="p lower" style="font-size: 18px; line-height: 1.5; text-transform:none;">
+<div class="p lower" style="font-size: 14px; line-height: 1.5; text-transform:none;">
   <ul style="margin-left: 16px; padding-left: 8px; list-style-type: disc;">
     <li>Para solicitação da garantia, deverão ser apresentados os seguintes documentos:</li>
     <ul style="margin-left: 20px; list-style-type: circle;">
       <li>Nota Fiscal de aquisição do equipamento.</li>
       <li>Certificado de Garantia preenchido e assinado pelo proprietário na hora da entrega.</li>
     </ul>
-        <li>Comprovante de revisão efetuada pelo representante ou fábrica em Santa Rosa Rs, de acordo com o plano de revisões abaixo:</li>
+        <li>Comprovante de revisão efetuada pelo ponto de instalação ou fábrica de Santa Rosa Rs, de acordo com o plano de revisões abaixo:</li>
         <ul style="margin-left: 20px; list-style-type: circle;">
           <li>500 horas ou 6 meses;</li>
           <li>1000 horas ou 12 meses;</li>
           <li>2000 horas ou 24 meses;</li>
-          <li>3000 horas ou 36 meses.</li>
         </ul>
         <li>Comprovante de troca de óleo realizada nas primeiras 500 horas ou primeiros 6 meses de uso do equipamento.</li>
         <li>Comprovante do relatório de entrega técnica assinado pelo responsável pelo recebimento do equipamento.</li>
       </ul>
-    </div>
+        <li>A garantia contratual concedida pela STARK Guindastes tem validade de:</li>
+        <li> 6 (seis) meses para o sistema hidráulico, ou, 500 (quinhentas) horas de operação, o que ocorrer primeiro.</li>
+        <li> 12 (doze) meses para a estrutura do equipamento, ou, 1000 (mil) horas de operação, o que ocorrer primeiro.</li>
+        <li>O prazo é contado a partir da data de entrega ao cliente, conforme nota fiscal, e mediante o envio do Certificado de Garantia devidamente preenchido e assinado á fábrica.</li>
+       <li>A validade de garantia está condicionada ao fato de que o faturamento da STARK Guindastes para a revenda não exceda 12 (doze) meses anteriores á entrega ao cliente final.</li>
       `;
     });
   }
@@ -562,15 +567,11 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       </table>
     `;
   }
-
-  const total = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
+  
   html += `
-      <div class="rule"></div>
-      <div class="kvs">
-        <div class="row"><div class="k">TOTAL DA PROPOSTA</div><div class="v right">${formatCurrency(total)}</div></div>
-      </div>
     </div>
   `;
+  
   el.innerHTML += html;
   return el;
 };
@@ -613,13 +614,21 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
       </div>
       ${
         temMedidas ? `
-          <div class="subtitle">MEDIDAS</div>
           <div class="kvs" style="grid-template-columns: 1fr 1fr;">
-            ${v.medidaA ? `<div class="row"><div class="k">MEDIDA A</div><div class="v">${v.medidaA}cm</div></div>` : ''}
-            ${v.medidaB ? `<div class="row"><div class="k">MEDIDA B</div><div class="v">${v.medidaB}cm</div></div>` : ''}
-            ${v.medidaC ? `<div class="row"><div class="k">MEDIDA C</div><div class="v">${v.medidaC}cm</div></div>` : ''}
-            ${v.medidaD ? `<div class="row"><div class="k">MEDIDA D</div><div class="v">${v.medidaD}cm</div></div>` : ''}
+            ${v.medidaA ? `<div class="row"><div class="k">MEDIDA A (CHASSI AO ASSOALHO)</div><div class="v">${v.medidaA}cm</div></div>` : ''}
+            ${v.medidaB ? `<div class="row"><div class="k">MEDIDA B (CHASSI)</div><div class="v">${v.medidaB}cm</div></div>` : ''}
+            ${v.medidaC ? `<div class="row"><div class="k">MEDIDA C (Solo ao Chassi)</div><div class="v">${v.medidaC}cm</div></div>` : ''}
+            ${v.medidaD ? `<div class="row"><div class="k">MEDIDA D (DIST ENTRE EIXOS)</div><div class="v">${v.medidaD}cm</div></div>` : ''}
           </div>
+          ${v.patolamento ? `
+            <div style="margin-top:15px;padding:10px;background:linear-gradient(135deg, #333334ff 0%, #3d3c35ff 100%);border-radius:8px;text-align:center;">
+              <div style="color:white;font-size:14px;font-weight:600;margin-bottom:6px;">🔧 PATOLAMENTO CALCULADO</div>
+              <div style="color:white;font-size:28px;font-weight:bold;letter-spacing:2px;">${v.patolamento}</div>
+              <div style="color:white;font-size:12px;opacity:0.9;margin-top:6px;">
+                ${parseFloat(v.medidaC) >= 70 ? 'Medida C ≥ 70cm' : parseFloat(v.medidaC) >= 60 ? 'Medida C entre 60-69cm' : 'Medida C < 60cm'}
+              </div>
+            </div>
+          ` : ''}
         ` : `
           <div class="p caps center small-gap">MEDIDAS NÃO INFORMADAS.</div>
         `
@@ -631,48 +640,211 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
 
 // CONDIÇÕES COMERCIAIS E FINANCEIRAS
 // CONDIÇÕES COMERCIAIS E FINANCEIRAS + DADOS BANCÁRIOS COM ÍCONES
-const renderFinanceiro = (pedidoData, { inline = false } = {}) => {
+const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const p = pedidoData.pagamentoData || {};
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
+  
+  // CÁLCULOS CORRETOS SEGUINDO A LÓGICA:
+  // 1. Base + Adicionais
+  const subtotalComAdicionais = totalBase + (p.valorFrete || 0) + (p.valorInstalacao || 0);
+  
+  // 2. Aplicar descontos
+  const valorDescontoVendedor = p.desconto ? (subtotalComAdicionais * p.desconto / 100) : 0;
+  const valorDescontoPrazo = p.descontoPrazo ? (subtotalComAdicionais * p.descontoPrazo / 100) : 0;
+  const valorAcrescimo = p.acrescimo ? (subtotalComAdicionais * p.acrescimo / 100) : 0;
+  
+  // 3. Valor Total Final
+  const valorTotalFinal = subtotalComAdicionais - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
+  
+  // 4. Entrada
+  const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
+  const sinalPago = p.valorSinal || 0;
+  
+  // 5. Saldo a Pagar (o que falta após entrada e sinal)
+  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
+
+  // 6. RECALCULAR PARCELAS com base no saldo correto
+  const numParcelas = p.parcelas?.length || 1;
+  const valorParcela = saldoAPagarCalc / numParcelas;
+  let somaAcumulada = 0;
+  const parcelasCorrigidas = p.parcelas?.map((parcela, idx) => {
+    const isUltima = idx === numParcelas - 1;
+    const valor = isUltima 
+      ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
+      : Math.round(valorParcela * 100) / 100;
+    somaAcumulada += valor;
+    return {
+      ...parcela,
+      valor
+    };
+  }) || [];
+
+  // Carregar logos dos bancos como base64
+  const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
+  const logoSicredi = await renderImageToDataURL('/sicredi.png');
+  const logoSicoob = await renderImageToDataURL('/sicoob.png');
 
   const el = createContainer('pdf-financeiro', { inline });
   el.innerHTML += `
-    <div class="wrap" style="padding:18px 22px;">
+    <div class="wrap" style="padding:18px 12px;">
       <div class="title">CONDIÇÕES COMERCIAIS E FINANCEIRAS</div>
 
-      <div class="kvs" style="margin-top:6px;">
-        <div class="row"><div class="k">TIPO DE PAGAMENTO</div><div class="v">${(p.tipoPagamento || 'NÃO INFORMADO').toUpperCase()}</div></div>
-        <div class="row"><div class="k">PRAZO</div><div class="v">${(p.prazoPagamento || 'NÃO INFORMADO').replaceAll('_',' ').toUpperCase()}</div></div>
-        <div class="row"><div class="k">VALOR BASE</div><div class="v">${formatCurrency(totalBase)}</div></div>
-        <div class="row"><div class="k">DESCONTO</div><div class="v">${p.desconto ? `${p.desconto}%` : '0%'}</div></div>
-        <div class="row"><div class="k">ACRÉSCIMO</div><div class="v">${p.acrescimo ? `${p.acrescimo}%` : '0%'}</div></div>
-        ${p.valorFrete ? `<div class="row"><div class="k">FRETE</div><div class="v">${formatCurrency(p.valorFrete)}</div></div>` : ''}
-        ${p.valorInstalacao ? `<div class="row"><div class="k">INSTALAÇÃO</div><div class="v">${formatCurrency(p.valorInstalacao)}</div></div>` : ''}
-        <div class="row"><div class="k">VALOR FINAL</div><div class="v">${formatCurrency(p.valorFinal || p.total || totalBase)}</div></div>
+      <!-- FLUXO CASCATA: PASSO A PASSO -->
+      
+      <!-- PASSO 1: VALOR BASE -->
+      <div style="margin-top:8px; padding:10px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
+        <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:6px;">① VALOR BASE DO EQUIPAMENTO</div>
+        <div style="font-size:20px; font-weight:700; color:#black;">${formatCurrency(totalBase)}</div>
       </div>
 
-      ${(p.tipoCliente === 'cliente' && p.percentualEntrada > 0) ? `
-        <div class="rule"></div>
-        <div class="subtitle">ENTRADA</div>
-        <div class="kvs">
-          <div class="row"><div class="k">PERCENTUAL DE ENTRADA</div><div class="v">${p.percentualEntrada}%</div></div>
-          <div class="row"><div class="k">ENTRADA TOTAL</div><div class="v">${formatCurrency(p.entradaTotal || 0)}</div></div>
-          ${p.valorSinal ? `<div class="row"><div class="k">SINAL JÁ PAGO</div><div class="v">- ${formatCurrency(p.valorSinal)}</div></div>` : ''}
-          <div class="row"><div class="k">FALTA PAGAR DE ENTRADA</div><div class="v">${formatCurrency(p.faltaEntrada || 0)}</div></div>
-          <div class="row"><div class="k">SALDO A PAGAR</div><div class="v">${formatCurrency(p.saldoAPagar || p.valorFinal || 0)}</div></div>
+      <!-- PASSO 2: ADICIONAIS (Frete + Instalação) -->
+      ${(p.tipoFrete || p.tipoInstalacao || p.valorFrete || p.valorInstalacao) ? `
+        <div style="margin-top:12px; padding:10px; background:#e3f2fd; border-left:4px solid #787b7dff; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:6px;">② FRETE E INSTALAÇÃO</div>
+          
+          ${p.tipoFrete ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>
+                <strong>Frete:</strong> FOB${p.valorFrete > 0 ? ' - Incluso no pedido' : ''}
+                ${p.valorFrete > 0 && p.tipoEntrega ? ` (${p.tipoEntrega === 'prioridade' ? 'Prioridade' : 'Reaproveitamento'})` : ''}
+              </span>
+              ${p.valorFrete > 0 ? `
+                <span style="color:#2196f3; font-weight:600;">+ ${formatCurrency(p.valorFrete)}</span>
+              ` : `
+                <span style="color:#666; font-size:12px;">Cliente paga direto</span>
+              `}
+            </div>
+          ` : ''}
+          
+          ${p.tipoInstalacao ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span><strong>Instalação:</strong> ${p.tipoInstalacao.toUpperCase()}</span>
+              ${p.valorInstalacao > 0 ? `
+                <span style="color:#2196f3; font-weight:600;">+ ${formatCurrency(p.valorInstalacao)}</span>
+              ` : `
+                <span style="color:#666; font-size:12px;">Cliente paga direto</span>
+              `}
+            </div>
+          ` : ''}
+          
+          ${(p.valorFrete > 0 || p.valorInstalacao > 0) ? `
+            <div style="border-top:1px solid #bbdefb; margin-top:6px; padding-top:6px; display:flex; justify-content:space-between;">
+              <span style="font-weight:600;">Subtotal com adicionais</span>
+              <span style="font-weight:700; font-size:16px;">${formatCurrency(subtotalComAdicionais)}</span>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
-      <div class="rule" style="margin-top:6mm;"></div>
-      <div class="subtitle" style="font-size:4mm;">OUTRAS CONDIÇÕES</div>
-      <div class="kvs" style="font-size:3.7mm;">
-        ${p.tipoFrete ? `<div class="row"><div class="k">TIPO DE FRETE</div><div class="v">${p.tipoFrete.toUpperCase()}</div></div>` : ''}
-        ${p.tipoInstalacao ? `<div class="row"><div class="k">TIPO DE INSTALAÇÃO</div><div class="v">${p.tipoInstalacao.toUpperCase()}</div></div>` : ''}
-        ${p.localInstalacao ? `<div class="row"><div class="k">LOCAL DE INSTALAÇÃO</div><div class="v">${p.localInstalacao.toUpperCase()}</div></div>` : ''}
-        <div class="row"><div class="k">VALIDADE DA PROPOSTA</div><div class="v">30 DIAS</div></div>
+      <!-- PASSO 3: DESCONTOS -->
+      ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
+        <div style="margin-top:12px; padding:10px; background:#fff3e0; border-left:4px solid #ff9800; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:6px;">③ DESCONTOS E AJUSTES</div>
+          ${p.desconto ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>Desconto do vendedor (${p.desconto}%)</span>
+              <span style="color:#e74c3c; font-weight:600;">- ${formatCurrency(valorDescontoVendedor)}</span>
+            </div>
+          ` : ''}
+          ${p.descontoPrazo ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>Desconto do prazo (${p.descontoPrazo}%)</span>
+              <span style="color:#e74c3c; font-weight:600;">- ${formatCurrency(valorDescontoPrazo)}</span>
+            </div>
+          ` : ''}
+          ${p.acrescimo ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+              <span>Acréscimo (${p.acrescimo}%)</span>
+              <span style="color:#27ae60; font-weight:600;">+ ${formatCurrency(valorAcrescimo)}</span>
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+
+      <!-- VALOR TOTAL FINAL -->
+      <div style="margin-top:12px; padding:14px; background:#4caf50; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700; font-size:18px; color:white;">VALOR TOTAL DA PROPOSTA</span>
+          <span style="font-weight:700; font-size:24px; color:white;">${formatCurrency(valorTotalFinal)}</span>
+        </div>
+      </div>
+
+      <!-- CONDIÇÕES DE PAGAMENTO -->
+      <div style="margin-top:16px; padding:10px; background:#e8f5e9; border-left:4px solid #5e6e5fff; border-radius:4px;">
+        <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:8px;">CONDIÇÕES DE PAGAMENTO</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+          <div>
+            <div style="font-size:11px; color:#black; margin-bottom:2px;">Tipo de Pagamento</div>
+            <div style="font-weight:600;">${(p.tipoPagamento || 'NÃO INFORMADO').toUpperCase()}</div>
+          </div>
+          <div>
+            <div style="font-size:11px; color:#black; margin-bottom:2px;">Prazo</div>
+            <div style="font-weight:600;">${(p.prazoPagamento || 'NÃO INFORMADO').replaceAll('_',' ').toUpperCase()}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ENTRADA (se houver) -->
+      ${(p.tipoCliente === 'cliente' && p.percentualEntrada > 0) ? `
+        <div style="margin-top:12px; padding:10px; background:#e1f5fe; border-left:4px solid #808283ff; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:8px;">④ ENTRADA (${p.percentualEntrada}% do valor total)</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span>Valor da entrada</span>
+            <span style="font-weight:700; font-size:18px; color:#03a9f4;">${formatCurrency(entradaTotalCalc)}</span>
+          </div>
+          ${sinalPago > 0 ? `
+            <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #838587ff; margin-top:6px;">
+              <span style="font-size:12px;">Sinal já pago</span>
+              <span style="font-weight:600; color:#4caf50;">${formatCurrency(sinalPago)}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px;">
+              <span style="font-size:12px;">Falta pagar da entrada</span>
+              <span style="font-weight:600; color:#ff9800;">${formatCurrency(entradaTotalCalc - sinalPago)}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- SALDO A PAGAR (O QUE FALTA APÓS ENTRADA) -->
+        <div style="margin-top:12px; padding:14px; background:#838587ff; border-radius:4px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+          <div style="font-weight:700; font-size:14px; color:black; margin-bottom:6px;">⑤ SALDO A PAGAR (APÓS FATURAMENTO)</div>
+          <div style="font-size:12px; color:black; margin-bottom:6px; opacity:0.9;">Este é o valor que será parcelado</div>
+          <div style="font-weight:700; font-size:22px; color:black;">${formatCurrency(saldoAPagarCalc)}</div>
+        </div>
+      ` : ''}
+
+      <!-- PARCELAMENTO -->
+      ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
+        <div style="margin-top:12px; padding:10px; background:#fce4ec; border-left:4px solid #af1a1aff; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#black; margin-bottom:4px;">${p.tipoCliente === 'cliente' && p.percentualEntrada > 0 ? '⑥' : '④'} PARCELAMENTO (APÓS FATURAMENTO)</div>
+          <div style="font-size:11px; color:#666; margin-bottom:8px;">O saldo de ${formatCurrency(saldoAPagarCalc)} será dividido em ${parcelasCorrigidas.length} parcelas:</div>
+          <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
+            ${parcelasCorrigidas.map((parcela, idx) => `
+              <div style="background:white; padding:8px; border-radius:4px; text-align:center;">
+                <div style="font-size:11px; color:#black; margin-bottom:2px;">Parcela ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:700; color:#black;">${formatCurrency(parcela.valor || 0)}</div>
+              </div>
+            `).join('')}
+          </div>
+          <div style="border-top:1px solid #f8bbd0; margin-top:8px; padding-top:8px; display:flex; justify-content:space-between;">
+            <span style="font-size:12px; font-weight:600;">Total das parcelas:</span>
+            <span style="font-size:12px; font-weight:700;">${formatCurrency(parcelasCorrigidas.reduce((acc, parc) => acc + (parc.valor || 0), 0))}</span>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- OUTRAS OBSERVAÇÕES -->
+      <div style="margin-top:16px; padding:10px; background:#eceff1; border-left:4px solid #607d8b; border-radius:4px;">
+        <div style="font-weight:700; font-size:16px; color:#black; margin-bottom:8px;">OUTRAS CONDIÇÕES</div>
+        <div style="font-size:12px; line-height:1.6;">
+          ${p.tipoInstalacao ? `<div><strong>Instalação:</strong> ${p.tipoInstalacao.toUpperCase()}</div>` : ''}
+          ${p.localInstalacao ? `<div><strong>Local:</strong> ${p.localInstalacao.toUpperCase()}</div>` : ''}
+          <div><strong>Validade:</strong> 30 DIAS</div>
+        </div>
       </div>
 
       <!-- BLOCO DE DADOS BANCÁRIOS COM ÍCONES -->
+      <div style="margin-top:80mm;"></div>
+      <div style="page-break-before: always;"></div>
       <div class="rule" style="margin:8mm 0 4mm 0;"></div>
       <div style="font-weight:700; font-size:4mm; text-transform:uppercase; margin-bottom:3mm;">DADOS BANCÁRIOS – STARK INDUSTRIAL LTDA</div>
 
@@ -684,18 +856,21 @@ const renderFinanceiro = (pedidoData, { inline = false } = {}) => {
         line-height:1.4;
       ">
         <div style="margin-bottom:3mm;">
+          <img src="${logoBB}" alt="Banco do Brasil" style="width:80px;height:auto;margin-bottom:2mm;display:block;"/>
           <div style="font-weight:700;">Banco do Brasil (001)</div>
           <div>Agência: 0339-5</div>
           <div>Conta Corrente: 60548-4</div>
         </div>
 
         <div style="margin-bottom:3mm;">
+          <img src="${logoSicredi}" alt="Sicredi" style="width:80px;height:auto;margin-bottom:2mm;display:block;"/>
           <div style="font-weight:700;">Banco Sicredi (748)</div>
           <div>Agência: 0307</div>
           <div>Conta Corrente: 40771-1</div>
         </div>
 
         <div style="margin-bottom:3mm;">
+          <img src="${logoSicoob}" alt="Sicoob" style="width:80px;height:auto;margin-bottom:2mm;display:block;"/>
           <div style="font-weight:700;">Banco Sicoob (756)</div>
           <div>Agência: 3072-4</div>
           <div>Conta Corrente: 33276-3</div>
@@ -889,7 +1064,10 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
   addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
 }
 
-      // ==== PÁGINA 2: VEÍCULO + ESTUDO VEICULAR (inline para tentar caber)
+      // ==== GRÁFICOS DE CARGA (logo após dados do equipamento)
+      await appendGraficosDeCarga(pdf, pedidoData);
+
+      // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR (inline para tentar caber)
       {
         const root = createContainer('page2-root', { inline: true });
         root.appendChild(renderCaminhao(pedidoData, { inline: true }));
@@ -898,14 +1076,14 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // ==== PÁGINA 3: FINANCEIRO
+      // ==== PÁGINA 4: FINANCEIRO
       {
-        const el = renderFinanceiro(pedidoData, { inline: false });
+        const el = await renderFinanceiro(pedidoData, { inline: false });
         const cv = await htmlToCanvas(el);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // ==== PÁGINA 4: CLÁUSULAS + ASSINATURAS (mesma página)
+      // ==== PÁGINA 5: CLÁUSULAS + ASSINATURAS (mesma página)
       {
         const root = createContainer('page4-root', { inline: true });
         root.appendChild(renderClausulas({ inline: true }));
@@ -913,9 +1091,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         const cv = await htmlToCanvas(root);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
-
-      // ==== ANEXOS: GRÁFICOS DE CARGA (SEM header/footer)
-      await appendGraficosDeCarga(pdf, pedidoData);
 
       const fileName = `proposta_stark_${new Date().toISOString().split('T')[0]}.pdf`;
       pdf.save(fileName);
