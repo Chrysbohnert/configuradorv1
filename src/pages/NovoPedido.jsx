@@ -2003,14 +2003,22 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       }
       
       const pedidoDataToSave = {
-        numero_pedido: numeroPedido,
-        cliente_id: cliente.id,
+        numero_proposta: numeroPedido,
+        data: new Date().toISOString(),
         vendedor_id: user.id,
-        caminhao_id: caminhao.id,
-        id_guindaste: guindasteId, // ← ADICIONADO para controle de estoque
-        status: 'finalizado', // Proposta comercial gerada = venda finalizada
+        vendedor_nome: user.nome || 'Não informado',
+        cliente_nome: cliente.nome || 'Não informado',
+        cliente_documento: cliente.documento || null,
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
-        observacoes: `Proposta gerada em ${new Date().toLocaleString('pt-BR')}. Local de instalação: ${pagamentoData.localInstalacao}. Tipo de instalação: ${pagamentoData.tipoInstalacao === 'cliente' ? 'Por conta do cliente' : 'Por conta da fábrica'}.`
+        tipo: 'proposta',
+        status: 'finalizado',
+        dados_serializados: {
+          carrinho,
+          clienteData: cliente,
+          caminhaoData: caminhao,
+          pagamentoData,
+          guindasteId // Guardar ID do guindaste nos dados serializados para controle de estoque
+        }
       };
       console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);
       
@@ -2025,37 +2033,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         console.warn('⚠️ ATENÇÃO: Estoque NÃO foi descontado!');
       }
       
-      // 5. Criar itens do pedido
-      console.log('5️⃣ Criando itens do pedido...');
-      for (const item of carrinho) {
-        console.log(`   Processando item: ${item.nome} (${item.tipo})`);
-        let codigo_produto = null;
-        if (item.tipo === 'equipamento') {
-          // Pega todos opcionais selecionados
-          const opcionaisSelecionados = carrinho
-            .filter(i => i.tipo === 'opcional')
-            .map(i => i.nome);
-          codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
-        }
-        
-        const itemDataToSave = {
-          pedido_id: pedido.id,
-          tipo: item.tipo,
-          item_id: item.id,
-          quantidade: 1,
-          preco_unitario: item.preco,
-          codigo_produto
-        };
-        
-        console.log(`   📋 Dados do item para salvar:`, itemDataToSave);
-        
-        try {
-          await db.createpropostasItem(itemDataToSave);
-        } catch (itemError) {
-          console.error(`   ❌ Erro ao criar item ${item.nome}:`, itemError);
-          throw itemError;
-        }
-      }
+      // 5. Itens do pedido já estão salvos em dados_serializados
+      // Não é necessário criar registros separados em propostas_itens
+      console.log('5️⃣ Itens do pedido salvos em dados_serializados:', carrinho.length, 'itens');
       
       console.log('🎉 Relatório salvo com sucesso:', {
         pedidoId: pedido.id,

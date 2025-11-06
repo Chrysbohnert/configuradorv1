@@ -185,25 +185,110 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         schema: 'public',
         table: 'solicitacoes_desconto',
         filter: `id=eq.${solicitacaoId}`
-      }, (payload) => {
+      }, async (payload) => {
         console.log('🔔 [PaymentPolicy] Atualização recebida:', payload);
 
         if (payload.new.status === 'aprovado') {
           const descontoAprovado = payload.new.desconto_aprovado;
           const aprovadorNome = payload.new.aprovador_nome;
 
-          console.log(`✅ [PaymentPolicy] Desconto de ${descontoAprovado}% aprovado por ${aprovadorNome}`);
+          console.log(`✅ [PaymentPolicy] Desconto aprovado: ${descontoAprovado}% (não exibido ao vendedor)`);
 
-          // Aplica o desconto automaticamente
-          setDescontoVendedor(descontoAprovado);
+          try {
+            // Atualiza o estado local com o desconto aprovado
+            setDescontoVendedor(descontoAprovado);
+            
+            // Força o recálculo do pagamento com o novo desconto
+            if (!planoSelecionado) {
+              console.warn('⚠️ [PaymentPolicy] Plano não selecionado, não é possível recalcular');
+              return;
+            }
 
-          // Fecha modal e limpa estados
-          setModalSolicitacaoOpen(false);
-          setAguardandoAprovacao(false);
-          setSolicitacaoId(null);
+            const r = calcularPagamento({
+              precoBase: precoAjustadoPorRegiao,
+              plan: planoSelecionado,
+              dataEmissaoNF: new Date(),
+            });
 
-          // Mostra notificação de sucesso
-          alert(`✅ Desconto de ${descontoAprovado}% aprovado por ${aprovadorNome}!\n\nVocê pode continuar preenchendo a proposta.`);
+            // Aplica desconto do vendedor aprovado
+            const descontoExtraValor = precoAjustadoPorRegiao * (descontoAprovado / 100);
+            const valorAposExtra = r.valorAjustado - descontoExtraValor;
+
+            // Calcula frete
+            const valorFrete = tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega
+              ? (tipoEntrega === 'prioridade'
+                ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
+                : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0))
+              : 0;
+
+            // Calcula instalação
+            const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso'
+              ? (temGSI ? 6350 : temGSE ? 7500 : 0)
+              : 0;
+
+            const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
+
+            // Calcular campos de entrada para o PDF
+            const valorSinalNum = parseFloat(valorSinal) || 0;
+            const entradaTotalCalc = r.entrada || 0;
+            const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
+            const saldoAPagarCalc = r.saldo || valorFinal;
+
+            const novoResultado = {
+              ...r,
+              precoBase: precoAjustadoPorRegiao,
+              descontoAdicionalValor: descontoExtraValor,
+              valorFinalComDescontoAdicional: valorAposExtra,
+              valorFrete,
+              valorInstalacao,
+              total: valorFinal,
+              valorFinal, // Adicionar também como valorFinal
+              financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
+              
+              // Campos em percentual para o PDF
+              desconto: descontoAprovado, // % do desconto aprovado
+              acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
+              
+              // Campos de entrada
+              percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+              entradaTotal: entradaTotalCalc,
+              valorSinal: valorSinalNum,
+              faltaEntrada: faltaEntradaCalc,
+              saldoAPagar: saldoAPagarCalc,
+              
+              tipoCliente,
+              participacaoRevenda,
+              tipoIE,
+              instalacao,
+              tipoFrete,
+              localInstalacao,
+              tipoEntrega,
+              tipoPagamento: tipoCliente,
+              tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : 
+                              instalacao === 'cliente' ? 'cliente paga direto' : '',
+              revendaTemIE: tipoIE === 'produtor' ? 'sim' : 
+                            tipoIE === 'cnpj_cpf' ? 'nao' : '',
+              prazoPagamento: planoSelecionado?.description || '',
+            };
+            
+            // Atualiza o estado com o novo resultado
+            setResultado(novoResultado);
+            
+            // Fecha o modal e limpa os estados
+            setModalSolicitacaoOpen(false);
+            setAguardandoAprovacao(false);
+            setSolicitacaoId(null);
+            
+            // Força uma nova renderização do componente
+            forceUpdate();
+            
+            // Mostra notificação de sucesso (sem mostrar o percentual exato)
+            alert(`✅ Desconto aprovado por ${aprovadorNome}!\n\nValor atualizado com sucesso. Você pode continuar preenchendo a proposta.`);
+            
+          } catch (error) {
+            console.error('❌ [PaymentPolicy] Erro ao processar aprovação de desconto:', error);
+            alert('❌ Ocorreu um erro ao aplicar o desconto. Por favor, verifique os dados e tente novamente.');
+          }
 
         } else if (payload.new.status === 'negado') {
           const aprovadorNome = payload.new.aprovador_nome;
@@ -215,9 +300,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           setModalSolicitacaoOpen(false);
           setAguardandoAprovacao(false);
           setSolicitacaoId(null);
+          
+          // Força uma nova renderização do componente
+          forceUpdate();
 
           // Mostra notificação de negação
-          alert(`❌ Solicitação negada por ${aprovadorNome}${observacao ? `\n\nMotivo: ${observacao}` : ''}`);
+          alert(`❌ Solicitação negada por ${aprovadorNome}${observacao ? '\n\nMotivo: ' + observacao : ''}`);
         }
       })
       .subscribe();
@@ -227,7 +315,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       console.log('🔕 [PaymentPolicy] Removendo listener');
       supabase.removeChannel(channel);
     };
-  }, [solicitacaoId]);
+  }, [solicitacaoId, precoAjustadoPorRegiao, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado]);
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
@@ -307,7 +395,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         tipoPagamento: tipoCliente, // 'cliente' ou 'revenda'
         tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : instalacao === 'cliente' ? 'cliente paga direto' : '',
         revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
-        prazoPagamento: '', // Não aplicável para financiamento
+        prazoPagamento: 'Financiamento Bancário', // Identificar no PDF
         // Valores
         descontoValor: 0,
         acrescimoValor: 0,
@@ -316,6 +404,16 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         saldo: precoBase,
         parcelas: [],
         total: precoBase,
+        valorFinal: precoBase, // Adicionar para compatibilidade com PDF
+        // Campos em percentual para o PDF
+        desconto: 0,
+        acrescimo: 0,
+        // Campos de entrada (zerados para financiamento)
+        percentualEntrada: 0,
+        entradaTotal: 0,
+        valorSinal: 0,
+        faltaEntrada: 0,
+        saldoAPagar: precoBase,
       };
       setResultado(r);
       onPaymentComputed?.(r);
@@ -350,6 +448,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
       const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
 
+      // Calcular campos de entrada para o PDF
+      const valorSinalNum = parseFloat(valorSinal) || 0;
+      const entradaTotalCalc = r.entrada || 0;
+      const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
+      const saldoAPagarCalc = r.saldo || valorFinal;
+
       const resultadoFinal = {
         ...r,
         precoBase: precoAjustadoPorRegiao, // Usar preço ajustado
@@ -358,7 +462,20 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorFrete,
         valorInstalacao,
         total: valorFinal,
+        valorFinal, // Adicionar também como valorFinal para compatibilidade com PDF
         financiamentoBancario: 'nao', // Não é financiamento bancário
+        
+        // Campos de desconto e acréscimo em PERCENTUAL (para o PDF)
+        desconto: descontoVendedor, // % do desconto do vendedor
+        acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100, // % do acréscimo do plano
+        
+        // Campos de entrada (para o PDF)
+        percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+        entradaTotal: entradaTotalCalc,
+        valorSinal: valorSinalNum,
+        faltaEntrada: faltaEntradaCalc,
+        saldoAPagar: saldoAPagarCalc,
+        
         // Campos internos do PaymentPolicy
         tipoCliente,
         participacaoRevenda,
@@ -398,6 +515,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     tipoEntrega,
     planoSelecionado,
     percentualEntrada,
+    valorSinal,
     descontoVendedor,
     temGSE,
     temGSI,
@@ -482,6 +600,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     }
   };
 
+  // Hook para forçar atualização do componente
+  const [_, forceUpdate] = React.useReducer(x => x + 1, 0);
+
   // Função para verificar status manualmente
   const handleVerificarStatus = async () => {
     if (!solicitacaoId) return;
@@ -492,22 +613,112 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       const solicitacao = await db.getSolicitacaoPorId(solicitacaoId);
       
       if (solicitacao.status === 'aprovado') {
-        console.log('✅ [PaymentPolicy] Desconto aprovado:', solicitacao.desconto_aprovado);
+        console.log('✅ [PaymentPolicy] Desconto aprovado:', solicitacao.desconto_aprovado, '% (não exibido ao vendedor)');
+        
+        // Atualiza o estado local com o desconto aprovado
         setDescontoVendedor(solicitacao.desconto_aprovado);
+        
+        // Força o recálculo do pagamento com o novo desconto
+        if (!planoSelecionado) {
+          console.warn('⚠️ [PaymentPolicy] Plano não selecionado, não é possível recalcular');
+          alert('⚠️ Por favor, selecione um plano de pagamento antes de aplicar o desconto.');
+          return;
+        }
+
+        const r = calcularPagamento({
+          precoBase: precoAjustadoPorRegiao,
+          plan: planoSelecionado,
+          dataEmissaoNF: new Date(),
+        });
+
+        // Aplica desconto do vendedor aprovado
+        const descontoExtraValor = precoAjustadoPorRegiao * (solicitacao.desconto_aprovado / 100);
+        const valorAposExtra = r.valorAjustado - descontoExtraValor;
+
+        // Calcula frete
+        const valorFrete = tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega
+          ? (tipoEntrega === 'prioridade'
+            ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
+            : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0))
+          : 0;
+
+        // Calcula instalação
+        const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso'
+          ? (temGSI ? 6350 : temGSE ? 7500 : 0)
+          : 0;
+
+        const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
+
+        // Calcular campos de entrada para o PDF
+        const valorSinalNum = parseFloat(valorSinal) || 0;
+        const entradaTotalCalc = r.entrada || 0;
+        const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
+        const saldoAPagarCalc = r.saldo || valorFinal;
+
+        const novoResultado = {
+          ...r,
+          precoBase: precoAjustadoPorRegiao,
+          descontoAdicionalValor: descontoExtraValor,
+          valorFinalComDescontoAdicional: valorAposExtra,
+          valorFrete,
+          valorInstalacao,
+          total: valorFinal,
+          valorFinal, // Adicionar também como valorFinal
+          financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
+          
+          // Campos em percentual para o PDF
+          desconto: solicitacao.desconto_aprovado, // % do desconto aprovado
+          acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
+          
+          // Campos de entrada
+          percentualEntrada: percentualEntrada && percentualEntrada !== 'financiamento' ? parseFloat(percentualEntrada) : 0,
+          entradaTotal: entradaTotalCalc,
+          valorSinal: valorSinalNum,
+          faltaEntrada: faltaEntradaCalc,
+          saldoAPagar: saldoAPagarCalc,
+          
+          tipoCliente,
+          participacaoRevenda,
+          tipoIE,
+          instalacao,
+          tipoFrete,
+          localInstalacao,
+          tipoEntrega,
+          tipoPagamento: tipoCliente,
+          tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : 
+                          instalacao === 'cliente' ? 'cliente paga direto' : '',
+          revendaTemIE: tipoIE === 'produtor' ? 'sim' : 
+                        tipoIE === 'cnpj_cpf' ? 'nao' : '',
+          prazoPagamento: planoSelecionado?.description || '',
+        };
+        
+        // Atualiza o estado com o novo resultado
+        setResultado(novoResultado);
+        
+        // Fecha o modal e limpa os estados
         setAguardandoAprovacao(false);
         setModalSolicitacaoOpen(false);
-        alert(`✅ Desconto de ${solicitacao.desconto_aprovado}% aprovado por ${solicitacao.aprovador_nome}!\n\nVocê pode continuar preenchendo a proposta.`);
+        setSolicitacaoId(null);
+        
+        // Força uma nova renderização do componente
+        forceUpdate();
+        
+        // Mostra notificação de sucesso (sem mostrar o percentual exato)
+        alert(`✅ Desconto aprovado por ${solicitacao.aprovador_nome}!\n\nValor atualizado com sucesso. Você pode continuar preenchendo a proposta.`);
+        
       } else if (solicitacao.status === 'negado') {
         console.log('❌ [PaymentPolicy] Solicitação negada');
         setAguardandoAprovacao(false);
         setModalSolicitacaoOpen(false);
-        alert(`❌ Solicitação negada por ${solicitacao.aprovador_nome}.\n\n${solicitacao.observacao_gestor || 'Sem justificativa'}`);
+        setSolicitacaoId(null);
+        alert(`❌ Solicitação negada por ${solicitacao.aprovador_nome}.${solicitacao.observacao_gestor ? '\n\nMotivo: ' + solicitacao.observacao_gestor : ''}`);
       } else {
         alert('⏳ Solicitação ainda está pendente.\n\nO gestor ainda não respondeu.');
       }
     } catch (error) {
       console.error('❌ [PaymentPolicy] Erro ao verificar status:', error);
       alert('❌ Erro ao verificar status. Tente novamente.');
+      setAguardandoAprovacao(false);
     }
   };
 

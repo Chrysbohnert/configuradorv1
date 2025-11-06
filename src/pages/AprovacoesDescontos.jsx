@@ -21,27 +21,49 @@ export default function AprovacoesDescontos() {
   const [descontoSelecionado, setDescontoSelecionado] = useState({});
   const [observacoes, setObservacoes] = useState({});
 
-  // Carregar solicitações pendentes
-  useEffect(() => {
-    carregarSolicitacoes();
-  }, []);
-
-  // Listener Realtime para novas solicitações
+  // Configurar listener para atualizações em tempo real
   useEffect(() => {
     console.log('🔔 [AprovacoesDescontos] Iniciando listener realtime...');
 
     const channel = supabase
-      .channel('solicitacoes-pendentes')
+      .channel('solicitacoes-admin')
       .on('postgres_changes', {
         event: '*', // INSERT, UPDATE, DELETE
         schema: 'public',
-        table: 'solicitacoes_desconto',
-        filter: 'status=eq.pendente'
+        table: 'solicitacoes_desconto'
       }, (payload) => {
         console.log('🔔 [AprovacoesDescontos] Mudança detectada:', payload);
-        carregarSolicitacoes();
+        // Atualiza a lista de forma otimizada
+        setSolicitacoes(current => {
+          const index = current.findIndex(s => s.id === payload.new?.id || payload.old?.id);
+          
+          // Se for uma atualização ou deleção
+          if (index !== -1) {
+            // Se foi aprovado/negado, remove da lista
+            if (payload.eventType === 'UPDATE' && 
+                ['aprovado', 'negado'].includes(payload.new.status)) {
+              const novasSolicitacoes = [...current];
+              novasSolicitacoes.splice(index, 1);
+              return novasSolicitacoes;
+            }
+            // Se foi atualizado, substitui o item
+            return current.map(s => 
+              s.id === payload.new.id ? payload.new : s
+            );
+          }
+          
+          // Se for uma nova inserção e estiver pendente, adiciona
+          if (payload.eventType === 'INSERT' && payload.new.status === 'pendente') {
+            return [payload.new, ...current];
+          }
+          
+          return current;
+        });
       })
       .subscribe();
+
+    // Carregar dados iniciais
+    carregarSolicitacoes();
 
     return () => {
       console.log('🔕 [AprovacoesDescontos] Removendo listener');
@@ -51,118 +73,188 @@ export default function AprovacoesDescontos() {
 
   const carregarSolicitacoes = async () => {
     try {
+      setLoading(true);
       console.log('🔄 [AprovacoesDescontos] Carregando solicitações...');
-      const data = await db.getSolicitacoesPendentes();
-      console.log(`✅ [AprovacoesDescontos] ${data.length} solicitações carregadas`);
-      setSolicitacoes(data);
+      
+      // Busca apenas solicitações pendentes
+      const { data, error } = await supabase
+        .from('solicitacoes_desconto')
+        .select('*')
+        .eq('status', 'pendente')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      console.log(`✅ [AprovacoesDescontos] ${data?.length || 0} solicitações pendentes carregadas`);
+      setSolicitacoes(data || []);
     } catch (error) {
       console.error('❌ [AprovacoesDescontos] Erro ao carregar:', error);
-      alert('Erro ao carregar solicitações. Tente novamente.');
+      alert('Erro ao carregar solicitações. Tente atualizar a página.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAprovar = async (solicitacao) => {
-    const desconto = descontoSelecionado[solicitacao.id];
-    
-    if (!desconto) {
-      alert('⚠️ Selecione o percentual de desconto antes de aprovar!');
-      return;
-    }
-
-    if (desconto < 8 || desconto > 12) {
-      alert('⚠️ O desconto deve estar entre 8% e 12%!');
-      return;
-    }
-
-    const confirmar = window.confirm(
-      `Aprovar desconto de ${desconto}% para ${solicitacao.vendedor_nome}?\n\n` +
-      `Equipamento: ${solicitacao.equipamento_descricao}\n` +
-      `Valor: ${formatCurrency(solicitacao.valor_base)}`
-    );
-
-    if (!confirmar) return;
-
     try {
-      setProcessando(solicitacao.id);
-      console.log('✅ [AprovacoesDescontos] Aprovando:', solicitacao.id, desconto);
+      const desconto = descontoSelecionado[solicitacao.id];
+      
+      if (!desconto) {
+        alert('⚠️ Selecione o percentual de desconto antes de aprovar!');
+        return;
+      }
 
+      // Converter para número para garantir o tipo correto
+      const descontoNumerico = parseFloat(desconto);
+      
+      if (isNaN(descontoNumerico) || descontoNumerico < 8 || descontoNumerico > 12) {
+        alert('⚠️ O desconto deve ser um número entre 8% e 12%!');
+        return;
+      }
+
+      // Arredondar para 2 casas decimais
+      const descontoFinal = Math.round(descontoNumerico * 100) / 100;
+
+      const confirmar = window.confirm(
+        `Aprovar desconto de ${descontoFinal}% para ${solicitacao.vendedor_nome}?\n\n` +
+        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+        `Valor: ${formatCurrency(solicitacao.valor_base) || 'Não informado'}`
+      );
+
+      if (!confirmar) return;
+
+      setProcessando(solicitacao.id);
+      console.log('✅ [AprovacoesDescontos] Iniciando aprovação:', {
+        solicitacaoId: solicitacao.id,
+        desconto: descontoNumerico,
+        aprovadorId: user?.id,
+        aprovadorNome: user?.nome
+      });
+
+      // Verificar se o usuário tem permissão de administrador
+      if (user?.tipo !== 'admin') {
+        console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
+        throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
+      }
+
+      // Chamar a função de aprovação
       await db.aprovarSolicitacaoDesconto(
         solicitacao.id,
-        desconto,
+        descontoFinal, // Arredondado para 2 casas decimais
         user.id,
         user.nome,
         observacoes[solicitacao.id] || null
       );
 
-      alert(`✅ Desconto de ${desconto}% aprovado com sucesso!\n\nO vendedor ${solicitacao.vendedor_nome} foi notificado.`);
+      // Feedback ao usuário
+      const mensagemSucesso = `✅ Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
+        `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
+      
+      alert(mensagemSucesso);
       
       // Recarregar lista
       await carregarSolicitacoes();
       
       // Limpar estados
-      setDescontoSelecionado(prev => {
-        const novo = { ...prev };
-        delete novo[solicitacao.id];
-        return novo;
-      });
-      setObservacoes(prev => {
-        const novo = { ...prev };
-        delete novo[solicitacao.id];
-        return novo;
-      });
+      setDescontoSelecionado(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
+      
+      setObservacoes(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
 
     } catch (error) {
       console.error('❌ [AprovacoesDescontos] Erro ao aprovar:', error);
-      alert('❌ Erro ao aprovar desconto. Tente novamente.');
+      
+      // Mensagem de erro mais amigável
+      let mensagemErro = 'Erro ao aprovar desconto. Tente novamente.';
+      
+      if (error.message.includes('permission denied') || 
+          error.message.includes('Acesso negado')) {
+        mensagemErro = 'Você não tem permissão para executar esta ação.';
+      } else if (error.message.includes('network error')) {
+        mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error.message) {
+        mensagemErro = error.message;
+      }
+      
+      alert(`❌ ${mensagemErro}`);
     } finally {
       setProcessando(null);
     }
   };
 
   const handleNegar = async (solicitacao) => {
-    const motivo = observacoes[solicitacao.id];
-    
-    const confirmar = window.confirm(
-      `Negar solicitação de ${solicitacao.vendedor_nome}?\n\n` +
-      `Equipamento: ${solicitacao.equipamento_descricao}\n` +
-      (motivo ? `Motivo: ${motivo}` : 'Sem motivo especificado')
-    );
-
-    if (!confirmar) return;
-
     try {
+      const motivo = observacoes[solicitacao.id] || 'Nenhum motivo informado';
+      
+      const confirmar = window.confirm(
+        `Negar solicitação de ${solicitacao.vendedor_nome}?\n\n` +
+        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+        `Motivo: ${motivo}`
+      );
+
+      if (!confirmar) return;
+
       setProcessando(solicitacao.id);
-      console.log('❌ [AprovacoesDescontos] Negando:', solicitacao.id);
+      console.log('❌ [AprovacoesDescontos] Negando solicitação:', {
+        solicitacaoId: solicitacao.id,
+        aprovadorId: user?.id,
+        aprovadorNome: user?.nome,
+        motivo
+      });
+
+      // Verificar se o usuário tem permissão de administrador
+      if (user?.tipo !== 'admin') {
+        console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
+        throw new Error('Acesso negado. Apenas administradores podem negar descontos.');
+      }
 
       await db.negarSolicitacaoDesconto(
         solicitacao.id,
         user.id,
         user.nome,
-        motivo || 'Sem justificativa'
+        motivo
       );
 
-      alert(`❌ Solicitação negada.\n\nO vendedor ${solicitacao.vendedor_nome} foi notificado.`);
+      const mensagemSucesso = `❌ Solicitação de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
+        `Motivo: ${motivo}`;
+      
+      alert(mensagemSucesso);
       
       // Recarregar lista
       await carregarSolicitacoes();
       
       // Limpar estados
-      setDescontoSelecionado(prev => {
-        const novo = { ...prev };
-        delete novo[solicitacao.id];
-        return novo;
-      });
-      setObservacoes(prev => {
-        const novo = { ...prev };
-        delete novo[solicitacao.id];
-        return novo;
-      });
+      setDescontoSelecionado(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
+      
+      setObservacoes(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
 
     } catch (error) {
       console.error('❌ [AprovacoesDescontos] Erro ao negar:', error);
-      alert('❌ Erro ao negar solicitação. Tente novamente.');
+      
+      // Mensagem de erro mais amigável
+      let mensagemErro = 'Erro ao negar solicitação. Tente novamente.';
+      
+      if (error.message.includes('permission denied') || 
+          error.message.includes('Acesso negado')) {
+        mensagemErro = 'Você não tem permissão para executar esta ação.';
+      } else if (error.message.includes('network error')) {
+        mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
+      } else if (error.message) {
+        mensagemErro = error.message;
+      }
+      
+      alert(`❌ ${mensagemErro}`);
     } finally {
       setProcessando(null);
     }
@@ -259,25 +351,26 @@ export default function AprovacoesDescontos() {
 
                 {/* Ações */}
                 <div className="card-actions">
-                  {/* Seletor de Desconto */}
+                  {/* Input de Desconto Livre */}
                   <div className="form-group">
-                    <label>Desconto a conceder:</label>
-                    <select
+                    <label>Desconto a conceder (8% a 12%):</label>
+                    <input
+                      type="number"
                       className="form-control"
+                      placeholder="Ex: 10.5"
+                      min="8"
+                      max="12"
+                      step="0.1"
                       value={descontoSelecionado[solicitacao.id] || ''}
                       onChange={(e) => setDescontoSelecionado(prev => ({
                         ...prev,
-                        [solicitacao.id]: parseInt(e.target.value)
+                        [solicitacao.id]: e.target.value
                       }))}
                       disabled={processando === solicitacao.id}
-                    >
-                      <option value="">Selecione...</option>
-                      <option value="8">8%</option>
-                      <option value="9">9%</option>
-                      <option value="10">10%</option>
-                      <option value="11">11%</option>
-                      <option value="12">12%</option>
-                    </select>
+                    />
+                    <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                      💡 Digite o percentual desejado (aceita decimais: 8.5, 10.8, etc.)
+                    </small>
                   </div>
 
                   {/* Observação */}
