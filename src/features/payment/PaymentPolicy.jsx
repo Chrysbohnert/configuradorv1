@@ -288,6 +288,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               valorSinal: valorSinalNum,
               faltaEntrada: faltaEntradaCalc,
               saldoAPagar: saldoAPagarCalc,
+              formaEntrada: formaEntrada || '',
               
               // CORREÇÃO: Usar parcelas recalculadas
               parcelas: parcelasCorrigidas,
@@ -451,6 +452,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorSinal: 0,
         faltaEntrada: 0,
         saldoAPagar: precoBase,
+        formaEntrada: '',
       };
       setResultado(r);
       onPaymentComputed?.(r);
@@ -545,6 +547,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorSinal: valorSinalNum,
         faltaEntrada: faltaEntradaCalc,
         saldoAPagar: saldoAPagarCalc,
+        formaEntrada: formaEntrada || '',
         
         // CORREÇÃO: Usar parcelas recalculadas
         parcelas: parcelasCorrigidas,
@@ -783,6 +786,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           valorSinal: valorSinalNum,
           faltaEntrada: faltaEntradaCalc,
           saldoAPagar: saldoAPagarCalc,
+          formaEntrada: formaEntrada || '',
           
           // CORREÇÃO: Usar parcelas recalculadas
           parcelas: parcelasCorrigidas,
@@ -1253,17 +1257,33 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             </div>
 
             {percentualEntrada && percentualEntrada !== 'financiamento' && (
-              <div className="form-group">
-                <label>Valor do Sinal</label>
-                <input
-                  type="number"
-                  value={valorSinal}
-                  onChange={e => setValorSinal(e.target.value)}
-                  placeholder="R$"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+              <>
+                <div className="form-group">
+                  <label>Valor do Sinal</label>
+                  <input
+                    type="number"
+                    value={valorSinal}
+                    onChange={e => setValorSinal(e.target.value)}
+                    placeholder="R$"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+                
+                <div className="form-group">
+                  <label>Forma de Pagamento da Entrada</label>
+                  <input
+                    type="text"
+                    value={formaEntrada}
+                    onChange={e => setFormaEntrada(e.target.value)}
+                    placeholder="Ex: PIX, Boleto, Cartão, Transferência..."
+                    maxLength="50"
+                  />
+                  <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
+                    💡 Informe como o cliente pagará a entrada (opcional)
+                  </small>
+                </div>
+              </>
             )}
           </div>
 

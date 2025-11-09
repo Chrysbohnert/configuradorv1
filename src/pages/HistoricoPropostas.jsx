@@ -54,17 +54,8 @@ const HistoricoPropostas = () => {
   };
 
   const handleReabrir = (proposta) => {
-    // Carregar dados serializados e navegar para novo pedido
-    const dadosSerializados = proposta.dados_serializados;
-    
-    // Salvar no localStorage temporariamente
-    localStorage.setItem('proposta_em_edicao', JSON.stringify({
-      id: proposta.id,
-      numero_proposta: proposta.numero_proposta,
-      dados: dadosSerializados
-    }));
-
-    navigate('/novo-pedido');
+    // Navegar para modo edição passando o ID da proposta na URL
+    navigate(`/novo-pedido/${proposta.id}`);
   };
 
   // Filtrar propostas
@@ -329,13 +320,14 @@ const HistoricoPropostas = () => {
                   </td>
                   <td style={{ padding: '16px', textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      {proposta.status === 'pendente' && (
+                      {/* Permitir edição de propostas pendentes E finalizadas */}
+                      {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
                         <>
                           <button
                             onClick={() => handleReabrir(proposta)}
                             style={{
                               padding: '6px 12px',
-                              background: '#007bff',
+                              background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
                               color: 'white',
                               border: 'none',
                               borderRadius: '6px',
@@ -343,31 +335,33 @@ const HistoricoPropostas = () => {
                               fontWeight: '600',
                               cursor: 'pointer'
                             }}
-                            title="Reabrir e continuar edição"
+                            title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
                           >
                             ✏️ Editar
                           </button>
-                          <button
-                            onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#dc3545',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer'
-                            }}
-                            title="Excluir proposta"
-                          >
-                            🗑️
-                          </button>
+                          {proposta.status === 'pendente' && (
+                            <button
+                              onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                              title="Excluir proposta"
+                            >
+                              🗑️
+                            </button>
+                          )}
                         </>
                       )}
-                      {proposta.status === 'finalizado' && (
+                      {proposta.status === 'excluido' && (
                         <span style={{ fontSize: '12px', color: '#999' }}>
-                          Finalizada
+                          Excluída
                         </span>
                       )}
                     </div>

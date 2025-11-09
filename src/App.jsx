@@ -56,7 +56,7 @@ function App() {
                 <DashboardVendedor />
               </LazyRoute>
             } />
-            <Route path="/novo-pedido" element={
+            <Route path="/novo-pedido/:propostaId?" element={
               <LazyRoute loadingMessage="Carregando Novo Pedido...">
                 <NovoPedido />
               </LazyRoute>
