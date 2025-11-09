@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useNavigate, useLocation, useOutletContext } from 'react-router-dom';
+import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
@@ -18,9 +18,12 @@ const logger = createLogger('NovoPedido');
 const NovoPedido = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { propostaId } = useParams(); // Captura ID da proposta para edição
   const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
+  const [isEdicao, setIsEdicao] = useState(false); // Modo edição
+  const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   const [carrinho, setCarrinho] = useState(() => {
     const savedCart = localStorage.getItem('carrinho');
     return savedCart ? JSON.parse(savedCart) : [];
@@ -41,14 +44,76 @@ const NovoPedido = () => {
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
 
-  // Limpar dados do cliente e caminhão ao montar o componente
+  // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
-    setClienteData({});
-    setCaminhaoData({});
-    // Limpar também do localStorage se existir
-    localStorage.removeItem('novoPedido_clienteData');
-    localStorage.removeItem('novoPedido_caminhaoData');
-  }, []);
+    const carregarPropostaParaEdicao = async () => {
+      if (!propostaId) {
+        // Modo criação: limpar dados
+        setClienteData({});
+        setCaminhaoData({});
+        localStorage.removeItem('novoPedido_clienteData');
+        localStorage.removeItem('novoPedido_caminhaoData');
+        setIsEdicao(false);
+        return;
+      }
+
+      try {
+        console.log('📝 Carregando proposta para edição:', propostaId);
+        const proposta = await db.getPropostaById(propostaId);
+        
+        if (!proposta) {
+          alert('Proposta não encontrada!');
+          navigate('/propostas');
+          return;
+        }
+
+        console.log('✅ Proposta carregada:', proposta);
+        setPropostaOriginal(proposta);
+        setIsEdicao(true);
+
+        // Carregar dados serializados
+        const dados = proposta.dados_serializados || {};
+        
+        // Carregar carrinho
+        if (dados.carrinho && Array.isArray(dados.carrinho)) {
+          setCarrinho(dados.carrinho);
+          localStorage.setItem('carrinho', JSON.stringify(dados.carrinho));
+        }
+
+        // Carregar dados do cliente
+        if (dados.clienteData) {
+          setClienteData(dados.clienteData);
+        }
+
+        // Carregar dados do caminhão
+        if (dados.caminhaoData) {
+          setCaminhaoData(dados.caminhaoData);
+        }
+
+        // Carregar dados de pagamento
+        if (dados.pagamentoData) {
+          setPagamentoData(dados.pagamentoData);
+        }
+
+        // Definir step para o último (Finalizar) para permitir edição completa
+        setCurrentStep(5);
+        setMaxStepReached(5);
+
+        console.log('✅ Dados carregados com sucesso para edição');
+        console.log('📊 Carrinho:', dados.carrinho?.length || 0, 'itens');
+        console.log('👤 Cliente:', dados.clienteData?.nome || 'N/A');
+        console.log('🚛 Caminhão:', dados.caminhaoData?.marca || 'N/A', dados.caminhaoData?.modelo || 'N/A');
+        console.log('💰 Pagamento:', dados.pagamentoData?.tipoPagamento || 'N/A');
+        console.log('🎯 Step definido para: 5 (Finalizar)');
+      } catch (error) {
+        console.error('❌ Erro ao carregar proposta:', error);
+        alert('Erro ao carregar proposta para edição');
+        navigate('/propostas');
+      }
+    };
+
+    carregarPropostaParaEdicao();
+  }, [propostaId]);
 
   // Salvar dados no localStorage sempre que mudarem (exceto clienteData)
 
@@ -1000,8 +1065,8 @@ const NovoPedido = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="Novo Pedido"
-        subtitle="Criar orçamento profissional"
+        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : "Novo Pedido"}
+        subtitle={isEdicao ? "Atualize os dados da proposta existente" : "Criar orçamento profissional"}
         extraButtons={[
           import.meta.env.DEV && (
             <>
@@ -1083,6 +1148,32 @@ const NovoPedido = () => {
           )
         ]}
       />
+
+      {/* Banner de Edição */}
+      {isEdicao && (
+        <div style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          color: 'white',
+          padding: '16px 24px',
+          margin: '0 24px 20px 24px',
+          borderRadius: '12px',
+          boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px'
+        }}>
+          <span style={{ fontSize: '24px' }}>✏️</span>
+          <div>
+            <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
+              Modo Edição Ativo
+            </div>
+            <div style={{ fontSize: '14px', opacity: 0.9 }}>
+              Você está editando a proposta <strong>#{propostaOriginal?.numero_proposta}</strong>. 
+              As alterações substituirão os dados atuais ao gerar o PDF.
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="novo-pedido-content">
         {/* Progress Bar */}
@@ -2009,12 +2100,48 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   const salvarRelatorio = async () => {
     try {
-      console.log('🔄 Iniciando salvamento do relatório...');
+      // Verificação defensiva: garantir que isEdicao e propostaOriginal existam
+      const modoEdicao = isEdicao || false;
+      const proposta = propostaOriginal || null;
+      
+      console.log(`🔄 Iniciando ${modoEdicao ? 'atualização' : 'salvamento'} do relatório...`);
       console.log('📋 Dados do cliente:', clienteData);
       console.log('🚛 Dados do caminhão:', caminhaoData);
       console.log('💳 Dados de pagamento:', pagamentoData);
       console.log('🛒 Carrinho:', carrinho);
       console.log('👤 Usuário:', user);
+      
+      // Se for edição, fazer UPDATE direto
+      if (modoEdicao && proposta) {
+        console.log('✏️ Modo EDIÇÃO - Atualizando proposta existente:', proposta.id);
+        
+        // Buscar o ID do guindaste principal no carrinho
+        const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
+        const guindasteId = guindasteNoCarrinho?.id || null;
+        
+        const dadosAtualizados = {
+          valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+          dados_serializados: {
+            carrinho,
+            clienteData,
+            caminhaoData,
+            pagamentoData,
+            guindasteId
+          },
+          // Atualizar também campos principais se mudaram
+          cliente_nome: clienteData.nome || proposta.cliente_nome,
+          cliente_documento: clienteData.documento || proposta.cliente_documento
+        };
+        
+        console.log('📋 Dados para atualização:', dadosAtualizados);
+        const propostaAtualizada = await db.updateProposta(proposta.id, dadosAtualizados);
+        console.log('✅ Proposta atualizada com sucesso:', propostaAtualizada);
+        
+        return propostaAtualizada;
+      }
+      
+      // Modo criação normal
+      console.log('➕ Modo CRIAÇÃO - Criando nova proposta');
       
       // 1. Criar cliente
       console.log('1️⃣ Criando cliente...');
