@@ -2099,10 +2099,11 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   };
 
   const salvarRelatorio = async () => {
+    console.log('🆕 [VERSÃO CORRIGIDA] salvarRelatorio iniciado - 10/11/2025 21:54');
     try {
-      // Verificação defensiva: garantir que isEdicao e propostaOriginal existam
-      const modoEdicao = isEdicao || false;
-      const proposta = propostaOriginal || null;
+      // Verificação defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
+      const modoEdicao = (typeof isEdicao !== 'undefined' && isEdicao) || false;
+      const proposta = (typeof propostaOriginal !== 'undefined' && propostaOriginal) || null;
       
       console.log(`🔄 Iniciando ${modoEdicao ? 'atualização' : 'salvamento'} do relatório...`);
       console.log('📋 Dados do cliente:', clienteData);
