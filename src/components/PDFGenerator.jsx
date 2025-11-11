@@ -214,6 +214,23 @@ const htmlToCanvas = async (container) => {
 
 /**
  * ==========================
+ *  FUNÇÕES AUXILIARES
+ * ==========================
+ */
+
+// Converte marcadores de formatação em HTML
+// Uso: **texto** vira <strong>texto</strong>
+const formatarTexto = (texto) => {
+  if (!texto) return '';
+  
+  // Converte **texto** em <strong>texto</strong> (negrito)
+  let textoFormatado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  
+  return textoFormatado;
+};
+
+/**
+ * ==========================
  *  RENDERERS DE SEÇÕES
  * ==========================
  */
@@ -224,9 +241,90 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   
   // Carregar imagem Stark como base64
   const starkImageBase64 = await renderImageToDataURL('/stark.png');
+  
   const vendedor = pedidoData.vendedor || 'NÃO INFORMADO';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
+  
+  // DEBUG: Ver TODOS os dados que chegam
+  console.log('🔍🔍🔍 [renderCapa] pedidoData COMPLETO:', pedidoData);
+  console.log('🔍🔍🔍 [renderCapa] pedidoData.carrinho:', pedidoData.carrinho);
+  console.log('🔍🔍🔍 [renderCapa] pedidoData.guindastes:', pedidoData.guindastes);
+  
+  // Pegar dados do equipamento para exibir na capa (mesma lógica do renderEquipamento)
+  const guindastesCarrinho = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
+  const itemCarrinho = guindastesCarrinho[0] || {};
+  
+  console.log('🔍 [renderCapa] itemCarrinho extraído:', itemCarrinho);
+  console.log('🔍 [renderCapa] Lista completa de guindastes no banco:', pedidoData.guindastes);
+  
+  // Log detalhado de cada guindaste no banco
+  if (pedidoData.guindastes && pedidoData.guindastes.length > 0) {
+    pedidoData.guindastes.forEach((g, idx) => {
+      console.log(`🔍 [renderCapa] Guindaste ${idx} no banco:`, {
+        id: g.id,
+        nome: g.nome,
+        modelo: g.modelo,
+        finame: g.finame,
+        ncm: g.ncm
+      });
+    });
+  } else {
+    console.log('⚠️ [renderCapa] pedidoData.guindastes está vazio ou undefined!');
+  }
+  
+  // Buscar dados completos do guindaste no banco
+  const banco = (pedidoData.guindastes || []).find(g => {
+    console.log('🔍 [renderCapa] Comparando:', {
+      'g.id': g?.id,
+      'itemCarrinho.id': itemCarrinho?.id,
+      'match id': g?.id && itemCarrinho?.id && g.id === itemCarrinho.id,
+      'g.nome': g?.nome,
+      'itemCarrinho.nome': itemCarrinho?.nome,
+      'match nome': g?.nome && itemCarrinho?.nome && g.nome === itemCarrinho.nome,
+      'g.modelo': g?.modelo,
+      'itemCarrinho.modelo': itemCarrinho?.modelo,
+      'match modelo': g?.modelo && itemCarrinho?.modelo && g.modelo === itemCarrinho.modelo
+    });
+    
+    return (g?.id && itemCarrinho?.id && g.id === itemCarrinho.id) ||
+           (g?.nome && itemCarrinho?.nome && g.nome === itemCarrinho.nome) ||
+           (g?.modelo && itemCarrinho?.modelo && g.modelo === itemCarrinho.modelo);
+  });
+  
+  console.log('🔍 [renderCapa] Banco encontrado?', banco ? '✅ SIM' : '❌ NÃO');
+  if (banco) {
+    console.log('🔍 [renderCapa] Dados do banco:', {
+      id: banco.id,
+      nome: banco.nome,
+      modelo: banco.modelo,
+      finame: banco.finame,
+      ncm: banco.ncm
+    });
+  }
+  
+  // Criar objeto enriquecido com fallbacks
+  const g = {
+    ...itemCarrinho,
+    ...(banco || {}),
+    finame: banco?.finame || itemCarrinho?.finame || 'NÃO INFORMADO',
+    ncm: banco?.ncm || itemCarrinho?.ncm || 'NÃO INFORMADO'
+  };
+  
+  console.log('🔍 [renderCapa] Dados FINAIS do equipamento:', {
+    nome: g.nome,
+    modelo: g.modelo,
+    finame: g.finame,
+    ncm: g.ncm,
+    codigo_produto: g.codigo_produto
+  });
+  
+  const opcionaisSelecionados = (pedidoData.carrinho || [])
+    .filter(i => i.tipo === 'opcional')
+    .map(i => i.nome);
+  const codigo = generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || g.codigo_produto || '-';
+  
+  console.log('🔍 [renderCapa] Código gerado:', codigo);
 
   const enderecoCliente = (() => {
     const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
@@ -280,34 +378,73 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         <div><b>E-MAIL:</b> ${c.email || 'NÃO INFORMADO'}</div>
       </div>
 
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
+
+      <!-- BLOCO 4: DADOS DO EQUIPAMENTO -->
+      <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">EQUIPAMENTO</div>
+        
+        <!-- TABELA EM 2 COLUNAS LADO A LADO -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:2mm;">
+          <!-- COLUNA 1 -->
+          <table style="width:100%;border-collapse:collapse;font-size:3.8mm;">
+            <tbody>
+              <tr style="border-bottom:0.5px solid #ddd;">
+                <td style="font-weight:600;width:40%;padding:2mm 1mm;">NOME / MODELO</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${(g.nome || g.modelo || 'EQUIPAMENTO')}</td>
+              </tr>
+              <tr style="border-bottom:0.5px solid #ddd;">
+                <td style="font-weight:600;padding:2mm 1mm;">CÓDIGO</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${codigo}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- COLUNA 2 -->
+          <table style="width:100%;border-collapse:collapse;font-size:3.8mm;">
+            <tbody>
+              <tr style="border-bottom:0.5px solid #ddd;">
+                <td style="font-weight:600;width:40%;padding:2mm 1mm;">FINAME</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${g.finame || 'NÃO INFORMADO'}</td>
+              </tr>
+              <tr style="border-bottom:0.5px solid #ddd;">
+                <td style="font-weight:600;padding:2mm 1mm;">NCM</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${g.ncm || 'NÃO INFORMADO'}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Linha final e infos da proposta -->
-      <div style="height:0.3mm; background:#555; opacity:0.4; margin:2mm 0 5mm;"></div>
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0 4mm;"></div>
 
       <div style="
         display:grid;
         grid-template-columns: repeat(3, 1fr);
         text-align:center;
-        font-size:4mm;
+        font-size:4.2mm;
         letter-spacing:0.1mm;
         gap:8mm;
+        margin-top:2mm;
       ">
         <div>
           <div style="font-weight:700;">Nº PROPOSTA</div>
-          <div style="font-weight:500;">#${numeroProposta}</div>
+          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">#${numeroProposta}</div>
         </div>
         <div>
           <div style="font-weight:700;">DATA DE EMISSÃO</div>
-          <div style="font-weight:500;">${data}</div>
+          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">${data}</div>
         </div>
         <div>
           <div style="font-weight:700;">VALIDADE</div>
-          <div style="font-weight:500;">30 DIAS</div>
+          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">30 DIAS</div>
         </div>
       </div>
 
       <!-- IMAGEM STARK INDUSTRIAL -->
       <div style="
-        margin-top:12mm;
+        margin-top:8mm;
         text-align:center;
         padding:0 20mm;
       ">
@@ -321,9 +458,6 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
             margin:0 auto;
           "
         />
-      </div>
-    </div>
-  </div>
       </div>
     </div>
   `;
@@ -435,34 +569,20 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   let html = `
     <div class="wrap" style="padding:22px;">
     <div style="page-break-before: always;"></div>
-      <div class="title">DADOS DO EQUIPAMENTO</div>
+      <div class="title" style="font-size:26px;margin-bottom:16px;">DESCRIÇÃO TÉCNICA DO EQUIPAMENTO</div>
   `;
 
   if (gList.length === 0) {
     html += `<div class="p caps">NENHUM EQUIPAMENTO PRINCIPAL INFORMADO.</div>`;
   } else {
     gList.forEach((g, idx) => {
-      const opcionaisSelecionados = (pedidoData.carrinho || [])
-        .filter(i => i.tipo === 'opcional')
-        .map(i => i.nome);
-      const codigo = generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || g.codigo_produto || '-';
-
       html += `
         ${idx > 0 ? '<div class="rule"></div>' : ''}
-        <div class="kvs">
-          <div class="row"><div class="k">NOME / MODELO</div><div class="v">${(g.nome || g.modelo || 'EQUIPAMENTO')}</div></div>
-          <div class="row"><div class="k">CÓDIGO</div><div class="v">${codigo}</div></div>
-          <div class="row"><div class="k">FINAME</div><div class="v">${g.finame || 'NÃO INFORMADO'}</div></div>
-          <div class="row"><div class="k">NCM</div><div class="v">${g.ncm || 'NÃO INFORMADO'}</div></div>
-        </div>
-
-        <div class="small-gap"></div>
-        <div class="subtitle">DESCRIÇÃO TÉCNICA</div>
-        <div class="p p-justify caps" style="white-space: pre-line;">${g.descricao || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line;">${formatarTexto(g.descricao) || 'NÃO INFORMADO'}</div>
 
         <div class="small-gap"></div>
         <div class="subtitle">NÃO INCLUÍDO</div>
-        <div class="p p-justify caps" style="white-space: pre-line;">${g.nao_incluido || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line;">${formatarTexto(g.nao_incluido) || 'NÃO INFORMADO'}</div>
         <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
 <div class="small-gap"></div>
 <div class="subtitle">PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK</div>
@@ -887,7 +1007,8 @@ const renderClausulas = ({ inline = false } = {}) => {
     'É obrigatório o estudo de integração veicular para a montagem do equipamento; sem o estudo, a STARK não se responsabiliza pela montagem.',
     'A STARK Guindastes não se responsabiliza por despesas extras com o caminhão (ex.: deslocamento de arla, aumento de entre-eixo, reforço de molas, parametrizações etc.).',
     'No faturamento, o preço do equipamento será atualizado conforme a tabela vigente, condicionando o embarque ao pagamento da diferença.',
-    'As assinaturas abaixo formalizam o presente pedido e a concordância com os termos e condições.'
+    'As assinaturas abaixo formalizam o presente pedido e a concordância com os termos e condições.',
+    'Refere-se Instalação do Guindaste no Caminhão do cliente Comprador apenas a Implementação do Guindaste no Caminhão, demais alterações Provenientes em Virtude para Permitir a Implementação, não Estão Previstas nos Custos desta Proposta, que devem Obrigatoriamente serem Alinhados e Estritamente Concensado entre Instalador e Cliente Comprador, sem Qualquer Onus Financeiro a Stark.'
   ];
 
   const el = createContainer('pdf-clausulas', { inline });
