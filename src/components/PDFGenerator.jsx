@@ -239,9 +239,6 @@ const formatarTexto = (texto) => {
 const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) => {
   const el = createContainer('pdf-capa', { inline });
   
-  // Carregar imagem Stark como base64
-  const starkImageBase64 = await renderImageToDataURL('/stark.png');
-  
   const vendedor = pedidoData.vendedor || 'NÃO INFORMADO';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
@@ -442,22 +439,30 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         </div>
       </div>
 
-      <!-- IMAGEM STARK INDUSTRIAL -->
+      <!-- FRASE DE IMPACTO PERSONALIZADA -->
       <div style="
         margin-top:8mm;
-        text-align:center;
-        padding:0 20mm;
+        padding:0 15mm;
       ">
-        <img 
-          src="${starkImageBase64}" 
-          alt="Stark Industrial - Qualidade que Garante sua Produtividade" 
-          style="
-            max-width:100%;
-            height:auto;
-            display:block;
-            margin:0 auto;
-          "
-        />
+        <div style="
+          padding:20px 30px;
+          background:#ffffff;
+          border:2px solid #e5e7eb;
+          border-radius:8px;
+          text-align:center;
+        ">
+          <p style="
+            font-size:20px;
+            font-weight:bold;
+            color:#000000;
+            line-height:1.6;
+            margin:0;
+            text-align:justify;
+            text-align-last:center;
+          ">
+            "Com sólida experiência em guindastes articulados hidráulicos, desenvolvemos esta proposta exclusiva para <strong>${c.nome || 'Cliente'}</strong>, apresentando o <strong>${g.nome || g.modelo || 'Guindaste'}</strong> como a solução ideal para otimizar suas operações, garantindo máxima eficiência, segurança e retorno sobre o investimento."
+          </p>
+        </div>
       </div>
     </div>
   `;
