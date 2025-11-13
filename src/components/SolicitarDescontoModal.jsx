@@ -32,7 +32,7 @@ export default function SolicitarDescontoModal({
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content solicitar-desconto-modal" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-container solicitar-desconto-modal" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-header">
           <h2>Solicitar Desconto Adicional</h2>
