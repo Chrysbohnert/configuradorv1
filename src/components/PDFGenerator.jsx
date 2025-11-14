@@ -144,7 +144,7 @@ const renderImageToDataURL = async (src) => {
   document.body.appendChild(cont);
   const canvas = await html2canvas(cont, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
   document.body.removeChild(cont);
-  return canvas.toDataURL('image/png');
+  return canvas.toDataURL('image/jpeg', 0.92);
 };
 
 // Desenha uma página no PDF com header/footer + um conteúdo (canvas) centralizado e paginado
@@ -187,11 +187,11 @@ const addSectionCanvasPaginated = (pdf, sectionCanvas, headerDataURL, footerData
       0, sliceStartPx, sectionWpx, sliceHeightPx,
       0, 0, sectionWpx, sliceHeightPx
     );
-    const imgData = temp.toDataURL('image/png');
+    const imgData = temp.toDataURL('image/jpeg', 0.92);
 
     // Conteúdo logo após o header, respeitando margem lateral
     const y = HEADER_H + 6; // respiro
-    pdf.addImage(imgData, 'PNG', MARGIN, y, CONTENT_W, sliceHeightMm);
+    pdf.addImage(imgData, 'JPEG', MARGIN, y, CONTENT_W, sliceHeightMm);
 
     // Timestamp
     pdf.setFont(STYLE.FONT, 'normal');
@@ -435,7 +435,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         </div>
         <div>
           <div style="font-weight:700;">VALIDADE</div>
-          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">30 DIAS</div>
+          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">10 DIAS</div>
         </div>
       </div>
 
@@ -1116,20 +1116,11 @@ const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataU
 
         pdf.addPage();
         
-        // ADICIONAR CABEÇALHO E RODAPÉ (padrão)
-        pdf.addImage(headerDataURL, 'PNG', 0, 0, PAGE.width, HEADER_H);
+        // SEM CABEÇALHO/RODAPÉ (o PDF do gráfico já vem formatado)
         
-        // Timestamp
-        pdf.setFontSize(7);
-        pdf.setTextColor(100, 100, 100);
-        pdf.text(timestampText, MARGIN, PAGE.height - FOOTER_H - 2);
-        
-        // Footer
-        pdf.addImage(footerDataURL, 'PNG', 0, PAGE.height - FOOTER_H, PAGE.width, FOOTER_H);
-        
-        // CALCULAR TAMANHO DA IMAGEM (considerando header/footer)
-        const maxW = PAGE.width - 2 * MARGIN;
-        const maxH = CONTENT_H; // Altura disponível (já considera header/footer)
+        // CALCULAR TAMANHO DA IMAGEM (página inteira)
+        const maxW = PAGE.width;
+        const maxH = PAGE.height;
         
         const scaledH = (canvas.height * maxW) / canvas.width;
         let drawW = maxW;
@@ -1140,9 +1131,9 @@ const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataU
           drawW = (canvas.width * maxH) / canvas.height;
         }
         
-        // Centralizar no espaço de conteúdo
+        // Centralizar na página inteira
         const x = (PAGE.width - drawW) / 2;
-        const y = HEADER_H + (CONTENT_H - drawH) / 2;
+        const y = (PAGE.height - drawH) / 2;
         
         pdf.addImage(img, 'PNG', x, y, drawW, drawH);
       }
