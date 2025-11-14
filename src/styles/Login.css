@@ -275,6 +275,22 @@
   color: #000000;
 }
 
+.forgot-password-btn {
+  background: transparent;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 8px;
+  transition: all 0.2s ease;
+}
+
+.forgot-password-btn:hover {
+  color: #000000;
+  text-decoration: none;
+}
+
 .form-help {
   display: block;
   font-size: 12px;

@@ -16,6 +16,9 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetSuccess, setResetSuccess] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -149,6 +152,44 @@ const Login = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
+    setResetSuccess(false);
+
+    try {
+      if (!resetEmail) {
+        setError('Por favor, digite seu email');
+        setIsLoading(false);
+        return;
+      }
+
+      // Enviar email de recuperação via Supabase Auth
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/redefinir-senha`,
+      });
+
+      if (resetError) {
+        console.error('Erro ao enviar email:', resetError);
+        setError('Erro ao enviar email. Verifique se o email está correto.');
+      } else {
+        setResetSuccess(true);
+        setResetEmail('');
+        // Voltar para tela de login após 3 segundos
+        setTimeout(() => {
+          setShowForgotPassword(false);
+          setResetSuccess(false);
+        }, 3000);
+      }
+    } catch (error) {
+      console.error('Erro:', error);
+      setError('Erro ao processar solicitação. Tente novamente.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="login-page">
       <UnifiedHeader 
@@ -176,6 +217,7 @@ const Login = () => {
               </div>
             )}
 
+            {!showForgotPassword ? (
             <form onSubmit={handleSubmit}>
               <div className="form-group">
                 <label htmlFor="email">Email</label>
@@ -216,8 +258,75 @@ const Login = () => {
                 )}
               </button>
             </form>
+            ) : (
+            <form onSubmit={handleForgotPassword}>
+              <div className="form-group">
+                <label htmlFor="reset-email">Email</label>
+                <input
+                  id="reset-email"
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => setResetEmail(e.target.value)}
+                  placeholder="Digite seu email cadastrado"
+                  required
+                />
+                <span className="form-help">Enviaremos um link para redefinir sua senha</span>
+              </div>
 
-            {/* Removido: Credenciais de Teste e botões de login rápido */}
+              <button 
+                type="submit" 
+                className="login-button"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="loading-spinner"></div>
+                    Enviando...
+                  </>
+                ) : (
+                  'Enviar Link de Recuperação'
+                )}
+              </button>
+
+              <div className="form-footer">
+                <button 
+                  type="button"
+                  className="back-btn"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setError('');
+                    setResetSuccess(false);
+                  }}
+                >
+                  Voltar para Login
+                </button>
+              </div>
+            </form>
+            )}
+
+            {resetSuccess && (
+              <div className="success-message">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+                Email enviado! Verifique sua caixa de entrada.
+              </div>
+            )}
+
+            {!showForgotPassword && (
+              <div className="form-footer">
+                <button 
+                  type="button"
+                  className="forgot-password-btn"
+                  onClick={() => {
+                    setShowForgotPassword(true);
+                    setError('');
+                  }}
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
