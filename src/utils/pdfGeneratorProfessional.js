@@ -199,7 +199,16 @@ export const generatePropostaComercialPDF = async (dadosProposta) => {
 export const gerarEBaixarProposta = async (dadosProposta) => {
   try {
     const doc = await generatePropostaComercialPDF(dadosProposta);
-    const fileName = `Proposta_${dadosProposta.numeroProposta}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const nomeClienteBruto = dadosProposta.cliente?.nome || 'Cliente';
+
+    const nomeClienteSanitizado = nomeClienteBruto
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+      .replace(/[^a-zA-Z0-9\s]/g, '')                   // remove caracteres especiais
+      .trim()
+      .replace(/\s+/g, '_')                             // espaços -> underscore
+      .slice(0, 40);                                     // limita tamanho
+
+    const fileName = `Proposta_Stark_${nomeClienteSanitizado}.pdf`;
     doc.save(fileName);
     return { success: true, fileName };
   } catch (e) {

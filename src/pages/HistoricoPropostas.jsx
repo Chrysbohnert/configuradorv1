@@ -13,10 +13,68 @@ const HistoricoPropostas = () => {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [busca, setBusca] = useState('');
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth < 768;
+  });
 
   useEffect(() => {
     carregarPropostas();
   }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobile(window.innerWidth < 768);
+    };
+
+  const handleWhatsApp = (proposta) => {
+    try {
+      const baseUrl = window.location.origin;
+      const urlProposta = `${baseUrl}/proposta/${proposta.id}`;
+      const mensagem = [
+        `Olá, segue a proposta Stark Guindastes:`,
+        ``,
+        `Número: ${proposta.numero_proposta || ''}`,
+        proposta.cliente_nome ? `Cliente: ${proposta.cliente_nome}` : '',
+        proposta.valor_total ? `Valor: ${formatCurrency(proposta.valor_total)}` : '',
+        ``,
+        `Link: ${urlProposta}`
+      ].filter(Boolean).join('\n');
+
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+      window.open(waUrl, '_blank');
+    } catch (error) {
+      console.error('Erro ao abrir WhatsApp:', error);
+      alert('Não foi possível abrir o WhatsApp. Tente novamente.');
+    }
+  };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const handleWhatsApp = (proposta) => {
+    try {
+      const baseUrl = window.location.origin;
+      const urlProposta = `${baseUrl}/proposta/${proposta.id}`;
+      const mensagem = [
+        `Olá, segue a proposta Stark Guindastes:`,
+        ``,
+        `Número: ${proposta.numero_proposta || ''}`,
+        proposta.cliente_nome ? `Cliente: ${proposta.cliente_nome}` : '',
+        proposta.valor_total ? `Valor: ${formatCurrency(proposta.valor_total)}` : '',
+        ``,
+        `Link: ${urlProposta}`
+      ].filter(Boolean).join('\n');
+
+      const waUrl = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
+      window.open(waUrl, '_blank');
+    } catch (error) {
+      console.error('Erro ao abrir WhatsApp:', error);
+      alert('Não foi possível abrir o WhatsApp. Tente novamente.');
+    }
+  };
 
   const carregarPropostas = async () => {
     try {
@@ -260,91 +318,189 @@ const HistoricoPropostas = () => {
           </p>
         </div>
       ) : (
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          overflow: 'hidden'
-        }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e5e5' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Nº Proposta
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Cliente
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Tipo
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Valor Total
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Data
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Status
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {propostasFiltradas.map((proposta) => (
-                <tr key={proposta.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                  <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
+        isMobile ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {propostasFiltradas.map((proposta) => (
+              <div
+                key={proposta.id}
+                style={{
+                  background: 'white',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                  padding: '14px 16px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '6px'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
                     #{proposta.numero_proposta}
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>
-                    <div>{proposta.cliente_nome}</div>
-                    {proposta.cliente_documento && (
-                      <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
-                        {proposta.cliente_documento}
-                      </div>
-                    )}
-                  </td>
-                  <td style={{ padding: '16px' }}>
-                    {getTipoBadge(proposta.tipo)}
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
-                    {formatCurrency(proposta.valor_total)}
-                  </td>
-                  <td style={{ padding: '16px', fontSize: '14px', color: '#666' }}>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>
                     {new Date(proposta.data).toLocaleDateString('pt-BR')}
-                  </td>
-                  <td style={{ padding: '16px' }}>
+                  </div>
+                </div>
+
+                <div style={{ fontSize: '13px', color: '#333' }}>
+                  <div style={{ fontWeight: '500' }}>{proposta.cliente_nome}</div>
+                  {proposta.cliente_documento && (
+                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                      {proposta.cliente_documento}
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>
+                    {formatCurrency(proposta.valor_total)}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+                    {getTipoBadge(proposta.tipo)}
                     {getStatusBadge(proposta.status)}
-                  </td>
-                  <td style={{ padding: '16px', textAlign: 'center' }}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      {/* Permitir edição de propostas pendentes E finalizadas */}
-                      {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
-                        <>
-                          <button
-                            onClick={() => handleReabrir(proposta)}
-                            style={{
-                              padding: '6px 12px',
-                              background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: '600',
-                              cursor: 'pointer'
-                            }}
-                            title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
-                          >
-                            ✏️ Editar
-                          </button>
-                          {proposta.status === 'pendente' && (
+                  </div>
+                </div>
+
+                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
+                    <>
+                      <button
+                        onClick={() => handleReabrir(proposta)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                        title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        onClick={() => handleWhatsApp(proposta)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          background: '#25D366',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }}
+                        title="Enviar proposta pelo WhatsApp"
+                      >
+                        💬 WhatsApp
+                      </button>
+                    </>
+                  )}
+
+                  {proposta.status === 'pendente' && (
+                    <button
+                      onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        background: '#dc3545',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }}
+                      title="Excluir proposta"
+                    >
+                      🗑️ Excluir
+                    </button>
+                  )}
+
+                  {proposta.status === 'excluido' && (
+                    <span style={{ fontSize: '12px', color: '#999' }}>
+                      Excluída
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+            overflowX: 'auto',
+            overflowY: 'hidden',
+            WebkitOverflowScrolling: 'touch'
+          }}>
+            <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e5e5' }}>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Nº Proposta
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Cliente
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Tipo
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Valor Total
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Data
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Status
+                  </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Ações
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {propostasFiltradas.map((proposta) => (
+                  <tr key={proposta.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
+                    <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
+                      #{proposta.numero_proposta}
+                    </td>
+                    <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>
+                      <div>{proposta.cliente_nome}</div>
+                      {proposta.cliente_documento && (
+                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                          {proposta.cliente_documento}
+                        </div>
+                      )}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      {getTipoBadge(proposta.tipo)}
+                    </td>
+                    <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
+                      {formatCurrency(proposta.valor_total)}
+                    </td>
+                    <td style={{ padding: '16px', fontSize: '14px', color: '#666' }}>
+                      {new Date(proposta.data).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td style={{ padding: '16px' }}>
+                      {getStatusBadge(proposta.status)}
+                    </td>
+                    <td style={{ padding: '16px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        {/* Permitir edição de propostas pendentes E finalizadas */}
+                        {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
+                          <>
                             <button
-                              onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                              onClick={() => handleReabrir(proposta)}
                               style={{
                                 padding: '6px 12px',
-                                background: '#dc3545',
+                                background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
@@ -352,25 +508,59 @@ const HistoricoPropostas = () => {
                                 fontWeight: '600',
                                 cursor: 'pointer'
                               }}
-                              title="Excluir proposta"
+                              title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
                             >
-                              🗑️
+                              ✏️ Editar
                             </button>
-                          )}
-                        </>
-                      )}
-                      {proposta.status === 'excluido' && (
-                        <span style={{ fontSize: '12px', color: '#999' }}>
-                          Excluída
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                            <button
+                              onClick={() => handleWhatsApp(proposta)}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#25D366',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                              title="Enviar proposta pelo WhatsApp"
+                            >
+                              💬 WhatsApp
+                            </button>
+                            {proposta.status === 'pendente' && (
+                              <button
+                                onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                                style={{
+                                  padding: '6px 12px',
+                                  background: '#dc3545',
+                                  color: 'white',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  cursor: 'pointer'
+                                }}
+                                title="Excluir proposta"
+                              >
+                                🗑️
+                              </button>
+                            )}
+                          </>
+                        )}
+                        {proposta.status === 'excluido' && (
+                          <span style={{ fontSize: '12px', color: '#999' }}>
+                            Excluída
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )
       )}
 
       {/* Resumo */}
