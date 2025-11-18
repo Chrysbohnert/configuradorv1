@@ -376,7 +376,7 @@ const DashboardAdmin = () => {
                           className="ranking-fill" 
                           style={{ 
                             width: `${(v.valor / (rankingVendedores[0]?.valor || 1)) * 100}%`,
-                            background: index === 0 ? 'linear-gradient(90deg, #4f46e5, #6366f1)' : 
+                            background: index === 0 ? 'linear-gradient(90deg, #5e5e60ff, #6366f1)' : 
                                       index === 1 ? 'linear-gradient(90deg, #4b5563, #6b7280)' :
                                       'linear-gradient(90deg, #9ca3af, #d1d5db)'
                           }} 
