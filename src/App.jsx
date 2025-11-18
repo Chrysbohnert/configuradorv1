@@ -30,6 +30,7 @@ const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
 const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
 const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
 const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
+const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'));
 
 
 function App() {
@@ -138,6 +139,13 @@ function App() {
           <Route path="/suporte" element={
             <LazyRoute loadingMessage="Carregando Suporte...">
               <Support />
+            </LazyRoute>
+          } />
+
+          {/* Rota pública para visualização de proposta */}
+          <Route path="/proposta/:id" element={
+            <LazyRoute loadingMessage="Carregando Proposta...">
+              <VisualizarProposta />
             </LazyRoute>
           } />
           
