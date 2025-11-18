@@ -1205,7 +1205,16 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      const fileName = `proposta_stark_${new Date().toISOString().split('T')[0]}.pdf`;
+      // Monta o nome do arquivo usando o nome do cliente (sanitizado)
+      const nomeClienteBruto = pedidoData.clienteData?.nome || 'Cliente';
+      const nomeClienteSanitizado = nomeClienteBruto
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
+        .replace(/[^a-zA-Z0-9\s]/g, '')                   // remove caracteres especiais
+        .trim()
+        .replace(/\s+/g, '_')                             // espaços -> underscore
+        .slice(0, 40);                                     // limita tamanho
+
+      const fileName = `Proposta_Stark_${nomeClienteSanitizado}.pdf`;
       pdf.save(fileName);
 
       // (Opcional) salvar metadados no banco — mantém tua lógica
@@ -1215,7 +1224,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
         await db.createProposta({
           numero_proposta: numeroProposta,
-          data: new Date().toISOString(),
+          // Usa apenas a parte YYYY-MM-DD para caber em varchar(10) / date
+          data: new Date().toISOString().slice(0, 10),
           vendedor_id: user.id || null,
           vendedor_nome: pedidoData.vendedor || user.nome || 'Não informado',
           cliente_nome: pedidoData.clienteData?.nome || 'Não informado',

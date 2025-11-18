@@ -125,8 +125,9 @@ const ResumoPedido = ({
       const caminhao = await db.createCaminhao(caminhaoDataToSave);
       console.log('✅ Caminhão criado:', caminhao);
       
-      // 3. Gerar número do pedido
-      const numeroPedido = `PED${Date.now()}`;
+      // 3. Gerar número do pedido (máx. 10 caracteres para compatibilidade com varchar(10))
+      const timestamp = Date.now().toString();
+      const numeroPedido = `PED${timestamp.slice(-7)}`; // Ex: PED1234567 (10 chars)
       console.log('3️⃣ Número do pedido gerado:', numeroPedido);
       
       // 4. Criar pedido
