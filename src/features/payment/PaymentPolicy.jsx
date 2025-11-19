@@ -1307,9 +1307,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   ))}
                 </select>
               </div>
+            </>
+          )}
 
-              <div className="form-group">
-                <label>Desconto Adicional do Vendedor</label>
+          <div className="form-group">
+            <label>Desconto Adicional do Vendedor</label>
                 
                 {/* GSI - REVENDA */}
                 {temGSI && tipoCliente === 'revenda' && (
@@ -1615,8 +1617,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   </div>
                 )}
               </div>
-            </>
-          )}
+          </div>
 
           {percentualEntrada === 'financiamento' && (
             <div className="pp-banner ok" style={{ marginTop: 12 }}>
