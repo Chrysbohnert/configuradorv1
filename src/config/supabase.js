@@ -849,7 +849,7 @@ class DatabaseService {
     const { data, error } = await supabase
       .from('caminhoes')
       .select('*')
-      .order('placa');
+      .order('created_at', { ascending: false });
     
     if (error) throw error;
     return data || [];

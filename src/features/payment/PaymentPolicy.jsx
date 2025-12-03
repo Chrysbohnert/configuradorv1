@@ -1617,7 +1617,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   </div>
                 )}
               </div>
-          </div>
 
           {percentualEntrada === 'financiamento' && (
             <div className="pp-banner ok" style={{ marginTop: 12 }}>

@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { validatePlate } from '../../utils/validation';
 
 /**
  * Componente do formulário de dados do caminhão
@@ -36,24 +35,9 @@ const CaminhaoForm = React.memo(({
   };
 
   const validateForm = () => {
-    const newErrors = {};
-
-    // Validar placa
-    if (formData.placa) {
-      const placaError = validatePlate(formData.placa);
-      if (placaError) newErrors.placa = placaError;
-    }
-
-    onErrorsChange(newErrors);
-    return Object.keys(newErrors).length === 0;
+    onErrorsChange({});
+    return true;
   };
-
-  // Validar automaticamente quando dados mudam
-  useEffect(() => {
-    if (formData.placa) {
-      validateForm();
-    }
-  }, [formData]);
 
   return (
     <div className="caminhao-form">
@@ -121,20 +105,6 @@ const CaminhaoForm = React.memo(({
             ));
           })()}
         </select>
-      </div>
-
-      {/* Placa */}
-      <div className="form-group">
-        <label htmlFor="placa">Placa *</label>
-        <input
-          id="placa"
-          type="text"
-          value={formData.placa || ''}
-          onChange={(e) => handleInputChange('placa', e.target.value.toUpperCase())}
-          placeholder="ABC-1234 ou ABC1D23"
-          className={errors.placa ? 'error' : ''}
-        />
-        {errors.placa && <span className="error-message">{errors.placa}</span>}
       </div>
 
       {/* Voltagem */}

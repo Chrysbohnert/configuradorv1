@@ -1,5 +1,6 @@
-// Formatadores para o sistema
+import { generateCodigoProduto as generateCodigoProdutoFromConfig, getDescricaoProduto as getDescricaoProdutoFromConfig, validarCombinacaoOpcionais as validarCombinacaoOpcionaisFromConfig } from '../config/codigosGuindaste';
 
+// Formatadores para o sistema
 // Formatar moeda brasileira
 export const formatCurrency = (value) => {
   if (!value && value !== 0) return 'R$ 0,00';
@@ -82,22 +83,6 @@ export const formatName = (name) => {
     .map(word => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 };
-
-// Formatar placa de veículo
-export const formatPlate = (plate) => {
-  if (!plate) return '';
-  
-  const cleaned = plate.replace(/\W/g, '').toUpperCase();
-  const match = cleaned.match(/^([A-Z]{3})(\d{4})$/) || cleaned.match(/^([A-Z]{3})(\d{1})([A-Z]{1})(\d{2})$/);
-  
-  if (match) {
-    return match.slice(1).join('-');
-  }
-  
-  return plate.toUpperCase();
-}; 
-
-import { generateCodigoProduto as generateCodigoProdutoFromConfig, getDescricaoProduto as getDescricaoProdutoFromConfig, validarCombinacaoOpcionais as validarCombinacaoOpcionaisFromConfig } from '../config/codigosGuindaste';
 
 /**
  * Gera o código único do produto (modelo + opcionais), considerando combinações especiais.

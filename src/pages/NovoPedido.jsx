@@ -745,7 +745,7 @@ const NovoPedido = () => {
                   </strong>
                   <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
                     Clique em "Gerar Proposta Rápida" para criar um orçamento preliminar. 
-                    Os dados do veículo serão marcados como "A PREENCHER" e você poderá completá-los depois.
+                    Os dados do veículo serão marcados como "PREENCHER" e você poderá completá-los depois.
                   </p>
                 </div>
               </div>
@@ -783,12 +783,11 @@ const NovoPedido = () => {
                     console.log('⚡ Gerando Proposta Rápida...');
                     // Preencher com dados placeholder
                     setCaminhaoData({
-                      tipo: 'A PREENCHER',
-                      marca: 'A PREENCHER',
-                      modelo: 'A PREENCHER',
+                      tipo: 'PREENCHER',
+                      marca: 'PREENCHER',
+                      modelo: 'PREENCHER',
                       ano: '',
-                      voltagem: 'A PREENCHER',
-                      placa: '',
+                      voltagem: '',
                       observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
                     });
                     // Avançar para próxima etapa
@@ -2076,9 +2075,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   const handlePDFGenerated = async (fileName) => {
     try {
+      // Detectar se é proposta preliminar (Proposta Rápida)
+      const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
+                                    caminhaoData?.marca === 'PREENCHER' || 
+                                    caminhaoData?.modelo === 'PREENCHER';
+      
       // Critérios mínimos para salvar automaticamente sem interromper a experiência
       const camposClienteOK = Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
-      const camposCaminhaoOK = Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo && caminhaoData?.voltagem);
+      
+      // Para proposta preliminar: apenas tipo, marca, modelo (voltagem pode estar vazio)
+      // Para proposta normal: exigir todos os campos incluindo voltagem
+      const camposCaminhaoOK = isPropostaPreliminar 
+        ? Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo)
+        : Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo && caminhaoData?.voltagem);
+      
       const usuarioOK = Boolean(user?.id);
 
       if (camposClienteOK && camposCaminhaoOK && usuarioOK) {
@@ -2087,7 +2097,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           const pedido = await salvarRelatorio();
           setPedidoSalvoId(pedido?.id || null);
         }
-        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
+        const tipoMsg = isPropostaPreliminar ? ' (Proposta Preliminar)' : '';
+        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!${tipoMsg}`);
       } else {
         alert(`PDF gerado com sucesso: ${fileName}\nObservação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios (Cliente e/ou Caminhão). Ao clicar em Finalizar, ele será salvo.`);
       }
@@ -2175,33 +2186,48 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       // 2. Criar caminhão
       console.log('2️⃣ Criando caminhão...');
       
-      // Verificar se todos os campos obrigatórios estão preenchidos
-      const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
-      const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
-      if (camposFaltando.length > 0) {
-        throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+      // Detectar se é proposta preliminar
+      const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
+                                    caminhaoData?.marca === 'PREENCHER' || 
+                                    caminhaoData?.modelo === 'PREENCHER';
+      
+      let caminhao = null;
+      
+      if (isPropostaPreliminar) {
+        // Para proposta preliminar: não salvar no banco, apenas usar dados em memória
+        console.log('⚠️ Proposta Preliminar - Caminhão não será salvo no banco');
+        caminhao = {
+          id: null,
+          ...caminhaoData,
+          cliente_id: cliente.id
+        };
+      } else {
+        // Para proposta normal: exigir voltagem e salvar no banco
+        const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
+        const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
+        if (camposFaltando.length > 0) {
+          throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+        }
+        
+        const caminhaoDataToSave = {
+          tipo: caminhaoData.tipo,
+          marca: caminhaoData.marca,
+          modelo: caminhaoData.modelo,
+          ano: caminhaoData.ano || null,
+          voltagem: caminhaoData.voltagem,
+          observacoes: caminhaoData.observacoes || null,
+          cliente_id: cliente.id
+        };
+        
+        console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
+        
+        caminhao = await db.createCaminhao(caminhaoDataToSave);
+        console.log('✅ Caminhão criado:', caminhao);
       }
       
-      // Filtrar apenas campos válidos da tabela caminhoes (inline para evitar dependência de helper)
-      const caminhaoDataToSave = {
-        tipo: caminhaoData.tipo,
-        marca: caminhaoData.marca,
-        modelo: caminhaoData.modelo,
-        ano: caminhaoData.ano || null,
-        voltagem: caminhaoData.voltagem,
-        observacoes: caminhaoData.observacoes || null,
-        cliente_id: cliente.id,
-        // Campo placa é obrigatório no banco mas não usado no formulário
-        placa: 'N/A'
-      };
-      
-      console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
-      
-      const caminhao = await db.createCaminhao(caminhaoDataToSave);
-      console.log('✅ Caminhão criado:', caminhao);
-      
-      // 3. Gerar número do pedido
-      const numeroPedido = `PED${Date.now()}`;
+      // 3. Gerar número do pedido (máx. 10 caracteres para caber em VARCHAR(10))
+      const timestamp = Date.now().toString();
+      const numeroPedido = `PED${timestamp.slice(-7)}`; // Ex: PED1234567
       console.log('3️⃣ Número do pedido gerado:', numeroPedido);
       
       // 4. Criar pedido
