@@ -104,8 +104,7 @@ const Historico = () => {
           marca: pedido.caminhao?.marca || '',
           modelo: pedido.caminhao?.modelo || '',
           ano: pedido.caminhao?.ano || '',
-          voltagem: pedido.caminhao?.voltagem || '',
-          placa: pedido.caminhao?.placa || 'N/A'
+          voltagem: pedido.caminhao?.voltagem || ''
         },
         pagamentoData: {
           tipoPagamento: pedido.tipo_pagamento || '',

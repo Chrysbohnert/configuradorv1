@@ -118,8 +118,7 @@ const ResumoPedido = ({
 
       const caminhaoDataToSave = {
         ...filterCaminhaoDataForDB(caminhaoData),
-        cliente_id: cliente.id,
-        placa: 'N/A' // Campo obrigatório no banco
+        cliente_id: cliente.id
       };
       
       const caminhao = await db.createCaminhao(caminhaoDataToSave);

@@ -76,11 +76,6 @@ export const caminhaoSchema = z.object({
     .optional()
     .nullable(),
   
-  placa: z.string()
-    .max(10, 'Placa deve ter no máximo 10 caracteres')
-    .optional()
-    .nullable(),
-  
   observacoes: z.string()
     .max(500, 'Observações devem ter no máximo 500 caracteres')
     .optional()

@@ -89,10 +89,6 @@ const ResumoForm = ({
             <span className="value">{caminhaoData.ano || 'Não informado'}</span>
           </div>
           <div className="data-row">
-            <span className="label">Placa:</span>
-            <span className="value">{caminhaoData.placa || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
             <span className="label">Voltagem:</span>
             <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
           </div>

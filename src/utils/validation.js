@@ -132,24 +132,6 @@ export const validatePrice = (price) => {
   return null;
 };
 
-// Validar placa de veículo
-export const validatePlate = (plate) => {
-  if (!plate) return 'Placa é obrigatória';
-  
-  const cleaned = plate.replace(/\W/g, '').toUpperCase();
-  
-  // Formato antigo: ABC-1234
-  const oldFormat = /^[A-Z]{3}\d{4}$/;
-  // Formato Mercosul: ABC1D23
-  const newFormat = /^[A-Z]{3}\d[A-Z]\d{2}$/;
-  
-  if (!oldFormat.test(cleaned) && !newFormat.test(cleaned)) {
-    return 'Formato de placa inválido';
-  }
-  
-  return null;
-};
-
 // Validar senha
 export const validatePassword = (password) => {
   if (!password) return 'Senha é obrigatória';
