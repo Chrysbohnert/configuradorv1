@@ -4,6 +4,7 @@ import UnifiedHeader from '../components/UnifiedHeader';
 import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
 import GuindasteSelector from '../components/GuindasteSelector';
+import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
 
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
@@ -43,6 +44,7 @@ const NovoPedido = () => {
     };
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
+  const [regiaoClienteSelecionada, setRegiaoClienteSelecionada] = useState('');
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -633,15 +635,34 @@ const NovoPedido = () => {
     switch (currentStep) {
       case 1:
         return (
-          <GuindasteSelector
-            guindastes={guindastes}
-            onGuindasteSelect={handleSelecionarGuindaste}
-            isLoading={isLoading}
-            selectedCapacidade={selectedCapacidade}
-            selectedModelo={selectedModelo}
-            onCapacidadeSelect={handleSelecionarCapacidade}
-            onModeloSelect={handleSelecionarModelo}
-          />
+          <div className="step-content">
+            <div className="step-header">
+              <h2>📍 Região do Cliente</h2>
+              <p>Selecione a região para definir a tabela de preços</p>
+            </div>
+            
+            <SeletorRegiaoCliente
+              regiaoSelecionada={regiaoClienteSelecionada}
+              onRegiaoChange={setRegiaoClienteSelecionada}
+              vendedorRegiao={user?.regiao || ''}
+              regioesDisponiveis={user?.regioes_operacao || []}
+            />
+
+            <div className="step-header" style={{ marginTop: '40px' }}>
+              <h2>🏗️ Selecionar Guindaste</h2>
+              <p>Escolha o guindaste ideal</p>
+            </div>
+
+            <GuindasteSelector
+              guindastes={guindastes}
+              onGuindasteSelect={handleSelecionarGuindaste}
+              isLoading={isLoading}
+              selectedCapacidade={selectedCapacidade}
+              selectedModelo={selectedModelo}
+              onCapacidadeSelect={handleSelecionarCapacidade}
+              onModeloSelect={handleSelecionarModelo}
+            />
+          </div>
         );
 
       case 2:
@@ -663,6 +684,7 @@ const NovoPedido = () => {
               onClienteIEChange={setClienteTemIE}
               carrinho={carrinho}
               onNext={handleNext}
+              regiaoClienteSelecionada={regiaoClienteSelecionada}
             />
           </div>
         );

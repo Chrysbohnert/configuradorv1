@@ -25,6 +25,7 @@ export default function PaymentPolicy({
   onPaymentComputed,
   onPlanSelected,
   onFinish, // Callback para finalizar e ir para próxima etapa
+  regiaoClienteSelecionada = '', // Região selecionada do cliente
   debug = false,
 }) {
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
@@ -123,12 +124,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       try {
         setCarregandoPreco(true);
         const user = JSON.parse(localStorage.getItem('user'));
-        const regiaoVendedor = user?.regiao?.toLowerCase() || '';
+        // Usar região selecionada do cliente se disponível, senão usar região do vendedor
+        const regiaoParaNormalizar = regiaoClienteSelecionada || user?.regiao?.toLowerCase() || '';
 
         // Determinar região para busca de preço
         let regiaoParaBusca = '';
 
-        if (regiaoVendedor === 'rio grande do sul' || regiaoVendedor === 'rs') {
+        if (regiaoParaNormalizar === 'rio grande do sul' || regiaoParaNormalizar === 'rs') {
           // RS: depende APENAS do tipo de IE selecionado (ignora participação de revenda)
           if (tipoIE === 'produtor') {
             regiaoParaBusca = 'rs-com-ie'; // Produtor Rural = Com IE
@@ -140,11 +142,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           }
         } else {
           // Outras regiões: usa região normalizada (sul-sudeste, norte-nordeste, etc)
-          if (regiaoVendedor.includes('sul') || regiaoVendedor.includes('paraná') || regiaoVendedor.includes('santa catarina')) {
+          if (regiaoParaNormalizar.includes('sul') || regiaoParaNormalizar.includes('paraná') || regiaoParaNormalizar.includes('santa catarina')) {
             regiaoParaBusca = 'sul-sudeste';
-          } else if (regiaoVendedor.includes('norte') || regiaoVendedor.includes('nordeste')) {
+          } else if (regiaoParaNormalizar.includes('norte') || regiaoParaNormalizar.includes('nordeste')) {
             regiaoParaBusca = 'norte-nordeste';
-          } else if (regiaoVendedor.includes('centro') || regiaoVendedor.includes('oeste')) {
+          } else if (regiaoParaNormalizar.includes('centro') || regiaoParaNormalizar.includes('oeste')) {
             regiaoParaBusca = 'centro-oeste';
           } else {
             regiaoParaBusca = 'sul-sudeste'; // fallback
