@@ -82,7 +82,7 @@ export const CarrinhoProvider = ({ children }) => {
   }, [removerDoCarrinho]);
 
   // Recalcular preços do carrinho baseado na região e contexto
-  const recalcularPrecos = useCallback(async (currentStep = 1, pagamentoData = {}) => {
+  const recalcularPrecos = useCallback(async (currentStep = 1, pagamentoData = {}, regiaoClienteSelecionada = '') => {
     if (carrinho.length === 0 || !user?.regiao || isRecalculating) {
       return;
     }
@@ -91,9 +91,12 @@ export const CarrinhoProvider = ({ children }) => {
 
     try {
       const temIE = determinarClienteTemIE(currentStep, pagamentoData);
-      const regiaoVendedor = normalizarRegiao(user.regiao, temIE);
+      // Usar região selecionada do cliente se disponível, senão usar região do vendedor
+      const regiaoParaNormalizar = regiaoClienteSelecionada || user.regiao;
+      const regiaoVendedor = normalizarRegiao(regiaoParaNormalizar, temIE);
 
       console.log('🔄 [CarrinhoContext] Recalculando preços...');
+      console.log('   Região selecionada do cliente:', regiaoClienteSelecionada);
       console.log('   Região do vendedor:', user.regiao);
       console.log('   Cliente tem IE:', temIE);
       console.log('   Região normalizada:', regiaoVendedor);
