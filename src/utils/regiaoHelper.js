@@ -18,18 +18,24 @@ export const normalizarRegiao = (regiao, temIE = true) => {
   
   const regiaoLower = regiao.toLowerCase().trim();
   
+  // ✅ NOVO: Reconhecer labels salvos em regioes_operacao
   // Rio Grande do Sul tem tratamento especial (diferencia por IE)
-  if (regiaoLower === 'rio grande do sul' || regiaoLower === 'rs') {
-    return temIE ? 'rs-com-ie' : 'rs-sem-ie';
+  if (regiaoLower === 'rio grande do sul' || regiaoLower === 'rs' || 
+      regiaoLower === 'rs com inscrição estadual' || regiaoLower === 'rs com inscricao estadual') {
+    return 'rs-com-ie';
+  }
+  
+  if (regiaoLower === 'rs sem inscrição estadual' || regiaoLower === 'rs sem inscricao estadual') {
+    return 'rs-sem-ie';
   }
   
   // Norte e Nordeste são agrupados
-  if (regiaoLower === 'norte' || regiaoLower === 'nordeste') {
+  if (regiaoLower === 'norte' || regiaoLower === 'nordeste' || regiaoLower === 'norte-nordeste') {
     return 'norte-nordeste';
   }
   
   // Sul e Sudeste são agrupados
-  if (regiaoLower === 'sul' || regiaoLower === 'sudeste') {
+  if (regiaoLower === 'sul' || regiaoLower === 'sudeste' || regiaoLower === 'sul-sudeste') {
     return 'sul-sudeste';
   }
   
