@@ -415,11 +415,11 @@ const GerenciarVendedores = () => {
                 <label>Regiões de Operação (para vendedores internos)</label>
                 <div className="regiao-cards">
                   {[
-                    { id: 'norte-nordeste', label: 'Norte-Nordeste', desc: 'Estados do Norte e Nordeste' },
-                    { id: 'centro-oeste', label: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
-                    { id: 'sul-sudeste', label: 'Sul-Sudeste', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
-                    { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', desc: '🚜 Produtor Rural' },
-                    { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', desc: '📄 CNPJ/CPF' }
+                    { id: 'norte-nordeste', label: 'Norte-Nordeste', value: 'Norte', desc: 'Estados do Norte e Nordeste' },
+                    { id: 'centro-oeste', label: 'Centro-Oeste', value: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
+                    { id: 'sul-sudeste', label: 'Sul-Sudeste', value: 'Sul', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
+                    { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', value: 'Rio Grande do Sul', desc: '🚜 Produtor Rural (com IE)' },
+                    { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', value: 'Rio Grande do Sul', desc: '📄 CNPJ/CPF (sem IE)' }
                   ].map(regiao => {
                     const active = formData.regioes_operacao?.includes(regiao.label);
                     return (

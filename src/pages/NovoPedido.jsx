@@ -44,7 +44,17 @@ const NovoPedido = () => {
     };
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
+  // ✅ NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
+  // Se admin define 1 região, usa essa. Se define múltiplas, vendedor seleciona qual usar.
   const [regiaoClienteSelecionada, setRegiaoClienteSelecionada] = useState('');
+
+  // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
+  React.useEffect(() => {
+    if (location.state?.regiaoClienteSelecionada) {
+      console.log('📍 [NovoPedido] Restaurando região de location.state:', location.state.regiaoClienteSelecionada);
+      setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
+    }
+  }, [location.state?.regiaoClienteSelecionada]);
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -182,9 +192,10 @@ const NovoPedido = () => {
     setMaxStepReached(1);
   };
 
-  // Determinar IE: para vendedor do RS usa clienteTemIE; demais regiões mantém preço padrão
+  // ✅ NOVO: Determinar IE baseado na região selecionada (não em user.regiao)
   const determinarClienteTemIE = () => {
-    if (currentStep >= 2 && user?.regiao === 'rio grande do sul' && pagamentoData.tipoPagamento === 'cliente') {
+    // Se a região selecionada é RS, usa clienteTemIE; senão sempre true
+    if (currentStep >= 2 && (regiaoClienteSelecionada?.toLowerCase().includes('rs') || regiaoClienteSelecionada === 'rio grande do sul') && pagamentoData.tipoPagamento === 'cliente') {
       return !!clienteTemIE;
     }
     return true;
@@ -192,10 +203,15 @@ const NovoPedido = () => {
 
   // ← NOVO: Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
-    if (carrinho.length === 0 || !user?.regiao) {
+    // ✅ NOVO: Usar APENAS regioes_operacao 
+    const regioes = user?.regioes_operacao || [];
+    
+    // ✅ NOVO: Não recalcular se região não foi selecionada
+    if (carrinho.length === 0 || regioes.length === 0 || !regiaoClienteSelecionada) {
       console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
         carrinhoLength: carrinho.length,
-        userRegiao: user?.regiao
+        regioesOperacao: regioes.length,
+        regiaoSelecionada: regiaoClienteSelecionada || '(vazia)'
       });
       return;
     }
@@ -204,14 +220,16 @@ const NovoPedido = () => {
     console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
-    const regiaoVendedor = normalizarRegiao(user.regiao, temIE);
+    // ✅ NOVO: Usar regiaoClienteSelecionada (que vem de regioes_operacao)
+    const regiaoVendedor = normalizarRegiao(regiaoClienteSelecionada, temIE);
 
-    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região: ${regiaoVendedor}`);
-    console.log(`👤 [recalcularPrecosCarrinho] Usuário região: ${user.regiao}`);
+    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região selecionada: ${regiaoClienteSelecionada}`);
+    console.log(`📍 [recalcularPrecosCarrinho] Regiões de operação disponíveis: ${regioes.join(', ')}`);
+    console.log(`🔑 [recalcularPrecosCarrinho] Região normalizada para busca: ${regiaoVendedor}`);
 
-    // ← NOVO: Testar preços de todas as regiões para comparação
-    if (user.regiao === 'rio grande do sul') {
-      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões:');
+    // ← NOVO: Testar preços de todas as regiões para comparação (se região selecionada é RS)
+    if (regiaoClienteSelecionada?.toLowerCase().includes('rs') || regiaoClienteSelecionada === 'rio grande do sul') {
+      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões RS:');
       for (const item of carrinho.filter(i => i.tipo === 'guindaste').slice(0, 1)) {
         try {
           const precoComIE = await db.getPrecoPorRegiao(item.id, 'rs-com-ie');
@@ -269,13 +287,20 @@ const NovoPedido = () => {
     }
   };
 
-  // Recalcular preços quando contexto de pagamento mudar (NÃO quando carrinho mudar)
+  // Recalcular preços quando contexto de pagamento mudar OU quando região selecionada mudar
   useEffect(() => {
-    if (carrinho.length > 0 && user?.regiao) {
+    console.log('📌 [useEffect recalcularPrecosCarrinho] Disparado! Carrinho:', carrinho.length, 'Região:', regiaoClienteSelecionada);
+    if (carrinho.length > 0 && regiaoClienteSelecionada) {
+      console.log('✅ [useEffect recalcularPrecosCarrinho] Condições atendidas, chamando recalcularPrecosCarrinho');
       recalcularPrecosCarrinho();
+    } else {
+      console.log('⚠️ [useEffect recalcularPrecosCarrinho] Condições NÃO atendidas:', {
+        carrinhoLength: carrinho.length,
+        regiaoClienteSelecionada: regiaoClienteSelecionada || '(vazia)'
+      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE]);
+  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, regiaoClienteSelecionada]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
@@ -340,16 +365,21 @@ const NovoPedido = () => {
         const guindaste = location.state.guindasteSelecionado;
         setGuindastesSelecionados([guindaste]);
 
-        // Buscar preço inicial (será recalculado quando contexto for definido)
+        // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;
-        if (!precoGuindaste && user?.regiao) {
+        if (regiaoClienteSelecionada) {
           try {
-            const regiaoInicial = user.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
-            console.log(`🌍 Buscando preço inicial: ${regiaoInicial}`);
-            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
+            const temIE = determinarClienteTemIE();
+            const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
+            console.log(`🌍 [adicionarGuindaste] Buscando preço inicial para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoParaBusca);
+            console.log(`💰 [adicionarGuindaste] Preço encontrado: R$ ${precoGuindaste}`);
           } catch (error) {
-            console.error('Erro ao buscar preço do guindaste:', error);
+            console.error('❌ [adicionarGuindaste] Erro ao buscar preço do guindaste:', error);
+            precoGuindaste = guindaste.preco || 0;
           }
+        } else {
+          console.log('⚠️ [adicionarGuindaste] Nenhuma região selecionada, usando preço padrão');
         }
 
         // Adicionar ao carrinho com TODOS os detalhes (incluindo descricao, nao_incluido, finame e ncm)
@@ -524,7 +554,8 @@ const NovoPedido = () => {
         state: {
           guindaste: { ...guindasteCompleto, preco: precoGuindaste },
           returnTo: '/novo-pedido',
-          step: 2
+          step: 2,
+          regiaoClienteSelecionada: regiaoClienteSelecionada
         }
       });
     } catch (error) {
@@ -636,6 +667,7 @@ const NovoPedido = () => {
       case 1:
         return (
           <div className="step-content">
+            {/* Seletor de região para todos os vendedores */}
             <div className="step-header">
               <h2>📍 Região do Cliente</h2>
               <p>Selecione a região para definir a tabela de preços</p>
@@ -644,7 +676,6 @@ const NovoPedido = () => {
             <SeletorRegiaoCliente
               regiaoSelecionada={regiaoClienteSelecionada}
               onRegiaoChange={setRegiaoClienteSelecionada}
-              vendedorRegiao={user?.regiao || ''}
               regioesDisponiveis={user?.regioes_operacao || []}
             />
 
@@ -674,7 +705,7 @@ const NovoPedido = () => {
             </div>
             
             <PaymentPolicy
-              key={`payment-${carrinho.find(item => item.tipo === 'guindaste')?.id || 'none'}`}
+              key={`payment-${carrinho.find(item => item.tipo === 'guindaste')?.id || 'none'}-${regiaoClienteSelecionada}-${getTotalCarrinho()}`}
               precoBase={getTotalCarrinho()}
               onPaymentComputed={setPagamentoData}
               onFinish={handleNext}
@@ -1116,7 +1147,7 @@ const NovoPedido = () => {
 
                   // Testar lógica atual
                   const temIE = determinarClienteTemIE();
-                  const regiaoAtual = normalizarRegiao(user?.regiao || 'sul-sudeste', temIE);
+                  const regiaoAtual = normalizarRegiao(regiaoClienteSelecionada || 'sul-sudeste', temIE);
                   console.log(`\n🎯 Lógica atual:`);
                   console.log(`  Cliente tem IE: ${temIE}`);
                   console.log(`  Região selecionada: ${regiaoAtual}`);

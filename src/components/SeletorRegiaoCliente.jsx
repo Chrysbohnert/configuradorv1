@@ -8,30 +8,27 @@ import './SeletorRegiaoCliente.css';
 export default function SeletorRegiaoCliente({
   regiaoSelecionada,
   onRegiaoChange,
-  regioesDisponiveis = [],
-  vendedorRegiao = ''
+  regioesDisponiveis = []
 }) {
   const [regioes, setRegioes] = useState([]);
 
-  // Definir regiões disponíveis (GRUPOS DE REGIÃO - igual aos preços dos guindastes)
+  // ✅ NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
   useEffect(() => {
+    console.log('📍 [SeletorRegiaoCliente] Inicializando regiões:', {
+      regioesDisponiveis,
+      regiaoSelecionada
+    });
+
     if (regioesDisponiveis && regioesDisponiveis.length > 0) {
-      // Se vendedor tem múltiplas regiões, usar essas
+      // Usar APENAS as regiões de operação definidas pelo admin
+      console.log('✅ [SeletorRegiaoCliente] Usando regiões de operação:', regioesDisponiveis);
       setRegioes(regioesDisponiveis);
-    } else if (vendedorRegiao) {
-      // Se vendedor tem apenas 1 região, usar essa
-      setRegioes([vendedorRegiao]);
     } else {
-      // Fallback: todos os grupos de região (igual à tabela de preços)
-      setRegioes([
-        'Norte-Nordeste',
-        'Centro-Oeste',
-        'Sul-Sudeste',
-        'RS com Inscrição Estadual',
-        'RS sem Inscrição Estadual'
-      ]);
+      // Se não tem regiões de operação, mostrar mensagem de erro
+      console.warn('⚠️ [SeletorRegiaoCliente] Nenhuma região de operação definida para este vendedor');
+      setRegioes([]);
     }
-  }, [regioesDisponiveis, vendedorRegiao]);
+  }, [regioesDisponiveis, regiaoSelecionada]);
 
   return (
     <div className="seletor-regiao-cliente">
@@ -45,25 +42,42 @@ export default function SeletorRegiaoCliente({
         </div>
 
         <div className="seletor-content">
-          <div className="form-group">
-            <label htmlFor="regiao-select">
-              Qual região o cliente está?
-              <span className="required">*</span>
-            </label>
-            <select
-              id="regiao-select"
-              value={regiaoSelecionada || ''}
-              onChange={(e) => onRegiaoChange(e.target.value)}
-              className={`regiao-select ${regiaoSelecionada ? 'selected' : ''}`}
-            >
-              <option value="">-- Selecione uma região --</option>
-              {regioes.map((regiao) => (
-                <option key={regiao} value={regiao}>
-                  {regiao}
-                </option>
-              ))}
-            </select>
-          </div>
+          {regioes.length === 0 ? (
+            <div style={{
+              background: '#fee',
+              border: '2px solid #f88',
+              borderRadius: '8px',
+              padding: '16px',
+              color: '#c33',
+              textAlign: 'center'
+            }}>
+              <strong>⚠️ Nenhuma região de operação configurada</strong>
+              <p>Contate o administrador para configurar as regiões de atuação.</p>
+            </div>
+          ) : (
+            <div className="form-group">
+              <label htmlFor="regiao-select">
+                Qual região o cliente está?
+                <span className="required">*</span>
+              </label>
+              <select
+                id="regiao-select"
+                value={regiaoSelecionada || ''}
+                onChange={(e) => {
+                  console.log('🔄 [SeletorRegiaoCliente] Região selecionada:', e.target.value);
+                  onRegiaoChange(e.target.value);
+                }}
+                className={`regiao-select ${regiaoSelecionada ? 'selected' : ''}`}
+              >
+                <option value="">-- Selecione uma região --</option>
+                {regioes.map((regiao) => (
+                  <option key={regiao} value={regiao}>
+                    {regiao}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {regiaoSelecionada && (
             <div className="regiao-info">

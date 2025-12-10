@@ -40,7 +40,8 @@ const DetalhesGuindaste = () => {
     navigate('/novo-pedido', { 
       state: { 
         step: 2,
-        guindasteSelecionado: guindaste 
+        guindasteSelecionado: guindaste,
+        regiaoClienteSelecionada: location.state?.regiaoClienteSelecionada
       } 
     });
   };

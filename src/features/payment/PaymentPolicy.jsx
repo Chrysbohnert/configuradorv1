@@ -85,9 +85,8 @@ export default function PaymentPolicy({
   // Hook para buscar dados de frete baseado no local de instalação
   const { dadosFreteAtual } = useFretes(localInstalacao);
 
-  // Estado para preço ajustado por região/IE (para valor flutuante)
-  const [precoAjustadoPorRegiao, setPrecoAjustadoPorRegiao] = useState(precoBase);
-  const [carregandoPreco, setCarregandoPreco] = useState(false);
+  // ✅ REMOVIDO: precoBase e carregandoPreco
+  // Agora usamos precoBase diretamente do carrinho
 
   // =============== CARREGAR PONTOS (para CIF) ====================
   useEffect(() => {
@@ -105,74 +104,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     load();
   }, []);
 
-  // =============== BUSCAR PREÇO CORRETO POR REGIÃO/IE ============
-  useEffect(() => {
-    async function buscarPrecoCorreto() {
-      // Só busca se tiver produtos no carrinho
-      if (itens.length === 0) {
-        setPrecoAjustadoPorRegiao(precoBase);
-        return;
-      }
-
-      // Pega o primeiro guindaste do carrinho
-      const guindaste = itens.find(i => i.tipo === 'guindaste' || i.id);
-      if (!guindaste || !guindaste.id) {
-        setPrecoAjustadoPorRegiao(precoBase);
-        return;
-      }
-
-      try {
-        setCarregandoPreco(true);
-        const user = JSON.parse(localStorage.getItem('user'));
-        // Usar região selecionada do cliente se disponível, senão usar região do vendedor
-        const regiaoParaNormalizar = regiaoClienteSelecionada || user?.regiao?.toLowerCase() || '';
-
-        // Determinar região para busca de preço
-        let regiaoParaBusca = '';
-
-        if (regiaoParaNormalizar === 'rio grande do sul' || regiaoParaNormalizar === 'rs') {
-          // RS: depende APENAS do tipo de IE selecionado (ignora participação de revenda)
-          if (tipoIE === 'produtor') {
-            regiaoParaBusca = 'rs-com-ie'; // Produtor Rural = Com IE
-          } else if (tipoIE === 'cnpj_cpf') {
-            regiaoParaBusca = 'rs-sem-ie'; // CNPJ/CPF = Sem IE
-          } else {
-            // Fallback se não tiver tipo selecionado ainda
-            regiaoParaBusca = 'rs-com-ie';
-          }
-        } else {
-          // Outras regiões: usa região normalizada (sul-sudeste, norte-nordeste, etc)
-          if (regiaoParaNormalizar.includes('sul') || regiaoParaNormalizar.includes('paraná') || regiaoParaNormalizar.includes('santa catarina')) {
-            regiaoParaBusca = 'sul-sudeste';
-          } else if (regiaoParaNormalizar.includes('norte') || regiaoParaNormalizar.includes('nordeste')) {
-            regiaoParaBusca = 'norte-nordeste';
-          } else if (regiaoParaNormalizar.includes('centro') || regiaoParaNormalizar.includes('oeste')) {
-            regiaoParaBusca = 'centro-oeste';
-          } else {
-            regiaoParaBusca = 'sul-sudeste'; // fallback
-          }
-        }
-
-        if (regiaoParaBusca) {
-          const precoRegiao = await db.getPrecoPorRegiao(guindaste.id, regiaoParaBusca);
-          if (precoRegiao && precoRegiao > 0) {
-            setPrecoAjustadoPorRegiao(precoRegiao);
-          } else {
-            setPrecoAjustadoPorRegiao(precoBase);
-          }
-        } else {
-          setPrecoAjustadoPorRegiao(precoBase);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar preço por região:', error);
-        setPrecoAjustadoPorRegiao(precoBase);
-      } finally {
-        setCarregandoPreco(false);
-      }
-    }
-
-    buscarPrecoCorreto();
-  }, [tipoCliente, participacaoRevenda, tipoIE, itens, precoBase]);
+  // ✅ REMOVIDO: useEffect que buscava preço
+  // O precoBase já vem do carrinho com o preço correto da região selecionada
+  // O NovoPedido.jsx já faz o recálculo em recalcularPrecosCarrinho quando a região muda
+  // Não precisamos buscar preço aqui novamente!
 
   // =============== LISTENER REALTIME PARA APROVAÇÃO DE DESCONTO ==
   useEffect(() => {
@@ -207,13 +142,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             }
 
             const r = calcularPagamento({
-              precoBase: precoAjustadoPorRegiao,
+              precoBase: precoBase,
               plan: planoSelecionado,
               dataEmissaoNF: new Date(),
             });
 
             // Aplica desconto do vendedor aprovado
-            const descontoExtraValor = precoAjustadoPorRegiao * (descontoAprovado / 100);
+            const descontoExtraValor = precoBase * (descontoAprovado / 100);
             const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
             // Calcula frete
@@ -271,7 +206,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
             const novoResultado = {
               ...r,
-              precoBase: precoAjustadoPorRegiao,
+              precoBase: precoBase,
               descontoAdicionalValor: descontoExtraValor,
               valorFinalComDescontoAdicional: valorAposExtra,
               valorFrete,
@@ -355,7 +290,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       console.log('🔕 [PaymentPolicy] Removendo listener');
       supabase.removeChannel(channel);
     };
-  }, [solicitacaoId, precoAjustadoPorRegiao, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado]);
+  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado]);
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
@@ -466,13 +401,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     // Usa teu cálculo existente (com preço ajustado por região)
     try {
       const r = calcularPagamento({
-        precoBase: precoAjustadoPorRegiao,
+        precoBase: precoBase,
         plan: planoSelecionado,
         dataEmissaoNF: new Date(),
       });
 
       // aplica desconto do vendedor (sobre o PREÇO AJUSTADO POR REGIÃO)
-      const descontoExtraValor = precoAjustadoPorRegiao * (descontoVendedor / 100);
+      const descontoExtraValor = precoBase * (descontoVendedor / 100);
       const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
       // frete: somente se frete incluso + selecionado tipo de entrega e local
@@ -530,7 +465,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
       const resultadoFinal = {
         ...r,
-        precoBase: precoAjustadoPorRegiao, // Usar preço ajustado
+        precoBase: precoBase, // Usar preço ajustado
         descontoAdicionalValor: descontoExtraValor,
         valorFinalComDescontoAdicional: valorAposExtra,
         valorFrete,
@@ -645,7 +580,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         vendedorId: user.id,
         vendedorNome: user.nome,
         equipamentoDescricao,
-        valorBase: precoAjustadoPorRegiao,
+        valorBase: precoBase,
         descontoAtual: descontoVendedor || 7,
         justificativa
       });
@@ -656,7 +591,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         vendedorNome: user.nome,
         vendedorEmail: user.email,
         equipamentoDescricao,
-        valorBase: precoAjustadoPorRegiao,
+        valorBase: precoBase,
         descontoAtual: descontoVendedor || 7,
         justificativa
       });
@@ -705,13 +640,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         }
 
         const r = calcularPagamento({
-          precoBase: precoAjustadoPorRegiao,
+          precoBase: precoBase,
           plan: planoSelecionado,
           dataEmissaoNF: new Date(),
         });
 
         // Aplica desconto do vendedor aprovado
-        const descontoExtraValor = precoAjustadoPorRegiao * (solicitacao.desconto_aprovado / 100);
+        const descontoExtraValor = precoBase * (solicitacao.desconto_aprovado / 100);
         const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
         // Calcula frete
@@ -769,7 +704,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
         const novoResultado = {
           ...r,
-          precoBase: precoAjustadoPorRegiao,
+          precoBase: precoBase,
           descontoAdicionalValor: descontoExtraValor,
           valorFinalComDescontoAdicional: valorAposExtra,
           valorFrete,
@@ -841,7 +776,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
   // =============== CALCULAR VALOR FLUTUANTE EM TEMPO REAL ========
   const valorFlutuante = useMemo(() => {
-    let valor = precoAjustadoPorRegiao;
+    let valor = precoBase;
 
     // Aplicar desconto do plano (se houver)
     if (resultado?.descontoValor) {
@@ -855,7 +790,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // Aplicar desconto do vendedor
     if (descontoVendedor > 0) {
-      valor -= (precoAjustadoPorRegiao * (descontoVendedor / 100));
+      valor -= (precoBase * (descontoVendedor / 100));
     }
 
     // Adicionar frete (se incluso)
@@ -872,7 +807,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     }
 
     return valor;
-  }, [precoAjustadoPorRegiao, resultado, descontoVendedor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
+  }, [precoBase, resultado, descontoVendedor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
 
   // =============== RENDER ========================================
   return (
@@ -884,16 +819,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           <span className="floating-price-title">Valor em Tempo Real</span>
         </div>
         <div className="floating-price-value">
-          {carregandoPreco ? (
-            <span className="loading">Calculando...</span>
-          ) : (
-            <span className="price">{formatCurrency(valorFlutuante)}</span>
-          )}
+          <span className="price">{formatCurrency(valorFlutuante)}</span>
         </div>
         <div className="floating-price-breakdown">
           <div className="breakdown-line">
             <span>Base:</span>
-            <span>{formatCurrency(precoAjustadoPorRegiao)}</span>
+            <span>{formatCurrency(precoBase)}</span>
           </div>
           {resultado?.descontoValor > 0 && (
             <div className="breakdown-line discount">
@@ -910,7 +841,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           {descontoVendedor > 0 && (
             <div className="breakdown-line discount">
               <span>- Desconto vendedor ({descontoVendedor}%):</span>
-              <span>{formatCurrency(precoAjustadoPorRegiao * (descontoVendedor / 100))}</span>
+              <span>{formatCurrency(precoBase * (descontoVendedor / 100))}</span>
             </div>
           )}
           {tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega && (
@@ -1652,7 +1583,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               <div className="summary-content">
                 <div className="summary-item">
                   <span className="summary-label">Preço Base</span>
-                  <span className="summary-value">{formatCurrency(precoAjustadoPorRegiao)}</span>
+                  <span className="summary-value">{formatCurrency(precoBase)}</span>
                 </div>
 
                 {resultado.descontoValor > 0 && (
@@ -1672,7 +1603,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {descontoVendedor > 0 && (
                   <div className="summary-item">
                     <span className="summary-label">Desconto do Vendedor ({descontoVendedor}%)</span>
-                    <span className="summary-value">- {formatCurrency(precoAjustadoPorRegiao * (descontoVendedor / 100))}</span>
+                    <span className="summary-value">- {formatCurrency(precoBase * (descontoVendedor / 100))}</span>
                   </div>
                 )}
 
@@ -1744,7 +1675,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         onSolicitar={handleSolicitarDesconto}
         onVerificarStatus={handleVerificarStatus}
         equipamentoDescricao={itens[0] ? `${itens[0].subgrupo || ''} ${itens[0].modelo || ''}`.trim() : 'Equipamento'}
-        valorBase={precoAjustadoPorRegiao}
+        valorBase={precoBase}
         descontoAtual={descontoVendedor || 7}
         isLoading={aguardandoAprovacao}
       />
