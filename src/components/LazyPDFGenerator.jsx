@@ -12,7 +12,7 @@ const PDFGenerator = lazy(() => import('./PDFGenerator'));
 const PDFGeneratorNovoWrapper = lazy(() => import('./PDFGeneratorNovoWrapper'));
 
 const LazyPDFGenerator = (props) => {
-  const [usarNovoDesign, setUsarNovoDesign] = useState(true);
+  const [usarNovoDesign, setUsarNovoDesign] = useState(false);
 
   return (
     <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -34,9 +34,9 @@ const LazyPDFGenerator = (props) => {
       <button
         onClick={() => setUsarNovoDesign(!usarNovoDesign)}
         style={{
-          background: usarNovoDesign 
-            ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
-            : 'linear-gradient(135deg, #2196F3 0%, #0b7dda 100%)',
+          background: usarNovoDesign
+            ? 'linear-gradient(135deg, #2196F3 0%, #0b7dda 100%)'
+            : 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)',
           color: 'white',
           border: 'none',
           padding: '8px 12px',
@@ -49,7 +49,7 @@ const LazyPDFGenerator = (props) => {
         }}
         title={usarNovoDesign ? 'Clique para usar design antigo' : 'Clique para usar novo design'}
       >
-        {usarNovoDesign ? '✨ Novo Design' : '📄 Design Antigo'}
+        {usarNovoDesign ? '📄 Design Antigo' : '✨ Novo Design'}
       </button>
     </div>
   );

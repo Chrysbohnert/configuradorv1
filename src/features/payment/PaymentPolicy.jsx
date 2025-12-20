@@ -71,6 +71,8 @@ export default function PaymentPolicy({
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50' | 'financiamento'
   const [valorSinal, setValorSinal] = useState('');
   const [formaEntrada, setFormaEntrada] = useState('');
+  const [extraDescricao, setExtraDescricao] = useState('');
+  const [extraValor, setExtraValor] = useState('');
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
   const [descontoVendedor, setDescontoVendedor] = useState(0);
 
@@ -132,6 +134,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           console.log(`✅ [PaymentPolicy] Desconto aprovado: ${descontoAprovado}% (não exibido ao vendedor)`);
 
           try {
+            const extraValorNum = parseFloat(extraValor) || 0;
+
             // Atualiza o estado local com o desconto aprovado
             setDescontoVendedor(descontoAprovado);
             
@@ -163,7 +167,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               ? (temGSI ? 6350 : temGSE ? 7500 : 0)
               : 0;
 
-            const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
+            const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
             // Calcular campos de entrada para o PDF
             const valorSinalNum = parseFloat(valorSinal) || 0;
@@ -209,6 +213,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               precoBase: precoBase,
               descontoAdicionalValor: descontoExtraValor,
               valorFinalComDescontoAdicional: valorAposExtra,
+              extraDescricao: extraDescricao || '',
+              extraValor: extraValorNum,
               valorFrete,
               valorInstalacao,
               total: valorFinal,
@@ -290,7 +296,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       console.log('🔕 [PaymentPolicy] Removendo listener');
       supabase.removeChannel(channel);
     };
-  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado]);
+  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI]);
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
@@ -316,6 +322,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     setPercentualEntrada('');
     setValorSinal('');
     setFormaEntrada('');
+    setExtraDescricao('');
+    setExtraValor('');
     setPlanoSelecionado(null);
     setDescontoVendedor(0);
     setResultado(null);
@@ -355,6 +363,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
+      const extraValorNum = parseFloat(extraValor) || 0;
+      const valorFinalFinanciamento = precoBase + extraValorNum;
       const r = {
         precoBase,
         financiamentoBancario: 'sim',
@@ -376,10 +386,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         acrescimoValor: 0,
         valorAjustado: precoBase,
         entrada: 0,
-        saldo: precoBase,
+        saldo: valorFinalFinanciamento,
         parcelas: [],
-        total: precoBase,
-        valorFinal: precoBase, // Adicionar para compatibilidade com PDF
+        total: valorFinalFinanciamento,
+        valorFinal: valorFinalFinanciamento, // Adicionar para compatibilidade com PDF
         // Campos em percentual para o PDF
         desconto: 0,
         acrescimo: 0,
@@ -388,8 +398,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         entradaTotal: 0,
         valorSinal: 0,
         faltaEntrada: 0,
-        saldoAPagar: precoBase,
+        saldoAPagar: valorFinalFinanciamento,
         formaEntrada: '',
+        extraDescricao: extraDescricao || '',
+        extraValor: extraValorNum,
       };
       setResultado(r);
       onPaymentComputed?.(r);
@@ -400,6 +412,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // Usa teu cálculo existente (com preço ajustado por região)
     try {
+      const extraValorNum = parseFloat(extraValor) || 0;
       const r = calcularPagamento({
         precoBase: precoBase,
         plan: planoSelecionado,
@@ -468,6 +481,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         precoBase: precoBase, // Usar preço ajustado
         descontoAdicionalValor: descontoExtraValor,
         valorFinalComDescontoAdicional: valorAposExtra,
+        extraDescricao: extraDescricao || '',
+        extraValor: extraValorNum,
         valorFrete,
         valorInstalacao,
         total: valorFinal,
@@ -530,6 +545,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     planoSelecionado,
     percentualEntrada,
     valorSinal,
+    extraDescricao,
+    extraValor,
     descontoVendedor,
     temGSE,
     temGSI,
@@ -628,6 +645,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       
       if (solicitacao.status === 'aprovado') {
         console.log('✅ [PaymentPolicy] Desconto aprovado:', solicitacao.desconto_aprovado, '% (não exibido ao vendedor)');
+
+        const extraValorNum = parseFloat(extraValor) || 0;
         
         // Atualiza o estado local com o desconto aprovado
         setDescontoVendedor(solicitacao.desconto_aprovado);
@@ -661,7 +680,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           ? (temGSI ? 6350 : temGSE ? 7500 : 0)
           : 0;
 
-        const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
+        const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
         // Calcular campos de entrada para o PDF
         const valorSinalNum = parseFloat(valorSinal) || 0;
@@ -707,6 +726,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           precoBase: precoBase,
           descontoAdicionalValor: descontoExtraValor,
           valorFinalComDescontoAdicional: valorAposExtra,
+          extraDescricao: extraDescricao || '',
+          extraValor: extraValorNum,
           valorFrete,
           valorInstalacao,
           total: valorFinal,
@@ -777,6 +798,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   // =============== CALCULAR VALOR FLUTUANTE EM TEMPO REAL ========
   const valorFlutuante = useMemo(() => {
     let valor = precoBase;
+    const extraValorNum = parseFloat(extraValor) || 0;
 
     // Aplicar desconto do plano (se houver)
     if (resultado?.descontoValor) {
@@ -793,6 +815,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       valor -= (precoBase * (descontoVendedor / 100));
     }
 
+    // Adicionar extra (não sofre desconto)
+    if (extraValorNum > 0) {
+      valor += extraValorNum;
+    }
+
     // Adicionar frete (se incluso)
     if (tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega) {
       const valorFreteCalc = tipoEntrega === 'prioridade'
@@ -807,7 +834,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     }
 
     return valor;
-  }, [precoBase, resultado, descontoVendedor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
+  }, [precoBase, resultado, descontoVendedor, extraValor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
 
   // =============== RENDER ========================================
   return (
@@ -818,32 +845,45 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           <span className="floating-price-icon">💰</span>
           <span className="floating-price-title">Valor em Tempo Real</span>
         </div>
+
         <div className="floating-price-value">
           <span className="price">{formatCurrency(valorFlutuante)}</span>
         </div>
+
         <div className="floating-price-breakdown">
           <div className="breakdown-line">
             <span>Base:</span>
             <span>{formatCurrency(precoBase)}</span>
           </div>
+
           {resultado?.descontoValor > 0 && (
             <div className="breakdown-line discount">
               <span>- Desconto plano:</span>
               <span>{formatCurrency(resultado.descontoValor)}</span>
             </div>
           )}
+
           {resultado?.acrescimoValor > 0 && (
             <div className="breakdown-line addition">
               <span>+ Acréscimo:</span>
               <span>{formatCurrency(resultado.acrescimoValor)}</span>
             </div>
           )}
+
           {descontoVendedor > 0 && (
             <div className="breakdown-line discount">
               <span>- Desconto vendedor ({descontoVendedor}%):</span>
               <span>{formatCurrency(precoBase * (descontoVendedor / 100))}</span>
             </div>
           )}
+
+          {parseFloat(extraValor) > 0 && (
+            <div className="breakdown-line addition">
+              <span>+ Extra{extraDescricao ? ` (${extraDescricao})` : ''}:</span>
+              <span>{formatCurrency(parseFloat(extraValor) || 0)}</span>
+            </div>
+          )}
+
           {tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega && (
             <div className="breakdown-line addition">
               <span>+ Frete:</span>
@@ -856,6 +896,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               </span>
             </div>
           )}
+
           {tipoCliente === 'cliente' && instalacao === 'incluso' && (
             <div className="breakdown-line addition">
               <span>+ Instalação:</span>
@@ -864,384 +905,411 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           )}
         </div>
       </div>
+
       {/* Stepper 1..7 */}
-      <div className="pp-stepper">
-        {[1, 2, 3, 4, 5, 6, 7].map(n => (
-          <div
-            key={n}
-            className={`pp-step ${etapa === n ? 'active' : etapa > n ? 'done' : ''}`}
-            onClick={() => setEtapa(n)}
-            title={
-              n===1?'Tipo de Cliente':
-              n===2?'Participação & IE':
-              n===3?'Instalação':
-              n===4?'Tipo de Frete':
-              n===5?'Local & Entrega':
-              n===6?'Entrada & Plano':
-              'Resumo'
-            }
-          >
-            {n}
-          </div>
-        ))}
-      </div>
+    <div className="pp-stepper">
+      {[1, 2, 3, 4, 5, 6, 7].map(n => (
+        <div
+          key={n}
+          className={`pp-step ${etapa === n ? 'active' : etapa > n ? 'done' : ''}`}
+          onClick={() => setEtapa(n)}
+          title={
+            n===1?'Tipo de Cliente':
+            n===2?'Participação & IE':
+            n===3?'Instalação':
+            n===4?'Tipo de Frete':
+            n===5?'Local & Entrega':
+            n===6?'Entrada & Plano':
+            'Resumo'
+          }
+        >
+          {n}
+        </div>
+      ))}
+    </div>
 
-      {/* 1) Tipo de Cliente */}
-      {etapa === 1 && (
-        <section className="payment-section">
-          <h3>1) Tipo de Cliente</h3>
-          <div className="radio-group">
-            <label className={`radio-option ${tipoCliente === 'cliente' ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="tipoCliente"
-                value="cliente"
-                checked={tipoCliente === 'cliente'}
-                onChange={() => setTipoCliente('cliente')}
-              />
-              <span>Cliente</span>
-            </label>
-            <label className={`radio-option ${tipoCliente === 'revenda' ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="tipoCliente"
-                value="revenda"
-                checked={tipoCliente === 'revenda'}
-                onChange={() => setTipoCliente('revenda')}
-              />
-              <span>Revenda</span>
-            </label>
-          </div>
+    {/* 1) Tipo de Cliente */}
+    {etapa === 1 && (
+      <section className="payment-section">
+        <h3>1) Tipo de Cliente</h3>
+        <div className="radio-group">
+          <label className={`radio-option ${tipoCliente === 'cliente' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="tipoCliente"
+              value="cliente"
+              checked={tipoCliente === 'cliente'}
+              onChange={() => setTipoCliente('cliente')}
+            />
+            <span>Cliente</span>
+          </label>
+          <label className={`radio-option ${tipoCliente === 'revenda' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="tipoCliente"
+              value="revenda"
+              checked={tipoCliente === 'revenda'}
+              onChange={() => setTipoCliente('revenda')}
+            />
+            <span>Revenda</span>
+          </label>
+        </div>
 
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" disabled={!podeIrEtapa2} onClick={next}>Continuar</button>
-          </div>
-        </section>
-      )}
+        <div className="payment-navigation">
+          <button className="payment-nav-btn" disabled={!podeIrEtapa2} onClick={next}>Continuar</button>
+        </div>
+      </section>
+    )}
 
-      {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
-      {etapa === 2 && (
-        <section className="payment-section">
-          <h3>2) Participação da Revenda & Escolha de Cliente</h3>
+    {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
+    {etapa === 2 && (
+      <section className="payment-section">
+        <h3>2) Participação da Revenda & Escolha de Cliente</h3>
 
-          {tipoCliente === 'cliente' ? (
-            <>
-              <div className="form-group">
-                <label>Há Participação de Revenda? *</label>
-                <div className="radio-group">
-                  <label className={`radio-option ${participacaoRevenda === 'sim' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="participacao"
-                      value="sim"
-                      checked={participacaoRevenda === 'sim'}
-                      onChange={() => setParticipacaoRevenda('sim')}
-                    />
-                    <span>Sim</span>
-                  </label>
-                  <label className={`radio-option ${participacaoRevenda === 'nao' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="participacao"
-                      value="nao"
-                      checked={participacaoRevenda === 'nao'}
-                      onChange={() => setParticipacaoRevenda('nao')}
-                    />
-                    <span>Não</span>
-                  </label>
-                </div>
+        {tipoCliente === 'cliente' ? (
+          <>
+            <div className="form-group">
+              <label>Há Participação de Revenda? *</label>
+              <div className="radio-group">
+                <label className={`radio-option ${participacaoRevenda === 'sim' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="participacao"
+                    value="sim"
+                    checked={participacaoRevenda === 'sim'}
+                    onChange={() => setParticipacaoRevenda('sim')}
+                  />
+                  <span>Sim</span>
+                </label>
+                <label className={`radio-option ${participacaoRevenda === 'nao' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="participacao"
+                    value="nao"
+                    checked={participacaoRevenda === 'nao'}
+                    onChange={() => setParticipacaoRevenda('nao')}
+                  />
+                  <span>Não</span>
+                </label>
               </div>
+            </div>
 
-              {!!participacaoRevenda && (
-                <div className="form-group" style={{ marginTop: '12px' }}>
-                  <label>Escolha Cliente*</label>
-                  <div className="radio-group">
-                    {/* Produtor rural SEMPRE disponível */}
-                    <label className={`radio-option ${tipoIE === 'produtor' ? 'selected' : ''}`}>
+            {!!participacaoRevenda && (
+              <div className="form-group" style={{ marginTop: '12px' }}>
+                <label>Escolha Cliente*</label>
+                <div className="radio-group">
+                  {/* Produtor rural SEMPRE disponível */}
+                  <label className={`radio-option ${tipoIE === 'produtor' ? 'selected' : ''}`}>
+                    <input
+                      type="radio"
+                      name="tipoIE"
+                      value="produtor"
+                      checked={tipoIE === 'produtor'}
+                      onChange={() => setTipoIE('produtor')}
+                    />
+                    <span>Produtor rural</span>
+                  </label>
+
+                  {/* CNPJ/CPF: some quando a regra do diagrama manda travar */}
+                  {!travaIEProdutor && (
+                    <label className={`radio-option ${tipoIE === 'cnpj_cpf' ? 'selected' : ''}`}>
                       <input
                         type="radio"
                         name="tipoIE"
-                        value="produtor"
-                        checked={tipoIE === 'produtor'}
-                        onChange={() => setTipoIE('produtor')}
+                        value="cnpj_cpf"
+                        checked={tipoIE === 'cnpj_cpf'}
+                        onChange={() => setTipoIE('cnpj_cpf')}
                       />
-                      <span>Produtor rural</span>
+                      <span>CNPJ</span>
                     </label>
-
-                    {/* CNPJ/CPF: some quando a regra do diagrama manda travar */}
-                    {!travaIEProdutor && (
-                      <label className={`radio-option ${tipoIE === 'cnpj_cpf' ? 'selected' : ''}`}>
-                        <input
-                          type="radio"
-                          name="tipoIE"
-                          value="cnpj_cpf"
-                          checked={tipoIE === 'cnpj_cpf'}
-                          onChange={() => setTipoIE('cnpj_cpf')}
-                        />
-                        <span>CNPJ</span>
-                      </label>
-                    )}
-                  </div>
-
-                  {travaIEProdutor && (
-                    <div className="pp-banner warn" style={{ marginTop: '12px' }}>
-                      {temGSE ? 'GSE detectado' : 'GSI detectado'} com Participação de Revenda: somente <b>Produtor rural</b> é permitido nesta condição.
-                    </div>
                   )}
                 </div>
-              )}
-            </>
-          ) : (
-            <div className="pp-banner ok">Cliente do tipo <b>Revenda</b> não exige definição de IE nesta etapa.</div>
-          )}
 
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button className="payment-nav-btn" disabled={!podeIrEtapa3} onClick={next}>Continuar</button>
-          </div>
-        </section>
-      )}
-
-      {/* 3) Instalação */}
-      {etapa === 3 && (
-        <section className="payment-section">
-          <h3>3) Instalação</h3>
-
-          {tipoCliente === 'revenda' ? (
-            // REVENDA: Apenas informativo, sem seleção
-            <div className="pp-banner ok">
-              ℹ️ <b>Instalação será definida na venda para cliente final</b>
-              <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', opacity: 0.9 }}>
-                Como este equipamento será revendido, a instalação será negociada quando a revenda vender para o cliente final.
-              </p>
-            </div>
-          ) : (
-            // CLIENTE: Opções normais de instalação
-            <>
-              <div className="radio-group">
-                <label className={`radio-option ${instalacao === 'cliente' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="instalacao"
-                    value="cliente"
-                    checked={instalacao === 'cliente'}
-                    onChange={() => setInstalacao('cliente')}
-                  />
-                  <span>Cliente paga direto</span>
-                </label>
-                <label className={`radio-option ${instalacao === 'incluso' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="instalacao"
-                    value="incluso"
-                    checked={instalacao === 'incluso'}
-                    onChange={() => setInstalacao('incluso')}
-                  />
-                  <span>Incluso no pedido</span>
-                </label>
+                {travaIEProdutor && (
+                  <div className="pp-banner warn" style={{ marginTop: '12px' }}>
+                    {temGSE ? 'GSE detectado' : 'GSI detectado'} com Participação de Revenda: somente <b>Produtor rural</b> é permitido nesta condição.
+                  </div>
+                )}
               </div>
+            )}
+          </>
+        ) : (
+          <div className="pp-banner ok">Cliente do tipo <b>Revenda</b> não exige definição de IE nesta etapa.</div>
+        )}
 
-              {instalacao === 'cliente' && (
-                <div className="pp-banner warn" style={{ marginTop: '12px' }}>
-                  ℹ️ Cliente pagará instalação diretamente ao instalador:
-                  <b> {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)}</b>
-                  <p style={{ margin: '8px 0 0 0', fontSize: '0.85em', opacity: 0.9 }}>
-                    Este valor NÃO será incluído no pedido
-                  </p>
-                </div>
-              )}
+        <div className="payment-navigation">
+          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
+          <button className="payment-nav-btn" disabled={!podeIrEtapa3} onClick={next}>Continuar</button>
+        </div>
+      </section>
+    )}
 
-              {instalacao === 'incluso' && (
-                <div className="pp-banner ok" style={{ marginTop: '12px' }}>
-                  Valor da instalação será adicionado ao total:
-                  <b> {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</b>
-                </div>
-              )}
-            </>
-          )}
+    {/* 3) Instalação */}
+    {etapa === 3 && (
+      <section className="payment-section">
+        <h3>3) Instalação</h3>
 
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button className="payment-nav-btn" disabled={!podeIrEtapa4} onClick={next}>Continuar</button>
+        {tipoCliente === 'revenda' ? (
+          // REVENDA: Apenas informativo, sem seleção
+          <div className="pp-banner ok">
+            ℹ️ <b>Instalação será definida na venda para cliente final</b>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', opacity: 0.9 }}>
+              Como este equipamento será revendido, a instalação será negociada quando a revenda vender para o cliente final.
+            </p>
           </div>
-        </section>
-      )}
+        ) : (
+          // CLIENTE: Opções normais de instalação
+          <>
+            <div className="radio-group">
+              <label className={`radio-option ${instalacao === 'cliente' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="instalacao"
+                  value="cliente"
+                  checked={instalacao === 'cliente'}
+                  onChange={() => setInstalacao('cliente')}
+                />
+                <span>Cliente paga direto</span>
+              </label>
+              <label className={`radio-option ${instalacao === 'incluso' ? 'selected' : ''}`}>
+                <input
+                  type="radio"
+                  name="instalacao"
+                  value="incluso"
+                  checked={instalacao === 'incluso'}
+                  onChange={() => setInstalacao('incluso')}
+                />
+                <span>Incluso no pedido</span>
+              </label>
+            </div>
 
-      {/* 4) Organização do Frete */}
-      {etapa === 4 && (
-        <section className="payment-section">
-          <h3>4) Organização do Frete</h3>
-          <div className="radio-group">
-            <label className={`radio-option ${tipoFrete === 'FOB' ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="frete"
-                value="FOB"
-                checked={tipoFrete === 'FOB'}
-                onChange={() => setTipoFrete('FOB')}
-              />
-              <span>Cliente organiza o frete</span>
-              <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
-                Cliente busca o equipamento ou contrata transportadora
-              </small>
-            </label>
-            <label className={`radio-option ${tipoFrete === 'CIF' ? 'selected' : ''}`}>
-              <input
-                type="radio"
-                name="frete"
-                value="CIF"
-                checked={tipoFrete === 'CIF'}
-                onChange={() => setTipoFrete('CIF')}
-              />
-              <span>Frete incluso no pedido</span>
-              <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
-                Selecione o tipo de entrega na próxima etapa
-              </small>
-            </label>
-          </div>
+            {instalacao === 'cliente' && (
+              <div className="pp-banner warn" style={{ marginTop: '12px' }}>
+                ℹ️ Cliente pagará instalação diretamente ao instalador:
+                <b> {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)}</b>
+                <p style={{ margin: '8px 0 0 0', fontSize: '0.85em', opacity: 0.9 }}>
+                  Este valor NÃO será incluído no pedido
+                </p>
+              </div>
+            )}
 
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button className="payment-nav-btn" disabled={!tipoFrete} onClick={next}>Continuar</button>
-          </div>
-        </section>
-      )}
+            {instalacao === 'incluso' && (
+              <div className="pp-banner ok" style={{ marginTop: '12px' }}>
+                Valor da instalação será adicionado ao total:
+                <b> {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</b>
+              </div>
+            )}
+          </>
+        )}
 
-      {/* 5) Local de Instalação & Tipo de Entrega */}
-      {etapa === 5 && (
-        <section className="payment-section">
-          <h3>5) Local & Tipo de Entrega</h3>
+        <div className="payment-navigation">
+          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
+          <button className="payment-nav-btn" disabled={!podeIrEtapa4} onClick={next}>Continuar</button>
+        </div>
+      </section>
+    )}
 
-          {/* Local de Instalação - SEMPRE obrigatório */}
-          <div className="form-group">
-            <label>Local de Instalação *</label>
-            <select value={localInstalacao} onChange={e => setLocalInstalacao(e.target.value)}>
-              <option value="">Selecione...</option>
-              {pontosInstalacao.map((p, idx) => (
-                <option key={p.id || idx} value={p.nome || `${p.oficina} - ${p.cidade}/${p.uf}`}>
-                  {p.nome || `${p.oficina} - ${p.cidade}/${p.uf}`}
-                </option>
-              ))}
-            </select>
-            <small className="form-help help-info">
-              {pontosInstalacao.length === 0 
-                ? '⚠️ Nenhum ponto de instalação disponível para sua região'
-                : `${pontosInstalacao.length} ponto(s) disponível(is) na sua região`}
+    {/* 4) Organização do Frete */}
+    {etapa === 4 && (
+      <section className="payment-section">
+        <h3>4) Organização do Frete</h3>
+        <div className="radio-group">
+          <label className={`radio-option ${tipoFrete === 'FOB' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="frete"
+              value="FOB"
+              checked={tipoFrete === 'FOB'}
+              onChange={() => setTipoFrete('FOB')}
+            />
+            <span>Cliente organiza o frete</span>
+            <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
+              Cliente busca o equipamento ou contrata transportadora
             </small>
-          </div>
+          </label>
+          <label className={`radio-option ${tipoFrete === 'CIF' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="frete"
+              value="CIF"
+              checked={tipoFrete === 'CIF'}
+              onChange={() => setTipoFrete('CIF')}
+            />
+            <span>Frete incluso no pedido</span>
+            <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
+              Selecione o tipo de entrega na próxima etapa
+            </small>
+          </label>
+        </div>
 
-          {/* Tipo de Entrega - Apenas quando frete incluso */}
-          {tipoFrete === 'CIF' ? (
-            <div className="form-group" style={{ marginTop: '16px' }}>
-              <label>Tipo de Entrega *</label>
-              <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)}>
-                <option value="">Selecione...</option>
-                <option value="prioridade">
-                  ⚡ Prioridade (carga exclusiva)
-                  {dadosFreteAtual?.valor_prioridade ? ` - ${formatCurrency(dadosFreteAtual.valor_prioridade)}` : ''}
-                </option>
-                <option value="reaproveitamento">
-                  ♻️ Reaproveitamento (quando fechar carga)
-                  {dadosFreteAtual?.valor_reaproveitamento ? ` - ${formatCurrency(dadosFreteAtual.valor_reaproveitamento)}` : ''}
-                </option>
-              </select>
-              {!dadosFreteAtual && localInstalacao && (
-                <small className="form-help help-warn">
-                  ⚠️ Valores de frete não disponíveis para este local
-                </small>
-              )}
-            </div>
-          ) : (
-            <div className="pp-banner ok" style={{ marginTop: '16px' }}>
-              🚚 Cliente responsável por organizar transporte até <b>{localInstalacao || '[selecione o local]'}</b>
-            </div>
-          )}
+        <div className="payment-navigation">
+          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
+          <button className="payment-nav-btn" disabled={!tipoFrete} onClick={next}>Continuar</button>
+        </div>
+      </section>
+    )}
 
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button
-              className="payment-nav-btn"
-              disabled={!podeIrEtapa5}
-              onClick={next}
-            >
-              Continuar
-            </button>
-          </div>
-        </section>
-      )}
+    {/* 5) Local de Instalação & Tipo de Entrega */}
+    {etapa === 5 && (
+      <section className="payment-section">
+        <h3>5) Local & Tipo de Entrega</h3>
 
-      {/* 6) Entrada, Financiamento e Plano */}
-      {etapa === 6 && (
-        <section className="payment-section">
-          <h3>6) Entrada & Plano</h3>
+        {/* Local de Instalação - SEMPRE obrigatório */}
+        <div className="form-group">
+          <label>Local de Instalação *</label>
+          <select value={localInstalacao} onChange={e => setLocalInstalacao(e.target.value)}>
+            <option value="">Selecione...</option>
+            {pontosInstalacao.map((p, idx) => (
+              <option key={p.id || idx} value={p.nome || `${p.oficina} - ${p.cidade}/${p.uf}`}>
+                {p.nome || `${p.oficina} - ${p.cidade}/${p.uf}`}
+              </option>
+            ))}
+          </select>
+          <small className="form-help help-info">
+            {pontosInstalacao.length === 0 
+              ? '⚠️ Nenhum ponto de instalação disponível para sua região'
+              : `${pontosInstalacao.length} ponto(s) disponível(is) na sua região`}
+          </small>
+        </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label>Percentual de Entrada *</label>
-              <select
-                value={percentualEntrada}
-                onChange={e => setPercentualEntrada(e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                <option value="30">30%</option>
-                <option value="50">50%</option>
-                <option value="financiamento">🏦 Financiamento Bancário</option>
-              </select>
-            </div>
-
-            {percentualEntrada && percentualEntrada !== 'financiamento' && (
-              <>
-                <div className="form-group">
-                  <label>Valor do Sinal</label>
-                  <input
-                    type="number"
-                    value={valorSinal}
-                    onChange={e => setValorSinal(e.target.value)}
-                    placeholder="R$"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-                
-                <div className="form-group">
-                  <label>Forma de Pagamento da Entrada</label>
-                  <input
-                    type="text"
-                    value={formaEntrada}
-                    onChange={e => setFormaEntrada(e.target.value)}
-                    placeholder="Ex: PIX, Boleto, Cartão, Transferência..."
-                    maxLength="50"
-                  />
-                  <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
-                    💡 Informe como o cliente pagará a entrada (opcional)
-                  </small>
-                </div>
-              </>
+        {/* Tipo de Entrega - Apenas quando frete incluso */}
+        {tipoFrete === 'CIF' ? (
+          <div className="form-group" style={{ marginTop: '16px' }}>
+            <label>Tipo de Entrega *</label>
+            <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)}>
+              <option value="">Selecione...</option>
+              <option value="prioridade">
+                ⚡ Prioridade (carga exclusiva)
+                {dadosFreteAtual?.valor_prioridade ? ` - ${formatCurrency(dadosFreteAtual.valor_prioridade)}` : ''}
+              </option>
+              <option value="reaproveitamento">
+                ♻️ Reaproveitamento (quando fechar carga)
+                {dadosFreteAtual?.valor_reaproveitamento ? ` - ${formatCurrency(dadosFreteAtual.valor_reaproveitamento)}` : ''}
+              </option>
+            </select>
+            {!dadosFreteAtual && localInstalacao && (
+              <small className="form-help help-warn">
+                ⚠️ Valores de frete não disponíveis para este local
+              </small>
             )}
           </div>
+        ) : (
+          <div className="pp-banner ok" style={{ marginTop: '16px' }}>
+            🚚 Cliente responsável por organizar transporte até <b>{localInstalacao || '[selecione o local]'}</b>
+          </div>
+        )}
 
-          {percentualEntrada !== 'financiamento' && (
+        <div className="payment-navigation">
+          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
+          <button
+            className="payment-nav-btn"
+            disabled={!podeIrEtapa5}
+            onClick={next}
+          >
+            Continuar
+          </button>
+        </div>
+      </section>
+    )}
+
+    {/* 6) Entrada, Financiamento e Plano */}
+    {etapa === 6 && (
+      <section className="payment-section">
+        <h3>6) Entrada & Plano</h3>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Percentual de Entrada *</label>
+            <select
+              value={percentualEntrada}
+              onChange={e => setPercentualEntrada(e.target.value)}
+            >
+              <option value="">Selecione...</option>
+              <option value="30">30%</option>
+              <option value="50">50%</option>
+              <option value="financiamento">🏦 Financiamento Bancário</option>
+            </select>
+          </div>
+
+          {percentualEntrada && percentualEntrada !== 'financiamento' && (
             <>
               <div className="form-group">
-                <label>Plano de Pagamento *</label>
-                <select
-                  value={planoSelecionado?.description || ''}
-                  onChange={e => {
-                    const p = getPlanByDescription(e.target.value, audience);
-                    setPlanoSelecionado(p || null);
-                    onPlanSelected?.(p || null);
-                  }}
-                >
-                  <option value="">Selecione...</option>
-                  {planosFiltrados.map(p => (
-                    <option key={`${p.audience}-${p.order}`} value={p.description}>
-                      {getPlanLabel(p)}
-                    </option>
-                  ))}
-                </select>
+                <label>Valor do Sinal</label>
+                <input
+                  type="number"
+                  value={valorSinal}
+                  onChange={e => setValorSinal(e.target.value)}
+                  placeholder="R$"
+                  min="0"
+                  step="0.01"
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>Forma de Pagamento da Entrada</label>
+                <input
+                  type="text"
+                  value={formaEntrada}
+                  onChange={e => setFormaEntrada(e.target.value)}
+                  placeholder="Ex: PIX, Boleto, Cartão, Transferência..."
+                  maxLength="50"
+                />
+                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
+                  💡 Informe como o cliente pagará a entrada (opcional)
+                </small>
+              </div>
+
+              <div className="form-group">
+                <label>Descrição do Extra (opcional)</label>
+                <input
+                  type="text"
+                  value={extraDescricao}
+                  onChange={e => setExtraDescricao(e.target.value)}
+                  placeholder="Ex: Lança 3m"
+                  maxLength="80"
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Valor do Extra (R$)</label>
+                <input
+                  type="number"
+                  value={extraValor}
+                  onChange={e => setExtraValor(e.target.value)}
+                  placeholder="R$"
+                  min="0"
+                  step="0.01"
+                />
+                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
+                  💡 Este valor será somado ao total (não sofre desconto)
+                </small>
               </div>
             </>
           )}
+        </div>
+
+        {percentualEntrada !== 'financiamento' && (
+          <>
+            <div className="form-group">
+              <label>Plano de Pagamento *</label>
+              <select
+                value={planoSelecionado?.description || ''}
+                onChange={e => {
+                  const p = getPlanByDescription(e.target.value, audience);
+                  setPlanoSelecionado(p || null);
+                  onPlanSelected?.(p || null);
+                }}
+              >
+                <option value="">Selecione...</option>
+                {planosFiltrados.map(p => (
+                  <option key={`${p.audience}-${p.order}`} value={p.description}>
+                    {getPlanLabel(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        )}
 
           <div className="form-group">
             <label>Desconto Adicional do Vendedor</label>
@@ -1253,7 +1321,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                       <strong style={{ fontSize: '14px', color: '#495057' }}>Desconto padrão (1 unidade):</strong>
                     </div>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(valor => (
+                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1374,7 +1442,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
                   <div style={{ marginTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      {[1, 2, 3, 4, 5, 6, 7].map(valor => (
+                      {[0, 1, 2, 3, 4, 5, 6, 7].map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1453,7 +1521,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && tipoIE === 'produtor' && (
                   <div style={{ marginTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[ 1, 2, 3, 4, 5].map(valor => (
+                      {[0, 1, 2, 3, 4, 5].map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1496,7 +1564,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
                   <div style={{ marginTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[0.5, 1, 1.5, 2, 2.5, 3].map(valor => (
+                      {[0, 0.5, 1, 1.5, 2, 2.5, 3].map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1604,6 +1672,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   <div className="summary-item">
                     <span className="summary-label">Desconto do Vendedor ({descontoVendedor}%)</span>
                     <span className="summary-value">- {formatCurrency(precoBase * (descontoVendedor / 100))}</span>
+                  </div>
+                )}
+
+                {parseFloat(extraValor) > 0 && (
+                  <div className="summary-item">
+                    <span className="summary-label">Extra{extraDescricao ? ` (${extraDescricao})` : ''}</span>
+                    <span className="summary-value">+ {formatCurrency(parseFloat(extraValor) || 0)}</span>
                   </div>
                 )}
 

@@ -776,6 +776,10 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
 const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const p = pedidoData.pagamentoData || {};
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
+  const extraValor = parseFloat(p.extraValor || 0);
+  const extraDescricao = (p.extraDescricao || '').trim();
+  const tipoClienteCalc = (p.tipoCliente || p.tipoPagamento || '').toString().toLowerCase();
+  const percentualEntradaNum = parseFloat(p.percentualEntrada || 0) || 0;
   
   // CÁLCULOS CORRETOS SEGUINDO A LÓGICA:
   // 1. Aplicar descontos SOBRE O VALOR BASE (não sobre subtotal)
@@ -786,8 +790,8 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   // 2. Base com descontos aplicados
   const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
   
-  // 3. Adicionar frete e instalação
-  const subtotalComAdicionais = baseComDescontos + (p.valorFrete || 0) + (p.valorInstalacao || 0);
+  // 3. Adicionar extras (sem desconto), frete e instalação
+  const subtotalComAdicionais = baseComDescontos + extraValor + (p.valorFrete || 0) + (p.valorInstalacao || 0);
   
   // 4. Valor Total Final
   const valorTotalFinal = subtotalComAdicionais;
@@ -893,6 +897,16 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
+      ${(extraValor > 0) ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">EXTRA</div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : 'AJUSTE COMERCIAL'}</span>
+            <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(extraValor)}</span>
+          </div>
+        </div>
+      ` : ''}
+
       <!-- VALOR TOTAL -->
       <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -902,9 +916,9 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       </div>
 
       <!-- ENTRADA (se houver) -->
-      ${(p.tipoCliente === 'cliente' && p.percentualEntrada > 0) ? `
+      ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ENTRADA (${p.percentualEntrada}% do valor total)</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ENTRADA (${percentualEntradaNum}% do valor total)</div>
           <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
             <span style="font-weight:600; color:#000;">Valor da entrada</span>
             <span style="font-weight:700; font-size:20px; color:#000;">${formatCurrency(entradaTotalCalc)}</span>
@@ -939,7 +953,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
           <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">
-            ${p.tipoCliente === 'cliente' && p.percentualEntrada > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
           <div style="font-size:13px; color:#000; margin-bottom:8px; font-weight:600;">Saldo de ${formatCurrency(saldoAPagarCalc)} dividido em ${parcelasCorrigidas.length} parcelas:</div>
           <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
@@ -1216,28 +1230,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
       const fileName = `Proposta_Stark_${nomeClienteSanitizado}.pdf`;
       pdf.save(fileName);
-
-      // (Opcional) salvar metadados no banco — mantém tua lógica
-      try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const valorTotal = (pedidoData.carrinho || []).reduce((acc, item) => acc + (item.preco || 0), 0);
-
-        await db.createProposta({
-          numero_proposta: numeroProposta,
-          // Usa apenas a parte YYYY-MM-DD para caber em varchar(10) / date
-          data: new Date().toISOString().slice(0, 10),
-          vendedor_id: user.id || null,
-          vendedor_nome: pedidoData.vendedor || user.nome || 'Não informado',
-          cliente_nome: pedidoData.clienteData?.nome || 'Não informado',
-          cliente_documento: pedidoData.clienteData?.documento || null,
-          valor_total: valorTotal,
-          tipo: 'proposta', // se quiser retomar a lógica de orçamento x proposta, dá para reativar aqui
-          status: 'finalizado',
-          dados_serializados: pedidoData
-        });
-      } catch (dbError) {
-        console.error('❌ Erro ao salvar proposta no banco:', dbError);
-      }
 
       onGenerate && onGenerate(fileName);
     } catch (e) {

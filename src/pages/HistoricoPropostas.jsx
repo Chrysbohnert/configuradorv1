@@ -54,6 +54,19 @@ const HistoricoPropostas = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const formatNumeroProposta = (numero) => {
+    const raw = String(numero || '').trim();
+    if (!raw) return '';
+
+    // Padronizar números gerados como PEDxxxxxxx para um formato curto e legível
+    // Ex: PED9654089 -> 9654089
+    if (/^PED\d+$/i.test(raw)) {
+      return raw.replace(/^PED/i, '');
+    }
+
+    return raw;
+  };
+
   const handleWhatsApp = (proposta) => {
     try {
       const baseUrl = window.location.origin;
@@ -335,7 +348,7 @@ const HistoricoPropostas = () => {
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
                   <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
-                    #{proposta.numero_proposta}
+                    #{formatNumeroProposta(proposta.numero_proposta)}
                   </div>
                   <div style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>
                     {new Date(proposta.data).toLocaleDateString('pt-BR')}
@@ -469,7 +482,7 @@ const HistoricoPropostas = () => {
                 {propostasFiltradas.map((proposta) => (
                   <tr key={proposta.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
                     <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
-                      #{proposta.numero_proposta}
+                      #{formatNumeroProposta(proposta.numero_proposta)}
                     </td>
                     <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>
                       <div>{proposta.cliente_nome}</div>
