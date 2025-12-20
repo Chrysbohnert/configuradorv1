@@ -890,6 +890,9 @@ const NovoPedido = () => {
               pagamentoData={pagamentoData}
               user={user}
               guindastes={guindastes}
+              isEdicao={isEdicao}
+              propostaOriginal={propostaOriginal}
+              propostaId={propostaId}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
             />
@@ -2110,7 +2113,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId }) => {
   // Log para depuração dos dados do equipamento
   useEffect(() => {
     if (carrinho && carrinho.length > 0) {
@@ -2126,12 +2129,33 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   }, [carrinho]);
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
+  // Modo edição de verdade vem da URL (propostaId). Isso evita timing issues de estado
+  // que podem fazer o fluxo cair em INSERT e duplicar registros.
+  const modoEdicaoCalc = !!propostaId;
+  const propostaIdCalc = propostaOriginal?.id || propostaId || null;
+
+  // Quando estiver editando, considerar a proposta como "já salva" para evitar INSERT
+  useEffect(() => {
+    if (modoEdicaoCalc && propostaIdCalc) {
+      setPedidoSalvoId(propostaIdCalc);
+    }
+  }, [modoEdicaoCalc, propostaIdCalc]);
+
   const handlePDFGenerated = async (fileName) => {
     try {
       // Detectar se é proposta preliminar (Proposta Rápida)
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
                                     caminhaoData?.marca === 'PREENCHER' || 
                                     caminhaoData?.modelo === 'PREENCHER';
+
+      // Se estiver editando uma proposta existente, atualizar o mesmo registro
+      // (evita duplicar propostas ao gerar um novo PDF)
+      if (modoEdicaoCalc && propostaIdCalc) {
+        const propostaAtualizada = await salvarRelatorio();
+        setPedidoSalvoId(propostaAtualizada?.id || propostaIdCalc);
+        alert(`PDF gerado com sucesso: ${fileName}\nProposta atualizada com sucesso!`);
+        return;
+      }
       
       // Critérios mínimos para salvar automaticamente sem interromper a experiência
       const camposClienteOK = Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
@@ -2166,8 +2190,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     console.log('🆕 [VERSÃO CORRIGIDA] salvarRelatorio iniciado - 10/11/2025 21:54');
     try {
       // Verificação defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
-      const modoEdicao = (typeof isEdicao !== 'undefined' && isEdicao) || false;
-      const proposta = (typeof propostaOriginal !== 'undefined' && propostaOriginal) || null;
+      const modoEdicao = modoEdicaoCalc;
+      const proposta = propostaOriginal || null;
+      const propostaIdToUpdate = propostaIdCalc;
       
       console.log(`🔄 Iniciando ${modoEdicao ? 'atualização' : 'salvamento'} do relatório...`);
       console.log('📋 Dados do cliente:', clienteData);
@@ -2177,14 +2202,15 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       console.log('👤 Usuário:', user);
       
       // Se for edição, fazer UPDATE direto
-      if (modoEdicao && proposta) {
-        console.log('✏️ Modo EDIÇÃO - Atualizando proposta existente:', proposta.id);
+      if (modoEdicao && propostaIdToUpdate) {
+        console.log('✏️ Modo EDIÇÃO - Atualizando proposta existente:', propostaIdToUpdate);
         
         // Buscar o ID do guindaste principal no carrinho
         const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
         const guindasteId = guindasteNoCarrinho?.id || null;
         
         const dadosAtualizados = {
+          data: new Date().toISOString(),
           valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
           dados_serializados: {
             carrinho,
@@ -2194,12 +2220,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             guindasteId
           },
           // Atualizar também campos principais se mudaram
-          cliente_nome: clienteData.nome || proposta.cliente_nome,
-          cliente_documento: clienteData.documento || proposta.cliente_documento
+          cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
+          cliente_documento: clienteData.documento || proposta?.cliente_documento || null
         };
         
         console.log('📋 Dados para atualização:', dadosAtualizados);
-        const propostaAtualizada = await db.updateProposta(proposta.id, dadosAtualizados);
+        const propostaAtualizada = await db.updateProposta(propostaIdToUpdate, dadosAtualizados);
         console.log('✅ Proposta atualizada com sucesso:', propostaAtualizada);
         
         return propostaAtualizada;
@@ -2269,6 +2295,11 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           ano: caminhaoData.ano || null,
           voltagem: caminhaoData.voltagem,
           observacoes: caminhaoData.observacoes || null,
+          medidaA: caminhaoData.medidaA || null,
+          medidaB: caminhaoData.medidaB || null,
+          medidaC: caminhaoData.medidaC || null,
+          medidaD: caminhaoData.medidaD || null,
+          patolamento: caminhaoData.patolamento || null,
           cliente_id: cliente.id
         };
         
@@ -2546,6 +2577,13 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <div className="data-row">
               <span className="label">Acréscimo:</span>
               <span className="value">{pagamentoData.acrescimo}%</span>
+            </div>
+          )}
+
+          {(parseFloat(pagamentoData.extraValor) > 0) && (
+            <div className="data-row">
+              <span className="label">Extra{pagamentoData.extraDescricao ? ` (${pagamentoData.extraDescricao})` : ''}:</span>
+              <span className="value">+ {formatCurrency(parseFloat(pagamentoData.extraValor) || 0)}</span>
             </div>
           )}
           <div className="data-row">
