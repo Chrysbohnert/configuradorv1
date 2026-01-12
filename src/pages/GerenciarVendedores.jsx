@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
 import '../styles/GerenciarVendedores.css';
 
 const GerenciarVendedores = () => {
@@ -35,13 +36,21 @@ const GerenciarVendedores = () => {
     try {
       setIsLoading(true);
       // Buscar usuários e propostas
+      const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+      const concessionariaId = user?.concessionaria_id;
+
       const [vendedoresData, propostas] = await Promise.all([
-        db.getUsers(),
+        isAdminConcessionaria
+          ? db.getUsers({ concessionaria_id: concessionariaId })
+          : db.getUsers(),
         db.getPropostas()
       ]);
       
       // Filtrar apenas vendedores (não admins)
-      const vendedoresOnly = vendedoresData.filter(v => v.tipo === 'vendedor');
+      const vendedoresOnly = vendedoresData.filter(v => {
+        if (isAdminConcessionaria) return v.tipo === 'vendedor_concessionaria';
+        return v.tipo === 'vendedor' || v.tipo === 'vendedor_concessionaria';
+      });
       
       // Calcular vendas e valor total para cada vendedor
       const vendedoresComVendas = vendedoresOnly.map(vendedor => {
@@ -71,10 +80,39 @@ const GerenciarVendedores = () => {
     e.preventDefault();
     
     try {
+      const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+      const concessionariaId = user?.concessionaria_id;
+
+      let regiaoConcessionaria = '';
+      let regioesOperacaoConcessionaria = [];
+      if (isAdminConcessionaria) {
+        if (!concessionariaId) {
+          alert('Erro: este admin não está vinculado a nenhuma concessionária.');
+          return;
+        }
+
+        const c = await db.getConcessionariaById(concessionariaId);
+        const regiaoNorm = c?.regiao_preco || normalizarRegiaoPorUF(c?.uf);
+
+        const labelPorRegiao = {
+          'rs-com-ie': 'RS com Inscrição Estadual',
+          'rs-sem-ie': 'RS sem Inscrição Estadual',
+          'centro-oeste': 'Centro-Oeste',
+          'norte-nordeste': 'Norte-Nordeste',
+          'sul-sudeste': 'Sul-Sudeste'
+        };
+
+        regiaoConcessionaria = labelPorRegiao[regiaoNorm] || 'Sul-Sudeste';
+        regioesOperacaoConcessionaria = [regiaoConcessionaria];
+      }
+
       const vendedorData = {
         ...formData,
         comissao: parseFloat(formData.comissao),
-        tipo: 'vendedor'
+        tipo: isAdminConcessionaria ? 'vendedor_concessionaria' : 'vendedor',
+        concessionaria_id: isAdminConcessionaria ? concessionariaId : (formData.concessionaria_id ?? null),
+        regiao: isAdminConcessionaria ? regiaoConcessionaria : formData.regiao,
+        regioes_operacao: isAdminConcessionaria ? regioesOperacaoConcessionaria : formData.regioes_operacao
       };
 
       // Se está editando e a senha está vazia, não alterar a senha atual
@@ -182,6 +220,8 @@ const GerenciarVendedores = () => {
   if (!user) {
     return null;
   }
+
+  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
 
   return (
     <>
@@ -391,62 +431,66 @@ const GerenciarVendedores = () => {
                 />
               </div>
               
-              <div className="form-group">
-                <label htmlFor="regiao">Região Principal * (Grupo de Região)</label>
-                <select
-                  id="regiao"
-                  value={formData.regiao || ''}
-                  onChange={(e) => handleInputChange('regiao', e.target.value)}
-                  required
-                >
-                  <option value="">Selecione a região</option>
-                  <option value="Norte-Nordeste">Norte-Nordeste (Estados do Norte e Nordeste)</option>
-                  <option value="Centro-Oeste">Centro-Oeste (MT, MS, GO, DF)</option>
-                  <option value="Sul-Sudeste">Sul-Sudeste (PR, SC, SP, RJ, MG, ES - exceto RS)</option>
-                  <option value="RS com Inscrição Estadual">RS com Inscrição Estadual (🚜 Produtor Rural)</option>
-                  <option value="RS sem Inscrição Estadual">RS sem Inscrição Estadual (📄 CNPJ/CPF)</option>
-                </select>
-                <small style={{ display: 'block', marginTop: '6px', color: '#6c757d' }}>
-                  💡 Selecione o GRUPO DE REGIÃO principal. Este é o padrão usado quando nenhuma região específica for selecionada.
-                </small>
-              </div>
-
-              <div className="form-group">
-                <label>Regiões de Operação (para vendedores internos)</label>
-                <div className="regiao-cards">
-                  {[
-                    { id: 'norte-nordeste', label: 'Norte-Nordeste', value: 'Norte', desc: 'Estados do Norte e Nordeste' },
-                    { id: 'centro-oeste', label: 'Centro-Oeste', value: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
-                    { id: 'sul-sudeste', label: 'Sul-Sudeste', value: 'Sul', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
-                    { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', value: 'Rio Grande do Sul', desc: '🚜 Produtor Rural (com IE)' },
-                    { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', value: 'Rio Grande do Sul', desc: '📄 CNPJ/CPF (sem IE)' }
-                  ].map(regiao => {
-                    const active = formData.regioes_operacao?.includes(regiao.label);
-                    return (
-                      <label key={regiao.id} className={`regiao-card ${active ? 'active' : ''}`}>
-                        <input
-                          type="checkbox"
-                          checked={active || false}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              handleInputChange('regioes_operacao', [...(formData.regioes_operacao || []), regiao.label]);
-                            } else {
-                              handleInputChange('regioes_operacao', (formData.regioes_operacao || []).filter(r => r !== regiao.label));
-                            }
-                          }}
-                        />
-                        <div className="regiao-card-text">
-                          <strong>{regiao.label}</strong>
-                          <span>{regiao.desc}</span>
-                        </div>
-                      </label>
-                    );
-                  })}
+              {!isAdminConcessionaria && (
+                <div className="form-group">
+                  <label htmlFor="regiao">Região Principal * (Grupo de Região)</label>
+                  <select
+                    id="regiao"
+                    value={formData.regiao || ''}
+                    onChange={(e) => handleInputChange('regiao', e.target.value)}
+                    required
+                  >
+                    <option value="">Selecione a região</option>
+                    <option value="Norte-Nordeste">Norte-Nordeste (Estados do Norte e Nordeste)</option>
+                    <option value="Centro-Oeste">Centro-Oeste (MT, MS, GO, DF)</option>
+                    <option value="Sul-Sudeste">Sul-Sudeste (PR, SC, SP, RJ, MG, ES - exceto RS)</option>
+                    <option value="RS com Inscrição Estadual">RS com Inscrição Estadual (🚜 Produtor Rural)</option>
+                    <option value="RS sem Inscrição Estadual">RS sem Inscrição Estadual (📄 CNPJ/CPF)</option>
+                  </select>
+                  <small style={{ display: 'block', marginTop: '6px', color: '#6c757d' }}>
+                    💡 Selecione o GRUPO DE REGIÃO principal. Este é o padrão usado quando nenhuma região específica for selecionada.
+                  </small>
                 </div>
-                <small className="form-help">
-                  💡 Selecione os GRUPOS DE REGIÃO que este vendedor pode atender. Estes grupos correspondem aos preços cadastrados dos guindastes. Se nenhum for selecionado, ele usará apenas a região principal.
-                </small>
-              </div>
+              )}
+
+              {!isAdminConcessionaria && (
+                <div className="form-group">
+                  <label>Regiões de Operação (para vendedores internos)</label>
+                  <div className="regiao-cards">
+                    {[
+                      { id: 'norte-nordeste', label: 'Norte-Nordeste', value: 'Norte', desc: 'Estados do Norte e Nordeste' },
+                      { id: 'centro-oeste', label: 'Centro-Oeste', value: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
+                      { id: 'sul-sudeste', label: 'Sul-Sudeste', value: 'Sul', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
+                      { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', value: 'Rio Grande do Sul', desc: '🚜 Produtor Rural (com IE)' },
+                      { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', value: 'Rio Grande do Sul', desc: '📄 CNPJ/CPF (sem IE)' }
+                    ].map(regiao => {
+                      const active = formData.regioes_operacao?.includes(regiao.label);
+                      return (
+                        <label key={regiao.id} className={`regiao-card ${active ? 'active' : ''}`}>
+                          <input
+                            type="checkbox"
+                            checked={active || false}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                handleInputChange('regioes_operacao', [...(formData.regioes_operacao || []), regiao.label]);
+                              } else {
+                                handleInputChange('regioes_operacao', (formData.regioes_operacao || []).filter(r => r !== regiao.label));
+                              }
+                            }}
+                          />
+                          <div className="regiao-card-text">
+                            <strong>{regiao.label}</strong>
+                            <span>{regiao.desc}</span>
+                          </div>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <small className="form-help">
+                    💡 Selecione os GRUPOS DE REGIÃO que este vendedor pode atender. Estes grupos correspondem aos preços cadastrados dos guindastes. Se nenhum for selecionado, ele usará apenas a região principal.
+                  </small>
+                </div>
+              )}
               
               <div className="form-group">
                 <label htmlFor="senha">Senha *</label>

@@ -24,13 +24,13 @@ export const getCurrentUser = () => {
 // Verificar se o usuário é admin
 export const isAdmin = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'admin';
+  return user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
 };
 
 // Verificar se o usuário é vendedor
 export const isVendedor = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'vendedor';
+  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria';
 };
 
 // Fazer logout

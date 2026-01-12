@@ -24,12 +24,28 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Classe para operações do banco de dados
 class DatabaseService {
   // ===== USUÁRIOS =====
-  async getUsers() {
-    const { data, error } = await supabase
+  async getUsers(filters = {}) {
+    let query = supabase
       .from('users')
       .select('*')
       .order('nome');
-    
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value === undefined) return;
+        if (value === null) {
+          query = query.is(key, null);
+          return;
+        }
+        if (Array.isArray(value)) {
+          query = query.in(key, value);
+          return;
+        }
+        query = query.eq(key, value);
+      });
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return data || [];
   }
@@ -52,19 +68,33 @@ class DatabaseService {
   }
 
   async createUser(userData) {
+    // Evitar enviar undefined para o PostgREST (pode causar 400 dependendo do schema/constraints)
+    const sanitizedUserData = Object.fromEntries(
+      Object.entries(userData || {}).filter(([, v]) => v !== undefined)
+    );
+
     // Se a senha não estiver em hash, fazer hash automaticamente
-    if (userData.senha && !this.isPasswordHashed(userData.senha)) {
+    if (sanitizedUserData.senha && !this.isPasswordHashed(sanitizedUserData.senha)) {
       const { hashPassword } = await import('../utils/passwordHash');
-      userData.senha = hashPassword(userData.senha);
+      sanitizedUserData.senha = hashPassword(sanitizedUserData.senha);
     }
     
     const { data, error } = await supabase
       .from('users')
-      .insert([userData])
+      .insert([sanitizedUserData])
       .select()
       .single();
     
-    if (error) throw error;
+    if (error) {
+      console.error('❌ [createUser] Erro ao inserir user:', {
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        payloadKeys: Object.keys(sanitizedUserData || {})
+      });
+      throw error;
+    }
     return data;
   }
 
@@ -98,6 +128,122 @@ class DatabaseService {
       .eq('id', id);
     
     if (error) throw error;
+  }
+
+  // ===== CONCESSIONÁRIAS =====
+  async getConcessionarias(options = {}) {
+    const { includeInactive = false } = options;
+
+    let query = supabase
+      .from('concessionarias')
+      .select('*')
+      .order('nome');
+
+    if (!includeInactive) {
+      query = query.eq('ativo', true);
+    }
+
+    const { data, error } = await query;
+
+    if (!error) return data || [];
+
+    if (!includeInactive) {
+      const { data: retryData, error: retryError } = await supabase
+        .from('concessionarias')
+        .select('*')
+        .order('nome');
+
+      if (retryError) throw error;
+      return retryData || [];
+    }
+
+    throw error;
+  }
+
+  async getConcessionariaById(id) {
+    const { data, error } = await supabase
+      .from('concessionarias')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async createConcessionaria(concessionariaData) {
+    const { data, error } = await supabase
+      .from('concessionarias')
+      .insert([concessionariaData])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async updateConcessionaria(id, updates) {
+    const { data, error } = await supabase
+      .from('concessionarias')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deleteConcessionaria(id) {
+    const { error } = await supabase
+      .from('concessionarias')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  // ===== PREÇOS DA CONCESSIONÁRIA (OVERRIDE) =====
+  async getConcessionariaPrecos(concessionariaId) {
+    const { data, error } = await supabase
+      .from('concessionaria_precos')
+      .select('*')
+      .eq('concessionaria_id', concessionariaId);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getConcessionariaPreco(concessionariaId, guindasteId) {
+    const { data, error } = await supabase
+      .from('concessionaria_precos')
+      .select('preco_override')
+      .eq('concessionaria_id', concessionariaId)
+      .eq('guindaste_id', guindasteId)
+      .limit(1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return null;
+    return data[0]?.preco_override ?? null;
+  }
+
+  async upsertConcessionariaPreco({ concessionaria_id, guindaste_id, preco_override, updated_by }) {
+    const payload = {
+      concessionaria_id,
+      guindaste_id,
+      preco_override,
+      updated_by: updated_by ?? null,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('concessionaria_precos')
+      .upsert([payload], { onConflict: 'concessionaria_id,guindaste_id' })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
   }
 
   // ===== GUINDASTES =====
@@ -1347,7 +1493,11 @@ class DatabaseService {
       .order('data', { ascending: false });
 
     if (filters.vendedor_id) {
-      query = query.eq('vendedor_id', filters.vendedor_id);
+      if (Array.isArray(filters.vendedor_id)) {
+        query = query.in('vendedor_id', filters.vendedor_id);
+      } else {
+        query = query.eq('vendedor_id', filters.vendedor_id);
+      }
     }
     if (filters.status) {
       query = query.eq('status', filters.status);

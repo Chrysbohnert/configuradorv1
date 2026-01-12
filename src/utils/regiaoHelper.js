@@ -48,6 +48,24 @@ export const normalizarRegiao = (regiao, temIE = true) => {
   return 'sul-sudeste';
 };
 
+export const normalizarRegiaoPorUF = (uf) => {
+  if (!uf) return 'sul-sudeste';
+
+  const ufUpper = uf.toString().trim().toUpperCase();
+
+  if (ufUpper === 'RS') return 'rs-com-ie';
+
+  const centroOeste = ['MT', 'MS', 'GO', 'DF'];
+  if (centroOeste.includes(ufUpper)) return 'centro-oeste';
+
+  const norteNordeste = [
+    'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'MA', 'PA', 'PB', 'PE', 'PI', 'RN', 'RO', 'RR', 'SE', 'TO'
+  ];
+  if (norteNordeste.includes(ufUpper)) return 'norte-nordeste';
+
+  return 'sul-sudeste';
+};
+
 /**
  * Lista de todas as regiões válidas no sistema
  */

@@ -21,6 +21,7 @@ const NovoPedido = () => {
   const location = useLocation();
   const { propostaId } = useParams(); // Captura ID da proposta para edição
   const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
+  const isVendedorConcessionaria = user?.tipo === 'vendedor_concessionaria';
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
@@ -246,10 +247,16 @@ const NovoPedido = () => {
     for (const item of carrinho) {
       if (item.tipo === 'guindaste') {
         try {
-          console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
-          const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
+          let novoPreco = 0;
+          if (isVendedorConcessionaria) {
+            console.log(`💰 [recalcularPrecosCarrinho] (CONCESSIONÁRIA) Buscando preço override para ${item.nome} (ID: ${item.id})`);
+            novoPreco = await db.getConcessionariaPreco(user?.concessionaria_id, item.id);
+          } else {
+            console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
+            novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
+          }
 
-          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${regiaoVendedor})`);
+          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isVendedorConcessionaria ? 'concessionaria' : regiaoVendedor})`);
 
           if (novoPreco !== item.preco) {
             console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
@@ -367,7 +374,19 @@ const NovoPedido = () => {
 
         // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;
-        if (regiaoClienteSelecionada) {
+        if (isVendedorConcessionaria) {
+          try {
+            precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
+            if (!precoGuindaste || precoGuindaste === 0) {
+              alert('Este equipamento não possui preço definido para esta concessionária.');
+              return;
+            }
+          } catch (error) {
+            console.error('❌ [adicionarGuindaste] Erro ao buscar preço override da concessionária:', error);
+            alert('Erro ao buscar preço da concessionária.');
+            return;
+          }
+        } else if (regiaoClienteSelecionada) {
           try {
             const temIE = determinarClienteTemIE();
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
@@ -516,16 +535,26 @@ const NovoPedido = () => {
       const guindasteCompleto = await db.getGuindasteCompleto(guindaste.id);
       logger.timeEnd('Carregamento do guindaste');
       
-      // 2. Buscar preço inicial (será recalculado quando contexto for definido)
-      const regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
-      const precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
-
-      logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
-
-      if (!precoGuindaste || precoGuindaste === 0) {
-        alert('Este equipamento não possui preço definido para sua região.');
-        setIsLoading(false);
-        return;
+      // 2. Buscar preço inicial
+      let precoGuindaste = 0;
+      let regiaoInicial = 'concessionaria';
+      if (isVendedorConcessionaria) {
+        precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
+        logger.log(`Preço inicial (concessionária): R$ ${precoGuindaste}`);
+        if (!precoGuindaste || precoGuindaste === 0) {
+          alert('Este equipamento não possui preço definido para esta concessionária.');
+          setIsLoading(false);
+          return;
+        }
+      } else {
+        regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+        precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
+        logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
+        if (!precoGuindaste || precoGuindaste === 0) {
+          alert('Este equipamento não possui preço definido para sua região.');
+          setIsLoading(false);
+          return;
+        }
       }
 
       // 3. Criar produto com preço correto e detalhes completos
@@ -2212,12 +2241,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         const dadosAtualizados = {
           data: new Date().toISOString(),
           valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+          concessionaria_id: user?.concessionaria_id || null,
           dados_serializados: {
             carrinho,
             clienteData,
             caminhaoData,
             pagamentoData,
-            guindasteId
+            guindasteId,
+            concessionaria_id: user?.concessionaria_id || null
           },
           // Atualizar também campos principais se mudaram
           cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
@@ -2341,12 +2372,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
         tipo: 'proposta',
         status: 'finalizado',
+        concessionaria_id: user?.concessionaria_id || null,
         dados_serializados: {
           carrinho,
           clienteData: cliente,
           caminhaoData: caminhao,
           pagamentoData,
-          guindasteId // Guardar ID do guindaste nos dados serializados para controle de estoque
+          guindasteId, // Guardar ID do guindaste nos dados serializados para controle de estoque
+          concessionaria_id: user?.concessionaria_id || null
         }
       };
       console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);

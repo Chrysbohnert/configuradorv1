@@ -15,7 +15,7 @@ const VendedorLayout = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // Verificar se é vendedor
-      if (parsedUser.tipo === 'vendedor') {
+      if (parsedUser.tipo === 'vendedor' || parsedUser.tipo === 'vendedor_concessionaria') {
         setUser(parsedUser);
         // Mostrar loading de boas-vindas apenas uma vez por sessão
         const hasShown = sessionStorage.getItem('welcomeShownVendedor');

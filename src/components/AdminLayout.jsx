@@ -15,7 +15,7 @@ const AdminLayout = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // Verificar se é admin
-      if (parsedUser.tipo === 'admin') {
+      if (parsedUser.tipo === 'admin' || parsedUser.tipo === 'admin_concessionaria') {
         setUser(parsedUser);
         // Mostrar loading de boas-vindas apenas uma vez por sessão
         const hasShown = sessionStorage.getItem('welcomeShownAdmin');
