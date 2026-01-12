@@ -21,15 +21,18 @@ const DashboardAdmin = () => {
       try {
         setIsLoading(true);
         console.log('🔄 Carregando dados reais do dashboard...');
-        
+
+        const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+        const concessionariaId = user?.concessionaria_id;
+
         // Carrega dados reais do banco em paralelo (versões otimizadas)
-        const [usersResp, pedidosResp, guindastesCountResp] = await Promise.all([
-          db.getUsers().catch(err => {
+        const usersPromise = isAdminConcessionaria
+          ? db.getUsers({ concessionaria_id: concessionariaId })
+          : db.getUsers();
+
+        const [usersResp, guindastesCountResp] = await Promise.all([
+          usersPromise.catch(err => {
             console.error('❌ Erro ao carregar usuários:', err);
-            return [];
-          }),
-          db.getPropostas().catch(err => {
-            console.error('❌ Erro ao carregar propostas:', err);
             return [];
           }),
           db.getGuindastesCountForDashboard().catch(err => {
@@ -37,6 +40,20 @@ const DashboardAdmin = () => {
             return 0;
           })
         ]);
+
+        const idsVendedores = (usersResp || [])
+          .filter(u => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
+          .map(u => u.id);
+
+        const pedidosResp = await (isAdminConcessionaria
+          ? db.getPropostas({ vendedor_id: idsVendedores }).catch(err => {
+            console.error('❌ Erro ao carregar propostas:', err);
+            return [];
+          })
+          : db.getPropostas().catch(err => {
+            console.error('❌ Erro ao carregar propostas:', err);
+            return [];
+          }));
         
         console.log('📊 Dados carregados:', {
           usuarios: usersResp.length,

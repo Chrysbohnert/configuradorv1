@@ -5,22 +5,27 @@ import ImageUpload from '../components/ImageUpload';
 import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
 import { db } from '../config/supabase';
+import { formatCurrency } from '../utils/formatters';
+import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
 import '../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
 
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
   const { user } = useOutletContext(); // Pega o usuário do AdminLayout
+  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
+
   const pageSize = 100; // Aumentado para pegar todos os 51 guindastes
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
   const [activeTab, setActiveTab] = useState('guindastes');
+
   const [formData, setFormData] = useState({
     subgrupo: '',
     modelo: '',
@@ -37,6 +42,7 @@ const GerenciarGuindastes = () => {
     codigo_referencia: '',
     quantidade_disponivel: 0
   });
+
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
@@ -45,12 +51,44 @@ const GerenciarGuindastes = () => {
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
+  const [concessionaria, setConcessionaria] = useState(null);
+  const [regiaoReferencia, setRegiaoReferencia] = useState('sul-sudeste');
+  const [precosConcessionariaMap, setPrecosConcessionariaMap] = useState({});
+
+  const [showPrecoConcessionariaModal, setShowPrecoConcessionariaModal] = useState(false);
+  const [guindasteSelecionadoPreco, setGuindasteSelecionadoPreco] = useState(null);
+  const [precoStarkReferencia, setPrecoStarkReferencia] = useState(null);
+  const [precoConcessionariaInput, setPrecoConcessionariaInput] = useState('');
+
   useEffect(() => {
     if (user) {
       loadData(1, false); // Usar cache quando possível para melhor performance
     }
   }, [user]);
 
+  useEffect(() => {
+    const loadContextoConcessionaria = async () => {
+      if (!user || !isAdminConcessionaria) return;
+      if (!user?.concessionaria_id) return;
+
+      try {
+        const c = await db.getConcessionariaById(user.concessionaria_id);
+        setConcessionaria(c);
+        setRegiaoReferencia(c?.regiao_preco || normalizarRegiaoPorUF(c?.uf));
+
+        const precos = await db.getConcessionariaPrecos(user.concessionaria_id);
+        const map = (precos || []).reduce((acc, row) => {
+          acc[row.guindaste_id] = row.preco_override;
+          return acc;
+        }, {});
+        setPrecosConcessionariaMap(map);
+      } catch (e) {
+        console.error('Erro ao carregar contexto da concessionária:', e);
+      }
+    };
+
+    loadContextoConcessionaria();
+  }, [user, isAdminConcessionaria]);
 
   // Auto-esconde o toast após alguns segundos
   useEffect(() => {
@@ -193,6 +231,10 @@ const GerenciarGuindastes = () => {
   };
 
   const handleEdit = async (item) => {
+    if (isAdminConcessionaria) {
+      alert('Admin de concessionária não pode editar guindastes.');
+      return;
+    }
     console.log('🔧 [handleEdit] Item recebido:', item);
 
     try {
@@ -237,10 +279,76 @@ const GerenciarGuindastes = () => {
   };
 
   const handleDeleteClick = (id) => {
+    if (isAdminConcessionaria) {
+      alert('Admin de concessionária não pode excluir guindastes.');
+      return;
+    }
     setGuindasteToDelete(id);
     setShowDeleteModal(true);
     // Bloquear scroll do body
     document.body.classList.add('modal-open');
+  };
+
+  const openPrecoConcessionaria = async (g) => {
+    if (!isAdminConcessionaria) return;
+    if (!user?.concessionaria_id) {
+      alert('Erro: admin não vinculado a uma concessionária.');
+      return;
+    }
+
+    try {
+      setGuindasteSelecionadoPreco(g);
+      setShowPrecoConcessionariaModal(true);
+      document.body.classList.add('modal-open');
+
+      const precoStark = await db.getPrecoPorRegiao(g.id, regiaoReferencia);
+      setPrecoStarkReferencia(precoStark || 0);
+
+      const precoAtual = await db.getConcessionariaPreco(user.concessionaria_id, g.id);
+      setPrecoConcessionariaInput(precoAtual !== null && precoAtual !== undefined ? String(precoAtual) : '');
+    } catch (e) {
+      console.error('Erro ao abrir preço da concessionária:', e);
+      alert('Erro ao carregar preço.');
+    }
+  };
+
+  const closePrecoConcessionaria = () => {
+    setShowPrecoConcessionariaModal(false);
+    setGuindasteSelecionadoPreco(null);
+    setPrecoStarkReferencia(null);
+    setPrecoConcessionariaInput('');
+    document.body.classList.remove('modal-open');
+  };
+
+  const salvarPrecoConcessionaria = async () => {
+    if (!isAdminConcessionaria) return;
+    if (!user?.concessionaria_id) {
+      alert('Erro: admin não vinculado a uma concessionária.');
+      return;
+    }
+    if (!guindasteSelecionadoPreco) return;
+
+    const num = parseFloat(String(precoConcessionariaInput || '').replace(',', '.'));
+    if (!Number.isFinite(num) || num <= 0) {
+      alert('Informe um preço válido (maior que zero).');
+      return;
+    }
+
+    try {
+      await db.upsertConcessionariaPreco({
+        concessionaria_id: user.concessionaria_id,
+        guindaste_id: guindasteSelecionadoPreco.id,
+        preco_override: num,
+        updated_by: user?.id
+      });
+
+      setPrecosConcessionariaMap(prev => ({ ...prev, [guindasteSelecionadoPreco.id]: num }));
+      setToast({ visible: true, message: 'Preço da concessionária salvo com sucesso!', type: 'success' });
+      closePrecoConcessionaria();
+    } catch (e) {
+      console.error('Erro ao salvar preço da concessionária:', e);
+      alert('Erro ao salvar preço.');
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -256,7 +364,7 @@ const GerenciarGuindastes = () => {
         setToast({ visible: true, message: 'Guindaste removido com sucesso!', type: 'success' });
       } catch (error) {
         console.error('Erro ao remover guindaste:', error);
-        
+
         // Mensagem de erro mais específica
         const mensagemErro = error.message || 'Erro desconhecido ao remover guindaste.';
         
@@ -298,6 +406,10 @@ const GerenciarGuindastes = () => {
   };
 
   const handleAddNew = () => {
+    if (isAdminConcessionaria) {
+      alert('Apenas o Admin Stark pode cadastrar novos guindastes.');
+      return;
+    }
     setEditingGuindaste(null);
     setFormData({
       subgrupo: '',
@@ -446,7 +558,7 @@ const GerenciarGuindastes = () => {
         showUserInfo={true}
         user={user}
         title="Gerenciar Guindastes"
-        subtitle="Cadastre e edite os guindastes"
+        subtitle={isAdminConcessionaria ? 'Defina os preços da sua concessionária' : 'Cadastre e edite os guindastes'}
       />
       <div className="gerenciar-guindastes-container">
         <div className="gerenciar-guindastes-content">
@@ -497,12 +609,14 @@ const GerenciarGuindastes = () => {
                         </svg>
                         Atualizar
                       </button>
-                      <button onClick={handleAddNew} className="add-btn">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                        </svg>
-                        Novo Guindaste
-                      </button>
+                      {!isAdminConcessionaria && (
+                        <button onClick={handleAddNew} className="add-btn">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                          </svg>
+                          Novo Guindaste
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -567,47 +681,69 @@ const GerenciarGuindastes = () => {
                                       {guindaste.codigo_referencia && (
                                         <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
                                       )}
+                                      {isAdminConcessionaria && (
+                                        <p className="codigo-referencia">
+                                          Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="guindaste-actions">
-                                    <button
-                                      onClick={() => handleEdit(guindaste)}
-                                      className="action-btn edit-btn"
-                                      title="Editar Guindaste"
-                                      aria-label="Editar"
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                      </svg>
-                                      Editar
-                                    </button>
-                                    <button
-                                      onClick={() => handleDeleteClick(guindaste.id)}
-                                      className="action-btn delete-btn"
-                                      title="Remover Guindaste"
-                                      aria-label="Remover"
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        <line x1="10" y1="11" x2="10" y2="17" />
-                                        <line x1="14" y1="11" x2="14" y2="17" />
-                                      </svg>
-                                      Excluir
-                                    </button>
-                                    <button
-                                      className="action-btn price-btn"
-                                      title="Preços por Região"
-                                      aria-label="Preços por Região"
-                                      onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <line x1="12" y1="1" x2="12" y2="23" />
-                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                      </svg>
-                                      Preços
-                                    </button>
+                                    {isAdminConcessionaria ? (
+                                      <button
+                                        className="action-btn price-btn"
+                                        title="Preço da Concessionária"
+                                        aria-label="Preço da Concessionária"
+                                        onClick={() => openPrecoConcessionaria(guindaste)}
+                                      >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="12" y1="1" x2="12" y2="23" />
+                                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                        </svg>
+                                        Preço
+                                      </button>
+                                    ) : (
+                                      <>
+                                        <button
+                                          onClick={() => handleEdit(guindaste)}
+                                          className="action-btn edit-btn"
+                                          title="Editar Guindaste"
+                                          aria-label="Editar"
+                                        >
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                          </svg>
+                                          Editar
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteClick(guindaste.id)}
+                                          className="action-btn delete-btn"
+                                          title="Remover Guindaste"
+                                          aria-label="Remover"
+                                        >
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <polyline points="3 6 5 6 21 6" />
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                            <line x1="10" y1="11" x2="10" y2="17" />
+                                            <line x1="14" y1="11" x2="14" y2="17" />
+                                          </svg>
+                                          Excluir
+                                        </button>
+                                        <button
+                                          className="action-btn price-btn"
+                                          title="Preços por Região"
+                                          aria-label="Preços por Região"
+                                          onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                        >
+                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                            <line x1="12" y1="1" x2="12" y2="23" />
+                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                          </svg>
+                                          Preços
+                                        </button>
+                                      </>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -646,47 +782,69 @@ const GerenciarGuindastes = () => {
                                   {guindaste.codigo_referencia && (
                                     <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
                                   )}
+                                  {isAdminConcessionaria && (
+                                    <p className="codigo-referencia">
+                                      Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
                               <div className="guindaste-actions">
-                                <button
-                                  onClick={() => handleEdit(guindaste)}
-                                  className="action-btn edit-btn"
-                                  title="Editar Guindaste"
-                                  aria-label="Editar"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                  </svg>
-                                  Editar
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteClick(guindaste.id)}
-                                  className="action-btn delete-btn"
-                                  title="Remover Guindaste"
-                                  aria-label="Remover"
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                    <line x1="10" y1="11" x2="10" y2="17" />
-                                    <line x1="14" y1="11" x2="14" y2="17" />
-                                  </svg>
-                                  Excluir
-                                </button>
-                                <button
-                                  className="action-btn price-btn"
-                                  title="Preços por Região"
-                                  aria-label="Preços por Região"
-                                  onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
-                                >
-                                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="12" y1="1" x2="12" y2="23" />
-                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                  </svg>
-                                  Preços
-                                </button>
+                                {isAdminConcessionaria ? (
+                                  <button
+                                    className="action-btn price-btn"
+                                    title="Preço da Concessionária"
+                                    aria-label="Preço da Concessionária"
+                                    onClick={() => openPrecoConcessionaria(guindaste)}
+                                  >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                      <line x1="12" y1="1" x2="12" y2="23" />
+                                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                    </svg>
+                                    Preço
+                                  </button>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => handleEdit(guindaste)}
+                                      className="action-btn edit-btn"
+                                      title="Editar Guindaste"
+                                      aria-label="Editar"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                      </svg>
+                                      Editar
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteClick(guindaste.id)}
+                                      className="action-btn delete-btn"
+                                      title="Remover Guindaste"
+                                      aria-label="Remover"
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <polyline points="3 6 5 6 21 6" />
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                        <line x1="10" y1="11" x2="10" y2="17" />
+                                        <line x1="14" y1="11" x2="14" y2="17" />
+                                      </svg>
+                                      Excluir
+                                    </button>
+                                    <button
+                                      className="action-btn price-btn"
+                                      title="Preços por Região"
+                                      aria-label="Preços por Região"
+                                      onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                    >
+                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <line x1="12" y1="1" x2="12" y2="23" />
+                                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                      </svg>
+                                      Preços
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
                           );
@@ -1045,15 +1203,65 @@ const GerenciarGuindastes = () => {
       )}
 
       {/* Modal de Preços por Região */}
-      {showPrecosModal && (
+      {!isAdminConcessionaria && showPrecosModal && (
         <PrecosPorRegiaoModal
           guindasteId={guindasteIdPrecos}
-          open={showPrecosModal}
-          onClose={() => {
-            setShowPrecosModal(false);
-            setGuindasteIdPrecos(null);
-          }}
+          onClose={() => setShowPrecosModal(false)}
         />
+      )}
+
+      {showPrecoConcessionariaModal && (
+        <div className="modal-overlay" onClick={closePrecoConcessionaria}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Preço da Concessionária</h2>
+              <button onClick={closePrecoConcessionaria} className="close-btn">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                </svg>
+              </button>
+            </div>
+
+            <div style={{ padding: '0 24px 24px 24px' }}>
+              <div style={{ marginBottom: '14px', color: '#374151', fontWeight: 600 }}>
+                {guindasteSelecionadoPreco?.subgrupo}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                <div style={{ background: '#f3f4f6', borderRadius: '10px', padding: '12px', border: '1px solid #e5e7eb' }}>
+                  <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 700, marginBottom: '6px' }}>
+                    PREÇO STARK (REFERÊNCIA) — {concessionaria?.uf || ''}
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#111827' }}>
+                    {formatCurrency(precoStarkReferencia || 0)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
+                    Região: {regiaoReferencia}
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="preco_concessionaria">Preço da Concessionária *</label>
+                  <input
+                    id="preco_concessionaria"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={precoConcessionariaInput}
+                    onChange={(e) => setPrecoConcessionariaInput(e.target.value)}
+                    placeholder="Ex: 79900"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="modal-actions" style={{ marginTop: '18px' }}>
+                <button type="button" onClick={closePrecoConcessionaria} className="cancel-btn">Cancelar</button>
+                <button type="button" onClick={salvarPrecoConcessionaria} className="save-btn">Salvar Preço</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Modal de Confirmação de Exclusão */}

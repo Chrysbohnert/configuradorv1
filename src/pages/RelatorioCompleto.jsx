@@ -19,10 +19,26 @@ const RelatorioCompleto = () => {
     if (!user) return;
     try {
       setIsLoading(true);
-      const [users, propostas] = await Promise.all([db.getUsers(), db.getPropostas()]);
-      const vendedoresData = users.filter(u => u.tipo === 'vendedor');
+      const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+      const concessionariaId = user?.concessionaria_id;
+
+      const usersPromise = isAdminConcessionaria
+        ? db.getUsers({ concessionaria_id: concessionariaId })
+        : db.getUsers();
+
+      const users = await usersPromise;
+
+      const idsVendedores = (users || [])
+        .filter(u => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
+        .map(u => u.id);
+
+      const propostas = await (isAdminConcessionaria
+        ? db.getPropostas({ vendedor_id: idsVendedores })
+        : db.getPropostas());
+
+      const vendedoresData = (users || []).filter(u => u.tipo === 'vendedor' || u.tipo === 'vendedor_concessionaria');
       setVendedores(vendedoresData);
-      setTodosPedidos(propostas);
+      setTodosPedidos(propostas || []);
     } catch (error) {
       console.error('Erro ao carregar relatório:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');

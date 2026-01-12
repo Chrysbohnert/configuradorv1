@@ -23,6 +23,10 @@ export default function AprovacoesDescontos() {
 
   // Configurar listener para atualizações em tempo real
   useEffect(() => {
+    if (user?.tipo === 'admin_concessionaria') {
+      navigate('/dashboard-admin');
+      return;
+    }
     console.log('🔔 [AprovacoesDescontos] Iniciando listener realtime...');
 
     const channel = supabase
@@ -69,7 +73,7 @@ export default function AprovacoesDescontos() {
       console.log('🔕 [AprovacoesDescontos] Removendo listener');
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user, navigate]);
 
   const carregarSolicitacoes = async () => {
     try {

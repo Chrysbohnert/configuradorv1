@@ -17,6 +17,10 @@ const GerenciarGraficosCarga = () => {
   });
 
   useEffect(() => {
+    if (user?.tipo === 'admin_concessionaria') {
+      navigate('/dashboard-admin');
+      return;
+    }
     if (user) {
       loadGraficos();
     }

@@ -20,6 +20,31 @@ const Login = () => {
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
 
+  const validarConcessionariaAtiva = async (user) => {
+    if (!user) return true;
+
+    const isConcessionariaUser = user.tipo === 'admin_concessionaria' || user.tipo === 'vendedor_concessionaria';
+    if (!isConcessionariaUser) return true;
+
+    if (!user.concessionaria_id) {
+      setError('Usuário de concessionária sem vínculo. Contate o administrador.');
+      return false;
+    }
+
+    try {
+      const c = await db.getConcessionariaById(user.concessionaria_id);
+      if (c?.ativo === false) {
+        setError('Concessionária inativa. Contate o administrador Stark.');
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.error('Erro ao validar concessionária:', e);
+      setError('Erro ao validar concessionária. Tente novamente.');
+      return false;
+    }
+  };
+
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (error) setError('');
@@ -71,10 +96,19 @@ const Login = () => {
           
           // Login direto no banco (fallback) - senha verificada com hash
           const { senha: _, ...userWithoutPassword } = debugResult.user;
+
+          const concessionariaOk = await validarConcessionariaAtiva(userWithoutPassword);
+          if (!concessionariaOk) {
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, false);
+            setIsLoading(false);
+            return;
+          }
+
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
           localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
           
-          if (debugResult.user.tipo === 'admin') {
+          if (debugResult.user.tipo === 'admin' || debugResult.user.tipo === 'admin_concessionaria') {
             // Registrar tentativa bem-sucedida
             const clientIP = getClientIP();
             recordLoginAttempt(clientIP, email, true);
@@ -123,9 +157,23 @@ const Login = () => {
         if (user) {
           // Salvar dados do usuário (sem senha)
           const { senha: _, ...userWithoutPassword } = user;
+
+          const concessionariaOk = await validarConcessionariaAtiva(userWithoutPassword);
+          if (!concessionariaOk) {
+            try {
+              await supabase.auth.signOut();
+            } catch (e) {
+              console.error('Erro ao signOut:', e);
+            }
+            const clientIP = getClientIP();
+            recordLoginAttempt(clientIP, email, false);
+            setIsLoading(false);
+            return;
+          }
+
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
 
-          if (user.tipo === 'admin') {
+          if (user.tipo === 'admin' || user.tipo === 'admin_concessionaria') {
             // Registrar tentativa bem-sucedida
             const clientIP = getClientIP();
             recordLoginAttempt(clientIP, email, true);

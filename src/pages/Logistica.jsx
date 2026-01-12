@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { startOfWeek, startOfMonth, addDays, isToday, format as dfFormat } from 'date-fns';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
@@ -7,6 +7,7 @@ import '../styles/Dashboard.css';
 import '../styles/Logistica.css';
 
 const Logistica = () => {
+  const navigate = useNavigate();
   const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [eventos, setEventos] = useState([]);
@@ -16,6 +17,10 @@ const Logistica = () => {
   const [selectedDateStr, setSelectedDateStr] = useState('');
 
   useEffect(() => {
+    if (user?.tipo === 'admin_concessionaria') {
+      navigate('/dashboard-admin');
+      return;
+    }
     if (user) {
       loadData();
     }

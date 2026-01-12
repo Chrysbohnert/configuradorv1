@@ -7,6 +7,9 @@ const AdminNavigation = ({ user }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
+  const isAdminStark = user?.tipo === 'admin';
+  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+
   const navItems = [
     {
       path: '/dashboard-admin',
@@ -58,6 +61,20 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
+    ...(isAdminStark ? [
+      {
+        path: '/concessionarias',
+        label: 'Concessionárias',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 21h18" />
+            <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14" />
+            <path d="M9 21v-8h6v8" />
+            <path d="M9 9h6" />
+          </svg>
+        )
+      }
+    ] : []),
     {
       path: '/logistica',
       label: 'Logística',
@@ -118,6 +135,11 @@ const AdminNavigation = ({ user }) => {
     navigate(path);
     setIsOpen(false);
   };
+
+  const filteredNavItems = navItems.filter((item) => {
+    if (!isAdminConcessionaria) return true;
+    return !['/logistica', '/gerenciar-graficos-carga', '/aprovacoes-descontos'].includes(item.path);
+  });
 
   return (
     <>
@@ -186,7 +208,7 @@ const AdminNavigation = ({ user }) => {
         </div>
 
         <nav className="nav-menu">
-          {navItems.map((item) => (
+          {filteredNavItems.map((item) => (
             <button
               key={item.path}
               className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}

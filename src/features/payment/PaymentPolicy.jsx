@@ -28,6 +28,15 @@ export default function PaymentPolicy({
   regiaoClienteSelecionada = '', // Região selecionada do cliente
   debug = false,
 }) {
+  const user = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('user'));
+    } catch {
+      return null;
+    }
+  }, []);
+  const isVendedorConcessionaria = user?.tipo === 'vendedor_concessionaria';
+
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
 
@@ -1476,40 +1485,42 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                       ))}
                       
                       {/* Botão [+] para solicitar desconto adicional */}
-                      <button
-                        type="button"
-                        onClick={() => setModalSolicitacaoOpen(true)}
-                        disabled={aguardandoAprovacao}
-                        style={{
-                          padding: '10px 20px',
-                          border: '2px dashed #667eea',
-                          background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
-                          color: aguardandoAprovacao ? '#6c757d' : '#667eea',
-                          borderRadius: '6px',
-                          cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
-                          fontWeight: '600',
-                          fontSize: '14px',
-                          transition: 'all 0.2s ease',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px'
-                        }}
-                        onMouseOver={(e) => {
-                          if (!aguardandoAprovacao) {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.background = '#f0f3ff';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (!aguardandoAprovacao) {
-                            e.currentTarget.style.borderColor = '#667eea';
-                            e.currentTarget.style.background = '#fff';
-                          }
-                        }}
-                        title="Solicitar desconto extra"
-                      >
-                        {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar'}
-                      </button>
+                      {!isVendedorConcessionaria && (
+                        <button
+                          type="button"
+                          onClick={() => setModalSolicitacaoOpen(true)}
+                          disabled={aguardandoAprovacao}
+                          style={{
+                            padding: '10px 20px',
+                            border: '2px dashed #667eea',
+                            background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
+                            color: aguardandoAprovacao ? '#6c757d' : '#667eea',
+                            borderRadius: '6px',
+                            cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
+                            fontWeight: '600',
+                            fontSize: '14px',
+                            transition: 'all 0.2s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}
+                          onMouseOver={(e) => {
+                            if (!aguardandoAprovacao) {
+                              e.currentTarget.style.borderColor = '#667eea';
+                              e.currentTarget.style.background = '#f0f3ff';
+                            }
+                          }}
+                          onMouseOut={(e) => {
+                            if (!aguardandoAprovacao) {
+                              e.currentTarget.style.borderColor = '#667eea';
+                              e.currentTarget.style.background = '#fff';
+                            }
+                          }}
+                          title="Solicitar desconto extra"
+                        >
+                          {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar'}
+                        </button>
+                      )}
                     </div>
                     <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
                       ℹ️ Desconto máximo padrão: 7%. Para valores maiores, clique em [+]
@@ -1740,20 +1751,27 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       )}
 
       {/* Modal de Solicitação de Desconto */}
-      <SolicitarDescontoModal
-        isOpen={modalSolicitacaoOpen}
-        onClose={() => {
-          if (!aguardandoAprovacao) {
-            setModalSolicitacaoOpen(false);
-          }
-        }}
-        onSolicitar={handleSolicitarDesconto}
-        onVerificarStatus={handleVerificarStatus}
-        equipamentoDescricao={itens[0] ? `${itens[0].subgrupo || ''} ${itens[0].modelo || ''}`.trim() : 'Equipamento'}
-        valorBase={precoBase}
-        descontoAtual={descontoVendedor || 7}
-        isLoading={aguardandoAprovacao}
-      />
+      {!isVendedorConcessionaria && (
+        <SolicitarDescontoModal
+          isOpen={modalSolicitacaoOpen}
+          onClose={() => {
+            if (!aguardandoAprovacao) {
+              setModalSolicitacaoOpen(false);
+            }
+          }}
+          onSolicitar={handleSolicitarDesconto}
+          onVerificarStatus={handleVerificarStatus}
+          equipamentoDescricao={(() => {
+            const equipamento = itens[0];
+            return equipamento 
+              ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
+              : 'Equipamento não identificado';
+          })()}
+          valorBase={precoBase}
+          descontoAtual={descontoVendedor || 7}
+          isLoading={aguardandoAprovacao}
+        />
+      )}
     </div>
   );
 }
