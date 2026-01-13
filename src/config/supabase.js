@@ -1002,17 +1002,29 @@ class DatabaseService {
   }
 
   async createCaminhao(caminhaoData) {
-    console.log('🔍 Tentando criar caminhão com dados:', caminhaoData);
+    const payload = { ...(caminhaoData || {}) };
+
+    if (payload.medidaA !== undefined && payload.medida_a === undefined) payload.medida_a = payload.medidaA;
+    if (payload.medidaB !== undefined && payload.medida_b === undefined) payload.medida_b = payload.medidaB;
+    if (payload.medidaC !== undefined && payload.medida_c === undefined) payload.medida_c = payload.medidaC;
+    if (payload.medidaD !== undefined && payload.medida_d === undefined) payload.medida_d = payload.medidaD;
+
+    delete payload.medidaA;
+    delete payload.medidaB;
+    delete payload.medidaC;
+    delete payload.medidaD;
+
+    console.log('🔍 Tentando criar caminhão com dados:', payload);
     
     const { data, error } = await supabase
       .from('caminhoes')
-      .insert([caminhaoData])
+      .insert([payload])
       .select()
       .single();
     
     if (error) {
       console.error('❌ Erro na criação do caminhão:', error);
-      console.error('📋 Dados enviados:', caminhaoData);
+      console.error('📋 Dados enviados:', payload);
       throw error;
     }
     

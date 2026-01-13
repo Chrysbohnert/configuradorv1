@@ -240,6 +240,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const el = createContainer('pdf-capa', { inline });
   
   const vendedor = pedidoData.vendedor || 'NÃO INFORMADO';
+  const vendedorTelefone = pedidoData.vendedorTelefone || '';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
   
@@ -350,7 +351,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         <div><b>RAZÃO SOCIAL:</b> STARK INDUSTRIAL LTDA</div>
         <div><b>CNPJ:</b> 33.228.312/0001-06</div>
         <div><b>ENDEREÇO:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
-        <div><b>CONTATO:</b> (55) 99999-9999 / comercial@starkindustrial.com</div>
+        <div><b>CONTATO:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
@@ -359,6 +360,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
         <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">REPRESENTANTE STARK</div>
         <div><b>NOME:</b> ${vendedor}</div>
+        ${vendedorTelefone ? `<div><b>TELEFONE:</b> ${vendedorTelefone}</div>` : ''}
         <div><b>EMPRESA:</b> STARK INDUSTRIAL LTDA</div>
       </div>
 

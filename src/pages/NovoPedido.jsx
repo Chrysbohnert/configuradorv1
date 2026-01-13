@@ -145,10 +145,10 @@ const NovoPedido = () => {
       ano: caminhaoData.ano || null,
       voltagem: caminhaoData.voltagem,
       observacoes: caminhaoData.observacoes || null,
-      medidaA: caminhaoData.medidaA || null,
-      medidaB: caminhaoData.medidaB || null,
-      medidaC: caminhaoData.medidaC || null,
-      medidaD: caminhaoData.medidaD || null,
+      medida_a: caminhaoData.medidaA || null,
+      medida_b: caminhaoData.medidaB || null,
+      medida_c: caminhaoData.medidaC || null,
+      medida_d: caminhaoData.medidaD || null,
       patolamento: caminhaoData.patolamento || null
     };
   };
@@ -2158,6 +2158,17 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   }, [carrinho]);
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
+  const filterCaminhaoDataForDB = (data) => {
+    return {
+      tipo: data.tipo,
+      marca: data.marca,
+      modelo: data.modelo,
+      ano: data.ano || null,
+      voltagem: data.voltagem,
+      observacoes: data.observacoes || null
+    };
+  };
+
   // Modo edição de verdade vem da URL (propostaId). Isso evita timing issues de estado
   // que podem fazer o fluxo cair em INSERT e duplicar registros.
   const modoEdicaoCalc = !!propostaId;
@@ -2318,19 +2329,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         if (camposFaltando.length > 0) {
           throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
         }
-        
+
         const caminhaoDataToSave = {
-          tipo: caminhaoData.tipo,
-          marca: caminhaoData.marca,
-          modelo: caminhaoData.modelo,
-          ano: caminhaoData.ano || null,
-          voltagem: caminhaoData.voltagem,
-          observacoes: caminhaoData.observacoes || null,
-          medidaA: caminhaoData.medidaA || null,
-          medidaB: caminhaoData.medidaB || null,
-          medidaC: caminhaoData.medidaC || null,
-          medidaD: caminhaoData.medidaD || null,
-          patolamento: caminhaoData.patolamento || null,
+          ...filterCaminhaoDataForDB(caminhaoData),
           cliente_id: cliente.id
         };
         
@@ -2449,6 +2450,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     caminhaoData,
     pagamentoData,
     vendedor: user?.nome || 'Não informado',
+    vendedorTelefone: user?.telefone || '',
     guindastes: guindastesCompletos
   };
 
