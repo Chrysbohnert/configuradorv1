@@ -1206,7 +1206,11 @@ const GerenciarGuindastes = () => {
       {!isAdminConcessionaria && showPrecosModal && (
         <PrecosPorRegiaoModal
           guindasteId={guindasteIdPrecos}
-          onClose={() => setShowPrecosModal(false)}
+          open={showPrecosModal}
+          onClose={() => {
+            setShowPrecosModal(false);
+            setGuindasteIdPrecos(null);
+          }}
         />
       )}
 
