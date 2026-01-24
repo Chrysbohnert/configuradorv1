@@ -243,6 +243,9 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const vendedorTelefone = pedidoData.vendedorTelefone || '';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
+  const tituloProposta = pedidoData.isConcessionariaCompra
+    ? 'PROPOSTA DE COMPRA STARK GUINDASTES'
+    : 'PROPOSTA COMERCIAL STARK GUINDASTES';
   
   // DEBUG: Ver TODOS os dados que chegam
   console.log('🔍🔍🔍 [renderCapa] pedidoData COMPLETO:', pedidoData);
@@ -339,7 +342,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
 
       <!-- Título -->
       <div style="text-align:center; margin-top:6mm; line-height:1.1;">
-        <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">PROPOSTA COMERCIAL STARK GUINDASTES</div>
+        <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">${tituloProposta}</div>
         <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
            ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} 
         </div>
@@ -821,6 +824,11 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
     };
   }) || [];
 
+  const concessionariaLogo = pedidoData?.concessionariaLogoUrl || '';
+  const dadosBancariosConcessionaria = (pedidoData?.concessionariaDadosBancarios || '').trim();
+  const concessionariaNome = (pedidoData?.concessionariaNome || '').trim();
+  const usarDadosConcessionaria = Boolean(dadosBancariosConcessionaria || concessionariaLogo);
+
   // Carregar logos dos bancos como base64
   const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
   const logoSicredi = await renderImageToDataURL('/sicredi.png');
@@ -971,38 +979,50 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       <!-- DADOS BANCÁRIOS (MESMA PÁGINA) -->
       <div style="margin-top:16px; padding-top:12px; border-top:2px solid #ddd;">
-        <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">DADOS BANCÁRIOS – STARK INDUSTRIAL LTDA</div>
-        
-        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
-          <div>
-            <img src="${logoBB}" alt="Banco do Brasil" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-            <div style="font-weight:700; font-size:13px;">Banco do Brasil (001)</div>
-            <div style="font-weight:600;">Ag: 0339-5</div>
-            <div style="font-weight:600;">CC: 60548-4</div>
+        ${usarDadosConcessionaria ? `
+          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">
+            DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}
+          </div>
+          ${concessionariaLogo ? `
+            <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:140px; max-height:60px; margin-bottom:10px; display:block;"/>
+          ` : ''}
+          <div style="font-size:12px; line-height:1.6; white-space:pre-line; font-weight:600;">
+            ${dadosBancariosConcessionaria || 'Dados bancários não informados.'}
+          </div>
+        ` : `
+          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">DADOS BANCÁRIOS – STARK INDUSTRIAL LTDA</div>
+          
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
+            <div>
+              <img src="${logoBB}" alt="Banco do Brasil" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:13px;">Banco do Brasil (001)</div>
+              <div style="font-weight:600;">Ag: 0339-5</div>
+              <div style="font-weight:600;">CC: 60548-4</div>
+            </div>
+
+            <div>
+              <img src="${logoSicredi}" alt="Sicredi" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:13px;">Sicredi (748)</div>
+              <div style="font-weight:600;">Ag: 0307</div>
+              <div style="font-weight:600;">CC: 40771-1</div>
+            </div>
+
+            <div>
+              <img src="${logoSicoob}" alt="Sicoob" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:13px;">Sicoob (756)</div>
+              <div style="font-weight:600;">Ag: 3072-4</div>
+              <div style="font-weight:600;">CC: 33276-3</div>
+            </div>
           </div>
 
-          <div>
-            <img src="${logoSicredi}" alt="Sicredi" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-            <div style="font-weight:700; font-size:13px;">Sicredi (748)</div>
-            <div style="font-weight:600;">Ag: 0307</div>
-            <div style="font-weight:600;">CC: 40771-1</div>
+          <div style="margin-top:10px; font-size:12px; line-height:1.6;">
+            <div style="font-weight:700;">Stark Industrial Ltda | CNPJ: 33.228.312/0001-06</div>
+            <div style="margin-top:5px; font-weight:600;">
+              Pix CNPJ: <b>33228312000106</b> (Sicredi) | 
+              Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
+            </div>
           </div>
-
-          <div>
-            <img src="${logoSicoob}" alt="Sicoob" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-            <div style="font-weight:700; font-size:13px;">Sicoob (756)</div>
-            <div style="font-weight:600;">Ag: 3072-4</div>
-            <div style="font-weight:600;">CC: 33276-3</div>
-          </div>
-        </div>
-
-        <div style="margin-top:10px; font-size:12px; line-height:1.6;">
-          <div style="font-weight:700;">Stark Industrial Ltda | CNPJ: 33.228.312/0001-06</div>
-          <div style="margin-top:5px; font-weight:600;">
-            Pix CNPJ: <b>33228312000106</b> (Sicredi) | 
-            Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
-          </div>
-        </div>
+        `}
       </div>
     </div>
   `;

@@ -99,7 +99,7 @@ const Support = () => {
             <div className="help-section">
               <div className="faq-item">
                 <h3>Como criar um novo orçamento?</h3>
-                <p>1. Acesse "Novo Pedido" no menu<br/>
+                <p>1. Acesse "Nova Proposta" no menu<br/>
                 2. Selecione o guindaste desejado<br/>
                 3. Adicione opcionais se necessário<br/>
                 4. Preencha os dados do cliente<br/>
@@ -108,12 +108,10 @@ const Support = () => {
               </div>
 
               <div className="faq-item">
-                <h3>Como enviar orçamento por WhatsApp?</h3>
-                <p>1. Vá para "Histórico"<br/>
-                2. Clique no botão "📱 Enviar WhatsApp"<br/>
-                3. Digite o número do cliente<br/>
-                4. O PDF será gerado automaticamente<br/>
-                5. O WhatsApp Web será aberto para envio</p>
+                <h3>Como compartilhar a proposta com o cliente?</h3>
+                <p>1. Vá para "Propostas"<br/>
+                2. Gere o PDF da proposta<br/>
+                3. Compartilhe o arquivo e/ou o link público da proposta</p>
               </div>
 
               <div className="faq-item">

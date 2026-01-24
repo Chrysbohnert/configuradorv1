@@ -21,6 +21,8 @@ export default function PaymentPolicy({
   equipamentos = [],
   // preço base total (para cálculo/resumo)
   precoBase = 0,
+  modoConcessionaria = false,
+  descontoConcessionaria = 0,
   // callbacks opcionais
   onPaymentComputed,
   onPlanSelected,
@@ -35,7 +37,7 @@ export default function PaymentPolicy({
       return null;
     }
   }, []);
-  const isVendedorConcessionaria = user?.tipo === 'vendedor_concessionaria';
+  const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
 
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
@@ -846,6 +848,25 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [precoBase, resultado, descontoVendedor, extraValor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
 
   // =============== RENDER ========================================
+  const etapasVisiveis = modoConcessionaria ? [6, 7] : [1, 2, 3, 4, 5, 6, 7];
+
+  useEffect(() => {
+    if (!modoConcessionaria) return;
+    setTipoCliente('revenda');
+    setParticipacaoRevenda('nao');
+    setTipoIE('produtor');
+    setInstalacao('');
+    setTipoFrete('FOB');
+    setLocalInstalacao('Concessionária');
+    setTipoEntrega('');
+    setEtapa(6);
+  }, [modoConcessionaria]);
+
+  useEffect(() => {
+    if (!modoConcessionaria) return;
+    setDescontoVendedor(Number(descontoConcessionaria) || 0);
+  }, [modoConcessionaria, descontoConcessionaria]);
+
   return (
     <div className="payment-policy">
       {/* Card Flutuante de Valor em Tempo Real */}
@@ -915,9 +936,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         </div>
       </div>
 
-      {/* Stepper 1..7 */}
+      {/* Stepper */}
     <div className="pp-stepper">
-      {[1, 2, 3, 4, 5, 6, 7].map(n => (
+      {etapasVisiveis.map(n => (
         <div
           key={n}
           className={`pp-step ${etapa === n ? 'active' : etapa > n ? 'done' : ''}`}
@@ -926,19 +947,19 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             n===1?'Tipo de Cliente':
             n===2?'Participação & IE':
             n===3?'Instalação':
-            n===4?'Tipo de Frete':
+            n===4?'Frete':
             n===5?'Local & Entrega':
             n===6?'Entrada & Plano':
             'Resumo'
           }
         >
-          {n}
+          <span>{modoConcessionaria ? (n === 6 ? 'P' : 'R') : n}</span>
         </div>
       ))}
     </div>
 
     {/* 1) Tipo de Cliente */}
-    {etapa === 1 && (
+    {!modoConcessionaria && etapa === 1 && (
       <section className="payment-section">
         <h3>1) Tipo de Cliente</h3>
         <div className="radio-group">
@@ -971,7 +992,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     )}
 
     {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
-    {etapa === 2 && (
+    {!modoConcessionaria && etapa === 2 && (
       <section className="payment-section">
         <h3>2) Participação da Revenda & Escolha de Cliente</h3>
 
@@ -1054,7 +1075,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     )}
 
     {/* 3) Instalação */}
-    {etapa === 3 && (
+    {!modoConcessionaria && etapa === 3 && (
       <section className="payment-section">
         <h3>3) Instalação</h3>
 
@@ -1119,7 +1140,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     )}
 
     {/* 4) Organização do Frete */}
-    {etapa === 4 && (
+    {!modoConcessionaria && etapa === 4 && (
       <section className="payment-section">
         <h3>4) Organização do Frete</h3>
         <div className="radio-group">
@@ -1159,7 +1180,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     )}
 
     {/* 5) Local de Instalação & Tipo de Entrega */}
-    {etapa === 5 && (
+    {!modoConcessionaria && etapa === 5 && (
       <section className="payment-section">
         <h3>5) Local & Tipo de Entrega</h3>
 
@@ -1485,7 +1506,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                       ))}
                       
                       {/* Botão [+] para solicitar desconto adicional */}
-                      {!isVendedorConcessionaria && (
+                      {!isConcessionariaUser && (
                         <button
                           type="button"
                           onClick={() => setModalSolicitacaoOpen(true)}
@@ -1751,7 +1772,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       )}
 
       {/* Modal de Solicitação de Desconto */}
-      {!isVendedorConcessionaria && (
+      {!isConcessionariaUser && (
         <SolicitarDescontoModal
           isOpen={modalSolicitacaoOpen}
           onClose={() => {

@@ -151,14 +151,14 @@ const Historico = () => {
         showUserInfo={true}
         user={user}
         title="Histórico"
-        subtitle="Pedidos e Orçamentos"
+        subtitle="Propostas e Orçamentos"
       />
 
       <div className="historico-content">
         <div className="historico-header">
           <div className="header-info">
-            <h1>Pedidos</h1>
-            <p>Histórico completo de orçamentos e pedidos</p>
+            <h1>Propostas</h1>
+            <p>Histórico completo de orçamentos e propostas</p>
           </div>
           
           <div className="header-actions">
@@ -169,7 +169,7 @@ const Historico = () => {
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
               </svg>
-              Novo Pedido
+              Nova Proposta
             </button>
           </div>
         </div>
@@ -187,7 +187,7 @@ const Historico = () => {
                 <div className="pedido-header">
                   <div>
                     <h3 className="cliente-name">{pedido.cliente?.nome || 'Cliente não informado'}</h3>
-                    <div className="pedido-numero">Pedido: {pedido.numero_pedido}</div>
+                    <div className="pedido-numero">Proposta: {pedido.numero_pedido}</div>
                   </div>
                   <div 
                     className={`pedido-status status-${pedido.status}`}
@@ -256,7 +256,7 @@ const Historico = () => {
                 <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
               </svg>
             </div>
-            <h3>Nenhum pedido encontrado</h3>
+            <h3>Nenhuma proposta encontrada</h3>
             <p>Comece criando seu primeiro orçamento</p>
             <button 
               onClick={() => navigate('/novo-pedido')}
@@ -265,7 +265,7 @@ const Historico = () => {
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
               </svg>
-              Criar Primeiro Pedido
+              Criar Primeira Proposta
             </button>
           </div>
         )}

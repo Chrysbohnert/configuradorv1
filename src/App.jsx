@@ -59,7 +59,7 @@ function App() {
               </LazyRoute>
             } />
             <Route path="/novo-pedido/:propostaId?" element={
-              <LazyRoute loadingMessage="Carregando Novo Pedido...">
+              <LazyRoute loadingMessage="Carregando Nova Proposta...">
                 <NovoPedido />
               </LazyRoute>
             } />
@@ -137,6 +137,11 @@ function App() {
             <Route path="/concessionarias" element={
               <LazyRoute loadingMessage="Carregando Concessionárias...">
                 <Concessionarias />
+              </LazyRoute>
+            } />
+            <Route path="/nova-proposta-concessionaria" element={
+              <LazyRoute loadingMessage="Carregando Proposta da Concessionária...">
+                <NovoPedido />
               </LazyRoute>
             } />
           </Route>

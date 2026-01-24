@@ -235,7 +235,7 @@ const NovoPedidoRefatorado = () => {
         showBackButton={true}
         showSupportButton={true}
         showUserInfo={true}
-        title="Novo Pedido"
+        title="Nova Proposta"
         subtitle="Sistema de Orçamentos"
       />
       

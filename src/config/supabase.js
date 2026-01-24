@@ -1581,6 +1581,19 @@ class DatabaseService {
   }
 
   /**
+   * Atualizar resultado comercial da proposta
+   */
+  async updateResultadoVendaProposta(id, { resultado_venda = null, motivo_perda = null } = {}) {
+    const updates = {
+      resultado_venda,
+      motivo_perda: resultado_venda === 'perdida' ? (motivo_perda || null) : null,
+      data_resultado_venda: resultado_venda ? new Date().toISOString() : null,
+    };
+
+    return this.updateProposta(id, updates);
+  }
+
+  /**
    * Excluir proposta (soft delete - muda status para 'excluido')
    */
   async deleteProposta(id) {

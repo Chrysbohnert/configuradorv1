@@ -30,6 +30,12 @@ const Configuracoes = () => {
   // Estado da foto
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
+  const [concessionariaData, setConcessionariaData] = useState({
+    logo_url: '',
+    dados_bancarios: ''
+  });
+  const [concessionariaLogoPreview, setConcessionariaLogoPreview] = useState('');
+  const [concessionariaLogoFile, setConcessionariaLogoFile] = useState(null);
 
   useEffect(() => {
     if (contextUser) {
@@ -58,8 +64,100 @@ const Configuracoes = () => {
     }
   }, [contextUser]);
 
+  useEffect(() => {
+    const carregarConcessionaria = async () => {
+      if (!contextUser?.concessionaria_id) return;
+      try {
+        const c = await db.getConcessionariaById(contextUser.concessionaria_id);
+        setConcessionariaData({
+          logo_url: c?.logo_url || '',
+          dados_bancarios: c?.dados_bancarios || ''
+        });
+        setConcessionariaLogoPreview(c?.logo_url || '');
+      } catch (error) {
+        console.error('Erro ao carregar concessionária:', error);
+      }
+    };
+    carregarConcessionaria();
+  }, [contextUser?.concessionaria_id]);
+
   const handleProfileChange = (field, value) => {
     setProfileData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleConcessionariaChange = (field, value) => {
+    setConcessionariaData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleConcessionariaLogoChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Por favor, selecione uma imagem válida.' });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB.' });
+      return;
+    }
+
+    setConcessionariaLogoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setConcessionariaLogoPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveConcessionaria = async () => {
+    try {
+      setIsSaving(true);
+      setMessage({ type: '', text: '' });
+
+      if (!contextUser?.concessionaria_id) {
+        setMessage({ type: 'error', text: 'Concessionária não vinculada.' });
+        return;
+      }
+
+      let logoUrl = concessionariaData.logo_url;
+      if (concessionariaLogoFile) {
+        const fileName = `concessionarias/${contextUser.concessionaria_id}_${Date.now()}.${concessionariaLogoFile.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage
+          .from('concessionarias')
+          .upload(fileName, concessionariaLogoFile, { cacheControl: '3600', upsert: true });
+
+        if (!uploadError) {
+          const { data: urlData } = supabase.storage
+            .from('concessionarias')
+            .getPublicUrl(fileName);
+
+          if (urlData?.publicUrl) {
+            logoUrl = urlData.publicUrl;
+          }
+        } else {
+          throw uploadError;
+        }
+      }
+
+      await db.updateConcessionaria(contextUser.concessionaria_id, {
+        logo_url: logoUrl || null,
+        dados_bancarios: concessionariaData.dados_bancarios?.trim() || null
+      });
+
+      setConcessionariaData(prev => ({
+        ...prev,
+        logo_url: logoUrl || ''
+      }));
+      setConcessionariaLogoFile(null);
+      setMessage({ type: 'success', text: 'Configurações da concessionária atualizadas!' });
+    } catch (error) {
+      console.error('Erro ao salvar concessionária:', error);
+      setMessage({ type: 'error', text: 'Erro ao salvar dados da concessionária.' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handlePasswordChange = (field, value) => {
@@ -311,6 +409,19 @@ const Configuracoes = () => {
                 </svg>
                 Senha
               </button>
+              {contextUser?.tipo === 'admin_concessionaria' && (
+                <button
+                  className={`config-tab ${activeTab === 'concessionaria' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('concessionaria')}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M3 21h18" />
+                    <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14" />
+                    <path d="M9 21v-8h6v8" />
+                  </svg>
+                  Concessionária
+                </button>
+              )}
             </div>
 
             {/* Mensagens */}
@@ -324,6 +435,62 @@ const Configuracoes = () => {
                   )}
                 </svg>
                 {message.text}
+              </div>
+            )}
+
+            {activeTab === 'concessionaria' && contextUser?.tipo === 'admin_concessionaria' && (
+              <div className="config-panel">
+                <h2>Configurações da Concessionária</h2>
+
+                <div className="config-form">
+                  <div className="form-group">
+                    <label>Logo da Concessionária</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleConcessionariaLogoChange}
+                    />
+                    {concessionariaLogoPreview && (
+                      <div style={{ marginTop: '12px' }}>
+                        <img
+                          src={concessionariaLogoPreview}
+                          alt="Logo da concessionária"
+                          style={{ maxWidth: '200px', maxHeight: '90px', objectFit: 'contain' }}
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="form-group">
+                    <label>Dados Bancários (texto livre)</label>
+                    <textarea
+                      value={concessionariaData.dados_bancarios}
+                      onChange={(e) => handleConcessionariaChange('dados_bancarios', e.target.value)}
+                      rows={5}
+                      placeholder="Banco X\nAgência: 0001\nConta: 00000-0\nPix: ..."
+                    />
+                  </div>
+
+                  <button
+                    className="save-btn"
+                    onClick={handleSaveConcessionaria}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? (
+                      <>
+                        <div className="spinner"></div>
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
+                        </svg>
+                        Salvar Configurações
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 

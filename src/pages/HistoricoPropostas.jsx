@@ -10,9 +10,13 @@ const HistoricoPropostas = () => {
   const navigate = useNavigate();
   const [propostas, setPropostas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filtroStatus, setFiltroStatus] = useState('todos');
-  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [filtroResultado, setFiltroResultado] = useState('todos');
   const [busca, setBusca] = useState('');
+  const [resultadoModalOpen, setResultadoModalOpen] = useState(false);
+  const [propostaSelecionada, setPropostaSelecionada] = useState(null);
+  const [resultadoSelecionado, setResultadoSelecionado] = useState('');
+  const [motivoPerda, setMotivoPerda] = useState('');
+  const [salvandoResultado, setSalvandoResultado] = useState(false);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth < 768;
@@ -27,28 +31,6 @@ const HistoricoPropostas = () => {
       if (typeof window === 'undefined') return;
       setIsMobile(window.innerWidth < 768);
     };
-
-  const handleWhatsApp = (proposta) => {
-    try {
-      const baseUrl = window.location.origin;
-      const urlProposta = `${baseUrl}/proposta/${proposta.id}`;
-      const mensagem = [
-        `Olá, segue a proposta Stark Guindastes:`,
-        ``,
-        `Número: ${proposta.numero_proposta || ''}`,
-        proposta.cliente_nome ? `Cliente: ${proposta.cliente_nome}` : '',
-        proposta.valor_total ? `Valor: ${formatCurrency(proposta.valor_total)}` : '',
-        ``,
-        `Link: ${urlProposta}`
-      ].filter(Boolean).join('\n');
-
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-      window.open(waUrl, '_blank');
-    } catch (error) {
-      console.error('Erro ao abrir WhatsApp:', error);
-      alert('Não foi possível abrir o WhatsApp. Tente novamente.');
-    }
-  };
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -67,25 +49,43 @@ const HistoricoPropostas = () => {
     return raw;
   };
 
-  const handleWhatsApp = (proposta) => {
-    try {
-      const baseUrl = window.location.origin;
-      const urlProposta = `${baseUrl}/proposta/${proposta.id}`;
-      const mensagem = [
-        `Olá, segue a proposta Stark Guindastes:`,
-        ``,
-        `Número: ${proposta.numero_proposta || ''}`,
-        proposta.cliente_nome ? `Cliente: ${proposta.cliente_nome}` : '',
-        proposta.valor_total ? `Valor: ${formatCurrency(proposta.valor_total)}` : '',
-        ``,
-        `Link: ${urlProposta}`
-      ].filter(Boolean).join('\n');
+  const openResultadoModal = (proposta) => {
+    setPropostaSelecionada(proposta);
+    setResultadoSelecionado(proposta?.resultado_venda || '');
+    setMotivoPerda(proposta?.motivo_perda || '');
+    setResultadoModalOpen(true);
+  };
 
-      const waUrl = `https://wa.me/?text=${encodeURIComponent(mensagem)}`;
-      window.open(waUrl, '_blank');
+  const closeResultadoModal = () => {
+    if (salvandoResultado) return;
+    setResultadoModalOpen(false);
+    setPropostaSelecionada(null);
+    setResultadoSelecionado('');
+    setMotivoPerda('');
+  };
+
+  const salvarResultado = async () => {
+    if (!propostaSelecionada?.id) return;
+
+    if (resultadoSelecionado === 'perdida' && !motivoPerda.trim()) {
+      alert('Informe um motivo (curto) para a perda.');
+      return;
+    }
+
+    setSalvandoResultado(true);
+    try {
+      await db.updateResultadoVendaProposta(propostaSelecionada.id, {
+        resultado_venda: resultadoSelecionado || null,
+        motivo_perda: motivoPerda || null,
+      });
+
+      await carregarPropostas();
+      closeResultadoModal();
     } catch (error) {
-      console.error('Erro ao abrir WhatsApp:', error);
-      alert('Não foi possível abrir o WhatsApp. Tente novamente.');
+      console.error('Erro ao salvar resultado da proposta:', error);
+      alert('Erro ao salvar resultado da proposta.');
+    } finally {
+      setSalvandoResultado(false);
     }
   };
 
@@ -131,11 +131,13 @@ const HistoricoPropostas = () => {
 
   // Filtrar propostas
   const propostasFiltradas = propostas.filter(p => {
-    // Filtro de status
-    if (filtroStatus !== 'todos' && p.status !== filtroStatus) return false;
-    
-    // Filtro de tipo
-    if (filtroTipo !== 'todos' && p.tipo !== filtroTipo) return false;
+    // Filtro de resultado
+    if (filtroResultado !== 'todos') {
+      const r = p.resultado_venda || '';
+      if (filtroResultado === 'sem_resultado' && r) return false;
+      if (filtroResultado === 'efetivada' && r !== 'efetivada') return false;
+      if (filtroResultado === 'perdida' && r !== 'perdida') return false;
+    }
     
     // Busca por texto
     if (busca) {
@@ -149,6 +151,56 @@ const HistoricoPropostas = () => {
     
     return true;
   });
+
+  const getResultadoBadge = (resultado, motivo) => {
+    const r = (resultado || '').toLowerCase();
+
+    if (!r) {
+      return (
+        <span style={{
+          padding: '4px 10px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
+          color: '#374151',
+          border: '1px solid #e5e7eb'
+        }}>
+          ⏳ Sem resultado
+        </span>
+      );
+    }
+
+    if (r === 'efetivada') {
+      return (
+        <span style={{
+          padding: '4px 10px',
+          borderRadius: '999px',
+          fontSize: '12px',
+          fontWeight: '700',
+          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.25)'
+        }}>
+          ✅ Efetivada
+        </span>
+      );
+    }
+
+    return (
+      <span title={motivo ? `Motivo: ${motivo}` : ''} style={{
+        padding: '4px 10px',
+        borderRadius: '999px',
+        fontSize: '12px',
+        fontWeight: '700',
+        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+        color: '#fff',
+        border: '1px solid rgba(255,255,255,0.25)'
+      }}>
+        ❌ Perdida
+      </span>
+    );
+  };
 
   const getStatusBadge = (status) => {
     const styles = {
@@ -248,11 +300,11 @@ const HistoricoPropostas = () => {
 
         <div>
           <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: '#555' }}>
-            Status
+            Resultado
           </label>
           <select
-            value={filtroStatus}
-            onChange={(e) => setFiltroStatus(e.target.value)}
+            value={filtroResultado}
+            onChange={(e) => setFiltroResultado(e.target.value)}
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -263,31 +315,9 @@ const HistoricoPropostas = () => {
             }}
           >
             <option value="todos">Todos</option>
-            <option value="pendente">Pendente</option>
-            <option value="finalizado">Finalizado</option>
-            <option value="excluido">Excluído</option>
-          </select>
-        </div>
-
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: '#555' }}>
-            Tipo
-          </label>
-          <select
-            value={filtroTipo}
-            onChange={(e) => setFiltroTipo(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="todos">Todos</option>
-            <option value="orcamento">Orçamento</option>
-            <option value="proposta">Proposta</option>
+            <option value="sem_resultado">Sem resultado</option>
+            <option value="efetivada">Efetivada</option>
+            <option value="perdida">Perdida</option>
           </select>
         </div>
 
@@ -325,7 +355,7 @@ const HistoricoPropostas = () => {
             Nenhuma proposta encontrada
           </h3>
           <p style={{ color: '#666', fontSize: '14px' }}>
-            {busca || filtroStatus !== 'todos' || filtroTipo !== 'todos'
+            {busca || filtroResultado !== 'todos'
               ? 'Tente ajustar os filtros de busca'
               : 'Comece gerando sua primeira proposta'}
           </p>
@@ -374,6 +404,28 @@ const HistoricoPropostas = () => {
                   </div>
                 </div>
 
+                <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                  <div>
+                    {getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}
+                  </div>
+                  <button
+                    onClick={() => openResultadoModal(proposta)}
+                    style={{
+                      padding: '8px 12px',
+                      background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
+                      color: 'white',
+                      border: '1px solid rgba(255,255,255,0.12)',
+                      borderRadius: '10px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      cursor: 'pointer'
+                    }}
+                    title="Marcar resultado da proposta"
+                  >
+                    📈 Resultado
+                  </button>
+                </div>
+
                 <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
                     <>
@@ -395,21 +447,21 @@ const HistoricoPropostas = () => {
                         ✏️ Editar
                       </button>
                       <button
-                        onClick={() => handleWhatsApp(proposta)}
+                        onClick={() => openResultadoModal(proposta)}
                         style={{
                           width: '100%',
                           padding: '8px 12px',
-                          background: '#25D366',
+                          background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
                           color: 'white',
-                          border: 'none',
+                          border: '1px solid rgba(255,255,255,0.12)',
                           borderRadius: '8px',
                           fontSize: '14px',
-                          fontWeight: '600',
+                          fontWeight: '700',
                           cursor: 'pointer'
                         }}
-                        title="Enviar proposta pelo WhatsApp"
+                        title="Marcar resultado da proposta"
                       >
-                        💬 WhatsApp
+                        📈 Resultado
                       </button>
                     </>
                   )}
@@ -473,6 +525,9 @@ const HistoricoPropostas = () => {
                   <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
                     Status
                   </th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                    Resultado
+                  </th>
                   <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#555' }}>
                     Ações
                   </th>
@@ -504,6 +559,9 @@ const HistoricoPropostas = () => {
                     <td style={{ padding: '16px' }}>
                       {getStatusBadge(proposta.status)}
                     </td>
+                    <td style={{ padding: '16px' }}>
+                      {getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}
+                    </td>
                     <td style={{ padding: '16px', textAlign: 'center' }}>
                       <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
                         {/* Permitir edição de propostas pendentes E finalizadas */}
@@ -526,10 +584,10 @@ const HistoricoPropostas = () => {
                               ✏️ Editar
                             </button>
                             <button
-                              onClick={() => handleWhatsApp(proposta)}
+                              onClick={() => openResultadoModal(proposta)}
                               style={{
                                 padding: '6px 12px',
-                                background: '#25D366',
+                                background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
                                 color: 'white',
                                 border: 'none',
                                 borderRadius: '6px',
@@ -537,9 +595,9 @@ const HistoricoPropostas = () => {
                                 fontWeight: '600',
                                 cursor: 'pointer'
                               }}
-                              title="Enviar proposta pelo WhatsApp"
+                              title="Marcar resultado da proposta"
                             >
-                              💬 WhatsApp
+                              📈 Resultado
                             </button>
                             {proposta.status === 'pendente' && (
                               <button
@@ -605,6 +663,206 @@ const HistoricoPropostas = () => {
           ➕ Nova Proposta
         </button>
       </div>
+
+      {resultadoModalOpen && (
+        <div
+          onClick={closeResultadoModal}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(6px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '18px',
+            zIndex: 9999
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: 'min(560px, 100%)',
+              borderRadius: '16px',
+              background: 'linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
+              border: '1px solid rgba(17,24,39,0.10)',
+              overflow: 'hidden'
+            }}
+          >
+            <div style={{
+              padding: '16px 18px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
+              color: 'white'
+            }}>
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: '800', letterSpacing: '0.3px' }}>
+                  Resultado da Proposta
+                </div>
+                <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
+                  #{formatNumeroProposta(propostaSelecionada?.numero_proposta)} • {propostaSelecionada?.cliente_nome}
+                </div>
+              </div>
+              <button
+                onClick={closeResultadoModal}
+                disabled={salvandoResultado}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(255,255,255,0.18)',
+                  background: 'rgba(255,255,255,0.10)',
+                  color: 'white',
+                  cursor: salvandoResultado ? 'not-allowed' : 'pointer',
+                  fontWeight: '900'
+                }}
+                title="Fechar"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ padding: '18px' }}>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: '1fr',
+                gap: '10px',
+                marginBottom: '14px'
+              }}>
+                <label style={{ fontSize: '12px', fontWeight: '800', color: '#111827' }}>
+                  Selecione o resultado
+                </label>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
+                  <button
+                    onClick={() => setResultadoSelecionado('')}
+                    disabled={salvandoResultado}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: resultadoSelecionado === '' ? '2px solid #111827' : '1px solid #e5e7eb',
+                      background: resultadoSelecionado === '' ? 'rgba(17,24,39,0.06)' : 'white',
+                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>⏳ Sem resultado</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
+                  </button>
+
+                  <button
+                    onClick={() => setResultadoSelecionado('efetivada')}
+                    disabled={salvandoResultado}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: resultadoSelecionado === 'efetivada' ? '2px solid #16a34a' : '1px solid #e5e7eb',
+                      background: resultadoSelecionado === 'efetivada' ? 'rgba(22,163,74,0.08)' : 'white',
+                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>✅ Efetivada</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Virou venda. Entra no cálculo de conversão do admin.</div>
+                  </button>
+
+                  <button
+                    onClick={() => setResultadoSelecionado('perdida')}
+                    disabled={salvandoResultado}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '12px',
+                      border: resultadoSelecionado === 'perdida' ? '2px solid #dc2626' : '1px solid #e5e7eb',
+                      background: resultadoSelecionado === 'perdida' ? 'rgba(220,38,38,0.08)' : 'white',
+                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>❌ Perdida</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
+                  Motivo (apenas se perdida)
+                </label>
+                <input
+                  value={motivoPerda}
+                  onChange={(e) => setMotivoPerda(e.target.value)}
+                  disabled={salvandoResultado || resultadoSelecionado !== 'perdida'}
+                  maxLength={140}
+                  placeholder={resultadoSelecionado === 'perdida' ? 'Ex: preço alto, prazo, concorrência, desistiu...' : '—'}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '10px',
+                    border: resultadoSelecionado === 'perdida' ? '1px solid #e5e7eb' : '1px dashed #e5e7eb',
+                    background: resultadoSelecionado === 'perdida' ? 'white' : '#f9fafb',
+                    fontSize: '14px',
+                    outline: 'none'
+                  }}
+                />
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>
+                  <span>
+                    {resultadoSelecionado === 'perdida' ? 'Obrigatório' : 'Desabilitado'}
+                  </span>
+                  <span>
+                    {(motivoPerda || '').length}/140
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '14px 18px',
+              background: '#fff',
+              borderTop: '1px solid #e5e7eb',
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: '10px'
+            }}>
+              <button
+                onClick={closeResultadoModal}
+                disabled={salvandoResultado}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: '1px solid #e5e7eb',
+                  background: 'white',
+                  fontWeight: '800',
+                  cursor: salvandoResultado ? 'not-allowed' : 'pointer'
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={salvarResultado}
+                disabled={salvandoResultado}
+                style={{
+                  flex: 1,
+                  padding: '10px 12px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: salvandoResultado
+                    ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
+                    : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  color: 'white',
+                  fontWeight: '900',
+                  cursor: salvandoResultado ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {salvandoResultado ? 'Salvando...' : 'Salvar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
