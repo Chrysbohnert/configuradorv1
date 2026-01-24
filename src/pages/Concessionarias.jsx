@@ -30,6 +30,8 @@ const Concessionarias = () => {
     telefone: '',
     email: '',
     endereco: '',
+    desconto_base: '',
+    desconto_compra: '',
     admin_nome: '',
     admin_email: '',
     admin_senha: ''
@@ -62,6 +64,7 @@ const Concessionarias = () => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+
   const handleCloseModal = () => {
     setShowModal(false);
     setIsEditMode(false);
@@ -73,6 +76,8 @@ const Concessionarias = () => {
       telefone: '',
       email: '',
       endereco: '',
+      desconto_base: '',
+      desconto_compra: '',
       admin_nome: '',
       admin_email: '',
       admin_senha: ''
@@ -89,6 +94,10 @@ const Concessionarias = () => {
       telefone: '',
       email: '',
       endereco: '',
+      desconto_base: '',
+      desconto_compra: '',
+      logo_url: '',
+      dados_bancarios: '',
       admin_nome: '',
       admin_email: '',
       admin_senha: ''
@@ -106,6 +115,8 @@ const Concessionarias = () => {
       telefone: c.telefone || '',
       email: c.email || '',
       endereco: c.endereco || '',
+      desconto_base: c.desconto_base ?? '',
+      desconto_compra: c.desconto_compra ?? '',
       admin_nome: '',
       admin_email: '',
       admin_senha: ''
@@ -173,7 +184,9 @@ const Concessionarias = () => {
           cnpj: formData.cnpj?.trim() || null,
           telefone: formData.telefone?.trim() || null,
           email: formData.email?.trim() || null,
-          endereco: formData.endereco?.trim() || null
+          endereco: formData.endereco?.trim() || null,
+          desconto_base: formData.desconto_base !== '' ? Number(formData.desconto_base) : null,
+          desconto_compra: formData.desconto_compra !== '' ? Number(formData.desconto_compra) : null
         });
 
         handleCloseModal();
@@ -188,8 +201,12 @@ const Concessionarias = () => {
         cnpj: formData.cnpj?.trim() || null,
         telefone: formData.telefone?.trim() || null,
         email: formData.email?.trim() || null,
-        endereco: formData.endereco?.trim() || null
+        endereco: formData.endereco?.trim() || null,
+        desconto_base: formData.desconto_base !== '' ? Number(formData.desconto_base) : null,
+        desconto_compra: formData.desconto_compra !== '' ? Number(formData.desconto_compra) : null
       });
+
+      const concessionariaId = concessionariaCriada?.id;
 
       if (!concessionariaCriada?.id) {
         throw new Error('Falha ao criar concessionária: ID não retornado pelo banco.');
@@ -200,7 +217,7 @@ const Concessionarias = () => {
         email: formData.admin_email.trim(),
         senha: formData.admin_senha,
         tipo: 'admin_concessionaria',
-        concessionaria_id: concessionariaCriada.id
+        concessionaria_id: concessionariaId
       });
 
       handleCloseModal();
@@ -377,6 +394,32 @@ const Concessionarias = () => {
                     type="text"
                     value={formData.endereco}
                     onChange={(e) => handleInputChange('endereco', e.target.value)}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Desconto Base (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    step="0.1"
+                    value={formData.desconto_base}
+                    onChange={(e) => handleInputChange('desconto_base', e.target.value)}
+                    placeholder="Ex: 10"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Desconto Compra (%)</label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    step="0.1"
+                    value={formData.desconto_compra}
+                    onChange={(e) => handleInputChange('desconto_compra', e.target.value)}
+                    placeholder="Ex: 15"
                   />
                 </div>
 

@@ -21,7 +21,10 @@ const NovoPedido = () => {
   const location = useLocation();
   const { propostaId } = useParams(); // Captura ID da proposta para edição
   const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
-  const isVendedorConcessionaria = user?.tipo === 'vendedor_concessionaria';
+  const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
+  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+  const isAdminStark = user?.tipo === 'admin';
+  const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
@@ -48,6 +51,8 @@ const NovoPedido = () => {
   // ✅ NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
   // Se admin define 1 região, usa essa. Se define múltiplas, vendedor seleciona qual usar.
   const [regiaoClienteSelecionada, setRegiaoClienteSelecionada] = useState('');
+  const [concessionariaInfo, setConcessionariaInfo] = useState(null);
+  const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
 
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
@@ -56,6 +61,36 @@ const NovoPedido = () => {
       setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
     }
   }, [location.state?.regiaoClienteSelecionada]);
+
+  useEffect(() => {
+    if (!isModoConcessionaria || !user?.concessionaria_id) return;
+    const carregarConcessionaria = async () => {
+      try {
+        const c = await db.getConcessionariaById(user.concessionaria_id);
+        setConcessionariaInfo(c);
+        setClienteData({
+          nome: c?.nome || 'Concessionária',
+          telefone: c?.telefone || '',
+          email: c?.email || '',
+          documento: c?.cnpj || '',
+          endereco: c?.endereco || ''
+        });
+        const desconto = c?.desconto_compra ?? c?.desconto_base ?? 0;
+        setDescontoConcessionaria(Number(desconto) || 0);
+      } catch (error) {
+        console.error('Erro ao carregar concessionária:', error);
+        alert('Erro ao carregar dados da concessionária.');
+      }
+    };
+    carregarConcessionaria();
+  }, [isModoConcessionaria, user?.concessionaria_id]);
+
+  useEffect(() => {
+    if (location.pathname !== '/nova-proposta-concessionaria') return;
+    if (isAdminStark) {
+      navigate('/dashboard-admin');
+    }
+  }, [location.pathname, isAdminStark, navigate]);
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -208,7 +243,7 @@ const NovoPedido = () => {
     const regioes = user?.regioes_operacao || [];
     
     // ✅ NOVO: Não recalcular se região não foi selecionada
-    if (carrinho.length === 0 || regioes.length === 0 || !regiaoClienteSelecionada) {
+    if (carrinho.length === 0 || (!isConcessionariaUser && (regioes.length === 0 || !regiaoClienteSelecionada))) {
       console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
         carrinhoLength: carrinho.length,
         regioesOperacao: regioes.length,
@@ -248,7 +283,7 @@ const NovoPedido = () => {
       if (item.tipo === 'guindaste') {
         try {
           let novoPreco = 0;
-          if (isVendedorConcessionaria) {
+          if (isConcessionariaUser) {
             console.log(`💰 [recalcularPrecosCarrinho] (CONCESSIONÁRIA) Buscando preço override para ${item.nome} (ID: ${item.id})`);
             novoPreco = await db.getConcessionariaPreco(user?.concessionaria_id, item.id);
           } else {
@@ -256,7 +291,7 @@ const NovoPedido = () => {
             novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
           }
 
-          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isVendedorConcessionaria ? 'concessionaria' : regiaoVendedor})`);
+          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isConcessionariaUser ? 'concessionaria' : regiaoVendedor})`);
 
           if (novoPreco !== item.preco) {
             console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
@@ -374,7 +409,7 @@ const NovoPedido = () => {
 
         // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;
-        if (isVendedorConcessionaria) {
+        if (isConcessionariaUser) {
           try {
             precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
             if (!precoGuindaste || precoGuindaste === 0) {
@@ -460,13 +495,19 @@ const NovoPedido = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep]);
 
-  const steps = [
-    { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
-    { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
-    { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
-    { id: 4, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
-    { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
-  ];
+  const steps = isModoConcessionaria
+    ? [
+        { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
+        { id: 2, title: 'Pagamento', icon: '💳', description: 'Condição de compra' },
+        { id: 3, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
+      ]
+    : [
+        { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
+        { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
+        { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
+        { id: 4, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
+        { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
+      ];
 
   // Capacidades hardcoded para carregamento instantâneo
   const getCapacidadesUnicas = () => {
@@ -538,7 +579,7 @@ const NovoPedido = () => {
       // 2. Buscar preço inicial
       let precoGuindaste = 0;
       let regiaoInicial = 'concessionaria';
-      if (isVendedorConcessionaria) {
+      if (isConcessionariaUser) {
         precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
         logger.log(`Preço inicial (concessionária): R$ ${precoGuindaste}`);
         if (!precoGuindaste || precoGuindaste === 0) {
@@ -696,17 +737,21 @@ const NovoPedido = () => {
       case 1:
         return (
           <div className="step-content">
-            {/* Seletor de região para todos os vendedores */}
-            <div className="step-header">
-              <h2>📍 Região do Cliente</h2>
-              <p>Selecione a região para definir a tabela de preços</p>
-            </div>
-            
-            <SeletorRegiaoCliente
-              regiaoSelecionada={regiaoClienteSelecionada}
-              onRegiaoChange={setRegiaoClienteSelecionada}
-              regioesDisponiveis={user?.regioes_operacao || []}
-            />
+            {!isModoConcessionaria && (
+              <>
+                {/* Seletor de região para todos os vendedores */}
+                <div className="step-header">
+                  <h2>📍 Região do Cliente</h2>
+                  <p>Selecione a região para definir a tabela de preços</p>
+                </div>
+                
+                <SeletorRegiaoCliente
+                  regiaoSelecionada={regiaoClienteSelecionada}
+                  onRegiaoChange={setRegiaoClienteSelecionada}
+                  regioesDisponiveis={user?.regioes_operacao || []}
+                />
+              </>
+            )}
 
             <div className="step-header" style={{ marginTop: '40px' }}>
               <h2>🏗️ Selecionar Guindaste</h2>
@@ -730,7 +775,7 @@ const NovoPedido = () => {
           <div className="step-content">
             <div className="step-header">
               <h2>Política de Pagamento</h2>
-              <p>Selecione a forma de pagamento e visualize os descontos</p>
+              <p>{isModoConcessionaria ? 'Condição de compra para concessionária' : 'Selecione a forma de pagamento e visualize os descontos'}</p>
             </div>
             
             <PaymentPolicy
@@ -745,6 +790,8 @@ const NovoPedido = () => {
               carrinho={carrinho}
               onNext={handleNext}
               regiaoClienteSelecionada={regiaoClienteSelecionada}
+              modoConcessionaria={isModoConcessionaria}
+              descontoConcessionaria={descontoConcessionaria}
             />
           </div>
         );
@@ -752,39 +799,63 @@ const NovoPedido = () => {
       case 3:
         return (
           <div className="step-content">
-            <div className="step-header-with-nav">
-              <button 
-                className="btn-back"
-                onClick={handlePrevious}
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                </svg>
-                Voltar ao Pagamento
-              </button>
-              
-              <div className="step-header">
-                <h2>👤 Dados do Cliente</h2>
-                <p>Preencha as informações do cliente para finalizar o orçamento</p>
-              </div>
-            </div>
-            
-            <div className="client-form-container">
-              <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
-              
-              <div className="form-actions">
-                <button 
-                  className="btn-continue"
-                  onClick={handleNext}
-                  disabled={!canGoNext()}
-                >
-                  <span>Continuar para Estudo Veicular</span>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                  </svg>
-                </button>
-              </div>
-            </div>
+            {isModoConcessionaria ? (
+              <>
+                <div className="step-header">
+                  <h2>Resumo da Proposta</h2>
+                  <p>Revise e confirme as informações</p>
+                </div>
+                <ResumoPedido 
+                  carrinho={carrinho}
+                  clienteData={clienteData}
+                  caminhaoData={caminhaoData}
+                  pagamentoData={pagamentoData}
+                  user={user}
+                  guindastes={guindastes}
+                  isEdicao={isEdicao}
+                  propostaOriginal={propostaOriginal}
+                  propostaId={propostaId}
+                  onRemoverItem={removerItemPorIndex}
+                  onLimparCarrinho={limparCarrinho}
+                />
+              </>
+            ) : (
+              <>
+                <div className="step-header-with-nav">
+                  <button 
+                    className="btn-back"
+                    onClick={handlePrevious}
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                    Voltar ao Pagamento
+                  </button>
+                  
+                  <div className="step-header">
+                    <h2>👤 Dados do Cliente</h2>
+                    <p>Preencha as informações do cliente para finalizar o orçamento</p>
+                  </div>
+                </div>
+                
+                <div className="client-form-container">
+                  <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
+                  
+                  <div className="form-actions">
+                    <button 
+                      className="btn-continue"
+                      onClick={handleNext}
+                      disabled={!canGoNext()}
+                    >
+                      <span>Continuar para Estudo Veicular</span>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         );
 
@@ -909,7 +980,7 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             <div className="step-header">
-              <h2>Resumo do Pedido</h2>
+              <h2>Resumo da Proposta</h2>
               <p>Revise e confirme as informações</p>
             </div>
             <ResumoPedido 
@@ -938,6 +1009,10 @@ const NovoPedido = () => {
     
     console.log('🔎 validateStep chamado para step:', step);
     
+    if (isModoConcessionaria) {
+      setValidationErrors({});
+      return true;
+    }
     switch (step) {
       case 1:
         if (guindastesSelecionados.length === 0) {
@@ -1092,7 +1167,8 @@ const NovoPedido = () => {
     console.log('❌ Erros de validação (estado antigo):', JSON.stringify(validationErrors, null, 2));
     console.log('⚠️ ATENÇÃO: Os erros reais foram logados dentro do validateStep acima ☝️');
     
-    if (isValid && currentStep < 5) {
+    const totalSteps = steps.length;
+    if (isValid && currentStep < totalSteps) {
       const nextStep = currentStep + 1;
       console.log('➡️ Avançando para step:', nextStep);
       setCurrentStep(nextStep);
@@ -1128,12 +1204,12 @@ const NovoPedido = () => {
       
       // Limpar carrinho e navegar para histórico
       limparCarrinho();
-      navigate('/historico');
+      navigate(isModoConcessionaria ? '/dashboard-admin' : '/historico');
       
-      alert('Pedido finalizado e salvo com sucesso!');
+      alert('Proposta finalizada e salva com sucesso!');
     } catch (error) {
-      console.error('Erro ao finalizar pedido:', error);
-      alert('Erro ao salvar pedido. Tente novamente.');
+      console.error('Erro ao finalizar proposta:', error);
+      alert('Erro ao salvar proposta. Tente novamente.');
     }
   };
 
@@ -1145,12 +1221,12 @@ const NovoPedido = () => {
     <div className="novo-pedido-container">
       <UnifiedHeader
         showBackButton={true}
-        onBackClick={() => navigate('/dashboard')}
+        onBackClick={() => navigate(isModoConcessionaria ? '/dashboard-admin' : '/dashboard')}
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : "Novo Pedido"}
-        subtitle={isEdicao ? "Atualize os dados da proposta existente" : "Criar orçamento profissional"}
+        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : (isModoConcessionaria ? 'Nova Proposta da Concessionária' : 'Nova Proposta')}
+        subtitle={isEdicao ? "Atualize os dados da proposta existente" : (isModoConcessionaria ? 'Compra interna simplificada' : 'Criar orçamento profissional')}
         extraButtons={[
           import.meta.env.DEV && (
             <>
@@ -1263,16 +1339,16 @@ const NovoPedido = () => {
         {/* Progress Bar */}
         <div className="progress-bar-container">
           <div className="progress-bar-background">
-            <div 
-              className="progress-bar-fill" 
-              style={{ width: `${(currentStep / 5) * 100}%` }}
-            ></div>
-          </div>
-          <div className="progress-info">
-            <span className="progress-text">Etapa {currentStep} de 5</span>
-            <span className="progress-percentage">{Math.round((currentStep / 5) * 100)}%</span>
-          </div>
+          <div 
+            className="progress-bar-fill" 
+            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+          ></div>
         </div>
+        <div className="progress-info">
+          <span className="progress-text">Etapa {currentStep} de {steps.length}</span>
+          <span className="progress-percentage">{Math.round((currentStep / steps.length) * 100)}%</span>
+        </div>
+      </div>
 
         {/* Progress Steps */}
         <div className={`progress-steps step-${currentStep}`}>

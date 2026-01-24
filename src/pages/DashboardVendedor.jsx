@@ -88,7 +88,7 @@ const DashboardVendedor = () => {
           {/* Header de Boas-vindas */}
           <div className="welcome-header">
             <h1>Bem-vindo, {user.nome}!</h1>
-            <p>Gerencie seus pedidos e orçamentos</p>
+            <p>Gerencie suas propostas e orçamentos</p>
           </div>
 
           {/* Seção Missão, Visão e Valores */}
@@ -134,7 +134,7 @@ const DashboardVendedor = () => {
               </div>
               <div className="metric-content">
                 <div className="metric-value">{stats.totalPedidos}</div>
-                <div className="metric-label">PEDIDOS NO MÊS</div>
+                <div className="metric-label">PROPOSTAS NO MÊS</div>
               </div>
             </div>
 

@@ -25,7 +25,7 @@ const ResumoForm = ({
 
   return (
     <div className="resumo-form">
-      <h3>Resumo do Pedido</h3>
+      <h3>Resumo da Proposta</h3>
       
       {/* Dados do Cliente */}
       <div className="resumo-section">
@@ -103,7 +103,7 @@ const ResumoForm = ({
 
       {/* Itens do Carrinho */}
       <div className="resumo-section">
-        <h4>Itens do Pedido</h4>
+        <h4>Itens da Proposta</h4>
         <div className="carrinho-resumo">
           {carrinho.map((item, index) => (
             <div key={`${item.id}-${index}`} className="carrinho-item-resumo">

@@ -129,7 +129,7 @@ const RelatorioCompleto = () => {
               <div className="stat-card">
                 <div className="stat-info">
                   <div className="stat-value">{resumo.totalPedidos}</div>
-                  <div className="stat-label">Pedidos (todos)</div>
+                  <div className="stat-label">Propostas (todas)</div>
                 </div>
               </div>
               <div className="stat-card">
@@ -155,7 +155,7 @@ const RelatorioCompleto = () => {
             {/* Tabela simples de pedidos */}
             <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>Pedidos ({pedidosFiltrados.length})</h3>
+                <h3 style={{ margin: 0 }}>Propostas ({pedidosFiltrados.length})</h3>
                     </div>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>

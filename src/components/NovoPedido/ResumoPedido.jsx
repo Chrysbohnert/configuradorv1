@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import PDFGenerator from '../PDFGenerator';
 import { db } from '../../config/supabase';
@@ -225,12 +225,31 @@ const ResumoPedido = ({
       };
     });
 
+  const [concessionariaInfo, setConcessionariaInfo] = useState(null);
+
+  useEffect(() => {
+    const carregarConcessionaria = async () => {
+      if (!user?.concessionaria_id) return;
+      try {
+        const c = await db.getConcessionariaById(user.concessionaria_id);
+        setConcessionariaInfo(c || null);
+      } catch (error) {
+        console.error('Erro ao carregar concessionária para PDF:', error);
+      }
+    };
+    carregarConcessionaria();
+  }, [user?.concessionaria_id]);
+
   const pedidoData = {
     carrinho,
     clienteData,
     caminhaoData,
     pagamentoData,
     vendedor: user?.nome || 'Não informado',
+    isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
+    concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
+    concessionariaDadosBancarios: concessionariaInfo?.dados_bancarios || '',
+    concessionariaNome: concessionariaInfo?.nome || '',
     guindastes: guindastesCompletos
   };
 
