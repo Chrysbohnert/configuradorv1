@@ -14,9 +14,18 @@ const GuindasteSelector = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(1);
 
-  // Capacidades disponíveis
+  // Capacidades disponíveis (dinâmicas)
   const getCapacidadesUnicas = () => {
-    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8'];
+    const set = new Set();
+
+    (guindastes || []).forEach(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) set.add(match[1]);
+    });
+
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
   };
 
   // Modelos por capacidade

@@ -378,7 +378,7 @@ const NovoPedido = () => {
       setIsLoading(true);
 
       // Carregar guindastes (versão leve)
-      const result = await db.getGuindastesLite(1, 100, false);
+      const result = await db.getGuindastesLite(1, 100, true);
       console.log('🔍 [NovoPedido] Resultado completo:', result);
       console.log('🔍 [NovoPedido] Guindastes carregados:', result?.data?.length || 0);
       console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', result?.data?.slice(0, 3));
@@ -509,10 +509,18 @@ const NovoPedido = () => {
         { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
       ];
 
-  // Capacidades hardcoded para carregamento instantâneo
+  // Capacidades dinâmicas com base nos guindastes carregados
   const getCapacidadesUnicas = () => {
-    // Capacidades baseadas nos dados reais do sistema
-    return ['6.5', '8.0', '10.8', '12.8', '13.0', '15.0', '15.8'];
+    const set = new Set();
+
+    (guindastes || []).forEach(guindaste => {
+      const subgrupo = guindaste.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) set.add(match[1]);
+    });
+
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
   };
 
   const getModelosPorCapacidade = (capacidade) => {
