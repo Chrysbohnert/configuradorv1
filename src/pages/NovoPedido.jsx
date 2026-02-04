@@ -11,7 +11,7 @@ import { normalizarRegiao } from '../utils/regiaoHelper';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import { createLogger } from '../utils/productionLogger';
-import { createLeadIfNotExists } from '../utils/bitrixClient';
+import { createDealInSalesIfNotExists } from '../utils/bitrixClient';
 import '../styles/NovoPedido.css';
 
 // ⚡ Logger otimizado
@@ -2269,12 +2269,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   const handlePDFGenerated = async (fileName) => {
     try {
       try {
-        await createLeadIfNotExists({
+        await createDealInSalesIfNotExists({
           cliente: clienteData,
           vendedorNome: user?.nome || ''
         });
       } catch (bitrixError) {
-        console.warn('Bitrix: falha ao criar lead automaticamente.', bitrixError);
+        console.warn('Bitrix: falha ao criar negócio automaticamente.', bitrixError);
       }
       // Detectar se é proposta preliminar (Proposta Rápida)
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
