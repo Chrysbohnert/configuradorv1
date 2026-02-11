@@ -140,7 +140,7 @@
     "audience": "revenda",
     "order": 5,
     "description": "30/45/60/75/90/105/120 DD",
-    "installments": 4,
+    "installments": 7,
     "active": true,
     "nature": "Venda",
     "surcharge_percent": 0.00

@@ -1080,7 +1080,7 @@ const NovoPedido = () => {
         if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
         if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
         // Email não é mais obrigatório
-        if (!clienteData.documento) errors.documento = 'CNPJ EMPRESA é obrigatório';
+        if (!clienteData.documento) errors.documento = 'CNPJ ou CPF é obrigatório';
         // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
         if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
           errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
@@ -1773,7 +1773,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           <div className="form-group">
             <label>
               <span className="label-icon">🆔</span>
-              CNPJ EMPRESA *
+              CNPJ ou CPF *
             </label>
             <input
               type="text"
@@ -2575,7 +2575,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <span className="value">{clienteData.email || 'Não informado'}</span>
           </div>
           <div className="data-row">
-            <span className="label">CNPJ EMPRESA:</span>
+            <span className="label">CNPJ ou CPF:</span>
             <span className="value">{clienteData.documento || 'Não informado'}</span>
           </div>
           <div className="data-row">
