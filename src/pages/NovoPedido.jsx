@@ -500,7 +500,8 @@ const NovoPedido = () => {
     ? [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
         { id: 2, title: 'Pagamento', icon: '💳', description: 'Condição de compra' },
-        { id: 3, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
+        { id: 3, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
+        { id: 4, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
       ]
     : [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
@@ -632,7 +633,7 @@ const NovoPedido = () => {
       navigate('/detalhes-guindaste', {
         state: {
           guindaste: { ...guindasteCompleto, preco: precoGuindaste },
-          returnTo: '/novo-pedido',
+          returnTo: isModoConcessionaria ? '/nova-proposta-concessionaria' : '/novo-pedido',
           step: 2,
           regiaoClienteSelecionada: regiaoClienteSelecionada
         }
@@ -810,23 +811,49 @@ const NovoPedido = () => {
           <div className="step-content">
             {isModoConcessionaria ? (
               <>
-                <div className="step-header">
-                  <h2>Resumo da Proposta</h2>
-                  <p>Revise e confirme as informações</p>
+                <div className="step-header-with-nav">
+                  <button 
+                    className="btn-back"
+                    onClick={handlePrevious}
+                  >
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                    </svg>
+                    Voltar ao Pagamento
+                  </button>
+                  
+                  <div className="step-header">
+                    <h2>🚛 Estudo Veicular</h2>
+                    <p>Informações do veículo para o serviço de guindaste</p>
+                  </div>
                 </div>
-                <ResumoPedido 
-                  carrinho={carrinho}
-                  clienteData={clienteData}
-                  caminhaoData={caminhaoData}
-                  pagamentoData={pagamentoData}
-                  user={user}
-                  guindastes={guindastes}
-                  isEdicao={isEdicao}
-                  propostaOriginal={propostaOriginal}
-                  propostaId={propostaId}
-                  onRemoverItem={removerItemPorIndex}
-                  onLimparCarrinho={limparCarrinho}
-                />
+                
+                <div className="vehicle-form-container">
+                  <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
+                  
+                  <div className="form-actions">
+                    <button 
+                      className="btn-back-secondary"
+                      onClick={handlePrevious}
+                    >
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                      </svg>
+                      Voltar
+                    </button>
+                    
+                    <button 
+                      className="btn-continue"
+                      onClick={handleNext}
+                      disabled={!canGoNext()}
+                    >
+                      <span>Continuar para Resumo</span>
+                      <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
               </>
             ) : (
               <>
@@ -869,6 +896,30 @@ const NovoPedido = () => {
         );
 
       case 4:
+        if (isModoConcessionaria) {
+          return (
+            <div className="step-content">
+              <div className="step-header">
+                <h2>Resumo da Proposta</h2>
+                <p>Revise e confirme as informações</p>
+              </div>
+              <ResumoPedido 
+                carrinho={carrinho}
+                clienteData={clienteData}
+                caminhaoData={caminhaoData}
+                pagamentoData={pagamentoData}
+                user={user}
+                guindastes={guindastes}
+                isEdicao={isEdicao}
+                propostaOriginal={propostaOriginal}
+                propostaId={propostaId}
+                onRemoverItem={removerItemPorIndex}
+                onLimparCarrinho={limparCarrinho}
+              />
+            </div>
+          );
+        }
+
         return (
           <div className="step-content">
             <div className="step-header-with-nav">
@@ -949,7 +1000,7 @@ const NovoPedido = () => {
                       marca: 'PREENCHER',
                       modelo: 'PREENCHER',
                       ano: '',
-                      voltagem: '',
+                      voltagem: 'PREENCHER',
                       observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
                     });
                     // Avançar para próxima etapa
@@ -1019,6 +1070,17 @@ const NovoPedido = () => {
     console.log('🔎 validateStep chamado para step:', step);
     
     if (isModoConcessionaria) {
+      if (step === 3) {
+        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
+        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
+        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
+        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
+        if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
+          errors.ano = 'Ano inválido';
+        }
+        setValidationErrors(errors);
+        return Object.keys(errors).length === 0;
+      }
       setValidationErrors({});
       return true;
     }
@@ -1107,6 +1169,23 @@ const NovoPedido = () => {
   };
 
   const canGoNext = () => {
+    if (isModoConcessionaria) {
+      switch (currentStep) {
+        case 1:
+          return guindastesSelecionados.length > 0;
+        case 2:
+          return true;
+        case 3:
+          return caminhaoData.tipo && 
+                 caminhaoData.marca && 
+                 caminhaoData.modelo && 
+                 caminhaoData.voltagem;
+        case 4:
+          return true;
+        default:
+          return false;
+      }
+    }
     switch (currentStep) {
       case 1:
         return guindastesSelecionados.length > 0;

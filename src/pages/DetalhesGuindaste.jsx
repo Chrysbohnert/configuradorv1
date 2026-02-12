@@ -28,16 +28,17 @@ const DetalhesGuindaste = () => {
   useEffect(() => {
     if (!guindaste) {
       console.warn('⚠️ Nenhum guindaste selecionado, redirecionando...');
-      navigate('/novo-pedido', { replace: true });
+      navigate(location.state?.returnTo || '/novo-pedido', { replace: true });
     }
-  }, [guindaste, navigate]);
+  }, [guindaste, navigate, location.state?.returnTo]);
 
   if (!guindaste) {
     return null;
   }
 
   const handleContinuar = () => {
-    navigate('/novo-pedido', { 
+    const returnTo = location.state?.returnTo || '/novo-pedido';
+    navigate(returnTo, { 
       state: { 
         step: 2,
         guindasteSelecionado: guindaste,
