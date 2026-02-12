@@ -98,6 +98,20 @@ export default function PaymentPolicy({
   // Hook para buscar dados de frete baseado no local de instalação
   const { dadosFreteAtual } = useFretes(localInstalacao);
 
+  const valorFreteCalculado = useMemo(() => {
+    if (String(tipoFrete).toUpperCase() !== 'CIF') return 0;
+    if (!dadosFreteAtual) return 0;
+    if (!tipoEntrega) return 0;
+
+    if (tipoEntrega === 'prioridade') {
+      return parseFloat(dadosFreteAtual.valor_prioridade || 0);
+    }
+    if (tipoEntrega === 'reaproveitamento') {
+      return parseFloat(dadosFreteAtual.valor_reaproveitamento || 0);
+    }
+    return 0;
+  }, [tipoFrete, dadosFreteAtual, tipoEntrega]);
+
   // ✅ REMOVIDO: precoBase e carregandoPreco
   // Agora usamos precoBase diretamente do carrinho
 
@@ -174,7 +188,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               : 0;
 
             // Calcula instalação
-            const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso'
+            const valorInstalacao = instalacao === 'incluso'
               ? (temGSI ? 6350 : temGSE ? 7500 : 0)
               : 0;
 
@@ -307,7 +321,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       console.log('🔕 [PaymentPolicy] Removendo listener');
       supabase.removeChannel(channel);
     };
-  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI]);
+  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI, dadosFreteAtual, valorFreteCalculado]);
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
@@ -375,7 +389,19 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
       const extraValorNum = parseFloat(extraValor) || 0;
-      const valorFinalFinanciamento = precoBase + extraValorNum;
+      const descontoExtraValor = precoBase * (descontoVendedor / 100);
+      const valorAposExtra = precoBase - descontoExtraValor;
+
+      // Frete pode ser incluso no pedido (CIF) mesmo em financiamento.
+      // Quando FOB, o cliente paga direto e o valor fica 0.
+      const valorFrete = valorFreteCalculado;
+
+      // Instalação pode ser inclusa na proposta (opcional) também para revenda
+      const valorInstalacao = instalacao === 'incluso'
+        ? (temGSI ? 6350 : temGSE ? 7500 : 0)
+        : 0;
+
+      const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
       const r = {
         precoBase,
         financiamentoBancario: 'sim',
@@ -393,16 +419,21 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
         prazoPagamento: 'Financiamento Bancário', // Identificar no PDF
         // Valores
+        descontoAdicionalValor: descontoExtraValor,
+        valorFinalComDescontoAdicional: valorAposExtra,
         descontoValor: 0,
         acrescimoValor: 0,
-        valorAjustado: precoBase,
+        valorAjustado: valorAposExtra,
+        valorFrete,
+        valorInstalacao,
         entrada: 0,
         saldo: valorFinalFinanciamento,
         parcelas: [],
         total: valorFinalFinanciamento,
         valorFinal: valorFinalFinanciamento, // Adicionar para compatibilidade com PDF
         // Campos em percentual para o PDF
-        desconto: 0,
+        desconto: descontoVendedor,
+        descontoPrazo: 0,
         acrescimo: 0,
         // Campos de entrada (zerados para financiamento)
         percentualEntrada: 0,
@@ -414,6 +445,16 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         extraDescricao: extraDescricao || '',
         extraValor: extraValorNum,
       };
+
+      console.log('💾 [PaymentPolicy] pagamentoData calculado (financiamento):', {
+        tipoFrete,
+        tipoEntrega,
+        localInstalacao,
+        valorFreteCalculado,
+        valorFrete: r.valorFrete,
+        valorFinal: r.valorFinal,
+        total: r.total,
+      });
       setResultado(r);
       onPaymentComputed?.(r);
       return;
@@ -435,18 +476,14 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
       // frete: somente se frete incluso + selecionado tipo de entrega e local
-      const valorFrete = tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega
-        ? (tipoEntrega === 'prioridade'
-          ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
-          : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0))
-        : 0;
+      const valorFrete = valorFreteCalculado;
 
       // instalação: apenas para CLIENTE, revenda não tem instalação
-      const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso'
+      const valorInstalacao = instalacao === 'incluso'
         ? (temGSI ? 6350 : temGSE ? 7500 : 0)
         : 0;
 
-      const valorFinal = valorAposExtra + valorFrete + valorInstalacao;
+      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
       // Calcular campos de entrada para o PDF
       const valorSinalNum = parseFloat(valorSinal) || 0;
@@ -502,6 +539,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         
         // Campos de desconto e acréscimo em PERCENTUAL (para o PDF)
         desconto: descontoVendedor, // % do desconto do vendedor
+        descontoPrazo: (planoSelecionado?.discount_percent || 0) * 100, // % do desconto do plano/prazo
         acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100, // % do acréscimo do plano
         
         // Campos de entrada (para o PDF)
@@ -526,16 +564,24 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         tipoEntrega,
         // Mapeamento para validação do NovoPedido
         tipoPagamento: tipoCliente, // 'cliente' ou 'revenda'
-        tipoInstalacao: tipoCliente === 'revenda' 
-          ? 'Definido na venda final' 
-          : instalacao === 'incluso' 
-            ? 'Incluso no pedido' 
-            : instalacao === 'cliente' 
-              ? 'cliente paga direto' 
-              : '',
+        tipoInstalacao: instalacao === 'incluso'
+          ? 'Incluso no pedido'
+          : instalacao === 'cliente'
+            ? 'cliente paga direto'
+            : '',
         revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
         prazoPagamento: planoSelecionado?.description || '',
       };
+
+      console.log('💾 [PaymentPolicy] pagamentoData calculado:', {
+        tipoFrete,
+        tipoEntrega,
+        localInstalacao,
+        valorFreteCalculado,
+        valorFrete: resultadoFinal.valorFrete,
+        valorFinal: resultadoFinal.valorFinal,
+        total: resultadoFinal.total,
+      });
 
       setResultado(resultadoFinal);
       onPaymentComputed?.(resultadoFinal);
@@ -553,6 +599,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     tipoFrete,
     localInstalacao,
     tipoEntrega,
+    dadosFreteAtual,
+    valorFreteCalculado,
     planoSelecionado,
     percentualEntrada,
     valorSinal,
@@ -832,20 +880,17 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     }
 
     // Adicionar frete (se incluso)
-    if (tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega) {
-      const valorFreteCalc = tipoEntrega === 'prioridade'
-        ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
-        : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0);
-      valor += valorFreteCalc;
+    if (valorFreteCalculado > 0) {
+      valor += valorFreteCalculado;
     }
 
-    // Adicionar instalação (apenas para CLIENTE)
-    if (tipoCliente === 'cliente' && instalacao === 'incluso') {
+    // Adicionar instalação (quando incluso na proposta)
+    if (instalacao === 'incluso') {
       valor += (temGSI ? 6350 : temGSE ? 7500 : 0);
     }
 
     return valor;
-  }, [precoBase, resultado, descontoVendedor, extraValor, tipoFrete, dadosFreteAtual, tipoEntrega, instalacao, temGSE, temGSI]);
+  }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSE, temGSI, tipoCliente]);
 
   // =============== RENDER ========================================
   const etapasVisiveis = modoConcessionaria ? [6, 7] : [1, 2, 3, 4, 5, 6, 7];
@@ -1079,57 +1124,53 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       <section className="payment-section">
         <h3>3) Instalação</h3>
 
-        {tipoCliente === 'revenda' ? (
-          // REVENDA: Apenas informativo, sem seleção
-          <div className="pp-banner ok">
-            ℹ️ <b>Instalação será definida na venda para cliente final</b>
+        {tipoCliente === 'revenda' && (
+          <div className="pp-banner ok" style={{ marginBottom: '12px' }}>
+            ℹ️ <b>Revenda: instalação é opcional</b>
             <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', opacity: 0.9 }}>
-              Como este equipamento será revendido, a instalação será negociada quando a revenda vender para o cliente final.
+              Se desejar, você pode incluir a instalação na proposta.
             </p>
           </div>
-        ) : (
-          // CLIENTE: Opções normais de instalação
-          <>
-            <div className="radio-group">
-              <label className={`radio-option ${instalacao === 'cliente' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="instalacao"
-                  value="cliente"
-                  checked={instalacao === 'cliente'}
-                  onChange={() => setInstalacao('cliente')}
-                />
-                <span>Cliente paga direto</span>
-              </label>
-              <label className={`radio-option ${instalacao === 'incluso' ? 'selected' : ''}`}>
-                <input
-                  type="radio"
-                  name="instalacao"
-                  value="incluso"
-                  checked={instalacao === 'incluso'}
-                  onChange={() => setInstalacao('incluso')}
-                />
-                <span>Incluso no pedido</span>
-              </label>
-            </div>
+        )}
 
-            {instalacao === 'cliente' && (
-              <div className="pp-banner warn" style={{ marginTop: '12px' }}>
-                ℹ️ Cliente pagará instalação diretamente ao instalador:
-                <b> {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)}</b>
-                <p style={{ margin: '8px 0 0 0', fontSize: '0.85em', opacity: 0.9 }}>
-                  Este valor NÃO será incluído no pedido
-                </p>
-              </div>
-            )}
+        <div className="radio-group">
+          <label className={`radio-option ${instalacao === 'cliente' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="instalacao"
+              value="cliente"
+              checked={instalacao === 'cliente'}
+              onChange={() => setInstalacao('cliente')}
+            />
+            <span>Cliente paga direto</span>
+          </label>
+          <label className={`radio-option ${instalacao === 'incluso' ? 'selected' : ''}`}>
+            <input
+              type="radio"
+              name="instalacao"
+              value="incluso"
+              checked={instalacao === 'incluso'}
+              onChange={() => setInstalacao('incluso')}
+            />
+            <span>Incluso no pedido</span>
+          </label>
+        </div>
 
-            {instalacao === 'incluso' && (
-              <div className="pp-banner ok" style={{ marginTop: '12px' }}>
-                Valor da instalação será adicionado ao total:
-                <b> {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</b>
-              </div>
-            )}
-          </>
+        {instalacao === 'cliente' && (
+          <div className="pp-banner warn" style={{ marginTop: '12px' }}>
+            ℹ️ Cliente pagará instalação diretamente ao instalador:
+            <b> {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)}</b>
+            <p style={{ margin: '8px 0 0 0', fontSize: '0.85em', opacity: 0.9 }}>
+              Este valor NÃO será incluído no pedido
+            </p>
+          </div>
+        )}
+
+        {instalacao === 'incluso' && (
+          <div className="pp-banner ok" style={{ marginTop: '12px' }}>
+            Valor da instalação será adicionado ao total:
+            <b> {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</b>
+          </div>
         )}
 
         <div className="payment-navigation">

@@ -588,15 +588,15 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
     gList.forEach((g, idx) => {
       html += `
         ${idx > 0 ? '<div class="rule"></div>' : ''}
-        <div class="p p-justify caps" style="white-space: pre-line;">${formatarTexto(g.descricao) || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${formatarTexto(g.descricao) || 'NÃO INFORMADO'}</div>
 
         <div class="small-gap"></div>
         <div class="subtitle">NÃO INCLUÍDO</div>
-        <div class="p p-justify caps" style="white-space: pre-line;">${formatarTexto(g.nao_incluido) || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${formatarTexto(g.nao_incluido) || 'NÃO INFORMADO'}</div>
         <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
 <div class="small-gap"></div>
 <div class="subtitle">PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK</div>
-<div class="p lower" style="font-size: 14px; line-height: 1.5; text-transform:none;">
+<div class="p lower" style="font-size: 13px; line-height: 1.35; text-transform:none;">
   <ul style="margin-left: 16px; padding-left: 8px; list-style-type: disc;">
     <li>Para solicitação da garantia, deverão ser apresentados os seguintes documentos:</li>
     <ul style="margin-left: 20px; list-style-type: circle;">
@@ -794,12 +794,28 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   
   // 2. Base com descontos aplicados
   const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
+
+  // Fonte de verdade (quando existir): valor final calculado na política
+  const valorFinalPolitica = parseFloat(p.valorFinal || p.total || 0) || 0;
+
+  // Alguns cenários chegam com tipoFrete=CIF mas valorFrete=0 no pagamentoData.
+  // Se tivermos valorFinal vindo da política, inferimos o frete pela diferença.
+  const valorFreteInformado = parseFloat(p.valorFrete || 0) || 0;
+  const valorInstalacaoInformado = parseFloat(p.valorInstalacao || 0) || 0;
+  const freteInferido = (
+    String(p.tipoFrete).toUpperCase() === 'CIF' &&
+    valorFreteInformado === 0 &&
+    valorFinalPolitica > 0
+  )
+    ? Math.max(0, valorFinalPolitica - (baseComDescontos + extraValor + valorInstalacaoInformado))
+    : 0;
+  const valorFreteFinal = valorFreteInformado || freteInferido;
   
   // 3. Adicionar extras (sem desconto), frete e instalação
-  const subtotalComAdicionais = baseComDescontos + extraValor + (p.valorFrete || 0) + (p.valorInstalacao || 0);
-  
+  const subtotalComAdicionais = baseComDescontos + extraValor + valorFreteFinal + valorInstalacaoInformado;
+
   // 4. Valor Total Final
-  const valorTotalFinal = subtotalComAdicionais;
+  const valorTotalFinal = valorFinalPolitica > 0 ? valorFinalPolitica : subtotalComAdicionais;
   
   // 4. Entrada
   const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
@@ -875,14 +891,14 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       </div>
 
       <!-- FRETE E INSTALAÇÃO -->
-      ${(p.tipoFrete || p.tipoInstalacao || p.valorFrete || p.valorInstalacao) ? `
+      ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
           <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">② FRETE E INSTALAÇÃO</div>
           ${p.tipoFrete ? `
             <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-              <span style="font-weight:600; color:#000;">Frete: FOB${p.valorFrete > 0 ? ' - Incluso' : ''}</span>
-              ${p.valorFrete > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(p.valorFrete)}</span>
+              <span style="font-weight:600; color:#000;">Frete: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ' - Incluso' : ''}</span>
+              ${valorFreteFinal > 0 ? `
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(valorFreteFinal)}</span>
               ` : `
                 <span style="color:#555; font-size:12px;">Cliente paga direto</span>
               `}
@@ -891,8 +907,8 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
           ${p.tipoInstalacao ? `
             <div style="display:flex; justify-content:space-between; font-size:14px;">
               <span style="font-weight:600; color:#000;">Instalação: ${p.tipoInstalacao.toUpperCase()}</span>
-              ${p.valorInstalacao > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(p.valorInstalacao)}</span>
+              ${valorInstalacaoInformado > 0 ? `
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(valorInstalacaoInformado)}</span>
               ` : `
                 <span style="color:#555; font-size:12px;">Cliente paga direto</span>
               `}
