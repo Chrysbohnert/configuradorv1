@@ -82,7 +82,6 @@ export default function PaymentPolicy({
 
   // 6) Entrada, plano, financiamento e desconto do vendedor
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50' | 'financiamento'
-  const [percentualEntradaPersonalizada, setPercentualEntradaPersonalizada] = useState('');
   const [valorSinal, setValorSinal] = useState('');
   const [formaEntrada, setFormaEntrada] = useState('');
   const [observacoesNegociacao, setObservacoesNegociacao] = useState('');
@@ -147,15 +146,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   const percentualEntradaNumCalc = useMemo(() => {
     if (!percentualEntrada) return 0;
     if (percentualEntrada === 'financiamento') return 0;
-    if (percentualEntrada === 'personalizado') {
-      const v = parseFloat(percentualEntradaPersonalizada);
-      if (Number.isNaN(v) || v < 0) return 0;
-      return Math.min(100, v);
-    }
     const v = parseFloat(percentualEntrada);
     if (Number.isNaN(v) || v < 0) return 0;
     return Math.min(100, v);
-  }, [percentualEntrada, percentualEntradaPersonalizada]);
+  }, [percentualEntrada]);
 
   const pontosInstalacaoFiltrados = useMemo(() => {
     const base = Array.isArray(pontosInstalacao) ? pontosInstalacao : [];
@@ -182,34 +176,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         return String(a?.oficina || a?.nome || '').localeCompare(String(b?.oficina || b?.nome || ''), 'pt-BR');
       });
   }, [pontosInstalacao, ufFiltroInstalacao, buscaInstalacao]);
-
-  const previewFinanceiroEntrada = useMemo(() => {
-    if (!tipoCliente) return null;
-    if (!percentualEntrada || percentualEntrada === 'financiamento') return null;
-
-    const extraValorNum = parseFloat(extraValor) || 0;
-    const descontoExtraValor = precoBase * (descontoVendedor / 100);
-    const valorAposExtra = precoBase - descontoExtraValor;
-
-    const valorFrete = valorFreteCalculado;
-
-    const valorInstalacao = instalacao === 'incluso'
-      ? (temGSI ? 6350 : temGSE ? 7500 : 0)
-      : 0;
-
-    const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
-
-    const percentualEntradaNum = percentualEntradaNumCalc;
-    const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
-    const saldoAPagarCalc = valorFinal - entradaTotalCalc;
-
-    return {
-      valorFinal,
-      percentualEntradaNum,
-      entradaTotal: entradaTotalCalc,
-      saldoAPagar: saldoAPagarCalc,
-    };
-  }, [tipoCliente, percentualEntrada, precoBase, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSI, temGSE, percentualEntradaNumCalc]);
 
   // ✅ REMOVIDO: useEffect que buscava preço
   // O precoBase já vem do carrinho com o preço correto da região selecionada
@@ -410,8 +376,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   // Filtra por percentual quando for cliente e não for financiamento
   const planosFiltrados = useMemo(() => {
     if (tipoCliente !== 'cliente') return todosPlanos;
-    if (!percentualEntrada || percentualEntrada === 'financiamento') return todosPlanos.filter(p => !p.entry_percent_required);
-    return todosPlanos;
+    if (!percentualEntrada) return [];
+    if (percentualEntrada === 'financiamento') return todosPlanos.filter(p => !p.entry_percent_required);
+    const pNum = percentualEntradaNumCalc / 100;
+    return todosPlanos.filter(p => p.entry_percent_required === pNum);
   }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
@@ -426,7 +394,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     setUfFiltroInstalacao('');
     setBuscaInstalacao('');
     setPercentualEntrada('');
-    setPercentualEntradaPersonalizada('');
     setValorSinal('');
     setFormaEntrada('');
     setObservacoesNegociacao('');
@@ -463,17 +430,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       setFormaEntrada('');
     }
   }, [percentualEntrada]);
-
-  useEffect(() => {
-    if (!planoSelecionado) return;
-    if (percentualEntrada === 'financiamento') return;
-    const required = planoSelecionado?.entry_percent_required;
-    if (!required) return;
-    const pNum = percentualEntradaNumCalc / 100;
-    if (pNum > 0 && required > pNum) {
-      setPlanoSelecionado(null);
-    }
-  }, [planoSelecionado, percentualEntrada, percentualEntradaNumCalc]);
 
   // =============== CÁLCULO FINAL =================================
   useEffect(() => {
@@ -699,7 +655,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     valorFreteCalculado,
     planoSelecionado,
     percentualEntrada,
-    percentualEntradaPersonalizada,
     valorSinal,
     extraDescricao,
     extraValor,
@@ -1430,25 +1385,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               <option value="">Selecione...</option>
               <option value="30">30%</option>
               <option value="50">50%</option>
-              <option value="personalizado">Entrada personalizada</option>
               <option value="financiamento">🏦 Financiamento Bancário</option>
             </select>
           </div>
-
-          {percentualEntrada === 'personalizado' && (
-            <div className="form-group">
-              <label>% de Entrada (personalizada) *</label>
-              <input
-                type="number"
-                value={percentualEntradaPersonalizada}
-                onChange={e => setPercentualEntradaPersonalizada(e.target.value)}
-                placeholder="Ex: 40"
-                min="0"
-                max="100"
-                step="0.01"
-              />
-            </div>
-          )}
 
           {percentualEntrada && percentualEntrada !== 'financiamento' && (
             <>
@@ -1526,22 +1465,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           />
         </div>
 
-        {previewFinanceiroEntrada && (
-          <div className="pp-banner ok" style={{ marginTop: '10px' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
-              <div>
-                <b>Total</b>: {formatCurrency(previewFinanceiroEntrada.valorFinal || 0)}
-              </div>
-              <div>
-                <b>Entrada ({(previewFinanceiroEntrada.percentualEntradaNum || 0).toFixed(2)}%)</b>: {formatCurrency(previewFinanceiroEntrada.entradaTotal || 0)}
-              </div>
-              <div>
-                <b>Saldo a pagar</b>: {formatCurrency(previewFinanceiroEntrada.saldoAPagar || 0)}
-              </div>
-            </div>
-          </div>
-        )}
-
         {percentualEntrada !== 'financiamento' && (
           <>
             <div className="form-group">
@@ -1557,16 +1480,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               >
                 <option value="">Selecione...</option>
                 {planosFiltrados.map(p => (
-                  <option
-                    key={`${p.audience}-${p.order}`}
-                    value={p.order}
-                    disabled={
-                      percentualEntrada &&
-                      percentualEntrada !== 'financiamento' &&
-                      !!p.entry_percent_required &&
-                      (p.entry_percent_required * 100) > (percentualEntradaNumCalc || 0)
-                    }
-                  >
+                  <option key={`${p.audience}-${p.order}`} value={p.order}>
                     {getPlanLabel(p)}
                   </option>
                 ))}
