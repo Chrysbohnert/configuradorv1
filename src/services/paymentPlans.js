@@ -64,6 +64,10 @@ export function getPlanLabel(plan) {
     hints.push(`entrada ${(plan.entry_percent * 100).toFixed(0)}%`);
   }
 
+  if (plan.entry_percent_required) {
+    hints.push(`entrada mín. ${(plan.entry_percent_required * 100).toFixed(0)}%`);
+  }
+
   if (plan.entry_min) {
     hints.push(`entrada mín. R$ ${plan.entry_min.toLocaleString('pt-BR')}`);
   }

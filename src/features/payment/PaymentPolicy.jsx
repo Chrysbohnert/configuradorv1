@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPaymentPlans, getPlanLabel, getPlanByDescription } from '../../services/paymentPlans';
+import { getPaymentPlans, getPlanLabel, getPlanByOrder } from '../../services/paymentPlans';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
@@ -182,6 +182,34 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         return String(a?.oficina || a?.nome || '').localeCompare(String(b?.oficina || b?.nome || ''), 'pt-BR');
       });
   }, [pontosInstalacao, ufFiltroInstalacao, buscaInstalacao]);
+
+  const previewFinanceiroEntrada = useMemo(() => {
+    if (!tipoCliente) return null;
+    if (!percentualEntrada || percentualEntrada === 'financiamento') return null;
+
+    const extraValorNum = parseFloat(extraValor) || 0;
+    const descontoExtraValor = precoBase * (descontoVendedor / 100);
+    const valorAposExtra = precoBase - descontoExtraValor;
+
+    const valorFrete = valorFreteCalculado;
+
+    const valorInstalacao = instalacao === 'incluso'
+      ? (temGSI ? 6350 : temGSE ? 7500 : 0)
+      : 0;
+
+    const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+
+    const percentualEntradaNum = percentualEntradaNumCalc;
+    const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+    const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+
+    return {
+      valorFinal,
+      percentualEntradaNum,
+      entradaTotal: entradaTotalCalc,
+      saldoAPagar: saldoAPagarCalc,
+    };
+  }, [tipoCliente, percentualEntrada, precoBase, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSI, temGSE, percentualEntradaNumCalc]);
 
   // ✅ REMOVIDO: useEffect que buscava preço
   // O precoBase já vem do carrinho com o preço correto da região selecionada
@@ -383,8 +411,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   const planosFiltrados = useMemo(() => {
     if (tipoCliente !== 'cliente') return todosPlanos;
     if (!percentualEntrada || percentualEntrada === 'financiamento') return todosPlanos.filter(p => !p.entry_percent_required);
-    const pNum = percentualEntradaNumCalc / 100;
-    return todosPlanos.filter(p => !p.entry_percent_required || p.entry_percent_required <= pNum);
+    return todosPlanos;
   }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
@@ -1499,21 +1526,47 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           />
         </div>
 
+        {previewFinanceiroEntrada && (
+          <div className="pp-banner ok" style={{ marginTop: '10px' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px' }}>
+              <div>
+                <b>Total</b>: {formatCurrency(previewFinanceiroEntrada.valorFinal || 0)}
+              </div>
+              <div>
+                <b>Entrada ({(previewFinanceiroEntrada.percentualEntradaNum || 0).toFixed(2)}%)</b>: {formatCurrency(previewFinanceiroEntrada.entradaTotal || 0)}
+              </div>
+              <div>
+                <b>Saldo a pagar</b>: {formatCurrency(previewFinanceiroEntrada.saldoAPagar || 0)}
+              </div>
+            </div>
+          </div>
+        )}
+
         {percentualEntrada !== 'financiamento' && (
           <>
             <div className="form-group">
               <label>Plano de Pagamento *</label>
               <select
-                value={planoSelecionado?.description || ''}
+                value={planoSelecionado?.order ?? ''}
                 onChange={e => {
-                  const p = getPlanByDescription(e.target.value, audience);
+                  const order = e.target.value ? parseInt(e.target.value, 10) : null;
+                  const p = Number.isFinite(order) ? getPlanByOrder(order, audience) : null;
                   setPlanoSelecionado(p || null);
                   onPlanSelected?.(p || null);
                 }}
               >
                 <option value="">Selecione...</option>
                 {planosFiltrados.map(p => (
-                  <option key={`${p.audience}-${p.order}`} value={p.description}>
+                  <option
+                    key={`${p.audience}-${p.order}`}
+                    value={p.order}
+                    disabled={
+                      percentualEntrada &&
+                      percentualEntrada !== 'financiamento' &&
+                      !!p.entry_percent_required &&
+                      (p.entry_percent_required * 100) > (percentualEntradaNumCalc || 0)
+                    }
+                  >
                     {getPlanLabel(p)}
                   </option>
                 ))}
