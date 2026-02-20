@@ -1394,24 +1394,6 @@ class DatabaseService {
     return data;
   }
 
-  // Buscar frete específico por oficina, cidade e UF (evita ambiguidade)
-  async getFretePorOficinaCidadeUF(oficina, cidade, uf) {
-    const { data, error } = await supabase
-      .from('fretes')
-      .select('*')
-      .eq('oficina', oficina)
-      .eq('cidade', cidade)
-      .eq('uf', uf)
-      .single();
-
-    if (error) {
-      console.error('Erro ao buscar frete específico:', error);
-      return null;
-    }
-
-    return data;
-  }
-
   async createFrete(freteData) {
     const { data, error } = await supabase
       .from('fretes')

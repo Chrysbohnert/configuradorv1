@@ -16,7 +16,8 @@ const VENDEDOR_BITRIX_ID = {
   'EDEMAR CAVAGNOLI': 404,
   'EVANDRO TAVARES': 22,
   'ELYSRAEL GOMES FONTENELE': 46,
-  'PAULO GAMBOA': 26
+  'PAULO GAMBOA': 26,
+  'THIAGO JOSE DE OLIVEIRA': 406,
 };
 
 const normalizeName = (value) => String(value || '')

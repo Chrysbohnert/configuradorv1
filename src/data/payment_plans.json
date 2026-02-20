@@ -328,6 +328,17 @@
   },
   {
     "audience": "cliente",
+    "order": 23,
+    "description": "30/60 DD",
+    "installments": 2,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.30,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "cliente",
     "order": 10,
     "description": "30/60/90 DD",
     "installments": 3,

@@ -243,6 +243,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const vendedorTelefone = pedidoData.vendedorTelefone || '';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
+  const pagamento = pedidoData.pagamentoData || {};
   const tituloProposta = pedidoData.isConcessionariaCompra
     ? 'PROPOSTA DE COMPRA STARK GUINDASTES'
     : 'PROPOSTA COMERCIAL STARK GUINDASTES';
@@ -346,6 +347,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
            ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} 
         </div>
+        ${pagamento.financiamentoBancario === 'sim' ? `
+          <div style="font-size:3.6mm; font-weight:700; margin-top:2mm; letter-spacing:0.2mm; color:#111;">
+            MODALIDADE: FINANCIAMENTO BANCÁRIO
+          </div>
+        ` : ''}
       </div>
 
       <!-- BLOCO 1: DADOS STARK -->
@@ -783,6 +789,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
   const extraValor = parseFloat(p.extraValor || 0);
   const extraDescricao = (p.extraDescricao || '').trim();
+  const observacoesNegociacao = (p.observacoesNegociacao || '').trim();
   const tipoClienteCalc = (p.tipoCliente || p.tipoPagamento || '').toString().toLowerCase();
   const percentualEntradaNum = parseFloat(p.percentualEntrada || 0) || 0;
   
@@ -854,6 +861,19 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   el.innerHTML += `
     <div class="wrap" style="padding:14px 10px;">
       <div class="title" style="font-size:26px; margin-bottom:12px; font-weight:800;">CONDIÇÕES COMERCIAIS E FINANCEIRAS</div>
+
+      ${p.financiamentoBancario === 'sim' ? `
+        <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#000;">MODALIDADE: FINANCIAMENTO BANCÁRIO</div>
+        </div>
+      ` : ''}
+
+      ${observacoesNegociacao ? `
+        <div style="margin-top:10px; padding:10px 12px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#000; margin-bottom:6px;">OBSERVAÇÕES DA NEGOCIAÇÃO</div>
+          <div style="font-size:13px; color:#000; line-height:1.4; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
+        </div>
+      ` : ''}
 
       <!-- LAYOUT 2 COLUNAS: VALOR BASE + DESCONTOS -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
