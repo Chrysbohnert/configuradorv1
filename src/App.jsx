@@ -22,6 +22,7 @@ const Logistica = lazy(() => import('./pages/Logistica'));
 const Configuracoes = lazy(() => import('./pages/Configuracoes'));
 const AprovacoesDescontos = lazy(() => import('./pages/AprovacoesDescontos'));
 const Concessionarias = lazy(() => import('./pages/Concessionarias'));
+const PlanosPagamento = lazy(() => import('./pages/PlanosPagamento'));
 const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
 const NovoPedido = lazy(() => import('./pages/NovoPedido'));
 const Historico = lazy(() => import('./pages/Historico'));
@@ -137,6 +138,11 @@ function App() {
             <Route path="/concessionarias" element={
               <LazyRoute loadingMessage="Carregando Concessionárias...">
                 <Concessionarias />
+              </LazyRoute>
+            } />
+            <Route path="/planos-pagamento" element={
+              <LazyRoute loadingMessage="Carregando Planos de Pagamento...">
+                <PlanosPagamento />
               </LazyRoute>
             } />
             <Route path="/nova-proposta-concessionaria" element={

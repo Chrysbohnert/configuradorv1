@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { getPaymentPlans, getPlanLabel, getPlanByOrder } from '../../services/paymentPlans';
+import { getPaymentPlans, getPlanLabel } from '../../services/paymentPlans';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
@@ -213,6 +213,14 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             // Força o recálculo do pagamento com o novo desconto
             if (!planoSelecionado) {
               console.warn('⚠️ [PaymentPolicy] Plano não selecionado, não é possível recalcular');
+              // Mesmo sem plano, o desconto já fica salvo no estado e será aplicado
+              // assim que o usuário selecionar o plano.
+              setModalSolicitacaoOpen(false);
+              setAguardandoAprovacao(false);
+              setSolicitacaoId(null);
+
+              forceUpdate();
+              alert(`✅ Desconto aprovado por ${aprovadorNome}!\n\nSelecione um plano de pagamento para atualizar os valores.`);
               return;
             }
 
@@ -226,12 +234,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             const descontoExtraValor = precoBase * (descontoAprovado / 100);
             const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
-            // Calcula frete
-            const valorFrete = tipoFrete === 'FOB INCLUSO NO PEDIDO' && dadosFreteAtual && tipoEntrega
-              ? (tipoEntrega === 'prioridade'
-                ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
-                : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0))
-              : 0;
+            // Calcula frete (mesma regra do cálculo principal)
+            const valorFrete = valorFreteCalculado;
 
             // Calcula instalação
             const valorInstalacao = instalacao === 'incluso'
@@ -371,7 +375,44 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
-  const todosPlanos = useMemo(() => getPaymentPlans(audience), [audience]);
+  const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadPublishedPlans = async () => {
+      try {
+        const scope = isConcessionariaUser ? 'concessionaria' : 'stark';
+        const concessionaria_id = user?.concessionaria_id || null;
+
+        if (scope === 'concessionaria' && !concessionaria_id) {
+          if (!cancelled) setTodosPlanos(getPaymentPlans(audience));
+          return;
+        }
+
+        const published = await db.getPublishedPaymentPlans({
+          scope,
+          concessionaria_id: scope === 'concessionaria' ? concessionaria_id : null,
+          audience
+        });
+
+        const publishedActive = (published || []).filter(p => p.active);
+        if (!cancelled) {
+          if (publishedActive.length > 0) {
+            setTodosPlanos(publishedActive);
+          } else {
+            setTodosPlanos(getPaymentPlans(audience));
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ [PaymentPolicy] Falha ao carregar planos publicados, usando fallback JSON:', e);
+        if (!cancelled) setTodosPlanos(getPaymentPlans(audience));
+      }
+    };
+
+    loadPublishedPlans();
+    return () => { cancelled = true; };
+  }, [audience, isConcessionariaUser, user?.concessionaria_id]);
 
   // Filtra por percentual quando for cliente e não for financiamento
   const planosFiltrados = useMemo(() => {
@@ -710,7 +751,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         vendedorNome: user.nome,
         equipamentoDescricao,
         valorBase: precoBase,
-        descontoAtual: descontoVendedor || 7,
+        descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
         justificativa
       });
 
@@ -721,7 +762,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         vendedorEmail: user.email,
         equipamentoDescricao,
         valorBase: precoBase,
-        descontoAtual: descontoVendedor || 7,
+        descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
         justificativa
       });
 
@@ -1470,17 +1511,27 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             <div className="form-group">
               <label>Plano de Pagamento *</label>
               <select
-                value={planoSelecionado?.order ?? ''}
+                value={planoSelecionado ? `${planoSelecionado.order}::${planoSelecionado.description}` : ''}
                 onChange={e => {
-                  const order = e.target.value ? parseInt(e.target.value, 10) : null;
-                  const p = Number.isFinite(order) ? getPlanByOrder(order, audience) : null;
-                  setPlanoSelecionado(p || null);
-                  onPlanSelected?.(p || null);
+                  const v = e.target.value || '';
+                  if (!v) {
+                    setPlanoSelecionado(null);
+                    onPlanSelected?.(null);
+                    return;
+                  }
+
+                  const [orderStr, ...descParts] = v.split('::');
+                  const order = parseInt(orderStr, 10);
+                  const description = descParts.join('::');
+
+                  const p = planosFiltrados.find(pl => pl.order === order && pl.description === description) || null;
+                  setPlanoSelecionado(p);
+                  onPlanSelected?.(p);
                 }}
               >
                 <option value="">Selecione...</option>
                 {planosFiltrados.map(p => (
-                  <option key={`${p.audience}-${p.order}`} value={p.order}>
+                  <option key={`${p.audience}-${p.order}-${p.description}`} value={`${p.order}::${p.description}`}>
                     {getPlanLabel(p)}
                   </option>
                 ))}
@@ -1616,11 +1667,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   </div>
                 )}
 
-                {/* GSI - CLIENTE SEM PARTICIPAÇÃO REVENDA */}
-                {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
+                {/* CLIENTE SEM PARTICIPAÇÃO REVENDA */}
+                {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
                   <div style={{ marginTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      {[0, 1, 2, 3, 4, 5, 6, 7].map(valor => (
+                      {(temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3]).map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1654,45 +1705,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                       ))}
                       
                       {/* Botão [+] para solicitar desconto adicional */}
-                      {!isConcessionariaUser && (
-                        <button
-                          type="button"
-                          onClick={() => setModalSolicitacaoOpen(true)}
-                          disabled={aguardandoAprovacao}
-                          style={{
-                            padding: '10px 20px',
-                            border: '2px dashed #667eea',
-                            background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
-                            color: aguardandoAprovacao ? '#6c757d' : '#667eea',
-                            borderRadius: '6px',
-                            cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
-                            fontWeight: '600',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px'
-                          }}
-                          onMouseOver={(e) => {
-                            if (!aguardandoAprovacao) {
-                              e.currentTarget.style.borderColor = '#667eea';
-                              e.currentTarget.style.background = '#f0f3ff';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (!aguardandoAprovacao) {
-                              e.currentTarget.style.borderColor = '#667eea';
-                              e.currentTarget.style.background = '#fff';
-                            }
-                          }}
-                          title="Solicitar desconto extra"
-                        >
-                          {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar'}
-                        </button>
-                      )}
+                      {/* Botão movido para baixo para aparecer em todos os cenários */}
                     </div>
                     <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Desconto máximo padrão: 7%. Para valores maiores, clique em [+]
+                      ℹ️ Para solicitar desconto adicional, clique em [+]
                     </small>
                   </div>
                 )}
@@ -1740,49 +1756,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   </div>
                 )}
 
-                {/* GSE - CLIENTE SEM PARTICIPAÇÃO REVENDA */}
-                {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[0, 0.5, 1, 1.5, 2, 2.5, 3].map(valor => (
-                        <button
-                          key={valor}
-                          type="button"
-                          onClick={() => setDescontoVendedor(valor)}
-                          style={{
-                            padding: '10px 20px',
-                            border: descontoVendedor === valor ? '2px solid #007bff' : '2px solid #dee2e6',
-                            background: descontoVendedor === valor ? '#007bff' : '#fff',
-                            color: descontoVendedor === valor ? '#fff' : '#495057',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: descontoVendedor === valor ? '600' : '500',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#007bff';
-                              e.currentTarget.style.background = '#f8f9fa';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#dee2e6';
-                              e.currentTarget.style.background = '#fff';
-                            }
-                          }}
-                        >
-                          {valor}%
-                        </button>
-                      ))}
-                    </div>
-                    <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Desconto máximo: 3%
-                    </small>
-                  </div>
-                )}
-
                 {/* GSE - CLIENTE COM PARTICIPAÇÃO REVENDA: SEM DESCONTO */}
                 {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && (
                   <div style={{ 
@@ -1795,6 +1768,49 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                     <p style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>
                       ℹ️ Não há desconto disponível para GSE com participação de revenda
                     </p>
+                  </div>
+                )}
+
+                {/* Botão [+] para solicitar desconto adicional (sempre disponível, exceto concessionária) */}
+                {!isConcessionariaUser && (
+                  <div style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setModalSolicitacaoOpen(true)}
+                      disabled={aguardandoAprovacao}
+                      style={{
+                        padding: '10px 20px',
+                        border: '2px dashed #667eea',
+                        background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
+                        color: aguardandoAprovacao ? '#6c757d' : '#667eea',
+                        borderRadius: '6px',
+                        cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
+                        fontWeight: '600',
+                        fontSize: '14px',
+                        transition: 'all 0.2s ease',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}
+                      onMouseOver={(e) => {
+                        if (!aguardandoAprovacao) {
+                          e.currentTarget.style.borderColor = '#667eea';
+                          e.currentTarget.style.background = '#f0f3ff';
+                        }
+                      }}
+                      onMouseOut={(e) => {
+                        if (!aguardandoAprovacao) {
+                          e.currentTarget.style.borderColor = '#667eea';
+                          e.currentTarget.style.background = '#fff';
+                        }
+                      }}
+                      title="Solicitar desconto extra"
+                    >
+                      {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar desconto'}
+                    </button>
+                    <small className="form-help help-info" style={{ display: 'block', marginTop: '10px' }}>
+                      ℹ️ Use este botão para solicitar aprovação de um desconto fora do padrão.
+                    </small>
                   </div>
                 )}
               </div>

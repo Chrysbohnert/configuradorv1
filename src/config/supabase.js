@@ -203,6 +203,144 @@ class DatabaseService {
     if (error) throw error;
   }
 
+  async getPaymentPlanSets({ scope, concessionaria_id = null, status = null } = {}) {
+    if (!scope) throw new Error('scope é obrigatório');
+
+    let query = supabase
+      .from('payment_plan_sets')
+      .select('*')
+      .eq('scope', scope)
+      .order('created_at', { ascending: false });
+
+    if (scope === 'stark') {
+      query = query.is('concessionaria_id', null);
+    } else {
+      if (!concessionaria_id) throw new Error('concessionaria_id é obrigatório para scope=concessionaria');
+      query = query.eq('concessionaria_id', concessionaria_id);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async ensurePaymentPlanDraftSet({ scope, concessionaria_id = null } = {}) {
+    if (!scope) throw new Error('scope é obrigatório');
+
+    const { data, error } = await supabase
+      .rpc('ensure_payment_plan_draft_set', {
+        p_scope: scope,
+        p_concessionaria_id: concessionaria_id
+      });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getPaymentPlanItems(set_id) {
+    if (!set_id) throw new Error('set_id é obrigatório');
+
+    const { data, error } = await supabase
+      .from('payment_plan_items')
+      .select('*')
+      .eq('set_id', set_id)
+      .order('audience')
+      .order('order');
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async upsertPaymentPlanItem(item) {
+    if (!item?.set_id) throw new Error('set_id é obrigatório');
+    if (!item?.audience) throw new Error('audience é obrigatório');
+    if (item?.order === undefined || item?.order === null) throw new Error('order é obrigatório');
+    if (!item?.description) throw new Error('description é obrigatório');
+    if (!item?.installments) throw new Error('installments é obrigatório');
+
+    const payload = {
+      id: item.id ?? undefined,
+      set_id: item.set_id,
+      audience: item.audience,
+      order: Number(item.order),
+      description: String(item.description),
+      installments: Number(item.installments),
+      active: item.active !== undefined ? Boolean(item.active) : true,
+      nature: item.nature ?? null,
+      discount_percent: item.discount_percent === '' || item.discount_percent === undefined ? null : item.discount_percent,
+      surcharge_percent: item.surcharge_percent === '' || item.surcharge_percent === undefined ? null : item.surcharge_percent,
+      min_order_value: item.min_order_value === '' || item.min_order_value === undefined ? null : item.min_order_value,
+      entry_percent_required: item.entry_percent_required === '' || item.entry_percent_required === undefined ? null : item.entry_percent_required,
+      entry_percent: item.entry_percent === '' || item.entry_percent === undefined ? null : item.entry_percent,
+      entry_min: item.entry_min === '' || item.entry_min === undefined ? null : item.entry_min,
+      juros_mensal: item.juros_mensal === '' || item.juros_mensal === undefined ? null : item.juros_mensal,
+    };
+
+    const sanitized = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined));
+
+    const { data, error } = await supabase
+      .from('payment_plan_items')
+      .upsert([sanitized])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deletePaymentPlanItem(id) {
+    if (!id) throw new Error('id é obrigatório');
+    const { error } = await supabase
+      .from('payment_plan_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  }
+
+  async publishPaymentPlanSet(set_id) {
+    if (!set_id) throw new Error('set_id é obrigatório');
+    const { error } = await supabase
+      .rpc('publish_payment_plan_set', { p_set_id: set_id });
+
+    if (error) throw error;
+  }
+
+  async rollbackPaymentPlanSet(set_id) {
+    if (!set_id) throw new Error('set_id é obrigatório');
+    const { error } = await supabase
+      .rpc('rollback_payment_plan_set', { p_archived_set_id: set_id });
+
+    if (error) throw error;
+  }
+
+  async getPublishedPaymentPlans({ scope, concessionaria_id = null, audience } = {}) {
+    if (!scope) throw new Error('scope é obrigatório');
+    if (!audience) throw new Error('audience é obrigatório');
+
+    let query = supabase
+      .from('payment_plans_published')
+      .select('*')
+      .eq('scope', scope)
+      .eq('audience', audience)
+      .order('order');
+
+    if (scope === 'stark') {
+      query = query.is('concessionaria_id', null);
+    } else {
+      if (!concessionaria_id) throw new Error('concessionaria_id é obrigatório para scope=concessionaria');
+      query = query.eq('concessionaria_id', concessionaria_id);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
   // ===== PREÇOS DA CONCESSIONÁRIA (OVERRIDE) =====
   async getConcessionariaPrecos(concessionariaId) {
     const { data, error } = await supabase
@@ -1768,7 +1906,7 @@ class DatabaseService {
         vendedor_email: dados.vendedorEmail || null,
         equipamento_descricao: dados.equipamentoDescricao,
         valor_base: dados.valorBase,
-        desconto_atual: dados.descontoAtual || 7,
+        desconto_atual: typeof dados.descontoAtual === 'number' ? dados.descontoAtual : 0,
         justificativa: dados.justificativa || null,
         status: 'pendente'
       }])
@@ -1878,8 +2016,8 @@ class DatabaseService {
       
       // Validar e converter desconto para número
       const descontoNumerico = Number(descontoAprovado);
-      if (isNaN(descontoNumerico) || descontoNumerico < 8) {
-        throw new Error('Desconto deve ser um número maior ou igual a 8');
+      if (isNaN(descontoNumerico) || descontoNumerico < 0) {
+        throw new Error('Desconto deve ser um número maior ou igual a 0');
       }
       
       console.log('📝 [aprovarSolicitacaoDesconto] Dados validados:', {
