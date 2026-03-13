@@ -378,12 +378,20 @@ const NovoPedido = () => {
     try {
       setIsLoading(true);
 
-      // Carregar guindastes (versão leve)
-      const result = await db.getGuindastesLite(1, 100, true);
-      console.log('🔍 [NovoPedido] Resultado completo:', result);
-      console.log('🔍 [NovoPedido] Guindastes carregados:', result?.data?.length || 0);
-      console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', result?.data?.slice(0, 3));
-      setGuindastes(result?.data || []);
+      const pageSize = 200;
+      const maxPages = 10;
+      const all = [];
+
+      for (let page = 1; page <= maxPages; page++) {
+        const result = await db.getGuindastesLite(page, pageSize, true);
+        const chunk = result?.data || [];
+        all.push(...chunk);
+        if (chunk.length < pageSize) break;
+      }
+
+      console.log('🔍 [NovoPedido] Guindastes carregados (paginação):', all.length);
+      console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', all.slice(0, 3));
+      setGuindastes(all);
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
