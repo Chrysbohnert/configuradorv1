@@ -50,6 +50,180 @@ class DatabaseService {
     return data || [];
   }
 
+  async getPrototypePaymentPlanSets({ guindaste_id, status = null } = {}) {
+    if (!guindaste_id) throw new Error('guindaste_id é obrigatório');
+
+    let query = supabase
+      .from('prototype_payment_plan_sets')
+      .select('*')
+      .eq('guindaste_id', guindaste_id)
+      .order('created_at', { ascending: false });
+
+    if (status) query = query.eq('status', status);
+
+    const { data, error } = await query;
+    if (error) throw error;
+    return data || [];
+  }
+
+  async ensurePrototypePaymentPlanDraftSet({ guindaste_id } = {}) {
+    if (!guindaste_id) throw new Error('guindaste_id é obrigatório');
+
+    const { data, error } = await supabase
+      .rpc('ensure_prototype_payment_plan_draft_set', { p_guindaste_id: guindaste_id });
+
+    if (error) throw error;
+    return data;
+  }
+
+  async publishPrototypePaymentPlanSet(set_id) {
+    if (!set_id) throw new Error('set_id é obrigatório');
+    const { error } = await supabase
+      .rpc('publish_prototype_payment_plan_set', { p_set_id: set_id });
+    if (error) throw error;
+
+    this.clearGuindastesCache();
+  }
+
+  async getPrototypePaymentPlanItems(set_id) {
+    if (!set_id) throw new Error('set_id é obrigatório');
+
+    const { data, error } = await supabase
+      .from('prototype_payment_plan_items')
+      .select('*')
+      .eq('set_id', set_id)
+      .order('audience')
+      .order('order');
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async upsertPrototypePaymentPlanItem(item) {
+    if (!item?.set_id) throw new Error('set_id é obrigatório');
+    if (!item?.audience) throw new Error('audience é obrigatório');
+    if (item?.order === undefined || item?.order === null) throw new Error('order é obrigatório');
+    if (!item?.description) throw new Error('description é obrigatório');
+    if (!item?.installments) throw new Error('installments é obrigatório');
+
+    const payload = {
+      id: item.id ?? undefined,
+      set_id: item.set_id,
+      audience: item.audience,
+      order: Number(item.order),
+      description: String(item.description),
+      installments: Number(item.installments),
+      active: item.active !== undefined ? Boolean(item.active) : true,
+      nature: item.nature ?? null,
+      discount_percent: item.discount_percent === '' || item.discount_percent === undefined ? null : item.discount_percent,
+      surcharge_percent: item.surcharge_percent === '' || item.surcharge_percent === undefined ? null : item.surcharge_percent,
+      min_order_value: item.min_order_value === '' || item.min_order_value === undefined ? null : item.min_order_value,
+      entry_percent_required: item.entry_percent_required === '' || item.entry_percent_required === undefined ? null : item.entry_percent_required,
+      entry_percent: item.entry_percent === '' || item.entry_percent === undefined ? null : item.entry_percent,
+      entry_min: item.entry_min === '' || item.entry_min === undefined ? null : item.entry_min,
+      juros_mensal: item.juros_mensal === '' || item.juros_mensal === undefined ? null : item.juros_mensal,
+    };
+
+    const sanitized = Object.fromEntries(Object.entries(payload).filter(([, v]) => v !== undefined));
+
+    const { data, error } = await supabase
+      .from('prototype_payment_plan_items')
+      .upsert([sanitized])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async deletePrototypePaymentPlanItem(id) {
+    if (!id) throw new Error('id é obrigatório');
+    const { error } = await supabase
+      .from('prototype_payment_plan_items')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+  }
+
+  async getPublishedPrototypePaymentPlans({ guindaste_id, audience } = {}) {
+    if (!guindaste_id) throw new Error('guindaste_id é obrigatório');
+    if (!audience) throw new Error('audience é obrigatório');
+
+    const { data, error } = await supabase
+      .from('prototype_payment_plans_published')
+      .select('*')
+      .eq('guindaste_id', guindaste_id)
+      .eq('audience', audience)
+      .order('order');
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getGuindasteVisibilidadeByGuindasteId(guindasteId) {
+    if (!guindasteId) throw new Error('guindasteId é obrigatório');
+
+    const { data, error } = await supabase
+      .from('guindaste_visibilidade')
+      .select('user_id, ativo')
+      .eq('guindaste_id', guindasteId);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getGuindasteIdsVisiveisParaUser(userId) {
+    if (userId === undefined || userId === null || userId === '') {
+      throw new Error('userId é obrigatório');
+    }
+
+    const numericUserId = parseInt(userId, 10);
+    if (Number.isNaN(numericUserId) || numericUserId <= 0) {
+      throw new Error('userId inválido: deve ser um número inteiro positivo');
+    }
+
+    const { data, error } = await supabase
+      .from('guindaste_visibilidade')
+      .select('guindaste_id')
+      .eq('user_id', numericUserId)
+      .eq('ativo', true);
+
+    if (error) throw error;
+    return (data || []).map(r => r.guindaste_id);
+  }
+
+  async setGuindasteVisibilidade({ guindasteId, userIds = [] }) {
+    if (!guindasteId) throw new Error('guindasteId é obrigatório');
+
+    const ids = Array.isArray(userIds)
+      ? userIds
+          .map(id => parseInt(id, 10))
+          .filter(id => Number.isFinite(id) && id > 0)
+      : [];
+
+    const { error: delError } = await supabase
+      .from('guindaste_visibilidade')
+      .delete()
+      .eq('guindaste_id', guindasteId);
+    if (delError) throw delError;
+
+    if (ids.length === 0) return [];
+
+    const payload = ids.map(uid => ({
+      guindaste_id: guindasteId,
+      user_id: uid,
+      ativo: true,
+    }));
+
+    const { data, error } = await supabase
+      .from('guindaste_visibilidade')
+      .insert(payload)
+      .select('guindaste_id, user_id, ativo');
+
+    if (error) throw error;
+    return data || [];
+  }
+
   // Buscar um usuário específico por ID (otimizado)
   async getUserById(id) {
     console.log('🔍 [getUserById] Buscando usuário ID:', id);
@@ -487,7 +661,7 @@ class DatabaseService {
       // As imagens serão carregadas sob demanda quando necessário
       const { data, error } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel')
+        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_payment_set_id')
         .order('subgrupo')
         .range(from, to);
 
@@ -646,6 +820,10 @@ class DatabaseService {
       codigo_referencia: guindasteData.codigo_referencia,
       finame: guindasteData.finame,
       ncm: guindasteData.ncm,
+      is_prototipo: !!guindasteData.is_prototipo,
+      prototipo_label: guindasteData.prototipo_label || null,
+      prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || null,
+      prototipo_payment_set_id: guindasteData.prototipo_payment_set_id || null,
       quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined) 
         ? 0 
         : parseInt(guindasteData.quantidade_disponivel, 10)
@@ -722,31 +900,31 @@ class DatabaseService {
       if (isNaN(numericId) || numericId <= 0) {
         throw new Error('ID inválido: deve ser um número inteiro positivo');
       }
-      
-      // Limpar dados antes de enviar para evitar problemas de tipo
+
+      // Criar uma cópia limpa dos dados para update (somente campos permitidos)
       const cleanData = {
-        // Garantir que campos de texto sejam strings válidas
-        subgrupo: guindasteData.subgrupo || '',
-        modelo: guindasteData.modelo || '',
-        grupo: guindasteData.grupo || '',
-        peso_kg: guindasteData.peso_kg || '',
-        configuração: guindasteData.configuração || '',
-        tem_contr: guindasteData.tem_contr || 'Não',
-        imagem_url: guindasteData.imagem_url || null,
-        descricao: guindasteData.descricao || null,
-        nao_incluido: guindasteData.nao_incluido || null,
-        codigo_referencia: guindasteData.codigo_referencia || null,
-        finame: guindasteData.finame || null,
-        ncm: guindasteData.ncm || null,
-        quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined) 
-          ? 0 
-          : parseInt(guindasteData.quantidade_disponivel, 10),
-        // Garantir que arrays sejam válidos
-        imagens_adicionais: Array.isArray(guindasteData.imagens_adicionais) 
-          ? guindasteData.imagens_adicionais 
-          : []
+        subgrupo: guindasteData.subgrupo,
+        modelo: guindasteData.modelo,
+        grupo: guindasteData.grupo,
+        peso_kg: guindasteData.peso_kg,
+        configuração: guindasteData.configuração,
+        tem_contr: guindasteData.tem_contr,
+        imagem_url: guindasteData.imagem_url,
+        descricao: guindasteData.descricao,
+        nao_incluido: guindasteData.nao_incluido,
+        imagens_adicionais: guindasteData.imagens_adicionais,
+        codigo_referencia: guindasteData.codigo_referencia,
+        finame: guindasteData.finame,
+        ncm: guindasteData.ncm,
+        is_prototipo: !!guindasteData.is_prototipo,
+        prototipo_label: guindasteData.prototipo_label || null,
+        prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || null,
+        prototipo_payment_set_id: guindasteData.prototipo_payment_set_id || null,
+        quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined)
+          ? 0
+          : parseInt(guindasteData.quantidade_disponivel, 10)
       };
-      
+
       // Remover qualquer campo que possa conter UUID
       console.log('🔧 [updateGuindaste] Dados limpos:', cleanData);
       
@@ -839,11 +1017,10 @@ class DatabaseService {
       
       // Limpar cache após atualização
       this.clearGuindastesCache();
-      
-      return data;
-    } catch (err) {
-      console.error('Erro ao atualizar guindaste:', err);
-      throw err;
+      return updatedData;
+    } catch (error) {
+      console.error('❌ [updateGuindaste] Erro:', error);
+      throw error;
     }
   }
 

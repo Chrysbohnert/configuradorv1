@@ -16,6 +16,7 @@ const GerenciarGuindastes = () => {
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
+
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [capacidadesDisponiveis, setCapacidadesDisponiveis] = useState([]);
@@ -40,31 +41,141 @@ const GerenciarGuindastes = () => {
     finame: '',
     ncm: '',
     codigo_referencia: '',
-    quantidade_disponivel: 0
+    quantidade_disponivel: 0,
+    is_prototipo: false,
+    prototipo_label: '',
+    prototipo_observacoes_pdf: ''
   });
+
+  const [vendedoresDisponiveis, setVendedoresDisponiveis] = useState([]);
 
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
   const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
+
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
-  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
-
-  const [concessionaria, setConcessionaria] = useState(null);
-  const [regiaoReferencia, setRegiaoReferencia] = useState('sul-sudeste');
-  const [precosConcessionariaMap, setPrecosConcessionariaMap] = useState({});
 
   const [showPrecoConcessionariaModal, setShowPrecoConcessionariaModal] = useState(false);
   const [guindasteSelecionadoPreco, setGuindasteSelecionadoPreco] = useState(null);
   const [precoStarkReferencia, setPrecoStarkReferencia] = useState(null);
   const [precoConcessionariaInput, setPrecoConcessionariaInput] = useState('');
 
+  const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
+  const [concessionaria, setConcessionaria] = useState(null);
+  const [regiaoReferencia, setRegiaoReferencia] = useState('sul-sudeste');
+  const [precosConcessionariaMap, setPrecosConcessionariaMap] = useState({});
+
+  const extractCapacidades = React.useCallback((data) => {
+    const set = new Set();
+    (data || []).forEach(g => {
+      const subgrupo = g?.subgrupo || '';
+      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+      const match = modeloBase.match(/(\d+\.?\d*)/);
+      if (match) set.add(match[1]);
+    });
+    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
+  }, []);
+
   useEffect(() => {
     if (user) {
       loadData(1, false); // Usar cache quando possível para melhor performance
     }
   }, [user]);
+
+  const loadData = async (pageToLoad = page, forceRefresh = false) => {
+    try {
+      setIsLoading(true);
+
+      const res = await db.getGuindastesLite(pageToLoad, pageSize, forceRefresh);
+      const data = res?.data || [];
+      const count = typeof res?.count === 'number' ? res.count : data.length;
+
+      setGuindastes(data);
+      setTotal(count);
+      setPage(pageToLoad);
+      setCapacidadesDisponiveis(extractCapacidades(data));
+    } catch (e) {
+      console.error('Erro ao carregar guindastes:', e);
+      setGuindastes([]);
+      setTotal(0);
+      setCapacidadesDisponiveis([]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInputChange = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleImageUpload = (imageUrl) => {
+    setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
+  };
+
+  const handleImagensAdicionaisChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    try {
+      const uploadedUrls = [];
+      for (const file of files) {
+        const fileName = `guindaste_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
+        const imageUrl = await db.uploadImagemGuindaste(file, fileName);
+        uploadedUrls.push(imageUrl);
+      }
+      setFormData(prev => ({ ...prev, imagens_adicionais: [...(prev.imagens_adicionais || []), ...uploadedUrls] }));
+    } catch (error) {
+      console.error('Erro ao fazer upload das imagens:', error);
+      alert('Erro ao fazer upload das imagens. Tente novamente.');
+    }
+  };
+
+  const extractCapacidade = (g) => {
+    const subgrupo = g?.subgrupo || '';
+    const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+    const match = modeloBase.match(/(\d+\.?\d*)/);
+    return match ? match[1] : 'Outros';
+  };
+
+  const getCapacidadesUnicas = () => {
+    const set = new Set((capacidadesDisponiveis || []).filter(Boolean));
+    return Array.from(set);
+  };
+
+  const getGuindastesFiltrados = () => {
+    if (filtroCapacidade === 'todos') return guindastes;
+    return (guindastes || []).filter(g => extractCapacidade(g) === filtroCapacidade);
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    if (isAdminConcessionaria) return;
+
+    const loadVendedores = async () => {
+      try {
+        const users = await db.getUsers();
+        const vendedores = (users || []).filter(u => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria');
+        setVendedoresDisponiveis(vendedores);
+      } catch (e) {
+        console.error('Erro ao carregar vendedores:', e);
+        setVendedoresDisponiveis([]);
+      }
+    };
+
+    loadVendedores();
+  }, [user, isAdminConcessionaria]);
+
+  useEffect(() => {
+    if (toast.visible) {
+      const timer = setTimeout(() => {
+        setToast(prev => ({ ...prev, visible: false }));
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast.visible]);
 
   useEffect(() => {
     const loadContextoConcessionaria = async () => {
@@ -90,142 +201,6 @@ const GerenciarGuindastes = () => {
     loadContextoConcessionaria();
   }, [user, isAdminConcessionaria]);
 
-  // Auto-esconde o toast após alguns segundos
-  useEffect(() => {
-    if (toast.visible) {
-      const timer = setTimeout(() => {
-        setToast(prev => ({ ...prev, visible: false }));
-      }, 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast.visible]);
-
-  // Memoizar extração de capacidades para evitar recálculos
-  const extractCapacidades = React.useCallback((data) => {
-    const set = new Set();
-    data.forEach(g => {
-      const subgrupo = g.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) set.add(match[1]);
-    });
-    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
-  }, []);
-
-  const loadData = async (pageToLoad = page, forceRefresh = false) => {
-    try {
-      setIsLoading(true);
-
-      // Verificar autenticação (Supabase Auth ou localStorage)
-      const userData = localStorage.getItem('user');
-      if (!userData) {
-        console.error('❌ Usuário não encontrado. Redirecionando para login...');
-        navigate('/');
-        return;
-      }
-
-      // Verificação de sessão removida para melhor performance
-
-      console.log('🔄 [loadData] Carregando dados da página:', pageToLoad);
-      const { data, count } = await db.getGuindastesLite(pageToLoad, pageSize, forceRefresh);
-
-      console.log('📊 [loadData] Dados carregados:', data?.length || 0, 'registros');
-      console.log('📊 [loadData] Total de registros:', count);
-      setGuindastes(data);
-      setTotal(count || 0);
-      setPage(pageToLoad);
-
-      // Processar capacidades apenas se não foram inicializadas ainda
-      if (!hasInitializedFiltro && data.length > 0) {
-        const capacidades = extractCapacidades(data);
-        setCapacidadesDisponiveis(capacidades);
-
-        if (capacidades.length > 0) {
-          const saved = localStorage.getItem('gg_capacidade');
-          // Sempre inicia na primeira capacidade disponível. Ignora 'todos'.
-          const initial = saved && capacidades.includes(saved) ? saved : capacidades[0];
-          setFiltroCapacidade(initial);
-          setHasInitializedFiltro(true);
-        }
-      } else if (hasInitializedFiltro && data.length > 0) {
-        // Atualizar capacidades disponíveis se já foram inicializadas
-        const capacidades = extractCapacidades(data);
-        setCapacidadesDisponiveis(capacidades);
-      }
-    } catch (error) {
-      console.error('❌ Erro ao carregar dados:', error);
-      console.error('❌ Detalhes do erro:', error.message);
-      console.error('❌ Stack trace:', error.stack);
-      alert(`Erro ao carregar dados: ${error.message}`);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Persistir preferência do usuário
-  useEffect(() => {
-    if (filtroCapacidade && filtroCapacidade !== 'todos') {
-      localStorage.setItem('gg_capacidade', filtroCapacidade);
-    } else if (filtroCapacidade === 'todos') {
-      localStorage.removeItem('gg_capacidade');
-    }
-  }, [filtroCapacidade]);
-
-  // Função para extrair capacidades únicas dos guindastes (otimizada)
-  const getCapacidadesUnicas = React.useCallback(() => {
-    return capacidadesDisponiveis;
-  }, [capacidadesDisponiveis]);
-
-  // Extrai a capacidade (toneladas) de um registro de guindaste
-  const extractCapacidade = (guindaste) => {
-    const subgrupo = guindaste.subgrupo || '';
-    const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-    const match = modeloBase.match(/(\d+\.?\d*)/);
-    return match ? match[1] : null;
-  };
-
-  const getGuindastesFiltrados = () => {
-    if (filtroCapacidade === 'todos') return guindastes;
-    return guindastes.filter(guindaste => {
-      const cap = extractCapacidade(guindaste);
-      return cap && cap === filtroCapacidade;
-    });
-  };
-
-  const handleInputChange = (field, value) => {
-    setFormData(prev => {
-      const newData = { ...prev, [field]: value };
-      if (field === 'configuração') {
-        const temControleRemoto = value.includes('CR') || value.includes('Controle Remoto') ? 'Sim' : 'Não';
-        newData.tem_contr = temControleRemoto;
-      }
-      return newData;
-    });
-  };
-
-  const handleImageUpload = (imageUrl) => {
-    setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
-  };
-
-  // Removido upload de gráfico de carga (PDF é anexado automaticamente na proposta)
-
-  const handleImagensAdicionaisChange = async (e) => {
-    const files = Array.from(e.target.files);
-    if (files.length === 0) return;
-    try {
-      const uploadedUrls = [];
-      for (const file of files) {
-        const fileName = `guindaste_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
-        const imageUrl = await db.uploadImagemGuindaste(file, fileName);
-        uploadedUrls.push(imageUrl);
-      }
-      setFormData(prev => ({ ...prev, imagens_adicionais: [...prev.imagens_adicionais, ...uploadedUrls] }));
-    } catch (error) {
-      console.error('Erro ao fazer upload das imagens:', error);
-      alert('Erro ao fazer upload das imagens. Tente novamente.');
-    }
-  };
-
   const removeImagemAdicional = (index) => {
     setFormData(prev => ({ ...prev, imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index) }));
   };
@@ -235,11 +210,10 @@ const GerenciarGuindastes = () => {
       alert('Admin de concessionária não pode editar guindastes.');
       return;
     }
+
     console.log('🔧 [handleEdit] Item recebido:', item);
 
     try {
-      // ⚡ OTIMIZADO: Buscar apenas o guindaste específico por ID
-      console.log('🔍 Buscando dados completos do guindaste ID:', item.id);
       const guindasteData = await db.getGuindasteById(item.id);
 
       if (!guindasteData) {
@@ -265,12 +239,15 @@ const GerenciarGuindastes = () => {
         finame: guindasteData.finame || '',
         ncm: guindasteData.ncm || '',
         codigo_referencia: guindasteData.codigo_referencia || '',
-        quantidade_disponivel: guindasteData.quantidade_disponivel || 0
+        quantidade_disponivel: guindasteData.quantidade_disponivel || 0,
+        is_prototipo: !!guindasteData.is_prototipo,
+        prototipo_label: guindasteData.prototipo_label || '',
+        prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || ''
       };
       console.log('📝 [handleEdit] FormData sendo definido:', newFormData);
       setFormData(newFormData);
+
       setShowModal(true);
-      // Bloquear scroll do body
       document.body.classList.add('modal-open');
     } catch (error) {
       console.error('❌ Erro ao buscar dados completos do guindaste:', error);
@@ -285,100 +262,7 @@ const GerenciarGuindastes = () => {
     }
     setGuindasteToDelete(id);
     setShowDeleteModal(true);
-    // Bloquear scroll do body
     document.body.classList.add('modal-open');
-  };
-
-  const openPrecoConcessionaria = async (g) => {
-    if (!isAdminConcessionaria) return;
-    if (!user?.concessionaria_id) {
-      alert('Erro: admin não vinculado a uma concessionária.');
-      return;
-    }
-
-    try {
-      setGuindasteSelecionadoPreco(g);
-      setShowPrecoConcessionariaModal(true);
-      document.body.classList.add('modal-open');
-
-      const precoStark = await db.getPrecoPorRegiao(g.id, regiaoReferencia);
-      setPrecoStarkReferencia(precoStark || 0);
-
-      const precoAtual = await db.getConcessionariaPreco(user.concessionaria_id, g.id);
-      setPrecoConcessionariaInput(precoAtual !== null && precoAtual !== undefined ? String(precoAtual) : '');
-    } catch (e) {
-      console.error('Erro ao abrir preço da concessionária:', e);
-      alert('Erro ao carregar preço.');
-    }
-  };
-
-  const closePrecoConcessionaria = () => {
-    setShowPrecoConcessionariaModal(false);
-    setGuindasteSelecionadoPreco(null);
-    setPrecoStarkReferencia(null);
-    setPrecoConcessionariaInput('');
-    document.body.classList.remove('modal-open');
-  };
-
-  const salvarPrecoConcessionaria = async () => {
-    if (!isAdminConcessionaria) return;
-    if (!user?.concessionaria_id) {
-      alert('Erro: admin não vinculado a uma concessionária.');
-      return;
-    }
-    if (!guindasteSelecionadoPreco) return;
-
-    const num = parseFloat(String(precoConcessionariaInput || '').replace(',', '.'));
-    if (!Number.isFinite(num) || num <= 0) {
-      alert('Informe um preço válido (maior que zero).');
-      return;
-    }
-
-    try {
-      await db.upsertConcessionariaPreco({
-        concessionaria_id: user.concessionaria_id,
-        guindaste_id: guindasteSelecionadoPreco.id,
-        preco_override: num,
-        updated_by: user?.id
-      });
-
-      setPrecosConcessionariaMap(prev => ({ ...prev, [guindasteSelecionadoPreco.id]: num }));
-      setToast({ visible: true, message: 'Preço da concessionária salvo com sucesso!', type: 'success' });
-      closePrecoConcessionaria();
-    } catch (e) {
-      console.error('Erro ao salvar preço da concessionária:', e);
-      alert('Erro ao salvar preço.');
-    }
-  };
-
-  const handleConfirmDelete = async () => {
-    if (guindasteToDelete) {
-      try {
-        await db.deleteGuindaste(guindasteToDelete);
-        await loadData(page, true); // forceRefresh = true para limpar cache
-        setShowDeleteModal(false);
-        setGuindasteToDelete(null);
-        // Restaurar scroll do body
-        document.body.classList.remove('modal-open');
-        // Notificação de sucesso
-        setToast({ visible: true, message: 'Guindaste removido com sucesso!', type: 'success' });
-      } catch (error) {
-        console.error('Erro ao remover guindaste:', error);
-
-        // Mensagem de erro mais específica
-        const mensagemErro = error.message || 'Erro desconhecido ao remover guindaste.';
-        
-        if (mensagemErro.includes('vinculado a') || mensagemErro.includes('pedido')) {
-          alert(`❌ ${mensagemErro}`);
-        } else {
-          alert(`❌ Erro ao remover guindaste: ${mensagemErro}\n\nVerifique se não há pedidos ou preços vinculados a este equipamento.`);
-        }
-        
-        setShowDeleteModal(false);
-        setGuindasteToDelete(null);
-        document.body.classList.remove('modal-open');
-      }
-    }
   };
 
   const handleCloseModal = () => {
@@ -399,9 +283,11 @@ const GerenciarGuindastes = () => {
       finame: '',
       ncm: '',
       codigo_referencia: '',
-      quantidade_disponivel: 0
+      quantidade_disponivel: 0,
+      is_prototipo: false,
+      prototipo_label: '',
+      prototipo_observacoes_pdf: ''
     });
-    // Restaurar scroll do body
     document.body.classList.remove('modal-open');
   };
 
@@ -425,10 +311,12 @@ const GerenciarGuindastes = () => {
       finame: '',
       ncm: '',
       codigo_referencia: '',
-      quantidade_disponivel: 0
+      quantidade_disponivel: 0,
+      is_prototipo: false,
+      prototipo_label: '',
+      prototipo_observacoes_pdf: ''
     });
     setShowModal(true);
-    // Bloquear scroll do body
     document.body.classList.add('modal-open');
   };
 
@@ -438,7 +326,6 @@ const GerenciarGuindastes = () => {
     setIsLoading(true);
 
     try {
-      // Validação completa de todos os campos obrigatórios
       const requiredFields = [
         { field: 'subgrupo', name: 'Subgrupo' },
         { field: 'modelo', name: 'Modelo' },
@@ -462,7 +349,6 @@ const GerenciarGuindastes = () => {
         return;
       }
 
-      // Monta o objeto de dados com base no formulário
       const guindasteData = {
         subgrupo: formData.subgrupo.trim(),
         modelo: formData.modelo.trim(),
@@ -477,36 +363,31 @@ const GerenciarGuindastes = () => {
         codigo_referencia: formData.codigo_referencia.trim(),
         finame: formData.finame.trim(),
         ncm: formData.ncm.trim(),
-        quantidade_disponivel: formData.quantidade_disponivel
+        quantidade_disponivel: formData.quantidade_disponivel,
+        is_prototipo: !!formData.is_prototipo,
+        prototipo_label: (formData.prototipo_label || '').trim() || null,
+        prototipo_observacoes_pdf: (formData.prototipo_observacoes_pdf || '').trim() || null
       };
-      
+
       console.log('📋 [handleSubmit] Dados do formulário:', formData);
       console.log('📋 [handleSubmit] Dados preparados para envio:', guindasteData);
       console.log('📋 [handleSubmit] Campo configuração:', guindasteData.configuração);
       console.log('📦 [handleSubmit] Quantidade disponível:', guindasteData.quantidade_disponivel);
 
       if (editingGuindaste) {
-        // LÓGICA DE ATUALIZAÇÃO
         console.log('🔧 [handleSubmit] Atualizando guindaste ID:', editingGuindaste.id);
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
         setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
-        // LÓGICA DE CRIAÇÃO
         console.log('🔧 [handleSubmit] Criando novo guindaste');
         const result = await db.createGuindaste(guindasteData);
         console.log('✅ [handleSubmit] Novo guindaste criado:', result);
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
-      // ⚡ OTIMIZADO: Fechar modal imediatamente para feedback rápido
       handleCloseModal();
-      
-      // Recarregar dados em segundo plano com forceRefresh para limpar cache
       loadData(page, true);
-      
-      // Scroll suave para o topo para mostrar o novo guindaste
       window.scrollTo({ top: 0, behavior: 'smooth' });
-
     } catch (error) {
       console.error('❌ Erro ao salvar guindaste:', error);
       if (error.code === '23505') {
@@ -526,7 +407,6 @@ const GerenciarGuindastes = () => {
 
   if (!user) return null;
 
-  // Função para resolver a imagem do guindaste, com fallback (otimizada)
   const resolveGuindasteImage = (guindaste) => {
     // Verificar se tem imagem_url válida
     if (guindaste.imagem_url && typeof guindaste.imagem_url === 'string') {
@@ -1034,12 +914,67 @@ const GerenciarGuindastes = () => {
                 </div>
               </div>
 
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>🧪 Protótipo</h3>
+                  <div className="section-divider"></div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🧪</span>
+                      É protótipo?
+                    </label>
+                    <select
+                      value={formData.is_prototipo ? 'sim' : 'nao'}
+                      onChange={e => handleInputChange('is_prototipo', e.target.value === 'sim')}
+                      className="form-select"
+                    >
+                      <option value="nao">❌ Não</option>
+                      <option value="sim">✅ Sim</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label>
+                      <span className="label-icon">🏷️</span>
+                      Label do protótipo (opcional)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.prototipo_label}
+                      onChange={e => handleInputChange('prototipo_label', e.target.value)}
+                      placeholder="Ex: PROTÓTIPO - PRÉ SÉRIE"
+                      className="form-input"
+                      disabled={!formData.is_prototipo}
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group full-width">
+                  <label>
+                    <span className="label-icon">📄</span>
+                    Observações no PDF (opcional)
+                  </label>
+                  <textarea
+                    value={formData.prototipo_observacoes_pdf}
+                    onChange={e => handleInputChange('prototipo_observacoes_pdf', e.target.value)}
+                    placeholder="Ex: Equipamento protótipo, sujeito a disponibilidade..."
+                    className="form-textarea"
+                    rows="3"
+                    disabled={!formData.is_prototipo}
+                  />
+                </div>
+              </div>
+
               {/* Seção: Mídia e Documentação */}
               <div className="form-section">
                 <div className="section-header">
                   <h3>📸 Mídia e Documentação</h3>
                   <div className="section-divider"></div>
                 </div>
+
                 <div className="form-group">
                   <label>
                     <span className="label-icon">🖼️</span>

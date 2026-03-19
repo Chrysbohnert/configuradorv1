@@ -42,6 +42,19 @@ export default function PaymentPolicy({
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
 
+  const guindasteDoPedido = useMemo(() => {
+    const g = (itens || []).find(i => i?.tipo === 'guindaste') || null;
+    return g || null;
+  }, [itens]);
+
+  const prototipoContext = useMemo(() => {
+    if (!guindasteDoPedido) return { isPrototipo: false, id: null };
+    return {
+      isPrototipo: !!guindasteDoPedido?.is_prototipo,
+      id: guindasteDoPedido?.id || null,
+    };
+  }, [guindasteDoPedido]);
+
   const temGSE = useMemo(() => itens.some(i => {
     const t = `${i?.modelo || ''} ${i?.subgrupo || ''} ${i?.nome || ''}`.toUpperCase();
     return t.includes('GSE');
@@ -377,11 +390,32 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
   const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
 
+  const entradaOpcoes = null;
+  const permiteFinanciamento = true;
+  const permiteSolicitarDescontoExtra = true;
+  const descontosBotoes = null;
+  const planosLiberados = null;
+
   useEffect(() => {
     let cancelled = false;
 
     const loadPublishedPlans = async () => {
       try {
+        if (prototipoContext.isPrototipo && prototipoContext.id) {
+          const publishedProto = await db.getPublishedPrototypePaymentPlans({
+            guindaste_id: prototipoContext.id,
+            audience
+          });
+          const publishedProtoActive = (publishedProto || []).filter(p => p.active);
+
+          if (!cancelled) {
+            if (publishedProtoActive.length > 0) {
+              setTodosPlanos(publishedProtoActive);
+              return;
+            }
+          }
+        }
+
         const scope = isConcessionariaUser ? 'concessionaria' : 'stark';
         const concessionaria_id = user?.concessionaria_id || null;
 
@@ -412,16 +446,30 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     loadPublishedPlans();
     return () => { cancelled = true; };
-  }, [audience, isConcessionariaUser, user?.concessionaria_id]);
+  }, [audience, isConcessionariaUser, user?.concessionaria_id, prototipoContext.isPrototipo, prototipoContext.id]);
+
+  useEffect(() => {
+    if (!prototipoContext.isPrototipo) return;
+
+    // Se protótipo não permitir financiamento e o usuário já selecionou financiamento, limpar
+    if (!permiteFinanciamento && percentualEntrada === 'financiamento') {
+      setPercentualEntrada('');
+    }
+  }, [prototipoContext.isPrototipo, permiteFinanciamento, percentualEntrada]);
 
   // Filtra por percentual quando for cliente e não for financiamento
   const planosFiltrados = useMemo(() => {
-    if (tipoCliente !== 'cliente') return todosPlanos;
+    let base = tipoCliente !== 'cliente' ? todosPlanos : todosPlanos;
+    if (planosLiberados) {
+      base = base.filter(p => planosLiberados.has(String(p.description).trim()));
+    }
+
+    if (tipoCliente !== 'cliente') return base;
     if (!percentualEntrada) return [];
-    if (percentualEntrada === 'financiamento') return todosPlanos.filter(p => !p.entry_percent_required);
+    if (percentualEntrada === 'financiamento') return base.filter(p => !p.entry_percent_required);
     const pNum = percentualEntradaNumCalc / 100;
-    return todosPlanos.filter(p => p.entry_percent_required === pNum);
-  }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc]);
+    return base.filter(p => p.entry_percent_required === pNum);
+  }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc, planosLiberados]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
   useEffect(() => {
@@ -1424,9 +1472,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               onChange={e => setPercentualEntrada(e.target.value)}
             >
               <option value="">Selecione...</option>
-              <option value="30">30%</option>
-              <option value="50">50%</option>
-              <option value="financiamento">🏦 Financiamento Bancário</option>
+              {(entradaOpcoes || ['30', '50', 'financiamento'])
+                .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
+                .map(v => (
+                  v === 'financiamento'
+                    ? <option key="financiamento" value="financiamento">🏦 Financiamento Bancário</option>
+                    : <option key={v} value={v}>{v}%</option>
+                ))}
             </select>
           </div>
 
@@ -1464,7 +1516,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   💡 Informe como o cliente pagará a entrada (opcional)
                 </small>
               </div>
+            </>
+          )}
 
+          {percentualEntrada && (
+            <>
               <div className="form-group">
                 <label>Descrição do Extra (opcional)</label>
                 <input
@@ -1671,7 +1727,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
                   <div style={{ marginTop: '12px' }}>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      {(temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3]).map(valor => (
+                      {((descontosBotoes || (temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3])))
+                        .map(valor => (
                         <button
                           key={valor}
                           type="button"
@@ -1772,7 +1829,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 )}
 
                 {/* Botão [+] para solicitar desconto adicional (sempre disponível, exceto concessionária) */}
-                {!isConcessionariaUser && (
+                {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
                   <div style={{ marginTop: '12px' }}>
                     <button
                       type="button"
@@ -1936,7 +1993,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       )}
 
       {/* Modal de Solicitação de Desconto */}
-      {!isConcessionariaUser && (
+      {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
         <SolicitarDescontoModal
           isOpen={modalSolicitacaoOpen}
           onClose={() => {
@@ -1951,7 +2008,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             return equipamento 
               ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
               : 'Equipamento não identificado';
-          })()}
+          })}
           valorBase={precoBase}
           descontoAtual={descontoVendedor || 7}
           isLoading={aguardandoAprovacao}
