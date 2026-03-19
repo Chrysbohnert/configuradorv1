@@ -49,7 +49,7 @@ const GerenciarVendedores = () => {
       // Filtrar apenas vendedores (não admins)
       const vendedoresOnly = vendedoresData.filter(v => {
         if (isAdminConcessionaria) return v.tipo === 'vendedor_concessionaria';
-        return v.tipo === 'vendedor' || v.tipo === 'vendedor_concessionaria';
+        return v.tipo === 'vendedor' || v.tipo === 'vendedor_concessionaria' || v.tipo === 'vendedor_exterior';
       });
       
       // Calcular vendas e valor total para cada vendedor
@@ -109,7 +109,7 @@ const GerenciarVendedores = () => {
       const vendedorData = {
         ...formData,
         comissao: parseFloat(formData.comissao),
-        tipo: isAdminConcessionaria ? 'vendedor_concessionaria' : 'vendedor',
+        tipo: isAdminConcessionaria ? 'vendedor_concessionaria' : (formData.tipo || 'vendedor'),
         concessionaria_id: isAdminConcessionaria ? concessionariaId : (formData.concessionaria_id ?? null),
         regiao: isAdminConcessionaria ? regiaoConcessionaria : formData.regiao,
         regioes_operacao: isAdminConcessionaria ? regioesOperacaoConcessionaria : formData.regioes_operacao
@@ -430,6 +430,21 @@ const GerenciarVendedores = () => {
                   required
                 />
               </div>
+
+              {!isAdminConcessionaria && (
+                <div className="form-group">
+                  <label htmlFor="tipo">Tipo de Usuário *</label>
+                  <select
+                    id="tipo"
+                    value={formData.tipo || 'vendedor'}
+                    onChange={(e) => handleInputChange('tipo', e.target.value)}
+                    required
+                  >
+                    <option value="vendedor">Vendedor</option>
+                    <option value="vendedor_exterior">Vendedor Exterior (USD)</option>
+                  </select>
+                </div>
+              )}
               
               {!isAdminConcessionaria && (
                 <div className="form-group">

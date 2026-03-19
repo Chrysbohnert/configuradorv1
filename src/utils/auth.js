@@ -30,7 +30,7 @@ export const isAdmin = () => {
 // Verificar se o usuário é vendedor
 export const isVendedor = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria';
+  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior';
 };
 
 // Fazer logout

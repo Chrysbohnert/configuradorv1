@@ -54,6 +54,7 @@ const NovoPedido = () => {
   const [regiaoClienteSelecionada, setRegiaoClienteSelecionada] = useState('');
   const [concessionariaInfo, setConcessionariaInfo] = useState(null);
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
+  const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
@@ -92,6 +93,28 @@ const NovoPedido = () => {
       navigate('/dashboard-admin');
     }
   }, [location.pathname, isAdminStark, navigate]);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user?.tipo !== 'vendedor_exterior') {
+      setCotacaoUSD(null);
+      return;
+    }
+
+    let cancelled = false;
+    const loadCotacao = async () => {
+      try {
+        const v = await db.getCotacaoUSD();
+        if (!cancelled) setCotacaoUSD(Number(v) || null);
+      } catch (error) {
+        console.error('Erro ao carregar cotação USD:', error);
+        if (!cancelled) setCotacaoUSD(null);
+      }
+    };
+
+    loadCotacao();
+    return () => { cancelled = true; };
+  }, [user]);
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -343,7 +366,7 @@ const NovoPedido = () => {
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagamentoData.tipoPagamento, pagamentoData.participacaoRevenda, pagamentoData.revendaTemIE, clienteTemIE, regiaoClienteSelecionada]);
+  }, [pagamentoData?.tipoPagamento || '', pagamentoData?.participacaoRevenda || '', pagamentoData?.revendaTemIE || '', clienteTemIE, regiaoClienteSelecionada]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
@@ -839,6 +862,7 @@ const NovoPedido = () => {
               regiaoClienteSelecionada={regiaoClienteSelecionada}
               modoConcessionaria={isModoConcessionaria}
               descontoConcessionaria={descontoConcessionaria}
+              cotacaoUSD={cotacaoUSD}
             />
           </div>
         );

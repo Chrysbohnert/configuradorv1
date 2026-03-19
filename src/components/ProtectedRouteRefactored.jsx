@@ -119,7 +119,7 @@ const ProtectedRouteRefactored = ({ children, requireAdmin = false, requireVende
 
   // Verificar permissões por tipo
   const isAdmin = authState.tipo === 'admin';
-  const isVendedor = authState.tipo === 'vendedor';
+  const isVendedor = authState.tipo === 'vendedor' || authState.tipo === 'vendedor_concessionaria' || authState.tipo === 'vendedor_exterior';
 
   // Requer admin mas não é
   if (requireAdmin && !isAdmin) {

@@ -134,6 +134,16 @@ const AdminNavigation = ({ user }) => {
       )
     },
     {
+      path: '/cotacao-dolar',
+      label: 'Cotação do Dólar',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 1v22" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7H14.5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      )
+    },
+    {
       path: '/admin/configuracoes',
       label: 'Configurações',
       icon: (

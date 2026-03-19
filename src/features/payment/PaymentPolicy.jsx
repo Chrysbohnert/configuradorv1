@@ -7,6 +7,11 @@ import { useFretes } from '../../hooks/useFretes';
 import SolicitarDescontoModal from '../../components/SolicitarDescontoModal';
 import './PaymentPolicy.css';
 
+const formatCurrencyUSD = (value) => {
+  const v = Number(value) || 0;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
+};
+
 /**
  * PaymentPolicy – Alinhado ao DIAGRAMA (7 etapas)
  * Regras-chave implementadas:
@@ -21,6 +26,7 @@ export default function PaymentPolicy({
   equipamentos = [],
   // preço base total (para cálculo/resumo)
   precoBase = 0,
+  cotacaoUSD = null,
   modoConcessionaria = false,
   descontoConcessionaria = 0,
   // callbacks opcionais
@@ -38,6 +44,7 @@ export default function PaymentPolicy({
     }
   }, []);
   const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
+  const isVendedorExterior = user?.tipo === 'vendedor_exterior';
 
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
@@ -257,6 +264,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
             const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
+            const cUsd = Number(cotacaoUSD);
+            const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+              ? (valorFinal / cUsd)
+              : 0;
+
             // Calcular campos de entrada para o PDF
             const valorSinalNum = parseFloat(valorSinal) || 0;
             
@@ -308,6 +320,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               total: valorFinal,
               valorFinal, // Adicionar também como valorFinal
               financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
+
+              // Comércio exterior
+              moeda: isVendedorExterior ? 'USD' : 'BRL',
+              cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+              valorFinalUSD,
               
               // Campos em percentual para o PDF
               desconto: descontoAprovado, // % do desconto aprovado
@@ -525,6 +542,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     // não calcula enquanto não definiu plano (ou financiamento)
     if (!tipoCliente) { setResultado(null); return; }
 
+    const cUsd = Number(cotacaoUSD);
+
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
       const extraValorNum = parseFloat(extraValor) || 0;
@@ -541,6 +560,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         : 0;
 
       const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+      const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+        ? (valorFinalFinanciamento / cUsd)
+        : 0;
       const r = {
         precoBase,
         financiamentoBancario: 'sim',
@@ -584,6 +606,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
         extraDescricao: extraDescricao || '',
         extraValor: extraValorNum,
+
+        // Comércio exterior
+        moeda: isVendedorExterior ? 'USD' : 'BRL',
+        cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+        valorFinalUSD,
       };
 
       console.log('💾 [PaymentPolicy] pagamentoData calculado (financiamento):', {
@@ -624,6 +651,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         : 0;
 
       const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+
+      const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+        ? (valorFinal / cUsd)
+        : 0;
 
       // Calcular campos de entrada para o PDF
       const valorSinalNum = parseFloat(valorSinal) || 0;
@@ -690,6 +721,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         faltaEntrada: faltaEntradaCalc,
         saldoAPagar: saldoAPagarCalc,
         formaEntrada: formaEntrada || '',
+
+        // Comércio exterior
+        moeda: isVendedorExterior ? 'USD' : 'BRL',
+        cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+        valorFinalUSD,
         
         // CORREÇÃO: Usar parcelas recalculadas
         parcelas: parcelasCorrigidas,
@@ -751,6 +787,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     descontoVendedor,
     temGSE,
     temGSI,
+    cotacaoUSD,
     onPaymentComputed,
   ]);
 
@@ -1034,6 +1071,18 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     return valor;
   }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSE, temGSI, tipoCliente]);
 
+  const moedaResumo = useMemo(() => {
+    if (!isVendedorExterior) return 'BRL';
+    return 'USD';
+  }, [isVendedorExterior]);
+
+  const valorFlutuanteUSD = useMemo(() => {
+    if (!isVendedorExterior) return 0;
+    const c = Number(cotacaoUSD);
+    if (!Number.isFinite(c) || c <= 0) return 0;
+    return valorFlutuante / c;
+  }, [isVendedorExterior, cotacaoUSD, valorFlutuante]);
+
   // =============== RENDER ========================================
   const etapasVisiveis = modoConcessionaria ? [6, 7] : [1, 2, 3, 4, 5, 6, 7];
 
@@ -1064,7 +1113,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         </div>
 
         <div className="floating-price-value">
-          <span className="price">{formatCurrency(valorFlutuante)}</span>
+          <span className="price">{isVendedorExterior ? formatCurrencyUSD(valorFlutuanteUSD) : formatCurrency(valorFlutuante)}</span>
+          {isVendedorExterior && (
+            <div style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>
+              Câmbio: 1 USD = {formatCurrency(Number(cotacaoUSD) || 0)}
+            </div>
+          )}
         </div>
 
         <div className="floating-price-breakdown">

@@ -23,6 +23,50 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 // Classe para operações do banco de dados
 class DatabaseService {
+  // ===== CONFIGURAÇÕES GLOBAIS =====
+  async getConfiguracaoGlobal(chave) {
+    if (!chave) throw new Error('chave é obrigatória');
+    const { data, error } = await supabase
+      .from('configuracoes_globais')
+      .select('*')
+      .eq('chave', chave)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data || null;
+  }
+
+  async setConfiguracaoGlobalNumero(chave, valorNumero) {
+    if (!chave) throw new Error('chave é obrigatória');
+    const payload = {
+      chave,
+      valor_numero: valorNumero === '' || valorNumero === undefined || valorNumero === null ? null : Number(valorNumero),
+    };
+
+    const { data, error } = await supabase
+      .from('configuracoes_globais')
+      .upsert(payload)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async getCotacaoUSD() {
+    const cfg = await this.getConfiguracaoGlobal('usd_brl');
+    const v = Number(cfg?.valor_numero);
+    return Number.isFinite(v) && v > 0 ? v : 5.12;
+  }
+
+  async setCotacaoUSD(valorBRL) {
+    const v = Number(valorBRL);
+    if (!Number.isFinite(v) || v <= 0) {
+      throw new Error('Cotação inválida');
+    }
+    return this.setConfiguracaoGlobalNumero('usd_brl', v);
+  }
+
   // ===== USUÁRIOS =====
   async getUsers(filters = {}) {
     let query = supabase
