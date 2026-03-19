@@ -15,7 +15,7 @@ const VendedorLayout = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // Verificar se é vendedor
-      if (parsedUser.tipo === 'vendedor' || parsedUser.tipo === 'vendedor_concessionaria') {
+      if (parsedUser.tipo === 'vendedor' || parsedUser.tipo === 'vendedor_concessionaria' || parsedUser.tipo === 'vendedor_exterior') {
         setUser(parsedUser);
         // Mostrar loading de boas-vindas apenas uma vez por sessão
         const hasShown = sessionStorage.getItem('welcomeShownVendedor');
@@ -24,7 +24,11 @@ const VendedorLayout = () => {
         }
       } else {
         console.warn('Usuário não é vendedor, redirecionando...');
-        navigate('/');
+        if (parsedUser.tipo === 'admin' || parsedUser.tipo === 'admin_concessionaria') {
+          navigate('/dashboard-admin');
+        } else {
+          navigate('/');
+        }
       }
     } else {
       console.warn('Usuário não encontrado, redirecionando para login...');

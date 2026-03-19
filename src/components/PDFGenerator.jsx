@@ -36,6 +36,294 @@ const STYLE = {
 const HEADER_IMG = '/cebecalho1.png';
 const FOOTER_IMG = '/rodapé.png';
 
+const formatCurrencyUSD = (value) => {
+  const v = Number(value) || 0;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
+};
+
+const getLang = (pedidoData) => {
+  const lang = (pedidoData?.pdfLang || pedidoData?.pagamentoData?.idioma_pdf || '').toString().toLowerCase();
+  return (lang === 'es' || lang === 'pt') ? lang : 'pt';
+};
+
+const t = (lang, key) => {
+  const dict = {
+    pt: {
+      proposalTitleCommercial: 'PROPOSTA COMERCIAL STARK',
+      proposalTitlePurchase: 'PROPOSTA DE COMPRA STARK',
+      clienteTitle: 'CLIENTE STARK',
+      equipamentoTitle: 'EQUIPAMENTO',
+      proposalNumber: 'Nº PROPOSTA',
+      issueDate: 'DATA DE EMISSÃO',
+      conditionsTitle: 'CONDIÇÕES COMERCIAIS E FINANCEIRAS',
+      exchangeRateApplied: 'CÂMBIO APLICADO',
+      totalProposal: 'VALOR TOTAL DA PROPOSTA',
+      bankData: 'DADOS BANCÁRIOS – STARK GUINDASTES LTDA',
+      notProvided: 'NÃO INFORMADO',
+      modelNotProvided: 'MODELO NÃO INFORMADO',
+      validity: 'VALIDADE',
+      validityDays10: '10 DIAS',
+      prototypeProposal: 'PROPOSTA DE EQUIPAMENTO PROTÓTIPO',
+      modalityFinancing: 'MODALIDADE: FINANCIAMENTO BANCÁRIO',
+      starkRepresentative: 'REPRESENTANTE STARK',
+      corporateName: 'RAZÃO SOCIAL',
+      contact: 'CONTATO',
+      company: 'EMPRESA',
+      nameLabel: 'NOME',
+      clientName: 'NOME CLIENTE',
+      stateRegistration: 'INSCRIÇÃO ESTADUAL',
+      address: 'ENDEREÇO',
+      phone: 'TELEFONE',
+      email: 'E-MAIL',
+      clientDataTitle: 'DADOS DO CLIENTE',
+      name: 'NOME',
+      observations: 'OBSERVAÇÕES',
+      equipmentTechDescription: 'DESCRIÇÃO TÉCNICA DO EQUIPAMENTO',
+      noMainEquipment: 'NENHUM EQUIPAMENTO PRINCIPAL INFORMADO.',
+      notIncluded: 'NÃO INCLUÍDO',
+      warrantyProgramTitle: 'PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK',
+      warrantyBullet1: 'Para solicitação da garantia, deverão ser apresentados os seguintes documentos:',
+      warrantyBullet2: 'Nota Fiscal de aquisição do equipamento.',
+      warrantyBullet3: 'Certificado de Garantia preenchido e assinado pelo proprietário na hora da entrega.',
+      warrantyBullet4: 'Comprovante de revisão efetuada pelo ponto de instalação ou fábrica de Santa Rosa Rs.',
+      warrantyBullet5: 'Comprovante do relatório de entrega técnica assinado pelo responsável pelo recebimento do equipamento.',
+      warrantyBullet6: 'A garantia contratual concedida pela STARK Guindastes tem validade de:',
+      warrantyBullet7: '6 (seis) meses para o sistema hidráulico, ou, 500 (quinhentas) horas de operação, o que ocorrer primeiro.',
+      warrantyBullet8: '12 (doze) meses para a estrutura do equipamento, ou, 1000 (mil) horas de operação, o que ocorrer primeiro.',
+      warrantyBullet9: 'O prazo é contado a partir da data de entrega ao cliente, conforme nota fiscal, e mediante o envio do Certificado de Garantia devidamente preenchido e assinado á fábrica.',
+      warrantyBullet10: 'A validade de garantia está condicionada ao fato de que o faturamento da STARK Guindastes para a revenda não exceda 12 (doze) meses anteriores á entrega ao cliente final.',
+      selectedOptionals: 'OPCIONAIS SELECIONADOS',
+      optional: 'OPCIONAL',
+      description: 'DESCRIÇÃO',
+      price: 'PREÇO',
+      vehicleDataTitle: 'DADOS DO VEÍCULO',
+      type: 'TIPO',
+      brand: 'MARCA',
+      year: 'ANO',
+      voltage: 'VOLTAGEM',
+      vehicleStudyTitle: 'ESTUDO VEICULAR',
+      measure: 'MEDIDA',
+      value: 'VALOR',
+      measuresNotProvided: 'MEDIDAS NÃO INFORMADAS.',
+      patolamento: 'PATOLAMENTO',
+      negotiationNotes: 'OBSERVAÇÕES DA NEGOCIAÇÃO',
+      financingModeShort: 'MODALIDADE: FINANCIAMENTO BANCÁRIO',
+      baseEquipmentValue: '① VALOR BASE DO EQUIPAMENTO',
+      discountsAndAdjustments: '③ DESCONTOS E AJUSTES',
+      sellerDiscount: 'Desconto Vendedor',
+      termDiscount: 'Desconto Prazo',
+      surcharge: 'Acréscimo',
+      freightAndInstallation: '② FRETE E INSTALAÇÃO',
+      freight: 'Frete',
+      included: 'Incluso',
+      customerPaysDirectly: 'Cliente paga direto',
+      installation: 'Instalação',
+      installationLocation: 'Local de Instalação',
+      extra: 'EXTRA',
+      commercialAdjustment: 'AJUSTE COMERCIAL',
+      entry: 'ENTRADA',
+      entryValue: 'Valor da entrada',
+      paymentMethod: 'Forma de Pagamento',
+      downPaymentPaid: 'Sinal já pago',
+      remainingToPay: 'Falta pagar',
+      balanceToPay: 'SALDO A PAGAR (APÓS FATURAMENTO)',
+      thisAmountWillBeInstallments: 'Este valor será parcelado',
+      term: 'PRAZO',
+      balanceOf: 'Saldo de',
+      dividedInto: 'dividido em',
+      installments: 'parcelas',
+      installment: 'Parcela',
+      clausesTitle: 'CLÁUSULAS CONTRATUAIS',
+      signaturesTitle: 'ASSINATURAS',
+      signatureClient: 'CLIENTE',
+      signatureSeller: 'VENDEDOR',
+      autoGeneratedProposalAt: 'PROPOSTA GERADA AUTOMATICAMENTE EM',
+      impactPhrase: '"Com sólida experiência em guindastes articulados hidráulicos, desenvolvemos esta proposta exclusiva para <strong>{{cliente}}</strong>, apresentando o <strong>{{equip}}</strong> como a solução ideal para otimizar suas operações, garantindo máxima eficiência, segurança e retorno sobre o investimento."',
+    },
+    es: {
+      proposalTitleCommercial: 'PROPUESTA COMERCIAL STARK',
+      proposalTitlePurchase: 'PROPUESTA DE COMPRA STARK GUINDASTES',
+      clienteTitle: 'CLIENTE STARK',
+      equipamentoTitle: 'EQUIPO',
+      proposalNumber: 'Nº PROPUESTA',
+      issueDate: 'FECHA DE EMISIÓN',
+      conditionsTitle: 'CONDICIONES COMERCIALES Y FINANCIERAS',
+      exchangeRateApplied: 'TIPO DE CAMBIO APLICADO',
+      totalProposal: 'VALOR TOTAL DE LA PROPUESTA',
+      bankData: 'DATOS BANCARIOS – STARK GUINDASTES LTDA',
+      notProvided: 'NO INFORMADO',
+      modelNotProvided: 'MODELO NO INFORMADO',
+      validity: 'VALIDEZ',
+      validityDays10: '10 DÍAS',
+      prototypeProposal: 'PROPUESTA DE EQUIPO PROTOTIPO',
+      modalityFinancing: 'MODALIDAD: FINANCIACIÓN BANCARIA',
+      starkRepresentative: 'REPRESENTANTE STARK',
+      corporateName: 'RAZÓN SOCIAL',
+      contact: 'CONTACTO',
+      company: 'EMPRESA',
+      nameLabel: 'NOMBRE',
+      clientName: 'NOMBRE DEL CLIENTE',
+      stateRegistration: 'INSCRIPCIÓN ESTATAL',
+      address: 'DIRECCIÓN',
+      phone: 'TELÉFONO',
+      email: 'E-MAIL',
+      clientDataTitle: 'DATOS DEL CLIENTE',
+      name: 'NOMBRE',
+      observations: 'OBSERVACIONES',
+      equipmentTechDescription: 'DESCRIPCIÓN TÉCNICA DEL EQUIPO',
+      noMainEquipment: 'NO SE INFORMÓ NINGÚN EQUIPO PRINCIPAL.',
+      notIncluded: 'NO INCLUIDO',
+      warrantyProgramTitle: 'PROGRAMA DE REVISIÓN Y GARANTÍA DEL EQUIPO STARK',
+      warrantyBullet1: 'Para solicitar la garantía, deberán presentarse los siguientes documentos:',
+      warrantyBullet2: 'Factura de compra del equipo.',
+      warrantyBullet3: 'Certificado de garantía completado y firmado por el propietario en el momento de la entrega.',
+      warrantyBullet4: 'Comprobante de revisión realizada por el punto de instalación o fábrica de Santa Rosa/RS.',
+      warrantyBullet5: 'Comprobante del informe de entrega técnica firmado por el responsable de la recepción del equipo.',
+      warrantyBullet6: 'La garantía contractual otorgada por STARK Guindastes tiene una validez de:',
+      warrantyBullet7: '6 (seis) meses para el sistema hidráulico, o 500 (quinientas) horas de operación, lo que ocurra primero.',
+      warrantyBullet8: '12 (doce) meses para la estructura del equipo, o 1000 (mil) horas de operación, lo que ocurra primero.',
+      warrantyBullet9: 'El plazo se cuenta a partir de la fecha de entrega al cliente, según factura, y mediante el envío del Certificado de Garantía debidamente completado y firmado a fábrica.',
+      warrantyBullet10: 'La validez de la garantía está condicionada a que la facturación de STARK Guindastes a la reventa no exceda 12 (doce) meses anteriores a la entrega al cliente final.',
+      selectedOptionals: 'OPCIONALES SELECCIONADOS',
+      optional: 'OPCIONAL',
+      description: 'DESCRIPCIÓN',
+      price: 'PRECIO',
+      vehicleDataTitle: 'DATOS DEL VEHÍCULO',
+      type: 'TIPO',
+      brand: 'MARCA',
+      year: 'AÑO',
+      voltage: 'VOLTAJE',
+      vehicleStudyTitle: 'ESTUDIO VEHICULAR',
+      measure: 'MEDIDA',
+      value: 'VALOR',
+      measuresNotProvided: 'MEDIDAS NO INFORMADAS.',
+      patolamento: 'PATOLAMIENTO',
+      negotiationNotes: 'OBSERVACIONES DE LA NEGOCIACIÓN',
+      financingModeShort: 'MODALIDAD: FINANCIACIÓN BANCARIA',
+      baseEquipmentValue: '① VALOR BASE DEL EQUIPO',
+      discountsAndAdjustments: '③ DESCUENTOS Y AJUSTES',
+      sellerDiscount: 'Descuento Vendedor',
+      termDiscount: 'Descuento Plazo',
+      surcharge: 'Recargo',
+      freightAndInstallation: '② FLETE E INSTALACIÓN',
+      freight: 'Flete',
+      included: 'Incluido',
+      customerPaysDirectly: 'El cliente paga directamente',
+      installation: 'Instalación',
+      installationLocation: 'Lugar de instalación',
+      extra: 'EXTRA',
+      commercialAdjustment: 'AJUSTE COMERCIAL',
+      entry: 'ENTRADA',
+      entryValue: 'Valor de la entrada',
+      paymentMethod: 'Forma de pago',
+      downPaymentPaid: 'Señal ya pagada',
+      remainingToPay: 'Resta pagar',
+      balanceToPay: 'SALDO A PAGAR (DESPUÉS DE LA FACTURACIÓN)',
+      thisAmountWillBeInstallments: 'Este valor será dividido en cuotas',
+      term: 'PLAZO',
+      balanceOf: 'Saldo de',
+      dividedInto: 'dividido en',
+      installments: 'cuotas',
+      installment: 'Cuota',
+      clausesTitle: 'CLÁUSULAS CONTRACTUALES',
+      signaturesTitle: 'FIRMAS',
+      signatureClient: 'CLIENTE',
+      signatureSeller: 'VENDEDOR',
+      autoGeneratedProposalAt: 'PROPUESTA GENERADA AUTOMÁTICAMENTE EN',
+      impactPhrase: '"Con sólida experiencia en grúas articuladas hidráulicas, desarrollamos esta propuesta exclusiva para <strong>{{cliente}}</strong>, presentando el <strong>{{equip}}</strong> como la solución ideal para optimizar sus operaciones, garantizando máxima eficiencia, seguridad y retorno sobre la inversión."',
+    }
+  };
+  return dict[lang]?.[key] || dict.pt[key] || key;
+};
+
+const tr = (lang, key, vars = {}) => {
+  let s = t(lang, key);
+  Object.entries(vars).forEach(([k, v]) => {
+    s = s.replaceAll(`{{${k}}}`, String(v ?? ''));
+  });
+  return s;
+};
+
+const translatePtToEsHeuristic = (text) => {
+  if (!text) return text;
+
+  let s = String(text);
+
+  const rules = [
+    [/\bN[ÃA]O\s+INCLU[IÍ]DO\b/gi, 'NO INCLUIDO'],
+    [/\bN[ÃA]O\s+INCLU[IÍ]DA\b/gi, 'NO INCLUIDA'],
+    [/\bN[ÃA]O\s+INCLUI\b/gi, 'NO INCLUYE'],
+    [/\bINCLU[IÍ]DO\b/gi, 'INCLUIDO'],
+    [/\bINCLU[IÍ]DA\b/gi, 'INCLUIDA'],
+    [/\bGARANTIA\b/gi, 'GARANTÍA'],
+    [/\bREVISA(?:O|ÃO)\b/gi, 'REVISIÓN'],
+    [/\bREVIS(?:O|Õ)ES\b/gi, 'REVISIONES'],
+    [/\bMANUTEN(?:C|Ç)(?:A|Ã)O\b/gi, 'MANTENIMIENTO'],
+    [/\bSISTEMA\b/gi, 'SISTEMA'],
+    [/\bHIDR[ÁA]ULIC(?:O|A)\b/gi, 'HIDRÁULICO'],
+    [/\bESTRUTURA\b/gi, 'ESTRUCTURA'],
+    [/\bEQUIPAMENTO\b/gi, 'EQUIPO'],
+    [/\bGUINDASTE\b/gi, 'GRÚA'],
+    [/\bGUINDASTES\b/gi, 'GRÚAS'],
+    [/\bCAMINH(?:A|Ã)O\b/gi, 'CAMIÓN'],
+    [/\bCAMINH(?:O|Õ)ES\b/gi, 'CAMIONES'],
+    [/\bCHASSI\b/gi, 'CHASIS'],
+    [/\bPLACA\b/gi, 'MATRÍCULA'],
+    [/\bCLIENTE\b/gi, 'CLIENTE'],
+    [/\bCOMPRADOR\b/gi, 'COMPRADOR'],
+    [/\bVENDEDOR\b/gi, 'VENDEDOR'],
+    [/\bCONCESSION(?:A|Á)RIA\b/gi, 'CONCESIONARIO'],
+    [/\bF[ÁA]BRICA\b/gi, 'FÁBRICA'],
+    [/\bPRAZO\b/gi, 'PLAZO'],
+    [/\bENTREGA\b/gi, 'ENTREGA'],
+    [/\bPAGAMENTO\b/gi, 'PAGO'],
+    [/\bPARCELAMENTO\b/gi, 'CUOTAS'],
+    [/\bPARCELADO\b/gi, 'EN CUOTAS'],
+    [/\bPARCELAS\b/gi, 'CUOTAS'],
+    [/\bPARCELA\b/gi, 'CUOTA'],
+    [/\bVALOR\b/gi, 'VALOR'],
+    [/\bTOTAL\b/gi, 'TOTAL'],
+    [/\bDESCONTO\b/gi, 'DESCUENTO'],
+    [/\bACR[ÉE]SCIMO\b/gi, 'RECARGO'],
+    [/\bFRETE\b/gi, 'FLETE'],
+    [/\bINSTALA(?:C|Ç)(?:A|Ã)O\b/gi, 'INSTALACIÓN'],
+    [/\bLOCAL\b/gi, 'LUGAR'],
+    [/\bOBSERVA(?:C|Ç)(?:A|Ã)O\b/gi, 'OBSERVACIÓN'],
+    [/\bOBSERVA(?:C|Ç)(?:O|Õ)ES\b/gi, 'OBSERVACIONES'],
+    [/\bCONDI(?:C|Ç)(?:A|Ã)O\b/gi, 'CONDICIÓN'],
+    [/\bCONDI(?:C|Ç)(?:O|Õ)ES\b/gi, 'CONDICIONES'],
+    [/\bTOMADA\s+DE\s+FOR(?:C|Ç)A\b/gi, 'TOMA DE FUERZA'],
+    [/\bCAIXA\s+DE\s+C[ÂA]MBIO\b/gi, 'CAJA DE CAMBIOS'],
+    [/\bAUTOM[ÁA]TIC(?:O|A)\b/gi, 'AUTOMÁTICO'],
+    [/\bOBRIGAT[ÓO]RIO\b/gi, 'OBLIGATORIO'],
+    [/\bOBRIGAT[ÓO]RIA\b/gi, 'OBLIGATORIA'],
+    [/\bOBRIGAT[ÓO]RIAS\b/gi, 'OBLIGATORIAS'],
+    [/\bRESPONSABILIDADE\b/gi, 'RESPONSABILIDAD'],
+    [/\bRESPONS[ÁA]VEL\b/gi, 'RESPONSABLE'],
+    [/\bCUSTO\b/gi, 'COSTO'],
+    [/\bSERVI(?:C|Ç)O\b/gi, 'SERVICIO'],
+    [/\bSERVI(?:C|Ç)OS\b/gi, 'SERVICIOS'],
+    [/\bDOCUMENTA(?:C|Ç)(?:A|Ã)O\b/gi, 'DOCUMENTACIÓN'],
+    [/\bDOCUMENTOS\b/gi, 'DOCUMENTOS'],
+    [/\bNOTA\s+FISCAL\b/gi, 'FACTURA'],
+    [/\bCONTRATO\b/gi, 'CONTRATO'],
+    [/\bASSINATURA\b/gi, 'FIRMA'],
+    [/\bASSINADO\b/gi, 'FIRMADO'],
+    [/\bASSINADAS\b/gi, 'FIRMADAS'],
+    [/\bFIRMA\s+RECONHECIDA\b/gi, 'FIRMA CERTIFICADA'],
+    [/\bDIA\s+ÚTIL\b/gi, 'DÍA HÁBIL'],
+    [/\bDIAS\s+ÚTEIS\b/gi, 'DÍAS HÁBILES'],
+    [/\bMONTAGEM\b/gi, 'MONTAJE'],
+    [/\bINTEGRA(?:C|Ç)(?:A|Ã)O\s+VEICULAR\b/gi, 'INTEGRACIÓN VEHICULAR'],
+  ];
+
+  rules.forEach(([re, rep]) => {
+    s = s.replace(re, rep);
+  });
+
+  return s;
+};
+
 /**
  * ==========================
  *  HELPERS
@@ -239,14 +527,15 @@ const formatarTexto = (texto) => {
 const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) => {
   const el = createContainer('pdf-capa', { inline });
   
-  const vendedor = pedidoData.vendedor || 'NÃO INFORMADO';
+  const lang = getLang(pedidoData);
+  const vendedor = pedidoData.vendedor || t(lang, 'notProvided');
   const vendedorTelefone = pedidoData.vendedorTelefone || '';
   const data = new Date().toLocaleDateString('pt-BR');
   const c = pedidoData.clienteData || {};
   const pagamento = pedidoData.pagamentoData || {};
   const tituloProposta = pedidoData.isConcessionariaCompra
-    ? 'PROPOSTA DE COMPRA STARK GUINDASTES'
-    : 'PROPOSTA COMERCIAL STARK GUINDASTES';
+    ? t(lang, 'proposalTitlePurchase')
+    : t(lang, 'proposalTitleCommercial');
   
   // DEBUG: Ver TODOS os dados que chegam
   console.log('🔍🔍🔍 [renderCapa] pedidoData COMPLETO:', pedidoData);
@@ -309,8 +598,8 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const g = {
     ...itemCarrinho,
     ...(banco || {}),
-    finame: banco?.finame || itemCarrinho?.finame || 'NÃO INFORMADO',
-    ncm: banco?.ncm || itemCarrinho?.ncm || 'NÃO INFORMADO'
+    finame: banco?.finame || itemCarrinho?.finame || t(lang, 'notProvided'),
+    ncm: banco?.ncm || itemCarrinho?.ncm || t(lang, 'notProvided')
   };
 
   const isPrototipo = !!(g?.is_prototipo);
@@ -339,7 +628,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
       ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}`
       : '';
     const cep = c.cep ? ` - CEP: ${c.cep}` : '';
-    return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || 'NÃO INFORMADO';
+    return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || t(lang, 'notProvided');
   })();
 
   el.innerHTML += `
@@ -349,57 +638,57 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
       <div style="text-align:center; margin-top:6mm; line-height:1.1;">
         <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">${tituloProposta}</div>
         <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
-           ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} 
+           ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || t(lang, 'modelNotProvided')} 
         </div>
         ${isPrototipo ? `
           <div style="margin-top:2.5mm; padding:2.5mm 4mm; border:0.6mm solid #111; display:inline-block; font-weight:800; font-size:3.8mm; letter-spacing:0.2mm;">
-            PROPOSTA DE EQUIPAMENTO PROTÓTIPO${prototipoLabel ? ` — ${prototipoLabel.toUpperCase()}` : ''}
+            ${t(lang, 'prototypeProposal')}${prototipoLabel ? ` — ${prototipoLabel.toUpperCase()}` : ''}
           </div>
         ` : ''}
         ${pagamento.financiamentoBancario === 'sim' ? `
           <div style="font-size:3.6mm; font-weight:700; margin-top:2mm; letter-spacing:0.2mm; color:#111;">
-            MODALIDADE: FINANCIAMENTO BANCÁRIO
+            ${t(lang, 'modalityFinancing')}
           </div>
         ` : ''}
       </div>
 
       <!-- BLOCO 1: DADOS STARK -->
       <div style="margin-top:10mm; font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK INDUSTRIAL LTDA</div>
-        <div><b>RAZÃO SOCIAL:</b> STARK INDUSTRIAL LTDA</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK GUINDASTES LTDA</div>
+        <div><b>${t(lang, 'corporateName')}:</b> STARK GUINDASTES LTDA</div>
         <div><b>CNPJ:</b> 33.228.312/0001-06</div>
-        <div><b>ENDEREÇO:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
-        <div><b>CONTATO:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
+        <div><b>${t(lang, 'address')}:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
+        <div><b>${t(lang, 'contact')}:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
 
       <!-- BLOCO 2: REPRESENTANTE -->
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">REPRESENTANTE STARK</div>
-        <div><b>NOME:</b> ${vendedor}</div>
-        ${vendedorTelefone ? `<div><b>TELEFONE:</b> ${vendedorTelefone}</div>` : ''}
-        <div><b>EMPRESA:</b> STARK INDUSTRIAL LTDA</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${t(lang, 'starkRepresentative')}</div>
+        <div><b>${t(lang, 'nameLabel')}:</b> ${vendedor}</div>
+        ${vendedorTelefone ? `<div><b>${t(lang, 'phone')}:</b> ${vendedorTelefone}</div>` : ''}
+        <div><b>${t(lang, 'company')}:</b> STARK GUINDASTES LTDA</div>
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
 
       <!-- BLOCO 3: CLIENTE -->
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">CLIENTE STARK</div>
-        <div><b>NOME CLIENTE:</b> ${c.nome || 'NÃO INFORMADO'}</div>
-        <div><b>CNPJ/CPF:</b> ${c.documento || 'NÃO INFORMADO'}</div>
-        <div><b>INSCRIÇÃO ESTADUAL:</b> ${c.inscricao_estadual || c.inscricaoEstadual || 'NÃO INFORMADO'}</div>
-        <div><b>ENDEREÇO:</b> ${enderecoCliente}</div>
-        <div><b>TELEFONE:</b> ${c.telefone || 'NÃO INFORMADO'}</div>
-        <div><b>E-MAIL:</b> ${c.email || 'NÃO INFORMADO'}</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${t(lang, 'clienteTitle')}</div>
+        <div><b>${t(lang, 'clientName')}:</b> ${c.nome || t(lang, 'notProvided')}</div>
+        <div><b>CNPJ/CPF:</b> ${c.documento || t(lang, 'notProvided')}</div>
+        <div><b>${t(lang, 'stateRegistration')}:</b> ${c.inscricao_estadual || c.inscricaoEstadual || t(lang, 'notProvided')}</div>
+        <div><b>${t(lang, 'address')}:</b> ${enderecoCliente}</div>
+        <div><b>${t(lang, 'phone')}:</b> ${c.telefone || t(lang, 'notProvided')}</div>
+        <div><b>${t(lang, 'email')}:</b> ${c.email || t(lang, 'notProvided')}</div>
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
 
       <!-- BLOCO 4: DADOS DO EQUIPAMENTO -->
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">EQUIPAMENTO</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">${t(lang, 'equipamentoTitle')}</div>
 
         ${isPrototipo && prototipoObs ? `
           <div style="margin:1mm 0 3mm 0; padding:2.5mm 3mm; border:0.4mm solid #111; font-size:3.6mm; line-height:1.35; font-weight:600;">
@@ -428,11 +717,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
             <tbody>
               <tr style="border-bottom:0.5px solid #ddd;">
                 <td style="font-weight:600;width:40%;padding:2mm 1mm;">FINAME</td>
-                <td style="font-weight:700;padding:2mm 1mm;">${g.finame || 'NÃO INFORMADO'}</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${g.finame || t(lang, 'notProvided')}</td>
               </tr>
               <tr style="border-bottom:0.5px solid #ddd;">
                 <td style="font-weight:600;padding:2mm 1mm;">NCM</td>
-                <td style="font-weight:700;padding:2mm 1mm;">${g.ncm || 'NÃO INFORMADO'}</td>
+                <td style="font-weight:700;padding:2mm 1mm;">${g.ncm || t(lang, 'notProvided')}</td>
               </tr>
             </tbody>
           </table>
@@ -452,16 +741,16 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         margin-top:2mm;
       ">
         <div>
-          <div style="font-weight:700;">Nº PROPOSTA</div>
+          <div style="font-weight:700;">${t(lang, 'proposalNumber')}</div>
           <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">#${numeroProposta}</div>
         </div>
         <div>
-          <div style="font-weight:700;">DATA DE EMISSÃO</div>
+          <div style="font-weight:700;">${t(lang, 'issueDate')}</div>
           <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">${data}</div>
         </div>
         <div>
-          <div style="font-weight:700;">VALIDADE</div>
-          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">10 DIAS</div>
+          <div style="font-weight:700;">${t(lang, 'validity')}</div>
+          <div style="font-weight:600;font-size:4.5mm;margin-top:1mm;">${t(lang, 'validityDays10')}</div>
         </div>
       </div>
 
@@ -486,7 +775,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
             text-align:justify;
             text-align-last:center;
           ">
-            "Com sólida experiência em guindastes articulados hidráulicos, desenvolvemos esta proposta exclusiva para <strong>${c.nome || 'Cliente'}</strong>, apresentando o <strong>${g.nome || g.modelo || 'Guindaste'}</strong> como a solução ideal para otimizar suas operações, garantindo máxima eficiência, segurança e retorno sobre o investimento."
+            ${tr(lang, 'impactPhrase', { cliente: (c.nome || 'Cliente'), equip: (g.nome || g.modelo || 'Guindaste') })}
           </p>
         </div>
       </div>
@@ -499,29 +788,30 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
 // DADOS DO CLIENTE (se quiser manter como seção separada em outras páginas)
 const renderCliente = (pedidoData, { inline = false } = {}) => {
   const c = pedidoData.clienteData || {};
+  const lang = getLang(pedidoData);
   const endereco = (() => {
     const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
     const bairro = c.bairro ? ` - ${c.bairro}` : '';
     const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
     const cep = c.cep ? ` - CEP: ${c.cep}` : '';
     const linha = `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim();
-    return linha || (c.endereco || 'NÃO INFORMADO');
+    return linha || (c.endereco || t(lang, 'notProvided'));
   })();
 
   const el = createContainer('pdf-cliente', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:22px;">
-      <div class="title">DADOS DO CLIENTE</div>
+      <div class="title">${t(lang, 'clientDataTitle')}</div>
       <div class="kvs">
-        <div class="row"><div class="k">NOME</div><div class="v">${c.nome || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">CNPJ/CPF</div><div class="v">${c.documento || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">INSCRIÇÃO ESTADUAL</div><div class="v">${c.inscricao_estadual || c.inscricaoEstadual || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">TELEFONE</div><div class="v">${c.telefone || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">E-MAIL</div><div class="v">${c.email || 'NÃO INFORMADO'}</div></div>
-        <div class="row"><div class="k">ENDEREÇO</div><div class="v">${endereco}</div></div>
+        <div class="row"><div class="k">${t(lang, 'name')}</div><div class="v">${c.nome || t(lang, 'notProvided')}</div></div>
+        <div class="row"><div class="k">CNPJ/CPF</div><div class="v">${c.documento || t(lang, 'notProvided')}</div></div>
+        <div class="row"><div class="k">${t(lang, 'stateRegistration')}</div><div class="v">${c.inscricao_estadual || c.inscricaoEstadual || t(lang, 'notProvided')}</div></div>
+        <div class="row"><div class="k">${t(lang, 'phone')}</div><div class="v">${c.telefone || t(lang, 'notProvided')}</div></div>
+        <div class="row"><div class="k">${t(lang, 'email')}</div><div class="v">${c.email || t(lang, 'notProvided')}</div></div>
+        <div class="row"><div class="k">${t(lang, 'address')}</div><div class="v">${endereco}</div></div>
       </div>
       ${c.observacoes ? `
-        <div class="subtitle">OBSERVAÇÕES</div>
+        <div class="subtitle">${t(lang, 'observations')}</div>
         <div class="p caps">${c.observacoes}</div>
       ` : ''}
     </div>
@@ -531,6 +821,7 @@ const renderCliente = (pedidoData, { inline = false } = {}) => {
 
 // EQUIPAMENTO / PRODUTO
 const renderEquipamento = (pedidoData, { inline = false } = {}) => {
+  const lang = getLang(pedidoData);
   console.log(' [renderEquipamento] Dados recebidos:', {
     carrinho: pedidoData.carrinho,
     guindastes: pedidoData.guindastes
@@ -571,8 +862,8 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       ...item,
       ...(banco || {}),
       descricao: banco?.descricao || item?.descricao || '',
-      finame: banco?.finame || item?.finame || 'NÃO INFORMADO',
-      ncm: banco?.ncm || item?.ncm || 'NÃO INFORMADO'
+      finame: banco?.finame || item?.finame || t(lang, 'notProvided'),
+      ncm: banco?.ncm || item?.ncm || t(lang, 'notProvided')
     };
 
     console.log(' [enrich] Dados finais do item:', {
@@ -599,38 +890,43 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   let html = `
     <div class="wrap" style="padding:22px;">
     <div style="page-break-before: always;"></div>
-      <div class="title" style="font-size:26px;margin-bottom:16px;">DESCRIÇÃO TÉCNICA DO EQUIPAMENTO</div>
+      <div class="title" style="font-size:26px;margin-bottom:16px;">${t(lang, 'equipmentTechDescription')}</div>
   `;
 
   if (gList.length === 0) {
-    html += `<div class="p caps">NENHUM EQUIPAMENTO PRINCIPAL INFORMADO.</div>`;
+    html += `<div class="p caps">${t(lang, 'noMainEquipment')}</div>`;
   } else {
     gList.forEach((g, idx) => {
+      const desc = formatarTexto(g.descricao) || '';
+      const naoIncluido = formatarTexto(g.nao_incluido) || '';
+      const descLang = lang === 'es' ? translatePtToEsHeuristic(desc) : desc;
+      const naoIncluidoLang = lang === 'es' ? translatePtToEsHeuristic(naoIncluido) : naoIncluido;
+
       html += `
         ${idx > 0 ? '<div class="rule"></div>' : ''}
-        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${formatarTexto(g.descricao) || 'NÃO INFORMADO'}</div>
+        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${descLang || t(lang, 'notProvided')}</div>
 
         <div class="small-gap"></div>
-        <div class="subtitle">NÃO INCLUÍDO</div>
-        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${formatarTexto(g.nao_incluido) || 'NÃO INFORMADO'}</div>
+        <div class="subtitle">${t(lang, 'notIncluded')}</div>
+        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${naoIncluidoLang || t(lang, 'notProvided')}</div>
         <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
 <div class="small-gap"></div>
-<div class="subtitle">PROGRAMA DE REVISÃO E GARANTIA EQUIPAMENTO STARK</div>
+<div class="subtitle">${t(lang, 'warrantyProgramTitle')}</div>
 <div class="p lower" style="font-size: 13px; line-height: 1.35; text-transform:none;">
   <ul style="margin-left: 16px; padding-left: 8px; list-style-type: disc;">
-    <li>Para solicitação da garantia, deverão ser apresentados os seguintes documentos:</li>
+    <li>${t(lang, 'warrantyBullet1')}</li>
     <ul style="margin-left: 20px; list-style-type: circle;">
-      <li>Nota Fiscal de aquisição do equipamento.</li>
-      <li>Certificado de Garantia preenchido e assinado pelo proprietário na hora da entrega.</li>
+      <li>${t(lang, 'warrantyBullet2')}</li>
+      <li>${t(lang, 'warrantyBullet3')}</li>
     </ul>
-        <li>Comprovante de revisão efetuada pelo ponto de instalação ou fábrica de Santa Rosa Rs.</li>
-        <li>Comprovante do relatório de entrega técnica assinado pelo responsável pelo recebimento do equipamento.</li>
+        <li>${t(lang, 'warrantyBullet4')}</li>
+        <li>${t(lang, 'warrantyBullet5')}</li>
       </ul>
-        <li>A garantia contratual concedida pela STARK Guindastes tem validade de:</li>
-        <li> 6 (seis) meses para o sistema hidráulico, ou, 500 (quinhentas) horas de operação, o que ocorrer primeiro.</li>
-        <li> 12 (doze) meses para a estrutura do equipamento, ou, 1000 (mil) horas de operação, o que ocorrer primeiro.</li>
-        <li>O prazo é contado a partir da data de entrega ao cliente, conforme nota fiscal, e mediante o envio do Certificado de Garantia devidamente preenchido e assinado á fábrica.</li>
-       <li>A validade de garantia está condicionada ao fato de que o faturamento da STARK Guindastes para a revenda não exceda 12 (doze) meses anteriores á entrega ao cliente final.</li>
+        <li>${t(lang, 'warrantyBullet6')}</li>
+        <li>${t(lang, 'warrantyBullet7')}</li>
+        <li>${t(lang, 'warrantyBullet8')}</li>
+        <li>${t(lang, 'warrantyBullet9')}</li>
+       <li>${t(lang, 'warrantyBullet10')}</li>
       `;
     });
   }
@@ -638,13 +934,13 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   if (opcionais.length > 0) {
     html += `
       <div class="rule"></div>
-      <div class="subtitle">OPCIONAIS SELECIONADOS</div>
+      <div class="subtitle">${t(lang, 'selectedOptionals')}</div>
       <table class="table">
         <thead>
           <tr>
-            <th>OPCIONAL</th>
-            <th>DESCRIÇÃO</th>
-            <th class="right">PREÇO</th>
+            <th>${t(lang, 'optional')}</th>
+            <th>${t(lang, 'description')}</th>
+            <th class="right">${t(lang, 'price')}</th>
           </tr>
         </thead>
         <tbody>
@@ -671,11 +967,12 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 // DADOS DO CAMINHÃO
 const renderCaminhao = (pedidoData, { inline = false } = {}) => {
   const v = pedidoData.caminhaoData || {};
+  const lang = getLang(pedidoData);
   const el = createContainer('pdf-caminhao', { inline });
 
   el.innerHTML += `
     <div class="wrap" style="padding:18px;">
-      <div class="title" style="font-size:20px;margin-bottom:10px;">DADOS DO VEÍCULO</div>
+      <div class="title" style="font-size:20px;margin-bottom:10px;">${t(lang, 'vehicleDataTitle')}</div>
       
       <!-- TABELA EM 2 COLUNAS LADO A LADO -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:8px;">
@@ -683,16 +980,16 @@ const renderCaminhao = (pedidoData, { inline = false } = {}) => {
         <table class="table" style="font-size:13px;">
           <tbody>
             <tr>
-              <td style="font-weight:600;width:35%;">TIPO</td>
-              <td style="font-weight:700;">${v.tipo || 'NÃO INFORMADO'}</td>
+              <td style="font-weight:600;width:35%;">${t(lang, 'type')}</td>
+              <td style="font-weight:700;">${v.tipo || t(lang, 'notProvided')}</td>
             </tr>
             <tr>
-              <td style="font-weight:600;">MARCA</td>
-              <td style="font-weight:700;">${v.marca || 'NÃO INFORMADO'}</td>
+              <td style="font-weight:600;">${t(lang, 'brand')}</td>
+              <td style="font-weight:700;">${v.marca || t(lang, 'notProvided')}</td>
             </tr>
             <tr>
               <td style="font-weight:600;">MODELO</td>
-              <td style="font-weight:700;">${v.modelo || 'NÃO INFORMADO'}</td>
+              <td style="font-weight:700;">${v.modelo || t(lang, 'notProvided')}</td>
             </tr>
           </tbody>
         </table>
@@ -701,17 +998,17 @@ const renderCaminhao = (pedidoData, { inline = false } = {}) => {
         <table class="table" style="font-size:13px;">
           <tbody>
             <tr>
-              <td style="font-weight:600;width:35%;">ANO</td>
-              <td style="font-weight:700;">${v.ano || 'NÃO INFORMADO'}</td>
+              <td style="font-weight:600;width:35%;">${t(lang, 'year')}</td>
+              <td style="font-weight:700;">${v.ano || t(lang, 'notProvided')}</td>
             </tr>
             <tr>
-              <td style="font-weight:600;">VOLTAGEM</td>
-              <td style="font-weight:700;">${v.voltagem || 'NÃO INFORMADO'}</td>
+              <td style="font-weight:600;">${t(lang, 'voltage')}</td>
+              <td style="font-weight:700;">${v.voltagem || t(lang, 'notProvided')}</td>
             </tr>
             ${v.observacoes ? `
               <tr>
                 <td colspan="2" style="font-weight:600;background:#f9f9f9;padding:8px;border-left:3px solid #333334ff;">
-                  <div style="font-size:11px;color:#666;margin-bottom:3px;">OBSERVAÇÕES:</div>
+                  <div style="font-size:11px;color:#666;margin-bottom:3px;">${t(lang, 'observations')}:</div>
                   <div style="font-size:12px;">${v.observacoes}</div>
                 </td>
               </tr>
@@ -728,11 +1025,12 @@ const renderCaminhao = (pedidoData, { inline = false } = {}) => {
 const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
   const v = pedidoData.caminhaoData || {};
   const temMedidas = v.medidaA || v.medidaB || v.medidaC || v.medidaD;
+  const lang = getLang(pedidoData);
 
   const el = createContainer('pdf-estudo', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:18px;">
-      <div class="title" style="font-size:20px;margin-bottom:10px;">ESTUDO VEICULAR</div>
+      <div class="title" style="font-size:20px;margin-bottom:10px;">${t(lang, 'vehicleStudyTitle')}</div>
       <div class="center" style="margin:8px 0;">
         <img src="/estudoveicular.png" alt="Estudo Veicular" style="max-width:600px;width:100%;height:auto;"/>
       </div>
@@ -744,8 +1042,8 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
             <table class="table" style="font-size:13px;">
               <thead>
                 <tr>
-                  <th style="width:65%;text-align:left;background:#f5f5f5;font-size:12px;">MEDIDA</th>
-                  <th style="width:35%;text-align:center;background:#f5f5f5;font-size:12px;">VALOR</th>
+                  <th style="width:65%;text-align:left;background:#f5f5f5;font-size:12px;">${t(lang, 'measure')}</th>
+                  <th style="width:35%;text-align:center;background:#f5f5f5;font-size:12px;">${t(lang, 'value')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -779,7 +1077,7 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
             <!-- PATOLAMENTO COMPACTO -->
             ${v.patolamento ? `
               <div style="padding:15px;background:linear-gradient(135deg, #525255ff 0%, #3d3c35ff 100%);border-radius:6px;text-align:center;border:2px solid #555;display:flex;flex-direction:column;justify-content:center;">
-                <div style="color:white;font-size:12px;font-weight:600;margin-bottom:8px;">⚙️ PATOLAMENTO</div>
+                <div style="color:white;font-size:12px;font-weight:600;margin-bottom:8px;">⚙️ ${t(lang, 'patolamento')}</div>
                 <div style="color:#ffd700;font-size:36px;font-weight:bold;letter-spacing:2px;line-height:1;">${v.patolamento}</div>
                 <div style="color:white;font-size:11px;opacity:0.9;margin-top:8px;font-weight:500;">
                   ${parseFloat(v.medidaC) >= 70 ? 'C ≥ 70cm' : parseFloat(v.medidaC) >= 60 ? 'C: 60-69cm' : 'C < 60cm'}
@@ -788,7 +1086,7 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
             ` : ''}
           </div>
         ` : `
-          <div class="p caps center" style="margin-top:10px;">MEDIDAS NÃO INFORMADAS.</div>
+          <div class="p caps center" style="margin-top:10px;">${t(lang, 'measuresNotProvided')}</div>
         `
       }
     </div>
@@ -800,6 +1098,7 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
 // CONDIÇÕES COMERCIAIS E FINANCEIRAS + DADOS BANCÁRIOS COM ÍCONES
 const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const p = pedidoData.pagamentoData || {};
+  const lang = getLang(pedidoData);
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
   const extraValor = parseFloat(p.extraValor || 0);
   const extraDescricao = (p.extraDescricao || '').trim();
@@ -837,6 +1136,13 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
   // 4. Valor Total Final
   const valorTotalFinal = valorFinalPolitica > 0 ? valorFinalPolitica : subtotalComAdicionais;
+
+  const moeda = String(p.moeda || 'BRL').toUpperCase();
+  const cotacaoUsd = Number(p.cotacao_usd);
+  const isUSD = moeda === 'USD';
+  const fmt = isUSD ? formatCurrencyUSD : formatCurrency;
+  const divisor = isUSD && Number.isFinite(cotacaoUsd) && cotacaoUsd > 0 ? cotacaoUsd : 1;
+  const convert = (v) => (Number(v) || 0) / divisor;
   
   // 4. Entrada
   const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
@@ -874,17 +1180,24 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const el = createContainer('pdf-financeiro', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:14px 10px;">
-      <div class="title" style="font-size:26px; margin-bottom:12px; font-weight:800;">CONDIÇÕES COMERCIAIS E FINANCEIRAS</div>
+      <div class="title" style="font-size:26px; margin-bottom:12px; font-weight:800;">${t(lang, 'conditionsTitle')}</div>
+
+      ${isUSD ? `
+        <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:800; font-size:14px; margin-bottom:4px;">USD</div>
+          <div style="font-weight:600; font-size:12px;">${t(lang, 'exchangeRateApplied')}: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
+        </div>
+      ` : ''}
 
       ${p.financiamentoBancario === 'sim' ? `
         <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:14px; color:#000;">MODALIDADE: FINANCIAMENTO BANCÁRIO</div>
+          <div style="font-weight:700; font-size:14px; color:#000;">${t(lang, 'financingModeShort')}</div>
         </div>
       ` : ''}
 
       ${observacoesNegociacao ? `
         <div style="margin-top:10px; padding:10px 12px; background:#fff; border:1px solid #ddd; border-radius:4px;">
-          <div style="font-weight:700; font-size:14px; color:#000; margin-bottom:6px;">OBSERVAÇÕES DA NEGOCIAÇÃO</div>
+          <div style="font-weight:700; font-size:14px; color:#000; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
           <div style="font-size:13px; color:#000; line-height:1.4; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
@@ -894,30 +1207,30 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         
         <!-- COLUNA 1: VALOR BASE -->
         <div style="padding:12px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">① VALOR BASE DO EQUIPAMENTO</div>
-          <div style="font-size:24px; font-weight:700; color:#000;">${formatCurrency(totalBase)}</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'baseEquipmentValue')}</div>
+          <div style="font-size:24px; font-weight:700; color:#000;">${fmt(convert(totalBase))}</div>
         </div>
 
         <!-- COLUNA 2: DESCONTOS -->
         ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
           <div style="padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-            <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">③ DESCONTOS E AJUSTES</div>
+            <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'discountsAndAdjustments')}</div>
             ${p.desconto ? `
               <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Desconto Vendedor (${p.desconto}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${formatCurrency(valorDescontoVendedor)}</span>
+                <span style="font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoVendedor))}</span>
               </div>
             ` : ''}
             ${p.descontoPrazo ? `
               <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Desconto Prazo (${p.descontoPrazo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${formatCurrency(valorDescontoPrazo)}</span>
+                <span style="font-weight:600; color:#000;">${t(lang, 'termDiscount')} (${p.descontoPrazo}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoPrazo))}</span>
               </div>
             ` : ''}
             ${p.acrescimo ? `
               <div style="display:flex; justify-content:space-between; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Acréscimo (${p.acrescimo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(valorAcrescimo)}</span>
+                <span style="font-weight:600; color:#000;">${t(lang, 'surcharge')} (${p.acrescimo}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorAcrescimo))}</span>
               </div>
             ` : ''}
           </div>
@@ -927,30 +1240,30 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       <!-- FRETE E INSTALAÇÃO -->
       ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">② FRETE E INSTALAÇÃO</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'freightAndInstallation')}</div>
           ${p.tipoFrete ? `
             <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-              <span style="font-weight:600; color:#000;">Frete: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ' - Incluso' : ''}</span>
+              <span style="font-weight:600; color:#000;">${t(lang, 'freight')}: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` - ${t(lang, 'included')}` : ''}</span>
               ${valorFreteFinal > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(valorFreteFinal)}</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorFreteFinal))}</span>
               ` : `
-                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
+                <span style="color:#555; font-size:12px;">${t(lang, 'customerPaysDirectly')}</span>
               `}
             </div>
           ` : ''}
           ${p.tipoInstalacao ? `
             <div style="display:flex; justify-content:space-between; font-size:14px;">
-              <span style="font-weight:600; color:#000;">Instalação: ${p.tipoInstalacao.toUpperCase()}</span>
+              <span style="font-weight:600; color:#000;">${t(lang, 'installation')}: ${p.tipoInstalacao.toUpperCase()}</span>
               ${valorInstalacaoInformado > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(valorInstalacaoInformado)}</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
               ` : `
-                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
+                <span style="color:#555; font-size:12px;">${t(lang, 'customerPaysDirectly')}</span>
               `}
             </div>
           ` : ''}
           ${p.localInstalacao ? `
             <div style="margin-top:5px; padding-top:5px; border-top:1px solid #ddd; font-size:13px;">
-              <span style="font-weight:600; color:#000;">📍 Local de Instalação:</span>
+              <span style="font-weight:600; color:#000;">📍 ${t(lang, 'installationLocation')}:</span>
               <span style="font-weight:700; color:#000; margin-left:5px;">${p.localInstalacao.toUpperCase()}</span>
             </div>
           ` : ''}
@@ -959,10 +1272,10 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       ${(extraValor > 0) ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">EXTRA</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'extra')}</div>
           <div style="display:flex; justify-content:space-between; font-size:14px;">
-            <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : 'AJUSTE COMERCIAL'}</span>
-            <span style="color:#000; font-weight:700; font-size:16px;">+ ${formatCurrency(extraValor)}</span>
+            <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : t(lang, 'commercialAdjustment')}</span>
+            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(extraValor))}</span>
           </div>
         </div>
       ` : ''}
@@ -970,42 +1283,42 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       <!-- VALOR TOTAL -->
       <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:800; font-size:18px; color:#000;">VALOR TOTAL DA PROPOSTA</span>
-          <span style="font-weight:800; font-size:26px; color:#000;">${formatCurrency(valorTotalFinal)}</span>
+          <span style="font-weight:800; font-size:18px; color:#000;">${t(lang, 'totalProposal')}</span>
+          <span style="font-weight:800; font-size:26px; color:#000;">${fmt(convert(valorTotalFinal))}</span>
         </div>
       </div>
 
       <!-- ENTRADA (se houver) -->
       ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ENTRADA (${percentualEntradaNum}% do valor total)</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ${t(lang, 'entry')} (${percentualEntradaNum}% do valor total)</div>
           <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-            <span style="font-weight:600; color:#000;">Valor da entrada</span>
-            <span style="font-weight:700; font-size:20px; color:#000;">${formatCurrency(entradaTotalCalc)}</span>
+            <span style="font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
+            <span style="font-weight:700; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
           </div>
           ${p.formaEntrada ? `
             <div style="margin-bottom:6px; padding:8px; background:#fff; border-radius:4px; border:1px solid #ddd;">
-              <span style="font-weight:600; color:#000; font-size:13px;">💳 Forma de Pagamento:</span>
+              <span style="font-weight:600; color:#000; font-size:13px;">💳 ${t(lang, 'paymentMethod')}:</span>
               <span style="font-weight:700; color:#000; margin-left:5px; font-size:14px;">${p.formaEntrada.toUpperCase()}</span>
             </div>
           ` : ''}
           ${sinalPago > 0 ? `
             <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #ddd; margin-top:6px; font-size:13px;">
-              <span style="font-weight:600; color:#000;">Sinal já pago</span>
-              <span style="font-weight:700; color:#000; font-size:14px;">${formatCurrency(sinalPago)}</span>
+              <span style="font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
+              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(sinalPago))}</span>
             </div>
             <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px;">
-              <span style="font-weight:600; color:#000;">Falta pagar</span>
-              <span style="font-weight:700; color:#000; font-size:14px;">${formatCurrency(entradaTotalCalc - sinalPago)}</span>
+              <span style="font-weight:600; color:#000;">${t(lang, 'remainingToPay')}</span>
+              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(entradaTotalCalc - sinalPago))}</span>
             </div>
           ` : ''}
         </div>
 
         <!-- SALDO A PAGAR -->
         <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:6px;">⑤ SALDO A PAGAR (APÓS FATURAMENTO)</div>
-          <div style="font-size:13px; color:#000; margin-bottom:6px;">Este valor será parcelado</div>
-          <div style="font-weight:800; font-size:24px; color:#000;">${formatCurrency(saldoAPagarCalc)}</div>
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:6px;">⑤ ${t(lang, 'balanceToPay')}</div>
+          <div style="font-size:13px; color:#000; margin-bottom:6px;">${t(lang, 'thisAmountWillBeInstallments')}</div>
+          <div style="font-weight:800; font-size:24px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
         </div>
       ` : ''}
 
@@ -1013,14 +1326,14 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
         <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
           <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">
-            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:13px; color:#000; margin-bottom:8px; font-weight:600;">Saldo de ${formatCurrency(saldoAPagarCalc)} dividido em ${parcelasCorrigidas.length} parcelas:</div>
+          <div style="font-size:13px; color:#000; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${parcelasCorrigidas.length} ${t(lang, 'installments')}:</div>
           <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
             ${parcelasCorrigidas.map((parcela, idx) => `
               <div style="background:#fff; padding:8px; border-radius:4px; text-align:center; border:1px solid #ddd;">
-                <div style="font-size:12px; color:#000; margin-bottom:3px; font-weight:600;">Parcela ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:700; color:#000; font-size:16px;">${formatCurrency(parcela.valor || 0)}</div>
+                <div style="font-size:12px; color:#000; margin-bottom:3px; font-weight:600;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:700; color:#000; font-size:16px;">${fmt(convert(parcela.valor || 0))}</div>
               </div>
             `).join('')}
           </div>
@@ -1040,7 +1353,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
             ${dadosBancariosConcessionaria || 'Dados bancários não informados.'}
           </div>
         ` : `
-          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">DADOS BANCÁRIOS – STARK INDUSTRIAL LTDA</div>
+          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">${t(lang, 'bankData')}</div>
           
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
             <div>
@@ -1066,7 +1379,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
           </div>
 
           <div style="margin-top:10px; font-size:12px; line-height:1.6;">
-            <div style="font-weight:700;">Stark Industrial Ltda | CNPJ: 33.228.312/0001-06</div>
+            <div style="font-weight:700;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
             <div style="margin-top:5px; font-weight:600;">
               Pix CNPJ: <b>33228312000106</b> (Sicredi) | 
               Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
@@ -1080,8 +1393,9 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 };
 
 // CLÁUSULAS + ASSINATURAS
-const renderClausulas = ({ inline = false } = {}) => {
-  const clausulas = [
+const renderClausulas = (pedidoData, { inline = false } = {}) => {
+  const lang = getLang(pedidoData);
+  const clausulasPt = [
     'O prazo de validade deste pedido será de 10 dias contados após a assinatura do mesmo para pagamento via recurso próprio e 30 dias para financiamento bancário.',
     'Caso haja a necessidade de inclusão e ou modificação de modelo da caixa de patola auxiliar no equipamento (mediante estudo de integração veicular), o custo não será de responsabilidade da STARK Guindastes.',
     'Caminhões com Caixa de Câmbio Automática exigem parametrização em concessionária para a habilitação e funcionamento da Tomada de Força. O custo deste serviço não está incluso nesta proposta.',
@@ -1102,10 +1416,33 @@ const renderClausulas = ({ inline = false } = {}) => {
     'Refere-se Instalação do Guindaste no Caminhão do cliente Comprador apenas a Implementação do Guindaste no Caminhão, demais alterações Provenientes em Virtude para Permitir a Implementação, não Estão Previstas nos Custos desta Proposta, que devem Obrigatoriamente serem Alinhados e Estritamente Concensado entre Instalador e Cliente Comprador, sem Qualquer Onus Financeiro a Stark.'
   ];
 
+  const clausulasEs = [
+    'El plazo de validez de este pedido será de 10 días contados después de su firma para pago con recursos propios y 30 días para financiación bancaria.',
+    'En caso de que sea necesaria la inclusión y/o modificación del modelo de la caja de pata auxiliar en el equipo (mediante estudio de integración vehicular), el costo no será responsabilidad de STARK Guindastes.',
+    'Camiones con caja de cambios automática requieren parametrización en concesionario para habilitar y operar la toma de fuerza. El costo de este servicio no está incluido en esta propuesta.',
+    'El plazo de entrega del equipo comenzará a partir de la recepción de la autorización de facturación cuando sea vía banco, del pago del 100% de la entrada cuando sea vía parcelado fábrica y del 100% del valor del equipo cuando sea al contado.',
+    'En ventas con parcelamiento de fábrica, es obligatorio el envío de la documentación solicitada para análisis de crédito en hasta 5 (cinco) días hábiles.',
+    'El embarque del equipo está condicionado al pago del 100% del valor acordado y al contrato de reserva de dominio firmado y con firma certificada para los casos de financiación de fábrica.',
+    'Las condiciones de este pedido son válidas solamente para los productos y cantidades que constan en el mismo.',
+    'La atención de este pedido está sujeta a análisis de registro y crédito, cuando la condición de pago sea a plazo.',
+    'Es obligatorio informar placa, chasis y modelo de camión para la confección del Contrato de Reserva de Dominio.',
+    'Si hubiera diferencia de alícuota de ICMS, la misma será responsabilidad del comprador, conforme la legislación vigente en su estado de origen.',
+    'Cuando el retiro sea por cuenta del cliente, el conductor transportista deberá estar debidamente autorizado y con licencia de conducir válida.',
+    'El atraso en la definición del vehículo o en el envío para montaje prorroga automáticamente el plazo de entrega en días hábiles equivalentes.',
+    'En ventas a plazo, la morosidad suspende la garantía contractual del equipo en el período, con multa del 2% e intereses del 0,33% al día.',
+    'Es obligatorio el estudio de integración vehicular para el montaje del equipo; sin el estudio, STARK no se responsabiliza por el montaje.',
+    'STARK Guindastes no se responsabiliza por gastos extra con el camión (ej.: reubicación de arla, aumento de distancia entre ejes, refuerzo de ballestas, parametrizaciones, etc.).',
+    'En la facturación, el precio del equipo será actualizado conforme a la tabla vigente, condicionando el embarque al pago de la diferencia.',
+    'Las firmas abajo formalizan el presente pedido y la concordancia con los términos y condiciones.',
+    'La instalación de la grúa en el camión del cliente comprador se refiere únicamente a la implementación de la grúa en el camión; demás alteraciones necesarias para permitir la implementación no están previstas en los costos de esta propuesta y deberán ser alineadas y estrictamente acordadas entre instalador y cliente comprador, sin ningún cargo financiero para Stark.'
+  ];
+
+  const clausulas = lang === 'es' ? clausulasEs : clausulasPt;
+
   const el = createContainer('pdf-clausulas', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:22px;">
-      <div class="title">CLÁUSULAS CONTRATUAIS</div>
+      <div class="title">${t(lang, 'clausesTitle')}</div>
       <div class="lower" style="font-size:${STYLE.CLAUSE_SIZE}px; line-height:1.28;">
         ${clausulas.map((c, i) => `<p class="p p-justify lower" style="margin-bottom:4px;">${i + 1}. ${c}</p>`).join('')}
       </div>
@@ -1115,6 +1452,7 @@ const renderClausulas = ({ inline = false } = {}) => {
 };
 
 const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
+  const lang = getLang(pedidoData);
   let vendedor = pedidoData.vendedor || '';
   try {
     if (!vendedor) {
@@ -1122,22 +1460,22 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
       vendedor = u.nome || '';
     }
   } catch {}
-  if (!vendedor) vendedor = 'NÃO INFORMADO';
+  if (!vendedor) vendedor = t(lang, 'notProvided');
 
-  const cliente = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : 'NÃO INFORMADO';
+  const cliente = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : t(lang, 'notProvided');
 
   const el = createContainer('pdf-assinaturas', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:22px;">
-      <div class="title">ASSINATURAS</div>
+      <div class="title">${t(lang, 'signaturesTitle')}</div>
       <div style="margin-top:24px; display:grid; grid-template-columns: 1fr 1fr; gap: 24px;">
         <div class="center">
           <div style="height: 56px;"></div>
-          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">CLIENTE: ${cliente.toUpperCase()}</div>
+          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">${t(lang, 'signatureClient')}: ${cliente.toUpperCase()}</div>
         </div>
         <div class="center">
           <div style="height: 56px;"></div>
-          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">VENDEDOR: ${vendedor.toUpperCase()}</div>
+          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">${t(lang, 'signatureSeller')}: ${vendedor.toUpperCase()}</div>
         </div>
       </div>
     </div>
@@ -1236,12 +1574,36 @@ const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataU
  */
 const PDFGenerator = ({ pedidoData, onGenerate }) => {
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const isVendedorExterior = React.useMemo(() => {
+    const moeda = String(pedidoData?.pagamentoData?.moeda || '').toUpperCase();
+    if (moeda === 'USD') return true;
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      return u?.tipo === 'vendedor_exterior';
+    } catch {
+      return false;
+    }
+  }, [pedidoData]);
+
+  const [pdfLang, setPdfLang] = React.useState(() => (isVendedorExterior ? 'es' : 'pt'));
+
+  React.useEffect(() => {
+    if (!isVendedorExterior) {
+      setPdfLang('pt');
+    }
+  }, [isVendedorExterior]);
 
   const generatePDF = async () => {
     setIsGenerating(true);
     try {
-      const ts = `PROPOSTA GERADA AUTOMATICAMENTE EM ${new Date().toLocaleString('pt-BR')}`;
+      const effectiveLang = isVendedorExterior ? pdfLang : 'pt';
+      const ts = `${t(effectiveLang, 'autoGeneratedProposalAt')} ${new Date().toLocaleString('pt-BR')}`;
       const numeroProposta = getNextProposalNumber();
+
+      const pedidoDataLang = {
+        ...(pedidoData || {}),
+        pdfLang: effectiveLang,
+      };
 
       const headerDataURL = await renderImageToDataURL(HEADER_IMG);
       const footerDataURL = await renderImageToDataURL(FOOTER_IMG);
@@ -1251,14 +1613,14 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
       // ==== PÁGINA 1: CAPA + CLIENTE + EQUIPAMENTO (todos inline)
      {
-  const el = await renderCapa(pedidoData, numeroProposta, { inline: false });
+  const el = await renderCapa(pedidoDataLang, numeroProposta, { inline: false });
   const cv = await htmlToCanvas(el);
   addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
 }
 
 // ==== PÁGINA 2: DADOS DO EQUIPAMENTO
 {
-  const el = renderEquipamento(pedidoData, { inline: false });
+  const el = renderEquipamento(pedidoDataLang, { inline: false });
   const cv = await htmlToCanvas(el);
   addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
 }
@@ -1269,15 +1631,15 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR (inline para tentar caber)
       {
         const root = createContainer('page2-root', { inline: true });
-        root.appendChild(renderCaminhao(pedidoData, { inline: true }));
-        root.appendChild(renderEstudoVeicular(pedidoData, { inline: true }));
+        root.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
+        root.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
         const cv = await htmlToCanvas(root);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
       // ==== PÁGINA 4: FINANCEIRO
       {
-        const el = await renderFinanceiro(pedidoData, { inline: false });
+        const el = await renderFinanceiro(pedidoDataLang, { inline: false });
         const cv = await htmlToCanvas(el);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
@@ -1285,8 +1647,8 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       // ==== PÁGINA 5: CLÁUSULAS + ASSINATURAS (mesma página)
       {
         const root = createContainer('page4-root', { inline: true });
-        root.appendChild(renderClausulas({ inline: true }));
-        root.appendChild(renderAssinaturas(pedidoData, { inline: true }));
+        root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
+        root.appendChild(renderAssinaturas(pedidoDataLang, { inline: true }));
         const cv = await htmlToCanvas(root);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
@@ -1314,6 +1676,26 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
   return (
     <>
+      {isVendedorExterior && (
+        <select
+          value={pdfLang}
+          onChange={(e) => setPdfLang(e.target.value)}
+          disabled={isGenerating}
+          style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            border: '1px solid #e5e7eb',
+            background: '#fff',
+            fontSize: '13px',
+            fontWeight: 600,
+          }}
+          title="Idioma do PDF"
+        >
+          <option value="pt">PT (Português)</option>
+          <option value="es">ES (Español)</option>
+        </select>
+      )}
+
       <button
         onClick={generatePDF}
         disabled={isGenerating}
