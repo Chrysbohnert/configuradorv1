@@ -312,6 +312,10 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
     finame: banco?.finame || itemCarrinho?.finame || 'NÃO INFORMADO',
     ncm: banco?.ncm || itemCarrinho?.ncm || 'NÃO INFORMADO'
   };
+
+  const isPrototipo = !!(g?.is_prototipo);
+  const prototipoLabel = (g?.prototipo_label || '').trim();
+  const prototipoObs = (g?.prototipo_observacoes_pdf || '').trim();
   
   console.log('🔍 [renderCapa] Dados FINAIS do equipamento:', {
     nome: g.nome,
@@ -347,6 +351,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         <div style="font-size:4.7mm; font-weight:600; margin-top:1mm;">
            ${pedidoData.carrinho?.[0]?.modelo?.toUpperCase() || 'MODELO NÃO INFORMADO'} 
         </div>
+        ${isPrototipo ? `
+          <div style="margin-top:2.5mm; padding:2.5mm 4mm; border:0.6mm solid #111; display:inline-block; font-weight:800; font-size:3.8mm; letter-spacing:0.2mm;">
+            PROPOSTA DE EQUIPAMENTO PROTÓTIPO${prototipoLabel ? ` — ${prototipoLabel.toUpperCase()}` : ''}
+          </div>
+        ` : ''}
         ${pagamento.financiamentoBancario === 'sim' ? `
           <div style="font-size:3.6mm; font-weight:700; margin-top:2mm; letter-spacing:0.2mm; color:#111;">
             MODALIDADE: FINANCIAMENTO BANCÁRIO
@@ -391,6 +400,12 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
       <!-- BLOCO 4: DADOS DO EQUIPAMENTO -->
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
         <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">EQUIPAMENTO</div>
+
+        ${isPrototipo && prototipoObs ? `
+          <div style="margin:1mm 0 3mm 0; padding:2.5mm 3mm; border:0.4mm solid #111; font-size:3.6mm; line-height:1.35; font-weight:600;">
+            ${prototipoObs}
+          </div>
+        ` : ''}
         
         <!-- TABELA EM 2 COLUNAS LADO A LADO -->
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm;margin-top:2mm;">
@@ -516,7 +531,7 @@ const renderCliente = (pedidoData, { inline = false } = {}) => {
 
 // EQUIPAMENTO / PRODUTO
 const renderEquipamento = (pedidoData, { inline = false } = {}) => {
-  console.log('📄 [renderEquipamento] Dados recebidos:', {
+  console.log(' [renderEquipamento] Dados recebidos:', {
     carrinho: pedidoData.carrinho,
     guindastes: pedidoData.guindastes
   });
@@ -525,7 +540,7 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   const opcionais = (pedidoData.carrinho || []).filter(i => i.tipo === 'opcional');
 
   const enrich = (item) => {
-    console.log('🔍 [enrich] Processando item:', {
+    console.log(' [enrich] Processando item:', {
       id: item.id,
       nome: item.nome,
       modelo: item.modelo,
@@ -541,14 +556,14 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
     );
 
     if (banco) {
-      console.log('✅ [enrich] Dados encontrados no banco:', {
+      console.log(' [enrich] Dados encontrados no banco:', {
         id: banco.id,
         nome: banco.nome,
         finame: banco.finame,
         ncm: banco.ncm
       });
     } else {
-      console.log('⚠️ [enrich] Nenhum dado adicional encontrado no banco para o item:', item.id || item.nome);
+      console.log(' [enrich] Nenhum dado adicional encontrado no banco para o item:', item.id || item.nome);
     }
 
     // Criar objeto enriquecido com fallbacks
@@ -556,12 +571,11 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       ...item,
       ...(banco || {}),
       descricao: banco?.descricao || item?.descricao || '',
-      nao_incluido: banco?.nao_incluido || item?.nao_incluido || '',
       finame: banco?.finame || item?.finame || 'NÃO INFORMADO',
       ncm: banco?.ncm || item?.ncm || 'NÃO INFORMADO'
     };
 
-    console.log('✅ [enrich] Dados finais do item:', {
+    console.log(' [enrich] Dados finais do item:', {
       id: enriched.id,
       nome: enriched.nome,
       finame: enriched.finame,

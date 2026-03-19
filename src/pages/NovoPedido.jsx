@@ -351,6 +351,7 @@ const NovoPedido = () => {
   const [selectedCapacidade, setSelectedCapacidade] = useState(null);
   const [selectedModelo, setSelectedModelo] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [guindastesVisiveisParaVendedor, setGuindastesVisiveisParaVendedor] = useState(null);
 
   // ← MOVIDO: Definir funções antes dos useEffects
   // Funções do Carrinho
@@ -391,7 +392,27 @@ const NovoPedido = () => {
 
       console.log('🔍 [NovoPedido] Guindastes carregados (paginação):', all.length);
       console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', all.slice(0, 3));
-      setGuindastes(all);
+
+      let idsVisiveis = null;
+      try {
+        if (!isAdminStark && user?.id) {
+          idsVisiveis = await db.getGuindasteIdsVisiveisParaUser(user.id);
+        }
+      } catch (e) {
+        console.warn('⚠️ [NovoPedido] Falha ao carregar visibilidade de protótipos:', e);
+      }
+
+      const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
+      setGuindastesVisiveisParaVendedor(idsSet);
+
+      const filtrados = (all || []).filter(g => {
+        if (!g?.is_prototipo) return true;
+        if (isAdminStark) return true;
+        if (!idsSet) return false;
+        return idsSet.has(g.id);
+      });
+
+      setGuindastes(filtrados);
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
@@ -399,7 +420,7 @@ const NovoPedido = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isAdminStark, user?.id]);
 
   useEffect(() => {
     if (!user) {
@@ -457,6 +478,10 @@ const NovoPedido = () => {
           nao_incluido: guindaste.nao_incluido,
           finame: guindaste.finame || '',
           ncm: guindaste.ncm || '',
+          is_prototipo: !!guindaste.is_prototipo,
+          prototipo_label: guindaste.prototipo_label || null,
+          prototipo_observacoes_pdf: guindaste.prototipo_observacoes_pdf || null,
+          prototipo_payment_set_id: guindaste.prototipo_payment_set_id || null,
           preco: precoGuindaste,
           tipo: 'guindaste'
         };
@@ -628,6 +653,10 @@ const NovoPedido = () => {
         nao_incluido: guindasteCompleto.nao_incluido || '',
         finame: guindasteCompleto.finame || '',
         ncm: guindasteCompleto.ncm || '',
+        is_prototipo: !!guindasteCompleto.is_prototipo,
+        prototipo_label: guindasteCompleto.prototipo_label || null,
+        prototipo_observacoes_pdf: guindasteCompleto.prototipo_observacoes_pdf || null,
+        prototipo_payment_set_id: guindasteCompleto.prototipo_payment_set_id || null,
         preco: precoGuindaste,
         tipo: 'guindaste'
       };
