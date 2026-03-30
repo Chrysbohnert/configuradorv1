@@ -57,7 +57,9 @@ export default function PaymentPolicy({
 
   const descontoQuantidadePercent = useMemo(() => {
     if (!modoConcessionaria) return 0;
-    return totalGuindastes >= 2 ? 0.02 : 0;
+    if (totalGuindastes < 2) return 0;
+    // 2% por unidade adicional: 2 unidades = 2%, 3 = 4%, 4 = 6%, etc
+    return (totalGuindastes - 1) * 0.02;
   }, [modoConcessionaria, totalGuindastes]);
 
   const precoBaseAjustado = useMemo(() => {
@@ -839,7 +841,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   const prev = () => setEtapa(e => Math.max(e - 1, 1));
 
   // =============== SOLICITAR DESCONTO ADICIONAL AO GESTOR ========
-  const handleSolicitarDesconto = async (justificativa) => {
+  const handleSolicitarDesconto = async (justificativa, descontoDesejado) => {
     try {
       setAguardandoAprovacao(true);
 
@@ -861,6 +863,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         equipamentoDescricao,
         valorBase: precoBase,
         descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
+        descontoDesejado,
         justificativa
       });
 
@@ -872,6 +875,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         equipamentoDescricao,
         valorBase: precoBase,
         descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
+        descontoDesejado: descontoDesejado || null,
         justificativa
       });
 

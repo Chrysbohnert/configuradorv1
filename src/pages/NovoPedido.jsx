@@ -449,11 +449,36 @@ const NovoPedido = () => {
       const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
       setGuindastesVisiveisParaVendedor(idsSet);
 
+      // Filtro de estoque para vendedores de concessionária
+      let idsEstoque = null;
+      if (user?.tipo === 'vendedor_concessionaria' && user?.concessionaria_id) {
+        try {
+          const estoque = await db.getEstoqueConcessionaria(user.concessionaria_id);
+          idsEstoque = new Set(
+            estoque
+              .filter(item => item.quantidade > 0)
+              .map(item => item.guindaste_id)
+          );
+          console.log('📦 [NovoPedido] Guindastes em estoque:', idsEstoque.size);
+        } catch (e) {
+          console.warn('⚠️ [NovoPedido] Falha ao carregar estoque da concessionária:', e);
+        }
+      }
+
       const filtrados = (all || []).filter(g => {
-        if (!g?.is_prototipo) return true;
-        if (isAdminStark) return true;
-        if (!idsSet) return false;
-        return idsSet.has(g.id);
+        // Filtro de protótipos
+        if (g?.is_prototipo) {
+          if (!isAdminStark) {
+            if (!idsSet || !idsSet.has(g.id)) return false;
+          }
+        }
+        
+        // Filtro de estoque para vendedores de concessionária
+        if (user?.tipo === 'vendedor_concessionaria' && idsEstoque) {
+          return idsEstoque.has(g.id);
+        }
+        
+        return true;
       });
 
       setGuindastes(filtrados);
@@ -1746,8 +1771,21 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => {
       let maskedValue = value;
-      if (field === 'telefone') maskedValue = maskPhone(value);
-      if (field === 'cep') maskedValue = maskCEP(value);
+      // Campos numéricos: aceitar apenas dígitos
+      if (field === 'telefone') maskedValue = maskPhone(value.replace(/\D/g, ''));
+      else if (field === 'cep') maskedValue = maskCEP(value.replace(/\D/g, ''));
+      else if (field === 'documento') {
+        // CPF/CNPJ: aceitar apenas números
+        const digits = value.replace(/\D/g, '');
+        maskedValue = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
+      }
+      else if (field === 'inscricao_estadual' && value !== 'ISENTO') {
+        // IE: aceitar apenas números (exceto quando é ISENTO)
+        maskedValue = value.replace(/\D/g, '');
+      }
+      else {
+        maskedValue = value;
+      }
       const next = { ...prev, [field]: maskedValue };
       // Consistência: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
       if (field === 'uf') {

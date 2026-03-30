@@ -344,6 +344,37 @@ export default function AprovacoesDescontos() {
                     <span className="label">Desconto Atual:</span>
                     <span className="value highlight">{solicitacao.desconto_atual}%</span>
                   </div>
+
+                  {/* Desconto solicitado pelo vendedor */}
+                  {solicitacao.desconto_desejado && (
+                    <div style={{
+                      background: '#fffbeb',
+                      border: '1px solid #fde68a',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      marginTop: '10px'
+                    }}>
+                      <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
+                        🎯 Vendedor solicita: {solicitacao.desconto_desejado}%
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
+                        <div>
+                          <span style={{ color: '#6b7280' }}>Valor com {solicitacao.desconto_atual}%:</span>
+                          <br />
+                          <strong>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}</strong>
+                        </div>
+                        <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>→</div>
+                        <div>
+                          <span style={{ color: '#16a34a' }}>Valor com {solicitacao.desconto_desejado}%:</span>
+                          <br />
+                          <strong style={{ color: '#16a34a' }}>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_desejado / 100))}</strong>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
+                        Diferença: -{formatCurrency((solicitacao.valor_base * solicitacao.desconto_desejado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
+                      </p>
+                    </div>
+                  )}
                   
                   {solicitacao.justificativa && (
                     <div className="justificativa-box">
@@ -357,11 +388,11 @@ export default function AprovacoesDescontos() {
                 <div className="card-actions">
                   {/* Input de Desconto Livre */}
                   <div className="form-group">
-                    <label>Desconto a conceder:</label>
+                    <label>Desconto a conceder (%):</label>
                     <input
                       type="number"
                       className="form-control"
-                      placeholder="Ex: 10.5"
+                      placeholder={solicitacao.desconto_desejado ? `Solicitado: ${solicitacao.desconto_desejado}%` : 'Ex: 10.5'}
                       min="0"
                       step="0.1"
                       value={descontoSelecionado[solicitacao.id] || ''}
@@ -371,9 +402,53 @@ export default function AprovacoesDescontos() {
                       }))}
                       disabled={processando === solicitacao.id}
                     />
-                    <small style={{ color: '#6c757d', fontSize: '12px', marginTop: '4px', display: 'block' }}>
-                      💡 Digite o percentual desejado (aceita decimais: 0.5, 1.0, 8.5, 10.8, 15.0, etc.)
-                    </small>
+                    {/* Botão rápido para aplicar o % solicitado */}
+                    {solicitacao.desconto_desejado && !descontoSelecionado[solicitacao.id] && (
+                      <button
+                        type="button"
+                        onClick={() => setDescontoSelecionado(prev => ({
+                          ...prev,
+                          [solicitacao.id]: String(solicitacao.desconto_desejado)
+                        }))}
+                        style={{
+                          marginTop: '6px',
+                          padding: '5px 12px',
+                          fontSize: '12px',
+                          background: '#f0fdf4',
+                          border: '1px solid #bbf7d0',
+                          borderRadius: '6px',
+                          color: '#166534',
+                          cursor: 'pointer',
+                          fontWeight: 500
+                        }}
+                      >
+                        Aplicar {solicitacao.desconto_desejado}% (solicitado)
+                      </button>
+                    )}
+
+                    {/* Simulador em tempo real */}
+                    {descontoSelecionado[solicitacao.id] && parseFloat(descontoSelecionado[solicitacao.id]) > 0 && (
+                      <div style={{
+                        background: '#f0f9ff',
+                        border: '1px solid #bae6fd',
+                        borderRadius: '6px',
+                        padding: '10px 12px',
+                        marginTop: '8px',
+                        fontSize: '13px'
+                      }}>
+                        <p style={{ fontWeight: 600, color: '#0c4a6e', marginBottom: '4px' }}>
+                          💰 Com {parseFloat(descontoSelecionado[solicitacao.id])}%:
+                        </p>
+                        <p>
+                          Valor final: <strong style={{ color: '#0369a1' }}>
+                            {formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100))}
+                          </strong>
+                        </p>
+                        <p style={{ fontSize: '11px', color: '#6b7280' }}>
+                          Desconto de {formatCurrency(solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100)} sobre o valor base
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Observação */}
