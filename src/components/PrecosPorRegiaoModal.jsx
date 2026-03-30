@@ -9,9 +9,34 @@ const regioes = [
   { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual', descricao: '📄 CNPJ/CPF (Sem IE)', destaque: true },
 ];
 
+const formatarMoeda = (valor) => {
+  if (!valor && valor !== 0) return '';
+  const num = typeof valor === 'string' ? valor.replace(/\D/g, '') : String(Math.round(valor * 100));
+  if (!num || num === '0') return '';
+  const numPadded = num.padStart(3, '0');
+  const inteiro = numPadded.slice(0, -2).replace(/^0+/, '') || '0';
+  const decimal = numPadded.slice(-2);
+  const inteiroFormatado = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return `${inteiroFormatado},${decimal}`;
+};
+
+const parseMoeda = (valorFormatado) => {
+  if (!valorFormatado) return null;
+  const limpo = valorFormatado.replace(/\./g, '').replace(',', '.');
+  const num = parseFloat(limpo);
+  return isNaN(num) ? null : num;
+};
+
+const handleMoedaInput = (e) => {
+  const apenasDigitos = e.target.value.replace(/\D/g, '');
+  return formatarMoeda(apenasDigitos);
+};
+
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
   const [precos, setPrecos] = useState([]);
   const [precosCompra, setPrecosCompra] = useState([]);
+  const [precosFormatados, setPrecosFormatados] = useState({});
+  const [precosCompraFormatados, setPrecosCompraFormatados] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -31,34 +56,52 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
       ]);
       setPrecos(dataStark || []);
       setPrecosCompra(dataCompra || []);
+
+      const fmtPrecos = {};
+      (dataStark || []).forEach(p => {
+        if (p.preco) fmtPrecos[p.regiao] = formatarMoeda(p.preco);
+      });
+      setPrecosFormatados(fmtPrecos);
+
+      const fmtCompra = {};
+      (dataCompra || []).forEach(p => {
+        if (p.preco) fmtCompra[p.regiao] = formatarMoeda(p.preco);
+      });
+      setPrecosCompraFormatados(fmtCompra);
     } catch (error) {
       console.error('Erro ao carregar preços:', error);
     }
     setLoading(false);
   };
 
-  const handleChange = (regiao, value) => {
+  const handleChange = (regiao, valorDigitado) => {
+    const formatado = handleMoedaInput({ target: { value: valorDigitado } });
+    setPrecosFormatados(prev => ({ ...prev, [regiao]: formatado }));
+    const numerico = parseMoeda(formatado);
     setPrecos(prev => {
       const idx = prev.findIndex(p => p.regiao === regiao);
       if (idx >= 0) {
         const updated = [...prev];
-        updated[idx].preco = value;
+        updated[idx].preco = numerico;
         return updated;
       } else {
-        return [...prev, { guindaste_id: guindasteId, regiao, preco: value }];
+        return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
       }
     });
   };
 
-  const handleChangeCompra = (regiao, value) => {
+  const handleChangeCompra = (regiao, valorDigitado) => {
+    const formatado = handleMoedaInput({ target: { value: valorDigitado } });
+    setPrecosCompraFormatados(prev => ({ ...prev, [regiao]: formatado }));
+    const numerico = parseMoeda(formatado);
     setPrecosCompra(prev => {
       const idx = prev.findIndex(p => p.regiao === regiao);
       if (idx >= 0) {
         const updated = [...prev];
-        updated[idx].preco = value;
+        updated[idx].preco = numerico;
         return updated;
       } else {
-        return [...prev, { guindaste_id: guindasteId, regiao, preco: value }];
+        return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
       }
     });
   };
@@ -74,7 +117,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
         if (precoObj && precoObj.preco) {
           precosParaSalvar.push({
             regiao: regiao.id,
-            preco: parseFloat(precoObj.preco)
+            preco: typeof precoObj.preco === 'number' ? precoObj.preco : parseFloat(precoObj.preco)
           });
         }
 
@@ -82,7 +125,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
         if (precoCompraObj && precoCompraObj.preco) {
           precosCompraParaSalvar.push({
             regiao: regiao.id,
-            preco: parseFloat(precoCompraObj.preco)
+            preco: typeof precoCompraObj.preco === 'number' ? precoCompraObj.preco : parseFloat(precoCompraObj.preco)
           });
         }
       }
@@ -153,10 +196,9 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
                     <div>
                       <div style={{ fontSize: '12px', marginBottom: '4px', color: '#555' }}>Preço Stark</div>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={precoObj.preco || ''}
+                        type="text"
+                        inputMode="numeric"
+                        value={precosFormatados[regiao.id] || ''}
                         onChange={e => handleChange(regiao.id, e.target.value)}
                         placeholder="R$"
                       />
@@ -165,10 +207,9 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
                     <div>
                       <div style={{ fontSize: '12px', marginBottom: '4px', color: '#555' }}>Preço Compra Concessionária</div>
                       <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={precoCompraObj.preco || ''}
+                        type="text"
+                        inputMode="numeric"
+                        value={precosCompraFormatados[regiao.id] || ''}
                         onChange={e => handleChangeCompra(regiao.id, e.target.value)}
                         placeholder="R$"
                       />

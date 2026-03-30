@@ -34,6 +34,18 @@ const AdminNavigation = ({ user }) => {
             <line x1="8" y1="12" x2="16" y2="12" />
           </svg>
         )
+      },
+      {
+        path: '/estoque-concessionaria',
+        label: 'Estoque',
+        icon: (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="3" width="7" height="9"/>
+            <rect x="14" y="3" width="7" height="5"/>
+            <rect x="14" y="12" width="7" height="9"/>
+            <rect x="3" y="16" width="7" height="5"/>
+          </svg>
+        )
       }
     ] : []),
     {
@@ -89,18 +101,6 @@ const AdminNavigation = ({ user }) => {
       }
     ] : []),
     {
-      path: '/logistica',
-      label: 'Logística',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="1" y="3" width="15" height="13"/>
-          <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-          <circle cx="5.5" cy="18.5" r="2.5"/>
-          <circle cx="18.5" cy="18.5" r="2.5"/>
-        </svg>
-      )
-    },
-    {
       path: '/relatorio-completo',
       label: 'Relatório Completo',
       icon: (
@@ -133,18 +133,6 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
-    ...(isAdminConcessionaria ? [
-      {
-        path: '/precos-venda',
-        label: 'Preços de Venda',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            <circle cx="12" cy="12" r="1" fill="currentColor" />
-          </svg>
-        )
-      }
-    ] : []),
     {
       path: '/cotacao-dolar',
       label: 'Cotação do Dólar',

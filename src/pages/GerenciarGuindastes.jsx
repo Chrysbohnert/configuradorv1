@@ -320,6 +320,78 @@ const GerenciarGuindastes = () => {
     document.body.classList.add('modal-open');
   };
 
+  const openPrecoConcessionaria = async (guindaste) => {
+    try {
+      setGuindasteSelecionadoPreco(guindaste);
+      const precoCompra = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoReferencia);
+      setPrecoStarkReferencia(precoCompra);
+      const precoVendaAtual = precosConcessionariaMap[guindaste.id] || 0;
+      setPrecoConcessionariaInput(precoVendaAtual > 0 ? precoVendaAtual.toString() : '');
+      setShowPrecoConcessionariaModal(true);
+      document.body.classList.add('modal-open');
+    } catch (error) {
+      console.error('Erro ao abrir modal de preço:', error);
+      alert('Erro ao carregar dados do preço. Tente novamente.');
+    }
+  };
+
+  const closePrecoConcessionaria = () => {
+    setShowPrecoConcessionariaModal(false);
+    setGuindasteSelecionadoPreco(null);
+    setPrecoStarkReferencia(null);
+    setPrecoConcessionariaInput('');
+    document.body.classList.remove('modal-open');
+  };
+
+  const salvarPrecoConcessionaria = async () => {
+    const novoPreco = parseFloat(precoConcessionariaInput);
+    if (!novoPreco || novoPreco <= 0) {
+      alert('⚠️ Preço inválido. Digite um valor maior que zero.');
+      return;
+    }
+    const precoCompra = precoStarkReferencia || 0;
+    if (novoPreco < precoCompra) {
+      const markup = precoCompra > 0 ? (((novoPreco - precoCompra) / precoCompra) * 100).toFixed(1) : 0;
+      const confirmar = window.confirm(`⚠️ ATENÇÃO: O preço de venda (${formatCurrency(novoPreco)}) é MENOR que o preço de compra (${formatCurrency(precoCompra)}).\n\nMarkup: ${markup}%\n\nVocê terá PREJUÍZO nesta venda!\n\nDeseja continuar mesmo assim?`);
+      if (!confirmar) return;
+    }
+    try {
+      setIsLoading(true);
+      await db.upsertConcessionariaPreco({
+        concessionaria_id: user.concessionaria_id,
+        guindaste_id: guindasteSelecionadoPreco.id,
+        preco_override: novoPreco,
+        updated_by: user.id
+      });
+      setPrecosConcessionariaMap(prev => ({ ...prev, [guindasteSelecionadoPreco.id]: novoPreco }));
+      setToast({ visible: true, message: '✅ Preço de venda salvo com sucesso!', type: 'success' });
+      closePrecoConcessionaria();
+    } catch (error) {
+      console.error('Erro ao salvar preço:', error);
+      setToast({ visible: true, message: '❌ Erro ao salvar preço. Tente novamente.', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!guindasteToDelete) return;
+    try {
+      setIsLoading(true);
+      await db.deleteGuindaste(guindasteToDelete);
+      setToast({ visible: true, message: 'Guindaste excluído com sucesso!', type: 'success' });
+      setShowDeleteModal(false);
+      setGuindasteToDelete(null);
+      loadData(page, true);
+    } catch (error) {
+      console.error('Erro ao excluir guindaste:', error);
+      setToast({ visible: true, message: 'Erro ao excluir guindaste', type: 'error' });
+    } finally {
+      setIsLoading(false);
+      document.body.classList.remove('modal-open');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log('🚀 [handleSubmit] Iniciando submit do formulário');

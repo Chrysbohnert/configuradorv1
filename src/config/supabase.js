@@ -67,7 +67,7 @@ class DatabaseService {
   async getUsers(filters = {}) {
     let query = supabase
       .from('users')
-      .select('*')
+      .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
       .order('nome');
 
     if (filters) {
@@ -340,13 +340,12 @@ class DatabaseService {
       .from('users')
       .delete()
       .eq('id', id);
-    
+
     if (error) throw error;
   }
 
-  // ===== CONCESSIONÁRIAS =====
-  async getConcessionarias(options = {}) {
-    const { includeInactive = false } = options;
+  async getConcessionarias(includeInactive = false) {
+    console.log('🔍 [getConcessionarias] Buscando concessionárias...');
 
     let query = supabase
       .from('concessionarias')
@@ -356,7 +355,7 @@ class DatabaseService {
     if (!includeInactive) {
       query = query.eq('ativo', true);
     }
-
+    
     const { data, error } = await query;
 
     if (!error) return data || [];
@@ -645,11 +644,80 @@ class DatabaseService {
     return data;
   }
 
+  // ===== ESTOQUE DA CONCESSIONÁRIA =====
+  async getEstoqueConcessionaria(concessionariaId) {
+    const { data, error } = await supabase
+      .from('estoque_concessionaria')
+      .select(`
+        *,
+        guindaste:guindastes(*)
+      `)
+      .eq('concessionaria_id', concessionariaId);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getEstoqueGuindaste(concessionariaId, guindasteId) {
+    const { data, error } = await supabase
+      .from('estoque_concessionaria')
+      .select('quantidade')
+      .eq('concessionaria_id', concessionariaId)
+      .eq('guindaste_id', guindasteId)
+      .limit(1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) return 0;
+    return data[0]?.quantidade || 0;
+  }
+
+  async adicionarEstoque(concessionariaId, guindasteId, quantidade) {
+    // Buscar estoque atual
+    const estoqueAtual = await this.getEstoqueGuindaste(concessionariaId, guindasteId);
+    const novaQuantidade = estoqueAtual + quantidade;
+
+    const payload = {
+      concessionaria_id: concessionariaId,
+      guindaste_id: guindasteId,
+      quantidade: novaQuantidade,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('estoque_concessionaria')
+      .upsert([payload], { onConflict: 'concessionaria_id,guindaste_id' })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  async removerEstoque(concessionariaId, guindasteId, quantidade) {
+    // Buscar estoque atual
+    const estoqueAtual = await this.getEstoqueGuindaste(concessionariaId, guindasteId);
+    const novaQuantidade = Math.max(0, estoqueAtual - quantidade);
+
+    const { data, error } = await supabase
+      .from('estoque_concessionaria')
+      .update({ 
+        quantidade: novaQuantidade,
+        updated_at: new Date().toISOString()
+      })
+      .eq('concessionaria_id', concessionariaId)
+      .eq('guindaste_id', guindasteId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
   // ===== GUINDASTES =====
   async getGuindastes() {
     const { data, error } = await supabase
       .from('guindastes')
-      .select('*')
+      .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, imagem_url, descricao, nao_incluido, finame, ncm, codigo_referencia, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_observacoes_pdf, created_at, updated_at')
       .order('subgrupo');
     
     if (error) throw error;
@@ -1225,56 +1293,13 @@ class DatabaseService {
     }
   }
 
-  // ===== LOGÍSTICA: CALENDÁRIO =====
-  async getEventosLogistica({ startDate, endDate } = {}) {
-    let query = supabase
-      .from('eventos_logistica')
-      .select('*')
-      .order('data', { ascending: true });
-    
-    if (startDate) query = query.gte('data', startDate);
-    if (endDate) query = query.lte('data', endDate);
-    
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
-  }
-
-  async createEventoLogistica(eventoData) {
-    const { data, error } = await supabase
-      .from('eventos_logistica')
-      .insert([eventoData])
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
-
-  async updateEventoLogistica(id, eventoData) {
-    const { data, error } = await supabase
-      .from('eventos_logistica')
-      .update(eventoData)
-      .eq('id', id)
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
-  }
-
-  async deleteEventoLogistica(id) {
-    const { error } = await supabase
-      .from('eventos_logistica')
-      .delete()
-      .eq('id', id);
-    if (error) throw error;
-  }
-
-  // ===== LOGÍSTICA: PRONTA ENTREGA =====
+  // ===== PRONTA ENTREGA =====
   async getProntaEntrega() {
     const { data, error } = await supabase
       .from('pronta_entrega')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, guindaste_id, quantidade, preco, observacoes, created_at, updated_at')
+      .order('created_at', { ascending: false })
+      .limit(50);
     if (error) throw error;
     return data || [];
   }
@@ -1374,8 +1399,9 @@ class DatabaseService {
   async getClientes() {
     const { data, error } = await supabase
       .from('clientes')
-      .select('*')
-      .order('nome');
+      .select('id, nome, cpf_cnpj, telefone, email, cidade, estado, created_at')
+      .order('nome')
+      .limit(500);
     
     if (error) throw error;
     return data || [];
@@ -1636,7 +1662,7 @@ class DatabaseService {
   async getFretes() {
     const { data, error } = await supabase
       .from('fretes')
-      .select('*')
+      .select('id, oficina, cidade, uf, valor_prioridade, valor_reaproveitamento')
       .order('cidade');
 
     if (error) throw error;
@@ -1885,8 +1911,9 @@ class DatabaseService {
   async getPropostas(filters = {}) {
     let query = supabase
       .from('propostas')
-      .select('*')
-      .order('data', { ascending: false });
+      .select('id, numero_proposta, vendedor_id, vendedor_nome, cliente_nome, data, valor_total, status, created_at')
+      .order('data', { ascending: false })
+      .limit(100);
 
     if (filters.vendedor_id) {
       if (Array.isArray(filters.vendedor_id)) {
@@ -2171,6 +2198,7 @@ class DatabaseService {
         equipamento_descricao: dados.equipamentoDescricao,
         valor_base: dados.valorBase,
         desconto_atual: typeof dados.descontoAtual === 'number' ? dados.descontoAtual : 0,
+        desconto_desejado: dados.descontoDesejado || null,
         justificativa: dados.justificativa || null,
         status: 'pendente'
       }])

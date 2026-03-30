@@ -18,7 +18,7 @@ const GerenciarVendedores = lazy(() => import('./pages/GerenciarVendedores'));
 const GerenciarGuindastes = lazy(() => import('./pages/GerenciarGuindastes'));
 const RelatorioCompleto = lazy(() => import('./pages/RelatorioCompleto'));
 const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga'));
-const Logistica = lazy(() => import('./pages/Logistica'));
+
 const Configuracoes = lazy(() => import('./pages/Configuracoes'));
 const AprovacoesDescontos = lazy(() => import('./pages/AprovacoesDescontos'));
 const Concessionarias = lazy(() => import('./pages/Concessionarias'));
@@ -34,7 +34,7 @@ const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
 const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
 const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'));
 const CotacaoDolar = lazy(() => import('./pages/CotacaoDolar'));
-const PrecosVendaConcessionaria = lazy(() => import('./pages/PrecosVendaConcessionaria'));
+const EstoqueConcessionaria = lazy(() => import('./pages/EstoqueConcessionaria'));
 
 
 function App() {
@@ -102,11 +102,7 @@ function App() {
                 <DashboardAdmin />
               </LazyRoute>
             } />
-            <Route path="/logistica" element={
-              <LazyRoute loadingMessage="Carregando Logística...">
-                <Logistica />
-              </LazyRoute>
-            } />
+
             <Route path="/gerenciar-vendedores" element={
               <LazyRoute loadingMessage="Carregando Vendedores...">
                 <GerenciarVendedores />
@@ -147,9 +143,9 @@ function App() {
                 <PlanosPagamento />
               </LazyRoute>
             } />
-            <Route path="/precos-venda" element={
-              <LazyRoute loadingMessage="Carregando Preços de Venda...">
-                <PrecosVendaConcessionaria />
+            <Route path="/estoque-concessionaria" element={
+              <LazyRoute loadingMessage="Carregando Estoque...">
+                <EstoqueConcessionaria />
               </LazyRoute>
             } />
             <Route path="/cotacao-dolar" element={
