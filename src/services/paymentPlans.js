@@ -12,7 +12,17 @@ import plans from '../data/payment_plans.json';
  */
 export function getPaymentPlans(audience) {
   const all = plans.filter(p => p.active);
-  return audience ? all.filter(p => p.audience === audience) : all;
+  if (!audience) return all;
+
+  const filtered = all.filter(p => p.audience === audience);
+  if (filtered.length > 0) return filtered;
+
+  // Fallback: caso não exista audiência nova no JSON, reaproveita planos de revenda
+  if (audience === 'concessionaria_compra') {
+    return all.filter(p => p.audience === 'revenda');
+  }
+
+  return filtered;
 }
 
 /**

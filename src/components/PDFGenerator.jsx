@@ -1,14 +1,9 @@
 import React from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import * as pdfjsLib from 'pdfjs-dist';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { buildGraficoKey, resolveGraficoUrl } from '../utils/modelNormalization';
 import { db } from '../config/supabase';
-
-// Worker do PDF.js
-pdfjsLib.GlobalWorkerOptions.workerSrc =
-  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 /**
  * ==========================
@@ -30,6 +25,17 @@ const STYLE = {
   CLAUSE_SIZE: 11,
   LINE: 5,
   FONT: 'helvetica',
+};
+
+const sanitizeFilePart = (value) => {
+  const raw = (value || '').toString() || 'Documento';
+  return raw
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .trim()
+    .replace(/\s+/g, '_')
+    .slice(0, 40);
 };
 
 // Cabeçalho/rodapé (imagens)
@@ -1524,43 +1530,42 @@ const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataU
       if (urlsIncluidas.has(url)) continue;
       urlsIncluidas.add(url);
 
-      const loadingTask = pdfjsLib.getDocument({ url });
-      const extPDF = await loadingTask.promise;
-      const n = extPDF.numPages;
+      // Renderizar gráfico como imagem
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = url;
+      });
 
-      for (let p = 1; p <= n; p++) {
-        const page = await extPDF.getPage(p);
-        const viewport = page.getViewport({ scale: 2 });
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = viewport.width;
-        canvas.height = viewport.height;
-        await page.render({ canvasContext: ctx, viewport }).promise;
-        const img = canvas.toDataURL('image/png');
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
 
-        pdf.addPage();
-        
-        // SEM CABEÇALHO/RODAPÉ (o PDF do gráfico já vem formatado)
-        
-        // CALCULAR TAMANHO DA IMAGEM (página inteira)
-        const maxW = PAGE.width;
-        const maxH = PAGE.height;
-        
-        const scaledH = (canvas.height * maxW) / canvas.width;
-        let drawW = maxW;
-        let drawH = scaledH;
-        
-        if (scaledH > maxH) {
-          drawH = maxH;
-          drawW = (canvas.width * maxH) / canvas.height;
-        }
-        
-        // Centralizar na página inteira
-        const x = (PAGE.width - drawW) / 2;
-        const y = (PAGE.height - drawH) / 2;
-        
-        pdf.addImage(img, 'PNG', x, y, drawW, drawH);
+      pdf.addPage();
+      
+      // CALCULAR TAMANHO DA IMAGEM (página inteira)
+      const maxW = PAGE.width;
+      const maxH = PAGE.height;
+      
+      const scaledH = (canvas.height * maxW) / canvas.width;
+      let drawW = maxW;
+      let drawH = scaledH;
+      
+      if (scaledH > maxH) {
+        drawH = maxH;
+        drawW = (canvas.width * maxH) / canvas.height;
       }
+      
+      // Centralizar na página inteira
+      const x = (PAGE.width - drawW) / 2;
+      const y = (PAGE.height - drawH) / 2;
+      
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', x, y, drawW, drawH);
     }
   } catch (e) {
     console.error('Erro ao anexar gráficos de carga:', e);
@@ -1611,40 +1616,44 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       const pdf = new jsPDF('p', 'mm', 'a4');
       pdf.setFont(STYLE.FONT, 'normal');
 
-      // ==== PÁGINA 1: CAPA + CLIENTE + EQUIPAMENTO (todos inline)
-     {
-  const el = await renderCapa(pedidoDataLang, numeroProposta, { inline: false });
-  const cv = await htmlToCanvas(el);
-  addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-}
+      const isCompra = !!pedidoData?.isConcessionariaCompra;
 
-// ==== PÁGINA 2: DADOS DO EQUIPAMENTO
-{
-  const el = renderEquipamento(pedidoDataLang, { inline: false });
-  const cv = await htmlToCanvas(el);
-  addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-}
-
-      // ==== GRÁFICOS DE CARGA (logo após dados do equipamento)
-      await appendGraficosDeCarga(pdf, pedidoData, headerDataURL, footerDataURL, ts);
-
-      // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR (inline para tentar caber)
+      // ==== PÁGINA 1: CAPA
       {
-        const root = createContainer('page2-root', { inline: true });
-        root.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
-        root.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
-        const cv = await htmlToCanvas(root);
+        const el = await renderCapa(pedidoDataLang, numeroProposta, { inline: false });
+        const cv = await htmlToCanvas(el);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // ==== PÁGINA 4: FINANCEIRO
+      // ==== PÁGINA 2: DADOS DO EQUIPAMENTO
+      {
+        const el = renderEquipamento(pedidoDataLang, { inline: false });
+        const cv = await htmlToCanvas(el);
+        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+      }
+
+      if (!isCompra) {
+        // ==== GRÁFICOS DE CARGA (logo após dados do equipamento)
+        await appendGraficosDeCarga(pdf, pedidoData, headerDataURL, footerDataURL, ts);
+
+        // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR
+        {
+          const root = createContainer('page2-root', { inline: true });
+          root.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
+          root.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
+          const cv = await htmlToCanvas(root);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+      }
+
+      // ==== FINANCEIRO
       {
         const el = await renderFinanceiro(pedidoDataLang, { inline: false });
         const cv = await htmlToCanvas(el);
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // ==== PÁGINA 5: CLÁUSULAS + ASSINATURAS (mesma página)
+      // ==== CLÁUSULAS + ASSINATURAS
       {
         const root = createContainer('page4-root', { inline: true });
         root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
@@ -1653,16 +1662,14 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
         addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
       }
 
-      // Monta o nome do arquivo usando o nome do cliente (sanitizado)
-      const nomeClienteBruto = pedidoData.clienteData?.nome || 'Cliente';
-      const nomeClienteSanitizado = nomeClienteBruto
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // remove acentos
-        .replace(/[^a-zA-Z0-9\s]/g, '')                   // remove caracteres especiais
-        .trim()
-        .replace(/\s+/g, '_')                             // espaços -> underscore
-        .slice(0, 40);                                     // limita tamanho
+      const nomeDocumento = isCompra
+        ? (pedidoData?.dados_serializados?.concessionariaInfo?.nome || pedidoData?.clienteData?.nome || 'Concessionaria')
+        : (pedidoData?.clienteData?.nome || 'Cliente');
 
-      const fileName = `Proposta_Stark_${nomeClienteSanitizado}.pdf`;
+      const nomeSanitizado = sanitizeFilePart(nomeDocumento);
+      const fileName = isCompra
+        ? `Pedido_Compra_Concessionaria_${nomeSanitizado}.pdf`
+        : `Proposta_Stark_${nomeSanitizado}.pdf`;
       pdf.save(fileName);
 
       onGenerate && onGenerate(fileName);

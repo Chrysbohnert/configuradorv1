@@ -138,4 +138,15 @@ export const disableConsoleInProduction = () => {
   }
 };
 
+/**
+ * Inicializa otimizações de logging em produção
+ * Chame no início da aplicação (main.jsx ou App.jsx)
+ */
+export const initProductionOptimizations = () => {
+  if (isProduction) {
+    disableConsoleInProduction();
+    console.log('%c🚀 Aplicação em modo produção - Logs desabilitados', 'color: #4CAF50; font-weight: bold;');
+  }
+};
+
 export default logger;

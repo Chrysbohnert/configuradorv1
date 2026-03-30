@@ -7,7 +7,8 @@ import '../styles/PlanosPagamento.css';
 
 const AUDIENCES = [
   { value: 'cliente', label: 'Cliente' },
-  { value: 'revenda', label: 'Revenda' }
+  { value: 'revenda', label: 'Revenda' },
+  { value: 'concessionaria_compra', label: 'Compra Concessionária' }
 ];
 
 const ENTRY_FILTERS = [

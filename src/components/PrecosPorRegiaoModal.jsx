@@ -11,6 +11,7 @@ const regioes = [
 
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
   const [precos, setPrecos] = useState([]);
+  const [precosCompra, setPrecosCompra] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -24,8 +25,12 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
   const fetchPrecos = async () => {
     setLoading(true);
     try {
-      const data = await db.getPrecosPorRegiao(guindasteId);
-      setPrecos(data || []);
+      const [dataStark, dataCompra] = await Promise.all([
+        db.getPrecosPorRegiao(guindasteId),
+        db.getPrecosCompraPorRegiao(guindasteId),
+      ]);
+      setPrecos(dataStark || []);
+      setPrecosCompra(dataCompra || []);
     } catch (error) {
       console.error('Erro ao carregar preços:', error);
     }
@@ -45,10 +50,24 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
     });
   };
 
+  const handleChangeCompra = (regiao, value) => {
+    setPrecosCompra(prev => {
+      const idx = prev.findIndex(p => p.regiao === regiao);
+      if (idx >= 0) {
+        const updated = [...prev];
+        updated[idx].preco = value;
+        return updated;
+      } else {
+        return [...prev, { guindaste_id: guindasteId, regiao, preco: value }];
+      }
+    });
+  };
+
   const handleSave = async () => {
     setSaving(true);
     try {
       const precosParaSalvar = [];
+      const precosCompraParaSalvar = [];
       
       for (const regiao of regioes) {
         const precoObj = precos.find(p => p.regiao === regiao.id);
@@ -58,9 +77,20 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
             preco: parseFloat(precoObj.preco)
           });
         }
+
+        const precoCompraObj = precosCompra.find(p => p.regiao === regiao.id);
+        if (precoCompraObj && precoCompraObj.preco) {
+          precosCompraParaSalvar.push({
+            regiao: regiao.id,
+            preco: parseFloat(precoCompraObj.preco)
+          });
+        }
       }
       
-      await db.salvarPrecosPorRegiao(guindasteId, precosParaSalvar);
+      await Promise.all([
+        db.salvarPrecosPorRegiao(guindasteId, precosParaSalvar),
+        db.salvarPrecosCompraPorRegiao(guindasteId, precosCompraParaSalvar),
+      ]);
       alert('Preços salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar preços:', error);
@@ -74,7 +104,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+      <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div className="modal-header">
           <h2>Preços por Região</h2>
           <button onClick={onClose} className="close-btn">×</button>
@@ -91,6 +121,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
           ) : (
             regioes.map(regiao => {
               const precoObj = precos.find(p => p.regiao === regiao.id) || {};
+              const precoCompraObj = precosCompra.find(p => p.regiao === regiao.id) || {};
               return (
                 <div 
                   className="form-group" 
@@ -117,14 +148,32 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
                       </small>
                     )}
                   </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={precoObj.preco || ''}
-                    onChange={e => handleChange(regiao.id, e.target.value)}
-                    placeholder="Preço em R$"
-                  />
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <div style={{ fontSize: '12px', marginBottom: '4px', color: '#555' }}>Preço Stark</div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={precoObj.preco || ''}
+                        onChange={e => handleChange(regiao.id, e.target.value)}
+                        placeholder="R$"
+                      />
+                    </div>
+
+                    <div>
+                      <div style={{ fontSize: '12px', marginBottom: '4px', color: '#555' }}>Preço Compra Concessionária</div>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={precoCompraObj.preco || ''}
+                        onChange={e => handleChangeCompra(regiao.id, e.target.value)}
+                        placeholder="R$"
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })

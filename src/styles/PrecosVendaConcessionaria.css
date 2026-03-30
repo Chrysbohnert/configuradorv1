@@ -1,0 +1,360 @@
+.precos-venda-container {
+  padding: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.precos-venda-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.precos-venda-info {
+  display: flex;
+  gap: 32px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.info-label {
+  font-size: 12px;
+  color: #6c757d;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.info-value {
+  font-size: 16px;
+  color: #212529;
+  font-weight: 600;
+}
+
+.precos-venda-instrucoes {
+  background: #e7f3ff;
+  border-left: 4px solid #0066cc;
+  padding: 16px 20px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+}
+
+.precos-venda-instrucoes h3 {
+  margin: 0 0 12px 0;
+  color: #0066cc;
+  font-size: 16px;
+}
+
+.precos-venda-instrucoes ol {
+  margin: 0 0 12px 20px;
+  padding: 0;
+}
+
+.precos-venda-instrucoes li {
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.precos-venda-instrucoes strong {
+  color: #212529;
+}
+
+.aviso {
+  margin: 12px 0 0 0;
+  padding: 12px;
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  border-radius: 4px;
+  color: #856404;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.precos-venda-loading,
+.precos-venda-empty {
+  text-align: center;
+  padding: 48px 20px;
+  color: #6c757d;
+}
+
+.precos-venda-empty p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.precos-venda-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.precos-venda-row {
+  display: grid;
+  grid-template-columns: 2fr 1.2fr 1.5fr 0.8fr 1.5fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.precos-venda-row--header {
+  background: #f8f9fa;
+  font-weight: 700;
+  font-size: 13px;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.precos-venda-row:not(.precos-venda-row--header) {
+  background: #ffffff;
+  border: 1px solid #e9ecef;
+}
+
+.precos-venda-row:not(.precos-venda-row--header):hover {
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.precos-venda-guindaste {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.guindaste-nome {
+  font-weight: 600;
+  color: #212529;
+  font-size: 14px;
+}
+
+.guindaste-codigo {
+  font-size: 12px;
+  color: #6c757d;
+  font-family: 'Courier New', monospace;
+}
+
+.precos-venda-compra,
+.precos-venda-venda,
+.precos-venda-markup {
+  display: flex;
+  align-items: center;
+}
+
+.valor-compra {
+  font-size: 15px;
+  font-weight: 600;
+  color: #dc3545;
+  padding: 6px 12px;
+  background: #fff5f5;
+  border-radius: 6px;
+  border: 1px solid #f8d7da;
+}
+
+.valor-venda {
+  font-size: 15px;
+  font-weight: 600;
+  color: #28a745;
+  padding: 6px 12px;
+  background: #f1f9f3;
+  border-radius: 6px;
+  border: 1px solid #c3e6cb;
+}
+
+.valor-venda--vazio {
+  color: #6c757d;
+  background: #f8f9fa;
+  border-color: #dee2e6;
+  font-weight: 500;
+  font-style: italic;
+}
+
+.input-preco {
+  width: 100%;
+  max-width: 150px;
+  padding: 8px 12px;
+  border: 2px solid #0066cc;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #212529;
+  transition: border-color 0.2s;
+}
+
+.input-preco:focus {
+  outline: none;
+  border-color: #0052a3;
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.input-preco:disabled {
+  background: #e9ecef;
+  cursor: not-allowed;
+}
+
+.markup {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+.markup--ok {
+  color: #28a745;
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.markup--baixo {
+  color: #ffc107;
+  background: #fff3cd;
+  border: 1px solid #ffeaa7;
+}
+
+.markup--negativo {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.precos-venda-acoes {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btn-editar,
+.btn-salvar,
+.btn-cancelar {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-editar {
+  background: #0066cc;
+  color: white;
+}
+
+.btn-editar:hover {
+  background: #0052a3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
+}
+
+.btn-salvar {
+  background: #28a745;
+  color: white;
+}
+
+.btn-salvar:hover:not(:disabled) {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-cancelar {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background: #5a6268;
+}
+
+.btn-salvar:disabled,
+.btn-cancelar:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Responsividade */
+@media (max-width: 1024px) {
+  .precos-venda-row {
+    grid-template-columns: 1.5fr 1fr 1.2fr 0.8fr 1.3fr;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .guindaste-nome {
+    font-size: 13px;
+  }
+
+  .guindaste-codigo {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 768px) {
+  .precos-venda-container {
+    padding: 12px;
+  }
+
+  .precos-venda-card {
+    padding: 16px;
+  }
+
+  .precos-venda-info {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .precos-venda-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .precos-venda-row--header {
+    display: none;
+  }
+
+  .precos-venda-row > div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .precos-venda-row > div::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6c757d;
+    font-size: 12px;
+    text-transform: uppercase;
+  }
+
+  .precos-venda-guindaste,
+  .precos-venda-acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .precos-venda-acoes {
+    gap: 8px;
+  }
+
+  .btn-editar,
+  .btn-salvar,
+  .btn-cancelar {
+    width: 100%;
+  }
+}

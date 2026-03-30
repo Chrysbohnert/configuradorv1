@@ -8,7 +8,10 @@ import './SeletorRegiaoCliente.css';
 export default function SeletorRegiaoCliente({
   regiaoSelecionada,
   onRegiaoChange,
-  regioesDisponiveis = []
+  regioesDisponiveis = [],
+  title = 'Região do Cliente',
+  subtitle = 'Selecione a região onde o cliente está localizado',
+  questionLabel = 'Qual região o cliente está?'
 }) {
   const [regioes, setRegioes] = useState([]);
 
@@ -36,8 +39,8 @@ export default function SeletorRegiaoCliente({
         <div className="seletor-header">
           <div className="seletor-icon">📍</div>
           <div className="seletor-title">
-            <h3>Região do Cliente</h3>
-            <p>Selecione a região onde o cliente está localizado</p>
+            <h3>{title}</h3>
+            <p>{subtitle}</p>
           </div>
         </div>
 
@@ -57,7 +60,7 @@ export default function SeletorRegiaoCliente({
           ) : (
             <div className="form-group">
               <label htmlFor="regiao-select">
-                Qual região o cliente está?
+                {questionLabel}
                 <span className="required">*</span>
               </label>
               <select

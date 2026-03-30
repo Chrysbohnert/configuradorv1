@@ -49,6 +49,23 @@ export default function PaymentPolicy({
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
 
+  const totalGuindastes = useMemo(() => {
+    return (itens || [])
+      .filter(i => i?.tipo === 'guindaste')
+      .reduce((acc, i) => acc + (parseInt(i?.quantidade, 10) || 1), 0);
+  }, [itens]);
+
+  const descontoQuantidadePercent = useMemo(() => {
+    if (!modoConcessionaria) return 0;
+    return totalGuindastes >= 2 ? 0.02 : 0;
+  }, [modoConcessionaria, totalGuindastes]);
+
+  const precoBaseAjustado = useMemo(() => {
+    const base = Number(precoBase) || 0;
+    const fator = 1 - (Number(descontoQuantidadePercent) || 0);
+    return Math.max(0, base * fator);
+  }, [precoBase, descontoQuantidadePercent]);
+
   const guindasteDoPedido = useMemo(() => {
     const g = (itens || []).find(i => i?.tipo === 'guindaste') || null;
     return g || null;
@@ -404,7 +421,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI, dadosFreteAtual, valorFreteCalculado]);
 
   // =============== PLANOS DISPONÍVEIS ============================
-  const audience = tipoCliente === 'revenda' ? 'revenda' : 'cliente';
+  const audience = modoConcessionaria
+    ? 'concessionaria_compra'
+    : (tipoCliente === 'revenda' ? 'revenda' : 'cliente');
   const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
 
   const entradaOpcoes = null;
@@ -633,13 +652,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     try {
       const extraValorNum = parseFloat(extraValor) || 0;
       const r = calcularPagamento({
-        precoBase: precoBase,
+        precoBase: precoBaseAjustado,
         plan: planoSelecionado,
         dataEmissaoNF: new Date(),
       });
 
       // aplica desconto do vendedor (sobre o PREÇO AJUSTADO POR REGIÃO)
-      const descontoExtraValor = precoBase * (descontoVendedor / 100);
+      const descontoExtraValor = precoBaseAjustado * (descontoVendedor / 100);
       const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
       // frete: somente se frete incluso + selecionado tipo de entrega e local
@@ -695,9 +714,14 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       
       console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
+      const descontoQuantidadeValor = (Number(precoBase) || 0) - (Number(precoBaseAjustado) || 0);
+
       const resultadoFinal = {
         ...r,
-        precoBase: precoBase, // Usar preço ajustado
+        precoBase: precoBaseAjustado,
+        precoBaseOriginal: precoBase,
+        descontoQuantidadePercent,
+        descontoQuantidadeValor,
         descontoAdicionalValor: descontoExtraValor,
         valorFinalComDescontoAdicional: valorAposExtra,
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
@@ -897,13 +921,13 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         }
 
         const r = calcularPagamento({
-          precoBase: precoBase,
+          precoBase: precoBaseAjustado,
           plan: planoSelecionado,
           dataEmissaoNF: new Date(),
         });
 
         // Aplica desconto do vendedor aprovado
-        const descontoExtraValor = precoBase * (solicitacao.desconto_aprovado / 100);
+        const descontoExtraValor = precoBaseAjustado * (solicitacao.desconto_aprovado / 100);
         const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
         // Calcula frete
@@ -959,9 +983,14 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         
         console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
+        const descontoQuantidadeValor = (Number(precoBase) || 0) - (Number(precoBaseAjustado) || 0);
+
         const novoResultado = {
           ...r,
-          precoBase: precoBase,
+          precoBase: precoBaseAjustado,
+          precoBaseOriginal: precoBase,
+          descontoQuantidadePercent,
+          descontoQuantidadeValor,
           descontoAdicionalValor: descontoExtraValor,
           valorFinalComDescontoAdicional: valorAposExtra,
           extraDescricao: extraDescricao || '',
@@ -1102,6 +1131,29 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     if (!modoConcessionaria) return;
     setDescontoVendedor(Number(descontoConcessionaria) || 0);
   }, [modoConcessionaria, descontoConcessionaria]);
+
+  // Notificar onPaymentComputed imediatamente no modo concessionária
+  useEffect(() => {
+    if (!modoConcessionaria) return;
+    
+    // Enviar dados iniciais para permitir validação no NovoPedido
+    const dadosIniciais = {
+      tipoCliente: 'revenda',
+      participacaoRevenda: 'nao',
+      tipoIE: 'produtor',
+      instalacao: '',
+      tipoFrete: 'FOB',
+      localInstalacao: 'Concessionária',
+      tipoEntrega: '',
+      tipoPagamento: 'revenda',
+      tipoInstalacao: '',
+      revendaTemIE: 'sim',
+      prazoPagamento: '', // Será preenchido quando selecionar plano
+    };
+    
+    console.log('🔄 [PaymentPolicy] Enviando dados iniciais do modo concessionária:', dadosIniciais);
+    onPaymentComputed?.(dadosIniciais);
+  }, [modoConcessionaria, onPaymentComputed]);
 
   return (
     <div className="payment-policy">
@@ -2028,7 +2080,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             <button 
               className="payment-nav-btn primary" 
               onClick={() => {
-                console.log('🔘 Botão "Continuar para Dados do Cliente" clicado');
+                console.log('🔘 Botão "Continuar" clicado');
                 console.log('📊 Resultado:', resultado);
                 console.log('🎯 onFinish existe?', !!onFinish);
                 if (onFinish) {
@@ -2040,7 +2092,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               }}
               disabled={!resultado || (percentualEntrada !== 'financiamento' && !planoSelecionado)}
             >
-              Continuar para Dados do Cliente →
+              {modoConcessionaria ? 'Finalizar e Ir para Resumo →' : 'Continuar para Dados do Cliente →'}
             </button>
           </div>
         </section>
