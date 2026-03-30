@@ -5,11 +5,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('❌ Variáveis de ambiente do Supabase não configuradas!');
-  console.error('📋 Verifique se o arquivo .env.local existe e contém:');
-  console.error('   VITE_SUPABASE_URL=sua-url');
-  console.error('   VITE_SUPABASE_ANON_KEY=sua-chave');
-  throw new Error('Variáveis de ambiente do Supabase não configuradas!');
+  throw new Error('❌ Variáveis de ambiente do Supabase não configuradas! Verifique .env.local');
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -557,6 +553,53 @@ class DatabaseService {
     const { data, error } = await query;
     if (error) throw error;
     return data || [];
+  }
+
+  // ===== PREÇOS DE COMPRA DA CONCESSIONÁRIA POR REGIÃO (GLOBAL) =====
+  async getPrecosCompraPorRegiao(guindasteId) {
+    const { data, error } = await supabase
+      .from('precos_compra_concessionaria_por_regiao')
+      .select('*')
+      .eq('guindaste_id', guindasteId);
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async salvarPrecosCompraPorRegiao(guindasteId, precos) {
+    await supabase
+      .from('precos_compra_concessionaria_por_regiao')
+      .delete()
+      .eq('guindaste_id', guindasteId);
+
+    if (precos && precos.length > 0) {
+      const { error } = await supabase
+        .from('precos_compra_concessionaria_por_regiao')
+        .insert(precos.map(p => ({
+          guindaste_id: guindasteId,
+          regiao: p.regiao,
+          preco: p.preco,
+        })));
+
+      if (error) throw error;
+    }
+  }
+
+  async getPrecoCompraPorRegiao(guindasteId, regiao) {
+    const { data, error } = await supabase
+      .from('precos_compra_concessionaria_por_regiao')
+      .select('preco')
+      .eq('guindaste_id', guindasteId)
+      .eq('regiao', regiao)
+      .limit(1);
+
+    if (error) {
+      console.error('Erro ao buscar preço de compra por região:', error);
+      return 0;
+    }
+
+    if (!data || data.length === 0) return 0;
+    return data[0]?.preco || 0;
   }
 
   // ===== PREÇOS DA CONCESSIONÁRIA (OVERRIDE) =====

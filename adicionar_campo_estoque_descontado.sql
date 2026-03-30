@@ -1,4 +1,4 @@
--- ✅ ADICIONAR CONTROLE DE ESTOQUE NOS PEDIDOS
+,-- ✅ ADICIONAR CONTROLE DE ESTOQUE NOS PEDIDOS
 -- Este campo rastreia se o pedido já descontou do estoque
 
 -- 1. Adicionar campo na tabela pedidos

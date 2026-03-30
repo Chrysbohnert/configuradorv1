@@ -26,6 +26,14 @@ const NovoPedido = () => {
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const isAdminStark = user?.tipo === 'admin';
   const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
+
+  const regioesCompraDisponiveis = useMemo(() => ([
+    'Norte-Nordeste',
+    'Centro-Oeste',
+    'Sul-Sudeste',
+    'RS com Inscrição Estadual',
+    'RS sem Inscrição Estadual',
+  ]), []);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
@@ -219,12 +227,8 @@ const NovoPedido = () => {
         return carrinho.length > 0;
       case 2: // Pagamento
         return pagamentoData.tipoPagamento !== '' || pagamentoData.prazoPagamento !== '';
-      case 3: // Dados do Cliente
-        return Object.keys(clienteData).length > 0 && (clienteData.nome || clienteData.email || clienteData.telefone);
-      case 4: // Estudo Veicular
-        return Object.keys(caminhaoData).length > 0 && (caminhaoData.tipo || caminhaoData.marca || caminhaoData.modelo);
-      case 5: // Finalizar
-        return false; // Step final não precisa de dados salvos
+      case 3:
+        return false;
       default:
         return false;
     }
@@ -267,7 +271,7 @@ const NovoPedido = () => {
     const regioes = user?.regioes_operacao || [];
     
     // ✅ NOVO: Não recalcular se região não foi selecionada
-    if (carrinho.length === 0 || (!isConcessionariaUser && (regioes.length === 0 || !regiaoClienteSelecionada))) {
+    if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && (regioes.length === 0))) {
       console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
         carrinhoLength: carrinho.length,
         regioesOperacao: regioes.length,
@@ -280,7 +284,7 @@ const NovoPedido = () => {
     console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
-    // ✅ NOVO: Usar regiaoClienteSelecionada (que vem de regioes_operacao)
+    // ✅ NOVO: Usar regiaoClienteSelecionada
     const regiaoVendedor = normalizarRegiao(regiaoClienteSelecionada, temIE);
 
     console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região selecionada: ${regiaoClienteSelecionada}`);
@@ -307,9 +311,9 @@ const NovoPedido = () => {
       if (item.tipo === 'guindaste') {
         try {
           let novoPreco = 0;
-          if (isConcessionariaUser) {
-            console.log(`💰 [recalcularPrecosCarrinho] (CONCESSIONÁRIA) Buscando preço override para ${item.nome} (ID: ${item.id})`);
-            novoPreco = await db.getConcessionariaPreco(user?.concessionaria_id, item.id);
+          if (isModoConcessionaria) {
+            console.log(`💰 [recalcularPrecosCarrinho] (COMPRA CONCESSIONÁRIA) Buscando preço por região para ${item.nome} (ID: ${item.id})`);
+            novoPreco = await db.getPrecoCompraPorRegiao(item.id, regiaoVendedor);
           } else {
             console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
             novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
@@ -384,12 +388,29 @@ const NovoPedido = () => {
       let newCart;
 
       if (tipo === 'guindaste') {
-        // Para guindastes, remove qualquer guindaste existente e adiciona o novo
-        const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
-        newCart = [...carrinhoSemGuindastes, itemComTipo];
+        if (isModoConcessionaria) {
+          // No modo concessionária (compra), permite múltiplos guindastes e agrega quantidade
+          const idx = prev.findIndex(i => i.tipo === 'guindaste' && i.id === itemComTipo.id);
+          if (idx >= 0) {
+            const updated = [...prev];
+            const atual = updated[idx];
+            const qtdAtual = parseInt(atual.quantidade, 10) || 1;
+            updated[idx] = {
+              ...atual,
+              quantidade: qtdAtual + 1,
+            };
+            newCart = updated;
+          } else {
+            newCart = [...prev, { ...itemComTipo, quantidade: 1 }];
+          }
+        } else {
+          // Para guindastes, remove qualquer guindaste existente e adiciona o novo
+          const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
+          newCart = [...carrinhoSemGuindastes, itemComTipo];
+        }
       } else {
         // Para opcionais, apenas adiciona
-        newCart = [...prev, itemComTipo];
+        newCart = [...prev, { ...itemComTipo, quantidade: itemComTipo.quantidade || 1 }];
       }
 
       localStorage.setItem('carrinho', JSON.stringify(newCart));
@@ -462,7 +483,26 @@ const NovoPedido = () => {
 
         // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;
-        if (isConcessionariaUser) {
+        if (isModoConcessionaria) {
+          if (!regiaoClienteSelecionada) {
+            alert('Selecione a Região de Compra antes de escolher o equipamento.');
+            return;
+          }
+          try {
+            const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, true);
+            console.log(`🌍 [adicionarGuindaste] (COMPRA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
+            console.log(`💰 [adicionarGuindaste] (COMPRA) Preço encontrado: R$ ${precoGuindaste}`);
+            if (!precoGuindaste || precoGuindaste === 0) {
+              alert('Este equipamento não possui preço de compra definido para esta região.');
+              return;
+            }
+          } catch (error) {
+            console.error('❌ [adicionarGuindaste] Erro ao buscar preço de compra por região:', error);
+            alert('Erro ao buscar preço de compra.');
+            return;
+          }
+        } else if (isConcessionariaUser) {
           try {
             precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
             if (!precoGuindaste || precoGuindaste === 0) {
@@ -556,8 +596,7 @@ const NovoPedido = () => {
     ? [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
         { id: 2, title: 'Pagamento', icon: '💳', description: 'Condição de compra' },
-        { id: 3, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
-        { id: 4, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
+        { id: 3, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
       ]
     : [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
@@ -645,11 +684,18 @@ const NovoPedido = () => {
       // 2. Buscar preço inicial
       let precoGuindaste = 0;
       let regiaoInicial = 'concessionaria';
-      if (isConcessionariaUser) {
-        precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
-        logger.log(`Preço inicial (concessionária): R$ ${precoGuindaste}`);
+      if (isModoConcessionaria) {
+        if (!regiaoClienteSelecionada) {
+          alert('Selecione a Região de Compra antes de escolher o equipamento.');
+          setIsLoading(false);
+          return;
+        }
+
+        regiaoInicial = normalizarRegiao(regiaoClienteSelecionada, true);
+        precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoInicial);
+        logger.log(`Preço inicial (compra concessionária): R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
-          alert('Este equipamento não possui preço definido para esta concessionária.');
+          alert('Este equipamento não possui preço de compra definido para esta região.');
           setIsLoading(false);
           return;
         }
@@ -793,7 +839,8 @@ const NovoPedido = () => {
   const getTotalCarrinho = () => {
     const total = carrinho.reduce((acc, item) => {
       const preco = parseFloat(item.preco) || 0;
-      return acc + preco;
+      const quantidade = parseInt(item.quantidade, 10) || 1;
+      return acc + (preco * quantidade);
     }, 0);
     return total;
   };
@@ -807,21 +854,22 @@ const NovoPedido = () => {
       case 1:
         return (
           <div className="step-content">
-            {!isModoConcessionaria && (
-              <>
-                {/* Seletor de região para todos os vendedores */}
-                <div className="step-header">
-                  <h2>📍 Região do Cliente</h2>
-                  <p>Selecione a região para definir a tabela de preços</p>
-                </div>
-                
-                <SeletorRegiaoCliente
-                  regiaoSelecionada={regiaoClienteSelecionada}
-                  onRegiaoChange={setRegiaoClienteSelecionada}
-                  regioesDisponiveis={user?.regioes_operacao || []}
-                />
-              </>
-            )}
+            <>
+              {/* Seletor de região */}
+              <div className="step-header">
+                <h2>{isModoConcessionaria ? '📍 Região de Compra' : '📍 Região do Cliente'}</h2>
+                <p>{isModoConcessionaria ? 'Selecione a região para definir a tabela de preço de compra' : 'Selecione a região para definir a tabela de preços'}</p>
+              </div>
+
+              <SeletorRegiaoCliente
+                regiaoSelecionada={regiaoClienteSelecionada}
+                onRegiaoChange={setRegiaoClienteSelecionada}
+                regioesDisponiveis={isModoConcessionaria ? regioesCompraDisponiveis : (user?.regioes_operacao || [])}
+                title={isModoConcessionaria ? 'Região de Compra' : 'Região do Cliente'}
+                subtitle={isModoConcessionaria ? 'Selecione a região para aplicar a tabela de preço de compra' : 'Selecione a região onde o cliente está localizado'}
+                questionLabel={isModoConcessionaria ? 'Qual a região de compra?' : 'Qual região o cliente está?'}
+              />
+            </>
 
             <div className="step-header" style={{ marginTop: '40px' }}>
               <h2>🏗️ Selecionar Guindaste</h2>
@@ -871,51 +919,27 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             {isModoConcessionaria ? (
-              <>
-                <div className="step-header-with-nav">
-                  <button 
-                    className="btn-back"
-                    onClick={handlePrevious}
-                  >
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                    </svg>
-                    Voltar ao Pagamento
-                  </button>
-                  
-                  <div className="step-header">
-                    <h2>🚛 Estudo Veicular</h2>
-                    <p>Informações do veículo para o serviço de guindaste</p>
-                  </div>
+              <div className="step-content">
+                <div className="step-header">
+                  <h2>Resumo do Pedido de Compra</h2>
+                  <p>Revise e gere o PDF</p>
                 </div>
-                
-                <div className="vehicle-form-container">
-                  <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
-                  
-                  <div className="form-actions">
-                    <button 
-                      className="btn-back-secondary"
-                      onClick={handlePrevious}
-                    >
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                      </svg>
-                      Voltar
-                    </button>
-                    
-                    <button 
-                      className="btn-continue"
-                      onClick={handleNext}
-                      disabled={!canGoNext()}
-                    >
-                      <span>Continuar para Resumo</span>
-                      <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              </>
+                <ResumoPedido 
+                  carrinho={carrinho}
+                  clienteData={clienteData}
+                  caminhaoData={caminhaoData}
+                  pagamentoData={pagamentoData}
+                  user={user}
+                  guindastes={guindastes}
+                  isEdicao={isEdicao}
+                  propostaOriginal={propostaOriginal}
+                  propostaId={propostaId}
+                  onRemoverItem={removerItemPorIndex}
+                  onLimparCarrinho={limparCarrinho}
+                  isConcessionariaCompra={true}
+                  regiaoCompraSelecionada={regiaoClienteSelecionada}
+                />
+              </div>
             ) : (
               <>
                 <div className="step-header-with-nav">
@@ -957,30 +981,6 @@ const NovoPedido = () => {
         );
 
       case 4:
-        if (isModoConcessionaria) {
-          return (
-            <div className="step-content">
-              <div className="step-header">
-                <h2>Resumo da Proposta</h2>
-                <p>Revise e confirme as informações</p>
-              </div>
-              <ResumoPedido 
-                carrinho={carrinho}
-                clienteData={clienteData}
-                caminhaoData={caminhaoData}
-                pagamentoData={pagamentoData}
-                user={user}
-                guindastes={guindastes}
-                isEdicao={isEdicao}
-                propostaOriginal={propostaOriginal}
-                propostaId={propostaId}
-                onRemoverItem={removerItemPorIndex}
-                onLimparCarrinho={limparCarrinho}
-              />
-            </div>
-          );
-        }
-
         return (
           <div className="step-content">
             <div className="step-header-with-nav">
@@ -1131,19 +1131,15 @@ const NovoPedido = () => {
     console.log('🔎 validateStep chamado para step:', step);
     
     if (isModoConcessionaria) {
-      if (step === 3) {
-        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
-        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
-        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
-        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
-        if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
-          errors.ano = 'Ano inválido';
-        }
-        setValidationErrors(errors);
-        return Object.keys(errors).length === 0;
+      if (step === 1) {
+        if (!regiaoClienteSelecionada) errors.regiao = 'Selecione a região de compra';
+        if (carrinho.length === 0) errors.guindaste = 'Selecione pelo menos um guindaste';
       }
-      setValidationErrors({});
-      return true;
+      if (step === 2) {
+        if (!pagamentoData.tipoFrete) errors.tipoFrete = 'Selecione o tipo de frete';
+      }
+      setValidationErrors(errors);
+      return Object.keys(errors).length === 0;
     }
     switch (step) {
       case 1:
@@ -1233,16 +1229,11 @@ const NovoPedido = () => {
     if (isModoConcessionaria) {
       switch (currentStep) {
         case 1:
-          return guindastesSelecionados.length > 0;
+          return carrinho.length > 0 && !!regiaoClienteSelecionada;
         case 2:
-          return true;
+          return !!pagamentoData.tipoFrete;
         case 3:
-          return caminhaoData.tipo && 
-                 caminhaoData.marca && 
-                 caminhaoData.modelo && 
-                 caminhaoData.voltagem;
-        case 4:
-          return true;
+          return true; // Step 3 é o resumo, sempre pode finalizar
         default:
           return false;
       }
@@ -1374,7 +1365,7 @@ const NovoPedido = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : (isModoConcessionaria ? 'Nova Proposta da Concessionária' : 'Nova Proposta')}
+        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : (isModoConcessionaria ? 'Novo Pedido da Concessionária' : 'Nova Proposta')}
         subtitle={isEdicao ? "Atualize os dados da proposta existente" : (isModoConcessionaria ? 'Compra interna simplificada' : 'Criar orçamento profissional')}
         extraButtons={[
           import.meta.env.DEV && (
@@ -2367,7 +2358,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId, isConcessionariaCompra = false, regiaoCompraSelecionada = '' }) => {
   // Log para depuração dos dados do equipamento
   useEffect(() => {
     if (carrinho && carrinho.length > 0) {
@@ -2408,13 +2399,15 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   const handlePDFGenerated = async (fileName) => {
     try {
-      try {
-        await createDealInSalesIfNotExists({
-          cliente: clienteData,
-          vendedorNome: user?.nome || ''
-        });
-      } catch (bitrixError) {
-        console.warn('Bitrix: falha ao criar negócio automaticamente.', bitrixError);
+      if (!isConcessionariaCompra) {
+        try {
+          await createDealInSalesIfNotExists({
+            cliente: clienteData,
+            vendedorNome: user?.nome || ''
+          });
+        } catch (bitrixError) {
+          console.warn('Bitrix: falha ao criar negócio automaticamente.', bitrixError);
+        }
       }
       // Detectar se é proposta preliminar (Proposta Rápida)
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
@@ -2441,7 +2434,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       const usuarioOK = Boolean(user?.id);
 
-      if (camposClienteOK && camposCaminhaoOK && usuarioOK) {
+      const camposCompraOK = Boolean(pedidoData?.regiaoCompraSelecionada && carrinho.length > 0 && pagamentoData?.tipoFrete);
+
+      if ((isConcessionariaCompra ? camposCompraOK : (camposClienteOK && camposCaminhaoOK)) && usuarioOK) {
         // Salvar relatório automaticamente no banco de dados (apenas uma vez)
         if (!pedidoSalvoId) {
           const pedido = await salvarRelatorio();
@@ -2484,7 +2479,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         
         const dadosAtualizados = {
           data: new Date().toISOString(),
-          valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+          valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
           concessionaria_id: user?.concessionaria_id || null,
           dados_serializados: {
             carrinho,
@@ -2508,6 +2503,36 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       // Modo criação normal
       console.log('➕ Modo CRIAÇÃO - Criando nova proposta');
+
+      if (isConcessionariaCompra) {
+        const timestamp = Date.now().toString();
+        const numeroPedido = `PC${timestamp.slice(-8)}`;
+
+        const valorTotal = pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
+
+        const pedidoDataToSave = {
+          numero_proposta: numeroPedido,
+          data: new Date().toISOString(),
+          vendedor_id: user.id,
+          vendedor_nome: user.nome || 'Não informado',
+          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
+          cliente_documento: concessionariaInfo?.cnpj || clienteData?.documento || null,
+          valor_total: valorTotal,
+          tipo: 'pedido_compra_concessionaria',
+          status: 'finalizado',
+          concessionaria_id: user?.concessionaria_id || null,
+          dados_serializados: {
+            carrinho,
+            pagamentoData,
+            regiaoCompraSelecionada: regiaoCompraSelecionada || null,
+            concessionaria_id: user?.concessionaria_id || null,
+            concessionariaInfo: concessionariaInfo || null,
+          }
+        };
+
+        const pedido = await db.createpropostas(pedidoDataToSave);
+        return pedido;
+      }
       
       // 1. Criar cliente
       console.log('1️⃣ Criando cliente...');
@@ -2603,7 +2628,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         vendedor_nome: user.nome || 'Não informado',
         cliente_nome: cliente.nome || 'Não informado',
         cliente_documento: cliente.documento || null,
-        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
+        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
         tipo: 'proposta',
         status: 'finalizado',
         concessionaria_id: user?.concessionaria_id || null,
@@ -2684,7 +2709,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     pagamentoData,
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',
-    guindastes: guindastesCompletos
+    guindastes: guindastesCompletos,
+    isConcessionariaCompra,
+    regiaoCompraSelecionada: regiaoCompraSelecionada || ''
   };
 
   return (
@@ -2695,119 +2722,123 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           <span className="item-count">{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
         </div>
         <div className="resumo-total">
-          <span>Total: {formatCurrency(carrinho.reduce((total, item) => total + item.preco, 0))}</span>
+          <span>Total: {formatCurrency(carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
         </div>
       </div>
 
-      <div className="resumo-section">
-        <h3>Dados do Cliente</h3>
-        <div className="resumo-data">
-          <div className="data-row">
-            <span className="label">Nome:</span>
-            <span className="value">{clienteData.nome || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Telefone:</span>
-            <span className="value">{clienteData.telefone || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Email:</span>
-            <span className="value">{clienteData.email || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">CNPJ ou CPF:</span>
-            <span className="value">{clienteData.documento || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Inscrição Estadual:</span>
-            <span className="value">{clienteData.inscricao_estadual || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Endereço:</span>
-            <span className="value">{clienteData.endereco || 'Não informado'}</span>
-          </div>
-          {clienteData.bairro && (
+      {!isConcessionariaCompra && (
+        <div className="resumo-section">
+          <h3>Dados do Cliente</h3>
+          <div className="resumo-data">
             <div className="data-row">
-              <span className="label">Bairro:</span>
-              <span className="value">{clienteData.bairro}</span>
+              <span className="label">Nome:</span>
+              <span className="value">{clienteData.nome || 'Não informado'}</span>
             </div>
-          )}
-          {(clienteData.cidade || clienteData.uf || clienteData.cep) && (
             <div className="data-row">
-              <span className="label">Cidade/UF/CEP:</span>
-              <span className="value">{`${clienteData.cidade || '—'}/${clienteData.uf || '—'}${clienteData.cep ? ' - ' + clienteData.cep : ''}`}</span>
+              <span className="label">Telefone:</span>
+              <span className="value">{clienteData.telefone || 'Não informado'}</span>
             </div>
-          )}
-          {clienteData.observacoes && (
             <div className="data-row">
-              <span className="label">Observações:</span>
-              <span className="value">{clienteData.observacoes}</span>
+              <span className="label">Email:</span>
+              <span className="value">{clienteData.email || 'Não informado'}</span>
             </div>
-          )}
-        </div>
-      </div>
-
-      <div className="resumo-section">
-        <h3>Estudo Veicular</h3>
-        <div className="resumo-data">
-          <div className="data-row">
-            <span className="label">Tipo:</span>
-            <span className="value">{caminhaoData.tipo || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Marca:</span>
-            <span className="value">{caminhaoData.marca || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Modelo:</span>
-            <span className="value">{caminhaoData.modelo || 'Não informado'}</span>
-          </div>
-          <div className="data-row">
-            <span className="label">Voltagem:</span>
-            <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
-          </div>
-          {caminhaoData.observacoes && (
             <div className="data-row">
-              <span className="label">Observações:</span>
-              <span className="value">{caminhaoData.observacoes}</span>
+              <span className="label">CNPJ ou CPF:</span>
+              <span className="value">{clienteData.documento || 'Não informado'}</span>
             </div>
-          )}
-          
-          {/* Mostrar medidas do estudo veicular se alguma foi preenchida */}
-          {(caminhaoData.medidaA || caminhaoData.medidaB || caminhaoData.medidaC || caminhaoData.medidaD) && (
-            <>
-              <div className="data-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
-                <span className="label" style={{ fontWeight: 'bold' }}>Medidas do Veículo:</span>
-                <span className="value"></span>
+            <div className="data-row">
+              <span className="label">Inscrição Estadual:</span>
+              <span className="value">{clienteData.inscricao_estadual || 'Não informado'}</span>
+            </div>
+            <div className="data-row">
+              <span className="label">Endereço:</span>
+              <span className="value">{clienteData.endereco || 'Não informado'}</span>
+            </div>
+            {clienteData.bairro && (
+              <div className="data-row">
+                <span className="label">Bairro:</span>
+                <span className="value">{clienteData.bairro}</span>
               </div>
-              {caminhaoData.medidaA && (
-                <div className="data-row">
-                  <span className="label">Medida A:</span>
-                  <span className="value">{caminhaoData.medidaA} mm</span>
-                </div>
-              )}
-              {caminhaoData.medidaB && (
-                <div className="data-row">
-                  <span className="label">Medida B:</span>
-                  <span className="value">{caminhaoData.medidaB} mm</span>
-                </div>
-              )}
-              {caminhaoData.medidaC && (
-                <div className="data-row">
-                  <span className="label">Medida C:</span>
-                  <span className="value">{caminhaoData.medidaC} mm</span>
-                </div>
-              )}
-              {caminhaoData.medidaD && (
-                <div className="data-row">
-                  <span className="label">Medida D:</span>
-                  <span className="value">{caminhaoData.medidaD} mm</span>
-                </div>
-              )}
-            </>
-          )}
+            )}
+            {(clienteData.cidade || clienteData.uf || clienteData.cep) && (
+              <div className="data-row">
+                <span className="label">Cidade/UF/CEP:</span>
+                <span className="value">{`${clienteData.cidade || '—'}/${clienteData.uf || '—'}${clienteData.cep ? ' - ' + clienteData.cep : ''}`}</span>
+              </div>
+            )}
+            {clienteData.observacoes && (
+              <div className="data-row">
+                <span className="label">Observações:</span>
+                <span className="value">{clienteData.observacoes}</span>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
+
+      {!isConcessionariaCompra && (
+        <div className="resumo-section">
+          <h3>Estudo Veicular</h3>
+          <div className="resumo-data">
+            <div className="data-row">
+              <span className="label">Tipo:</span>
+              <span className="value">{caminhaoData.tipo || 'Não informado'}</span>
+            </div>
+            <div className="data-row">
+              <span className="label">Marca:</span>
+              <span className="value">{caminhaoData.marca || 'Não informado'}</span>
+            </div>
+            <div className="data-row">
+              <span className="label">Modelo:</span>
+              <span className="value">{caminhaoData.modelo || 'Não informado'}</span>
+            </div>
+            <div className="data-row">
+              <span className="label">Voltagem:</span>
+              <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
+            </div>
+            {caminhaoData.observacoes && (
+              <div className="data-row">
+                <span className="label">Observações:</span>
+                <span className="value">{caminhaoData.observacoes}</span>
+              </div>
+            )}
+            
+            {/* Mostrar medidas do estudo veicular se alguma foi preenchida */}
+            {(caminhaoData.medidaA || caminhaoData.medidaB || caminhaoData.medidaC || caminhaoData.medidaD) && (
+              <>
+                <div className="data-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
+                  <span className="label" style={{ fontWeight: 'bold' }}>Medidas do Veículo:</span>
+                  <span className="value"></span>
+                </div>
+                {caminhaoData.medidaA && (
+                  <div className="data-row">
+                    <span className="label">Medida A:</span>
+                    <span className="value">{caminhaoData.medidaA} mm</span>
+                  </div>
+                )}
+                {caminhaoData.medidaB && (
+                  <div className="data-row">
+                    <span className="label">Medida B:</span>
+                    <span className="value">{caminhaoData.medidaB} mm</span>
+                  </div>
+                )}
+                {caminhaoData.medidaC && (
+                  <div className="data-row">
+                    <span className="label">Medida C:</span>
+                    <span className="value">{caminhaoData.medidaC} mm</span>
+                  </div>
+                )}
+                {caminhaoData.medidaD && (
+                  <div className="data-row">
+                    <span className="label">Medida D:</span>
+                    <span className="value">{caminhaoData.medidaD} mm</span>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="resumo-section">
         <h3>Política de Pagamento</h3>
@@ -2857,7 +2888,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           <div className="data-row">
             <span className="label">Valor Final:</span>
             <span className="value" style={{ fontWeight: 'bold', color: '#007bff' }}>
-              {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0))}
+              {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}
             </span>
           </div>
           {/* Mostrar campos adicionais para cliente */}

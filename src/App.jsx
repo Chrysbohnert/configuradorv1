@@ -34,6 +34,7 @@ const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
 const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
 const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'));
 const CotacaoDolar = lazy(() => import('./pages/CotacaoDolar'));
+const PrecosVendaConcessionaria = lazy(() => import('./pages/PrecosVendaConcessionaria'));
 
 
 function App() {
@@ -144,6 +145,11 @@ function App() {
             <Route path="/planos-pagamento" element={
               <LazyRoute loadingMessage="Carregando Planos de Pagamento...">
                 <PlanosPagamento />
+              </LazyRoute>
+            } />
+            <Route path="/precos-venda" element={
+              <LazyRoute loadingMessage="Carregando Preços de Venda...">
+                <PrecosVendaConcessionaria />
               </LazyRoute>
             } />
             <Route path="/cotacao-dolar" element={

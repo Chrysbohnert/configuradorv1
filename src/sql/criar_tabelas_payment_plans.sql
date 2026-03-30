@@ -24,7 +24,7 @@ create index if not exists payment_plan_sets_lookup
 create table if not exists public.payment_plan_items (
   id uuid primary key default gen_random_uuid(),
   set_id uuid not null references public.payment_plan_sets(id) on delete cascade,
-  audience text not null check (audience in ('revenda','cliente')),
+  audience text not null check (audience in ('revenda','cliente','concessionaria_compra')),
   "order" integer not null,
   description text not null,
   installments integer not null check (installments >= 1),
