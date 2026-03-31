@@ -1286,6 +1286,19 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
+      ${(parseFloat(p.valorConversor || 0) > 0) ? `
+        <div style="margin-top:12px; padding:12px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">⚡ CONVERSOR DE VOLTAGEM</div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span style="font-weight:600; color:#000;">CONTROLE REMOTO + CAMINHÃO 12V</span>
+            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
+          </div>
+          <div style="margin-top:5px; font-size:12px; color:#856404; font-style:italic;">
+            * Necessário conversor de voltagem para compatibilidade
+          </div>
+        </div>
+      ` : ''}
+
       <!-- VALOR TOTAL -->
       <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
         <div style="display:flex; justify-content:space-between; align-items:center;">
