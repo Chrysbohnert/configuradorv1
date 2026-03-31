@@ -72,6 +72,16 @@ const NovoPedido = () => {
     }
   }, [location.state?.regiaoClienteSelecionada]);
 
+  // ✅ NOVO: Restaurar step quando voltar de DetalhesGuindaste (admin concessionária)
+  React.useEffect(() => {
+    if (location.state?.step && isModoConcessionaria) {
+      const targetStep = location.state.step;
+      console.log('📍 [NovoPedido] Restaurando step de location.state:', targetStep);
+      setCurrentStep(targetStep);
+      setMaxStepReached(Math.max(maxStepReached, targetStep));
+    }
+  }, [location.state?.step, isModoConcessionaria]);
+
   useEffect(() => {
     if (!isModoConcessionaria || !user?.concessionaria_id) return;
     const carregarConcessionaria = async () => {
@@ -936,6 +946,7 @@ const NovoPedido = () => {
               modoConcessionaria={isModoConcessionaria}
               descontoConcessionaria={descontoConcessionaria}
               cotacaoUSD={cotacaoUSD}
+              caminhaoData={caminhaoData}
             />
           </div>
         );
@@ -2921,6 +2932,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             <div className="data-row">
               <span className="label">Extra{pagamentoData.extraDescricao ? ` (${pagamentoData.extraDescricao})` : ''}:</span>
               <span className="value">+ {formatCurrency(parseFloat(pagamentoData.extraValor) || 0)}</span>
+            </div>
+          )}
+          {(parseFloat(pagamentoData.valorConversor) > 0) && (
+            <div className="data-row">
+              <span className="label">Conversor de Voltagem (CR + 12V):</span>
+              <span className="value">+ {formatCurrency(parseFloat(pagamentoData.valorConversor) || 0)}</span>
             </div>
           )}
           <div className="data-row">

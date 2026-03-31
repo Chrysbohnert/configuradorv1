@@ -478,7 +478,7 @@
 }
 
 .floating-price-value .price {
-  font-size: 2.5rem;
+  font-size: 1.75rem;
   font-weight: 900;
   background: linear-gradient(135deg, #ffd700, #ffed4e);
   -webkit-background-clip: text;

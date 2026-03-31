@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { getPaymentPlans, getPlanLabel } from '../../services/paymentPlans';
+import React, { useState, useEffect, useMemo, useReducer } from 'react';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
 import { useFretes } from '../../hooks/useFretes';
+import { temControleRemoto } from '../../utils/guindasteHelper';
+import { getPaymentPlans, getPlanLabel } from '../../services/paymentPlans';
 import SolicitarDescontoModal from '../../components/SolicitarDescontoModal';
 import './PaymentPolicy.css';
 
@@ -34,6 +35,7 @@ export default function PaymentPolicy({
   onPlanSelected,
   onFinish, // Callback para finalizar e ir para próxima etapa
   regiaoClienteSelecionada = '', // Região selecionada do cliente
+  caminhaoData = {}, // Dados do caminhão (para calcular conversor de voltagem)
   debug = false,
 }) {
   const user = useMemo(() => {
@@ -90,6 +92,23 @@ export default function PaymentPolicy({
     const t = `${i?.modelo || ''} ${i?.subgrupo || ''} ${i?.nome || ''}`.toUpperCase();
     return t.includes('GSI');
   }), [itens]);
+
+  // Calcular valor do conversor de voltagem (CR + 12V = +R$ 400)
+  const valorConversor = useMemo(() => {
+    // Verifica se algum guindaste tem controle remoto (CR)
+    const guindasteComCR = itens.find(i => {
+      if (i?.tipo !== 'guindaste') return false;
+      const subgrupo = i?.subgrupo || i?.nome || '';
+      return temControleRemoto(subgrupo);
+    });
+
+    // Se tem CR e voltagem do caminhão é 12V, adiciona R$ 400
+    if (guindasteComCR && caminhaoData?.voltagem === '12V') {
+      return 400;
+    }
+
+    return 0;
+  }, [itens, caminhaoData?.voltagem]);
 
   // =============== ESTADO PRINCIPAL (7 ETAPAS) ===================
   const [etapa, setEtapa] = useState(1);
@@ -580,7 +599,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         ? (temGSI ? 6350 : temGSE ? 7500 : 0)
         : 0;
 
-      const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+      const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
       const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
         ? (valorFinalFinanciamento / cUsd)
         : 0;
@@ -608,6 +627,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorAjustado: valorAposExtra,
         valorFrete,
         valorInstalacao,
+        valorConversor, // Conversor de voltagem (CR + 12V = R$ 400)
         entrada: 0,
         saldo: valorFinalFinanciamento,
         parcelas: [],
@@ -671,7 +691,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         ? (temGSI ? 6350 : temGSE ? 7500 : 0)
         : 0;
 
-      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
 
       const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
         ? (valorFinal / cUsd)
@@ -731,6 +751,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         extraValor: extraValorNum,
         valorFrete,
         valorInstalacao,
+        valorConversor, // Conversor de voltagem (CR + 12V = R$ 400)
         total: valorFinal,
         valorFinal, // Adicionar também como valorFinal para compatibilidade com PDF
         financiamentoBancario: 'nao', // Não é financiamento bancário
@@ -1139,6 +1160,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   // Notificar onPaymentComputed imediatamente no modo concessionária
   useEffect(() => {
     if (!modoConcessionaria) return;
+    if (!tipoFrete) return; // Aguardar inicialização
     
     // Enviar dados iniciais para permitir validação no NovoPedido
     const dadosIniciais = {
@@ -1146,7 +1168,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       participacaoRevenda: 'nao',
       tipoIE: 'produtor',
       instalacao: '',
-      tipoFrete: 'FOB',
+      tipoFrete: tipoFrete, // Usar o estado atual
       localInstalacao: 'Concessionária',
       tipoEntrega: '',
       tipoPagamento: 'revenda',
@@ -1157,7 +1179,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     
     console.log('🔄 [PaymentPolicy] Enviando dados iniciais do modo concessionária:', dadosIniciais);
     onPaymentComputed?.(dadosIniciais);
-  }, [modoConcessionaria, onPaymentComputed]);
+  }, [modoConcessionaria, onPaymentComputed, tipoFrete]);
 
   return (
     <div className="payment-policy">
