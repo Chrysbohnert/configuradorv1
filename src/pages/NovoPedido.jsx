@@ -9,6 +9,7 @@ import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
+import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '../utils/masks';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import { createLogger } from '../utils/productionLogger';
 import { createDealInSalesIfNotExists } from '../utils/bitrixClient';
@@ -64,11 +65,22 @@ const NovoPedido = () => {
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
+  // ✅ Limpar carrinho ao entrar em novo pedido (não em modo edição)
+  React.useEffect(() => {
+    if (!propostaId && !location.state?.fromDetalhes) {
+      console.log('🧹 [NovoPedido] Limpando carrinho (novo pedido)');
+      setCarrinho([]);
+      localStorage.removeItem('carrinho');
+    }
+  }, [propostaId, location.state?.fromDetalhes]);
+
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
     if (location.state?.regiaoClienteSelecionada) {
       console.log('📍 [NovoPedido] Restaurando região de location.state:', location.state.regiaoClienteSelecionada);
       setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
+      // Limpar o state para evitar loops
+      window.history.replaceState({}, document.title);
     }
   }, [location.state?.regiaoClienteSelecionada]);
 
@@ -514,18 +526,30 @@ const NovoPedido = () => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
+        
+        // ✅ VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação)
+        const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
+        if (jaNoCarrinho) {
+          console.log('⚠️ [processarGuindasteSelecionado] Guindaste já está no carrinho, ignorando duplicação');
+          // Limpar o state e retornar
+          navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
+          return;
+        }
+        
         setGuindastesSelecionados([guindaste]);
 
         // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;
         if (isModoConcessionaria) {
-          if (!regiaoClienteSelecionada) {
+          // Se estamos voltando de DetalhesGuindaste, a região já foi restaurada
+          const regiaoParaUsar = location.state?.regiaoClienteSelecionada || regiaoClienteSelecionada;
+          if (!regiaoParaUsar) {
             alert('Selecione a Região de Compra antes de escolher o equipamento.');
             return;
           }
           try {
-            const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, true);
-            console.log(`🌍 [adicionarGuindaste] (COMPRA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            const regiaoParaBusca = normalizarRegiao(regiaoParaUsar, true);
+            console.log(`🌍 [adicionarGuindaste] (COMPRA) Buscando preço para região: ${regiaoParaUsar} → ${regiaoParaBusca}`);
             precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
             console.log(`💰 [adicionarGuindaste] (COMPRA) Preço encontrado: R$ ${precoGuindaste}`);
             if (!precoGuindaste || precoGuindaste === 0) {
@@ -599,14 +623,14 @@ const NovoPedido = () => {
         }
 
         // Limpar o estado da navegação
-        navigate(location.pathname, { replace: true });
+        navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
       }
     };
 
     if (user) {
       processarGuindasteSelecionado();
     }
-  }, [location.state, navigate, user]);
+  }, [location.state, navigate, user, carrinho]);
 
 
   // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
@@ -920,6 +944,83 @@ const NovoPedido = () => {
               onCapacidadeSelect={handleSelecionarCapacidade}
               onModeloSelect={handleSelecionarModelo}
             />
+
+            {/* Mostrar carrinho e botão de continuar para modo concessionária */}
+            {isModoConcessionaria && carrinho.length > 0 && (
+              <div style={{ marginTop: '30px', padding: '20px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', color: 'white' }}>
+                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>🛒 Guindastes Selecionados ({carrinho.length})</h3>
+                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
+                  {carrinho.map((item, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: idx < carrinho.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none' }}>
+                      <div>
+                        <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.nome}</div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Quantidade: {item.quantidade || 1}</div>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{formatCurrency((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1))}</div>
+                        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Unit: {formatCurrency(parseFloat(item.preco) || 0)}</div>
+                      </div>
+                    </div>
+                  ))}
+                  <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '2px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL:</div>
+                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(getTotalCarrinho())}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      setSelectedCapacidade(null);
+                      setSelectedModelo(null);
+                    }}
+                    style={{
+                      flex: '1',
+                      minWidth: '200px',
+                      padding: '12px 24px',
+                      background: 'rgba(255,255,255,0.2)',
+                      border: '2px solid white',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                    onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                    onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+                  >
+                    ➕ Adicionar Mais Guindastes
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    style={{
+                      flex: '1',
+                      minWidth: '200px',
+                      padding: '12px 24px',
+                      background: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: '#667eea',
+                      fontSize: '1rem',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                    }}
+                    onMouseOver={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+                    }}
+                    onMouseOut={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                    }}
+                  >
+                    ✅ Continuar para Pagamento
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
 
