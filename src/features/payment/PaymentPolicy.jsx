@@ -1594,107 +1594,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     {/* 6) Entrada, Financiamento e Plano */}
     {etapa === 6 && (
       <section className="payment-section">
-        <h3>6) Entrada & Plano</h3>
+        <h3>{modoConcessionaria ? 'Plano de Pagamento' : '6) Entrada & Plano'}</h3>
 
-        <div className="form-row">
-          <div className="form-group">
-            <label>Percentual de Entrada *</label>
-            <select
-              value={percentualEntrada}
-              onChange={e => setPercentualEntrada(e.target.value)}
-            >
-              <option value="">Selecione...</option>
-              {(entradaOpcoes || ['30', '50', 'financiamento'])
-                .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
-                .map(v => (
-                  v === 'financiamento'
-                    ? <option key="financiamento" value="financiamento">🏦 Financiamento Bancário</option>
-                    : <option key={v} value={v}>{v}%</option>
-                ))}
-            </select>
-          </div>
-
-          {percentualEntrada && percentualEntrada !== 'financiamento' && (
-            <>
-              <div className="form-group">
-                <label>Valor do Sinal</label>
-                <input
-                  type="number"
-                  value={valorSinal}
-                  onChange={e => setValorSinal(e.target.value)}
-                  placeholder="R$"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-              
-              <div className="form-group">
-                <label>Forma de Pagamento da Entrada</label>
-                <select
-                  value={formaEntrada}
-                  onChange={e => setFormaEntrada(e.target.value)}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="PIX">PIX</option>
-                  <option value="BOLETO">BOLETO</option>
-                  <option value="CHEQUE">CHEQUE</option>
-                  <option value="DINHEIRO">DINHEIRO</option>
-                  <option value="CARTÃO">CARTÃO</option>
-                  {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO'].includes(formaEntrada) && (
-                    <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
-                  )}
-                </select>
-                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
-                  💡 Informe como o cliente pagará a entrada (opcional)
-                </small>
-              </div>
-            </>
-          )}
-
-          {percentualEntrada && (
-            <>
-              <div className="form-group">
-                <label>Descrição do Extra (opcional)</label>
-                <input
-                  type="text"
-                  value={extraDescricao}
-                  onChange={e => setExtraDescricao(e.target.value)}
-                  placeholder="Ex: Lança 3m"
-                  maxLength="80"
-                />
-              </div>
-
-              <div className="form-group">
-                <label>Valor do Extra (R$)</label>
-                <input
-                  type="number"
-                  value={extraValor}
-                  onChange={e => setExtraValor(e.target.value)}
-                  placeholder="R$"
-                  min="0"
-                  step="0.01"
-                />
-                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
-                  💡 Este valor será somado ao total (não sofre desconto)
-                </small>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="form-group" style={{ marginTop: '10px' }}>
-          <label>Observações da Negociação (opcional)</label>
-          <textarea
-            value={observacoesNegociacao}
-            onChange={e => setObservacoesNegociacao(e.target.value)}
-            placeholder="Ex: Condição especial acordada, carência, observações sobre financiamento, etc."
-            rows={3}
-            maxLength={500}
-            style={{ width: '100%', resize: 'vertical' }}
-          />
-        </div>
-
-        {percentualEntrada !== 'financiamento' && (
+        {modoConcessionaria ? (
+          /* MODO CONCESSIONÁRIA - Apenas plano de pagamento */
           <>
             <div className="form-group">
               <label>Plano de Pagamento *</label>
@@ -1725,6 +1628,235 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 ))}
               </select>
             </div>
+
+            <div className="form-group">
+              <label>Tipo de Frete *</label>
+              <div className="radio-group">
+                <label className={`radio-option ${tipoFrete === 'FOB' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="frete"
+                    value="FOB"
+                    checked={tipoFrete === 'FOB'}
+                    onChange={() => setTipoFrete('FOB')}
+                  />
+                  <span>FOB (Retira na fábrica)</span>
+                </label>
+                <label className={`radio-option ${tipoFrete === 'CIF' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="frete"
+                    value="CIF"
+                    checked={tipoFrete === 'CIF'}
+                    onChange={() => setTipoFrete('CIF')}
+                  />
+                  <span>CIF (Frete incluso)</span>
+                </label>
+              </div>
+            </div>
+
+            {tipoFrete === 'CIF' && (
+              <>
+                <div className="form-group">
+                  <label>Local de Destino *</label>
+                  <select value={localInstalacao} onChange={e => setLocalInstalacao(e.target.value)}>
+                    <option value="">Selecione...</option>
+                    {pontosInstalacao.map((p, idx) => {
+                      const uf = String(p?.uf || '').trim().toUpperCase();
+                      const cidade = String(p?.cidade || '').trim();
+                      const oficina = String(p?.oficina || p?.nome || '').trim();
+                      const value = p.nome || `${oficina} - ${cidade}/${uf}`;
+                      const label = cidade && uf ? `${cidade}/${uf} — ${oficina || 'OFICINA'}` : (p.nome || `${oficina} - ${cidade}/${uf}`);
+                      return (
+                        <option key={p.id || idx} value={value}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>Tipo de Entrega *</label>
+                  <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)}>
+                    <option value="">Selecione...</option>
+                    <option value="prioridade">
+                      ⚡ Prioridade (carga exclusiva)
+                      {dadosFreteAtual?.valor_prioridade ? ` - ${formatCurrency(dadosFreteAtual.valor_prioridade)}` : ''}
+                    </option>
+                    <option value="reaproveitamento">
+                      ♻️ Reaproveitamento (quando fechar carga)
+                      {dadosFreteAtual?.valor_reaproveitamento ? ` - ${formatCurrency(dadosFreteAtual.valor_reaproveitamento)}` : ''}
+                    </option>
+                  </select>
+                </div>
+              </>
+            )}
+
+            <div className="form-group" style={{ marginTop: '10px' }}>
+              <label>Observações (opcional)</label>
+              <textarea
+                value={observacoesNegociacao}
+                onChange={e => setObservacoesNegociacao(e.target.value)}
+                placeholder="Observações sobre a compra..."
+                rows={3}
+                maxLength={500}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+
+            {/* Navegação para modo concessionária */}
+            <div className="payment-navigation" style={{ marginTop: '20px' }}>
+              <button 
+                className="payment-nav-btn primary" 
+                onClick={() => {
+                  console.log('🔘 [Concessionária] Botão "Continuar" clicado');
+                  console.log('📊 Resultado:', resultado);
+                  if (onFinish) {
+                    console.log('✅ Chamando onFinish...');
+                    onFinish(resultado);
+                  }
+                }}
+                disabled={!planoSelecionado || !tipoFrete || (tipoFrete === 'CIF' && (!localInstalacao || !tipoEntrega))}
+              >
+                Continuar para Resumo →
+              </button>
+            </div>
+          </>
+        ) : (
+          /* MODO NORMAL - Com entrada, sinal, etc */
+          <>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Percentual de Entrada *</label>
+                <select
+                  value={percentualEntrada}
+                  onChange={e => setPercentualEntrada(e.target.value)}
+                >
+                  <option value="">Selecione...</option>
+                  {(entradaOpcoes || ['30', '50', 'financiamento'])
+                    .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
+                    .map(v => (
+                      v === 'financiamento'
+                        ? <option key="financiamento" value="financiamento">🏦 Financiamento Bancário</option>
+                        : <option key={v} value={v}>{v}%</option>
+                    ))}
+                </select>
+              </div>
+
+              {percentualEntrada && percentualEntrada !== 'financiamento' && (
+                <>
+                  <div className="form-group">
+                    <label>Valor do Sinal</label>
+                    <input
+                      type="number"
+                      value={valorSinal}
+                      onChange={e => setValorSinal(e.target.value)}
+                      placeholder="R$"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label>Forma de Pagamento da Entrada</label>
+                    <select
+                      value={formaEntrada}
+                      onChange={e => setFormaEntrada(e.target.value)}
+                    >
+                      <option value="">Selecione...</option>
+                      <option value="PIX">PIX</option>
+                      <option value="BOLETO">BOLETO</option>
+                      <option value="CHEQUE">CHEQUE</option>
+                      <option value="DINHEIRO">DINHEIRO</option>
+                      <option value="CARTÃO">CARTÃO</option>
+                      {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO'].includes(formaEntrada) && (
+                        <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
+                      )}
+                    </select>
+                    <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
+                      💡 Informe como o cliente pagará a entrada (opcional)
+                    </small>
+                  </div>
+                </>
+              )}
+
+              {percentualEntrada && (
+                <>
+                  <div className="form-group">
+                    <label>Descrição do Extra (opcional)</label>
+                    <input
+                      type="text"
+                      value={extraDescricao}
+                      onChange={e => setExtraDescricao(e.target.value)}
+                      placeholder="Ex: Lança 3m"
+                      maxLength="80"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label>Valor do Extra (R$)</label>
+                    <input
+                      type="number"
+                      value={extraValor}
+                      onChange={e => setExtraValor(e.target.value)}
+                      placeholder="R$"
+                      min="0"
+                      step="0.01"
+                    />
+                    <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
+                      💡 Este valor será somado ao total (não sofre desconto)
+                    </small>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="form-group" style={{ marginTop: '10px' }}>
+              <label>Observações da Negociação (opcional)</label>
+              <textarea
+                value={observacoesNegociacao}
+                onChange={e => setObservacoesNegociacao(e.target.value)}
+                placeholder="Ex: Condição especial acordada, carência, observações sobre financiamento, etc."
+                rows={3}
+                maxLength={500}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+
+            {percentualEntrada !== 'financiamento' && (
+              <>
+                <div className="form-group">
+                  <label>Plano de Pagamento *</label>
+                  <select
+                    value={planoSelecionado ? `${planoSelecionado.order}::${planoSelecionado.description}` : ''}
+                    onChange={e => {
+                      const v = e.target.value || '';
+                      if (!v) {
+                        setPlanoSelecionado(null);
+                        onPlanSelected?.(null);
+                        return;
+                      }
+
+                      const [orderStr, ...descParts] = v.split('::');
+                      const order = parseInt(orderStr, 10);
+                      const description = descParts.join('::');
+
+                      const p = planosFiltrados.find(pl => pl.order === order && pl.description === description) || null;
+                      setPlanoSelecionado(p);
+                      onPlanSelected?.(p);
+                    }}
+                  >
+                    <option value="">Selecione...</option>
+                    {planosFiltrados.map(p => (
+                      <option key={`${p.audience}-${p.order}-${p.description}`} value={`${p.order}::${p.description}`}>
+                        {getPlanLabel(p)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
           </>
         )}
 
