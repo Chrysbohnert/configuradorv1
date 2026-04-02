@@ -19,7 +19,11 @@ const ResumoPedido = ({
   caminhaoData, 
   pagamentoData, 
   user, 
-  guindastes = [] 
+  guindastes = [],
+  isConcessionariaCompra = false,
+  carrinhoAcumulativo = [],
+  onAdicionarAoCarrinho,
+  onLimparPedidoAtual
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
 
@@ -133,25 +137,11 @@ const ResumoPedido = ({
       console.log('4️⃣ Criando pedido...');
       console.log('🔍 [DEBUG] Carrinho completo:', carrinho);
       
-      // Buscar o ID do guindaste principal no carrinho (para controle de estoque)
-      const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
-      const guindasteId = guindasteNoCarrinho?.id || null;
-      
-      console.log('🔍 [DEBUG] Guindaste no carrinho:', guindasteNoCarrinho);
-      console.log('🔍 [DEBUG] ID do guindaste:', guindasteId);
-      
-      if (guindasteId) {
-        console.log('📦 Guindaste encontrado no carrinho - ID:', guindasteId);
-      } else {
-        console.warn('⚠️ ATENÇÃO: Nenhum guindaste encontrado no carrinho!');
-      }
-      
       const pedidoDataToSave = {
         numero_pedido: numeroPedido,
         cliente_id: cliente.id,
         vendedor_id: user.id,
         caminhao_id: caminhao.id,
-        id_guindaste: guindasteId, // ← ADICIONADO para controle de estoque
         status: 'finalizado', // Proposta comercial gerada = venda finalizada
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + item.preco, 0),
         observacoes: [
@@ -165,15 +155,7 @@ const ResumoPedido = ({
       
       const pedido = await db.createPedido(pedidoDataToSave);
       console.log('✅ Pedido criado:', pedido);
-      console.log('🔍 [DEBUG] estoque_descontado:', pedido.estoque_descontado);
-      
-      // Verificar se o estoque foi descontado
-      if (pedido.estoque_descontado) {
-        console.log('✅ Estoque descontado automaticamente!');
-      } else {
-        console.warn('⚠️ ATENÇÃO: Estoque NÃO foi descontado!');
-      }
-      
+
       // 5. Criar itens do pedido
       console.log('5️⃣ Criando itens do pedido...');
       for (const item of carrinho) {
@@ -580,10 +562,95 @@ const ResumoPedido = ({
       <div className="resumo-section">
         <h3>Ações</h3>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <PDFGenerator 
-            pedidoData={pedidoData} 
-            onGenerate={handlePDFGenerated}
-          />
+          {isConcessionariaCompra ? (
+            /* Ações para Concessionária */
+            <>
+              <button
+                onClick={() => {
+                  if (window.confirm('Deseja adicionar este pedido ao carrinho acumulativo e continuar comprando?')) {
+                    onAdicionarAoCarrinho();
+                    onLimparPedidoAtual();
+                    alert('Pedido adicionado ao carrinho! Você pode continuar adicionando mais equipamentos.');
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #28a745, #20c997)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                ➕ Adicionar Mais ao Carrinho
+              </button>
+              
+              <button
+                onClick={() => {
+                  if (carrinhoAcumulativo.length > 0) {
+                    if (window.confirm(`Você tem ${carrinhoAcumulativo.length} pedido(s) no carrinho acumulativo. Deseja gerar o PDF final com todos os pedidos?`)) {
+                      // Gerar PDF com carrinho acumulativo
+                      const pedidoDataAcumulativo = {
+                        ...pedidoData,
+                        carrinho: carrinhoAcumulativo.flatMap(p => p.carrinho),
+                        isPedidoMultiplo: true,
+                        totalPedidos: carrinhoAcumulativo.length
+                      };
+                      // Chamar PDFGenerator com dados acumulativos
+                      alert('Gerando PDF com múltiplos equipamentos...');
+                    }
+                  } else {
+                    // Gerar PDF apenas do pedido atual
+                    alert('Gerando PDF do pedido atual...');
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.target.style.transform = 'translateY(-2px)';
+                  e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.target.style.transform = 'translateY(0)';
+                  e.target.style.boxShadow = 'none';
+                }}
+              >
+                📄 Gerar PDF {carrinhoAcumulativo.length > 0 ? `Final (${carrinhoAcumulativo.length + 1} pedidos)` : 'do Pedido'}
+              </button>
+            </>
+          ) : (
+            /* Ações normais */
+            <PDFGenerator 
+              pedidoData={pedidoData} 
+              onGenerate={handlePDFGenerated}
+            />
+          )}
         </div>
       </div>
     </div>

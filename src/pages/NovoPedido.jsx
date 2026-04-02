@@ -43,6 +43,13 @@ const NovoPedido = () => {
     const savedCart = localStorage.getItem('carrinho');
     return savedCart ? JSON.parse(savedCart) : [];
   });
+  
+  // Estados para carrinho acumulativo
+  const [carrinhoAcumulativo, setCarrinhoAcumulativo] = useState(() => {
+    const saved = localStorage.getItem('carrinhoAcumulativo');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [pedidoAtual, setPedidoAtual] = useState(null);
   const [clienteData, setClienteData] = useState({});
   const [caminhaoData, setCaminhaoData] = useState({});
   const [pagamentoData, setPagamentoData] = useState(() => {
@@ -65,12 +72,27 @@ const NovoPedido = () => {
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
-  // ✅ Limpar carrinho ao entrar em novo pedido (não em modo edição)
+  // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
   React.useEffect(() => {
     if (!propostaId && !location.state?.fromDetalhes) {
-      console.log('🧹 [NovoPedido] Limpando carrinho (novo pedido)');
+      console.log('🧹 [NovoPedido] Limpando todos os dados (novo pedido)');
       setCarrinho([]);
+      setClienteData({});
+      setCaminhaoData({});
+      setPagamentoData({
+        tipoPagamento: '',
+        prazoPagamento: '',
+        desconto: 0,
+        acrescimo: 0,
+        valorFinal: 0,
+        localInstalacao: '',
+        tipoInstalacao: ''
+      });
+      setRegiaoClienteSelecionada('');
+      setCurrentStep(1);
+      setMaxStepReached(1);
       localStorage.removeItem('carrinho');
+      localStorage.removeItem('novoPedido_pagamentoData');
     }
   }, [propostaId, location.state?.fromDetalhes]);
 
@@ -411,20 +433,9 @@ const NovoPedido = () => {
 
       if (tipo === 'guindaste') {
         if (isModoConcessionaria) {
-          // No modo concessionária (compra), permite múltiplos guindastes e agrega quantidade
-          const idx = prev.findIndex(i => i.tipo === 'guindaste' && i.id === itemComTipo.id);
-          if (idx >= 0) {
-            const updated = [...prev];
-            const atual = updated[idx];
-            const qtdAtual = parseInt(atual.quantidade, 10) || 1;
-            updated[idx] = {
-              ...atual,
-              quantidade: qtdAtual + 1,
-            };
-            newCart = updated;
-          } else {
-            newCart = [...prev, { ...itemComTipo, quantidade: 1 }];
-          }
+          // No modo concessionária: 1 guindaste por pedido (substitui o atual)
+          const carrinhoSemGuindastes = prev.filter(i => i.tipo !== 'guindaste');
+          newCart = [...carrinhoSemGuindastes, { ...itemComTipo, quantidade: 1 }];
         } else {
           // Para guindastes, remove qualquer guindaste existente e adiciona o novo
           const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
@@ -471,22 +482,7 @@ const NovoPedido = () => {
       const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
       setGuindastesVisiveisParaVendedor(idsSet);
 
-      // Filtro de estoque para vendedores de concessionária
-      let idsEstoque = null;
-      if (user?.tipo === 'vendedor_concessionaria' && user?.concessionaria_id) {
-        try {
-          const estoque = await db.getEstoqueConcessionaria(user.concessionaria_id);
-          idsEstoque = new Set(
-            estoque
-              .filter(item => item.quantidade > 0)
-              .map(item => item.guindaste_id)
-          );
-          console.log('📦 [NovoPedido] Guindastes em estoque:', idsEstoque.size);
-        } catch (e) {
-          console.warn('⚠️ [NovoPedido] Falha ao carregar estoque da concessionária:', e);
-        }
-      }
-
+      
       const filtrados = (all || []).filter(g => {
         // Filtro de protótipos
         if (g?.is_prototipo) {
@@ -495,11 +491,7 @@ const NovoPedido = () => {
           }
         }
         
-        // Filtro de estoque para vendedores de concessionária
-        if (user?.tipo === 'vendedor_concessionaria' && idsEstoque) {
-          return idsEstoque.has(g.id);
-        }
-        
+                
         return true;
       });
 
@@ -548,36 +540,9 @@ const NovoPedido = () => {
             return;
           }
           try {
-            const regiaoParaBusca = normalizarRegiao(regiaoParaUsar, true);
-            console.log(`🌍 [adicionarGuindaste] (COMPRA) Buscando preço para região: ${regiaoParaUsar} → ${regiaoParaBusca}`);
-            precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
-            console.log(`💰 [adicionarGuindaste] (COMPRA) Preço encontrado: R$ ${precoGuindaste}`);
-            if (!precoGuindaste || precoGuindaste === 0) {
-              alert('Este equipamento não possui preço de compra definido para esta região.');
-              return;
-            }
-          } catch (error) {
-            console.error('❌ [adicionarGuindaste] Erro ao buscar preço de compra por região:', error);
-            alert('Erro ao buscar preço de compra.');
-            return;
-          }
-        } else if (isConcessionariaUser) {
-          try {
-            precoGuindaste = await db.getConcessionariaPreco(user?.concessionaria_id, guindaste.id);
-            if (!precoGuindaste || precoGuindaste === 0) {
-              alert('Este equipamento não possui preço definido para esta concessionária.');
-              return;
-            }
-          } catch (error) {
-            console.error('❌ [adicionarGuindaste] Erro ao buscar preço override da concessionária:', error);
-            alert('Erro ao buscar preço da concessionária.');
-            return;
-          }
-        } else if (regiaoClienteSelecionada) {
-          try {
             const temIE = determinarClienteTemIE();
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
-            console.log(`🌍 [adicionarGuindaste] Buscando preço inicial para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            console.log(`🌍 [adicionarGuindaste] Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
             precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoParaBusca);
             console.log(`💰 [adicionarGuindaste] Preço encontrado: R$ ${precoGuindaste}`);
           } catch (error) {
@@ -655,7 +620,8 @@ const NovoPedido = () => {
     ? [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
         { id: 2, title: 'Pagamento', icon: '💳', description: 'Condição de compra' },
-        { id: 3, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
+        { id: 3, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
+        { id: 4, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
       ]
     : [
         { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
@@ -789,10 +755,9 @@ const NovoPedido = () => {
         tipo: 'guindaste'
       };
 
-      // 4. Adicionar ao carrinho (isso substitui qualquer guindaste anterior)
-      adicionarAoCarrinho(produto, 'guindaste');
-
-      logger.success('Guindaste adicionado ao carrinho');
+      // 4. NÃO adicionar ao carrinho aqui - apenas navegar para detalhes
+      // O carrinho será atualizado quando voltar de DetalhesGuindaste
+      logger.log('Navegando para detalhes do guindaste (sem adicionar ao carrinho ainda)');
 
       // 5. Navegar para detalhes com objeto completo
       navigate('/detalhes-guindaste', {
@@ -904,6 +869,57 @@ const NovoPedido = () => {
     return total;
   };
 
+  // Funções para carrinho acumulativo
+  const adicionarPedidoAoCarrinhoAcumulativo = () => {
+    const novoPedido = {
+      id: Date.now(), // ID único para o pedido
+      carrinho: [...carrinho],
+      clienteData: { ...clienteData },
+      caminhaoData: { ...caminhaoData },
+      pagamentoData: { ...pagamentoData },
+      regiaoCliente: regiaoClienteSelecionada,
+      timestamp: new Date().toISOString()
+    };
+
+    const novoCarrinhoAcumulativo = [...carrinhoAcumulativo, novoPedido];
+    setCarrinhoAcumulativo(novoCarrinhoAcumulativo);
+    localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinhoAcumulativo));
+    
+    console.log('📦 [NovoPedido] Pedido adicionado ao carrinho acumulativo:', novoPedido);
+    return novoPedido;
+  };
+
+  const limparPedidoAtual = () => {
+    setCarrinho([]);
+    setClienteData({});
+    setCaminhaoData({});
+    setPagamentoData({
+      tipoPagamento: '',
+      prazoPagamento: '',
+      desconto: 0,
+      acrescimo: 0,
+      valorFinal: 0,
+      localInstalacao: '',
+      tipoInstalacao: ''
+    });
+    setRegiaoClienteSelecionada('');
+    setCurrentStep(1);
+    setMaxStepReached(1);
+    localStorage.removeItem('carrinho');
+    localStorage.removeItem('novoPedido_pagamentoData');
+    console.log('🧹 [NovoPedido] Pedido atual limpo para novo pedido');
+  };
+
+  const getTotalCarrinhoAcumulativo = () => {
+    return carrinhoAcumulativo.reduce((total, pedido) => {
+      return total + pedido.carrinho.reduce((subtotal, item) => {
+        const preco = parseFloat(item.preco) || 0;
+        const quantidade = parseInt(item.quantidade, 10) || 1;
+        return subtotal + (preco * quantidade);
+      }, 0);
+    }, 0);
+  };
+
 
 
 
@@ -969,29 +985,6 @@ const NovoPedido = () => {
                 </div>
                 <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                   <button
-                    onClick={() => {
-                      setSelectedCapacidade(null);
-                      setSelectedModelo(null);
-                    }}
-                    style={{
-                      flex: '1',
-                      minWidth: '200px',
-                      padding: '12px 24px',
-                      background: 'rgba(255,255,255,0.2)',
-                      border: '2px solid white',
-                      borderRadius: '8px',
-                      color: 'white',
-                      fontSize: '1rem',
-                      fontWeight: 'bold',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                    onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
-                    onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
-                  >
-                    ➕ Adicionar Mais Guindastes
-                  </button>
-                  <button
                     onClick={handleNext}
                     style={{
                       flex: '1',
@@ -1056,25 +1049,19 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             {isModoConcessionaria ? (
+              /* Estudo Veicular para Concessionária */
               <div className="step-content">
                 <div className="step-header">
-                  <h2>Resumo do Pedido de Compra</h2>
-                  <p>Revise e gere o PDF</p>
+                  <h2>🚛 Estudo Veicular</h2>
+                  <p>Configure o veículo para instalação do guindaste</p>
                 </div>
-                <ResumoPedido 
-                  carrinho={carrinho}
-                  clienteData={clienteData}
+                <EstudoVeicular
                   caminhaoData={caminhaoData}
-                  pagamentoData={pagamentoData}
-                  user={user}
-                  guindastes={guindastes}
-                  isEdicao={isEdicao}
-                  propostaOriginal={propostaOriginal}
-                  propostaId={propostaId}
-                  onRemoverItem={removerItemPorIndex}
-                  onLimparCarrinho={limparCarrinho}
-                  isConcessionariaCompra={true}
-                  regiaoCompraSelecionada={regiaoClienteSelecionada}
+                  setCaminhaoData={setCaminhaoData}
+                  carrinho={carrinho}
+                  onNext={handleNext}
+                  onPrev={handlePrev}
+                  errors={validationErrors}
                 />
               </div>
             ) : (
@@ -1120,117 +1107,94 @@ const NovoPedido = () => {
       case 4:
         return (
           <div className="step-content">
-            <div className="step-header-with-nav">
-              <button 
-                className="btn-back"
-                onClick={handlePrevious}
-              >
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                </svg>
-                Voltar aos Dados do Cliente
-              </button>
-              
-              <div className="step-header">
-                <h2>🚛 Estudo Veicular</h2>
-                <p>Informações do veículo para o serviço de guindaste</p>
-              </div>
-            </div>
-            
-            <div className="vehicle-form-container">
-              {/* Banner informativo sobre Proposta Rápida */}
-              <div style={{
-                background: 'linear-gradient(135deg, #fff9e6, #fff3cd)',
-                border: '2px solid #ffc107',
-                borderRadius: '12px',
-                padding: '16px',
-                marginBottom: '20px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <span style={{ fontSize: '24px' }}>⚡</span>
-                <div>
-                  <strong style={{ color: '#856404', display: 'block', marginBottom: '4px' }}>
-                    Precisa de uma proposta rápida?
-                  </strong>
-                  <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
-                    Clique em "Gerar Proposta Rápida" para criar um orçamento preliminar. 
-                    Os dados do veículo serão marcados como "PREENCHER" e você poderá completá-los depois.
-                  </p>
+            {isModoConcessionaria ? (
+              /* Resumo para Concessionária */
+              <div className="step-content">
+                <div className="step-header">
+                  <h2>Resumo do Pedido de Compra</h2>
+                  <p>Revise e gere o PDF</p>
                 </div>
-              </div>
-
-              <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={validationErrors} />
-              
-              <div className="form-actions">
-                <button 
-                  className="btn-back-secondary"
-                  onClick={handlePrevious}
-                >
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-                  </svg>
-                  Voltar
-                </button>
                 
-                <button 
-                  style={{
-                    background: 'linear-gradient(135deg, #ffc107, #ff9800)',
-                    color: '#000',
-                    border: 'none',
-                    padding: '12px 24px',
-                    borderRadius: '8px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    transition: 'all 0.3s ease',
-                    boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
-                  }}
-                  onClick={() => {
-                    console.log('⚡ Gerando Proposta Rápida...');
-                    // Preencher com dados placeholder
-                    setCaminhaoData({
-                      tipo: 'PREENCHER',
-                      marca: 'PREENCHER',
-                      modelo: 'PREENCHER',
-                      ano: '',
-                      voltagem: 'PREENCHER',
-                      observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
-                    });
-                    // Avançar para próxima etapa
-                    setTimeout(() => {
-                      handleNext();
-                    }, 300);
-                  }}
-                  onMouseOver={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
-                  }}
-                  onMouseOut={(e) => {
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
-                  }}
-                >
-                  <span>⚡</span>
-                  <span>Gerar Proposta Rápida</span>
-                </button>
+                {/* Carrinho Acumulativo Display */}
+                {carrinhoAcumulativo.length > 0 && (
+                  <div style={{ 
+                    marginBottom: '30px', 
+                    padding: '20px', 
+                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)', 
+                    borderRadius: '12px', 
+                    color: 'white' 
+                  }}>
+                    <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>📦 Pedidos no Carrinho ({carrinhoAcumulativo.length})</h3>
+                    <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '15px' }}>
+                      {carrinhoAcumulativo.map((pedido, idx) => (
+                        <div key={pedido.id} style={{ 
+                          display: 'flex', 
+                          justifyContent: 'space-between', 
+                          alignItems: 'center', 
+                          padding: '10px 0', 
+                          borderBottom: idx < carrinhoAcumulativo.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none' 
+                        }}>
+                          <div>
+                            <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>
+                              Pedido #{idx + 1} - {pedido.carrinho.length} guindaste(s)
+                            </div>
+                            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
+                              {new Date(pedido.timestamp).toLocaleString('pt-BR')}
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
+                              {formatCurrency(pedido.carrinho.reduce((sum, item) => sum + (parseFloat(item.preco) || 0) * (parseInt(item.quantidade) || 1), 0))}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      <div style={{ 
+                        marginTop: '15px', 
+                        paddingTop: '15px', 
+                        borderTop: '2px solid rgba(255,255,255,0.3)', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center' 
+                      }}>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL ACUMULADO:</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+                          {formatCurrency(getTotalCarrinhoAcumulativo())}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
-                <button 
-                  className="btn-continue"
-                  onClick={handleNext}
-                  disabled={!canGoNext()}
-                >
-                  <span>Finalizar Orçamento</span>
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
-                  </svg>
-                </button>
+                <ResumoPedido 
+                  carrinho={carrinho}
+                  clienteData={clienteData}
+                  caminhaoData={caminhaoData}
+                  pagamentoData={pagamentoData}
+                  user={user}
+                  guindastes={guindastes}
+                  isEdicao={isEdicao}
+                  propostaOriginal={propostaOriginal}
+                  propostaId={propostaId}
+                  onRemoverItem={removerItemPorIndex}
+                  onLimparCarrinho={limparCarrinho}
+                  isConcessionariaCompra={true}
+                  regiaoCompraSelecionada={regiaoClienteSelecionada}
+                  carrinhoAcumulativo={carrinhoAcumulativo}
+                  onAdicionarAoCarrinho={adicionarPedidoAoCarrinhoAcumulativo}
+                  onLimparPedidoAtual={limparPedidoAtual}
+                />
               </div>
-            </div>
+            ) : (
+              <EstudoVeicular
+                caminhaoData={caminhaoData}
+                setCaminhaoData={setCaminhaoData}
+                carrinho={carrinho}
+                onNext={handleNext}
+                onPrev={handlePrev}
+                errors={validationErrors}
+              />
+            )}
           </div>
         );
 
@@ -2757,20 +2721,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       // 4. Criar pedido
       console.log('4️⃣ Criando pedido...');
       
-      // Buscar o ID do guindaste principal no carrinho (para controle de estoque)
-      const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
-      const guindasteId = guindasteNoCarrinho?.id || null;
-      
-      console.log('🔍 [DEBUG] Carrinho completo:', carrinho);
-      console.log('🔍 [DEBUG] Guindaste no carrinho:', guindasteNoCarrinho);
-      console.log('🔍 [DEBUG] ID do guindaste:', guindasteId);
-      
-      if (guindasteId) {
-        console.log('📦 Guindaste encontrado no carrinho - ID:', guindasteId);
-      } else {
-        console.warn('⚠️ ATENÇÃO: Nenhum guindaste encontrado no carrinho!');
-      }
-      
+            
+            
       const pedidoDataToSave = {
         numero_proposta: numeroPedido,
         data: new Date().toISOString(),
@@ -2787,7 +2739,6 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           clienteData: cliente,
           caminhaoData: caminhao,
           pagamentoData,
-          guindasteId, // Guardar ID do guindaste nos dados serializados para controle de estoque
           concessionaria_id: user?.concessionaria_id || null
         }
       };
@@ -2795,15 +2746,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       const pedido = await db.createpropostas(pedidoDataToSave);
       console.log('✅ Pedido criado:', pedido);
-      console.log('🔍 [DEBUG] estoque_descontado:', pedido.estoque_descontado);
-      
-      // Verificar se o estoque foi descontado
-      if (pedido.estoque_descontado) {
-        console.log('✅ Estoque descontado automaticamente!');
-      } else {
-        console.warn('⚠️ ATENÇÃO: Estoque NÃO foi descontado!');
-      }
-      
+            
       // 5. Itens do pedido já estão salvos em dados_serializados
       // Não é necessário criar registros separados em propostas_itens
       console.log('5️⃣ Itens do pedido salvos em dados_serializados:', carrinho.length, 'itens');
