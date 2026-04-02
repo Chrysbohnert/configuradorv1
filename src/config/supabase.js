@@ -626,6 +626,20 @@ class DatabaseService {
   }
 
   async upsertConcessionariaPreco({ concessionaria_id, guindaste_id, preco_override, updated_by }) {
+    // Primeiro, tentar verificar se já existe
+    const { data: existing, error: checkError } = await supabase
+      .from('concessionaria_precos')
+      .select('id')
+      .eq('concessionaria_id', concessionaria_id)
+      .eq('guindaste_id', guindaste_id)
+      .limit(1)
+      .maybeSingle();
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      // Erro real, não é "not found"
+      throw checkError;
+    }
+
     const payload = {
       concessionaria_id,
       guindaste_id,
@@ -634,14 +648,32 @@ class DatabaseService {
       updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
-      .from('concessionaria_precos')
-      .upsert([payload], { onConflict: 'concessionaria_id,guindaste_id' })
-      .select()
-      .single();
+    let result;
+    if (existing) {
+      // UPDATE se já existe
+      const { data, error } = await supabase
+        .from('concessionaria_precos')
+        .update(payload)
+        .eq('concessionaria_id', concessionaria_id)
+        .eq('guindaste_id', guindaste_id)
+        .select()
+        .single();
 
-    if (error) throw error;
-    return data;
+      if (error) throw error;
+      result = data;
+    } else {
+      // INSERT se não existe
+      const { data, error } = await supabase
+        .from('concessionaria_precos')
+        .insert([payload])
+        .select()
+        .single();
+
+      if (error) throw error;
+      result = data;
+    }
+
+    return result;
   }
 
   // ===== ESTOQUE DA CONCESSIONÁRIA =====

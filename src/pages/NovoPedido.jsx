@@ -963,50 +963,58 @@ const NovoPedido = () => {
 
             {/* Mostrar carrinho e botão de continuar para modo concessionária */}
             {isModoConcessionaria && carrinho.length > 0 && (
-              <div style={{ marginTop: '30px', padding: '20px', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', borderRadius: '12px', color: 'white' }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>🛒 Guindastes Selecionados ({carrinho.length})</h3>
-                <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '15px', marginBottom: '15px' }}>
-                  {carrinho.map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: idx < carrinho.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none' }}>
-                      <div>
-                        <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>{item.nome}</div>
-                        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Quantidade: {item.quantidade || 1}</div>
-                      </div>
-                      <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{formatCurrency((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1))}</div>
-                        <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>Unit: {formatCurrency(parseFloat(item.preco) || 0)}</div>
-                      </div>
+              <div style={{ marginTop: '20px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '10px',
+                    background: 'rgba(102, 126, 234, 0.12)',
+                    border: '1px solid rgba(102, 126, 234, 0.35)'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <div style={{ fontWeight: 800, color: '#1f2937' }}>
+                      Carrinho: {carrinho.reduce((sum, i) => sum + (parseInt(i.quantidade, 10) || 1), 0)} item(ns)
                     </div>
-                  ))}
-                  <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '2px solid rgba(255,255,255,0.3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL:</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{formatCurrency(getTotalCarrinho())}</div>
+                    <div style={{ fontSize: '0.95rem', color: '#374151' }}>
+                      {carrinho
+                        .filter(i => i.tipo === 'guindaste')
+                        .map(i => `${i.nome}${i.modelo ? ` (${i.modelo})` : ''}`)
+                        .join(' | ')}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 800, color: '#111827' }}>
+                    {formatCurrency(getTotalCarrinho())}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+
+                <div style={{ marginTop: '14px', display: 'flex' }}>
                   <button
                     onClick={handleNext}
                     style={{
-                      flex: '1',
-                      minWidth: '200px',
+                      width: '100%',
                       padding: '12px 24px',
-                      background: 'white',
+                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                       border: 'none',
-                      borderRadius: '8px',
-                      color: '#667eea',
+                      borderRadius: '10px',
+                      color: 'white',
                       fontSize: '1rem',
                       fontWeight: 'bold',
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.12)'
                     }}
                     onMouseOver={(e) => {
-                      e.target.style.transform = 'translateY(-2px)';
-                      e.target.style.boxShadow = '0 6px 16px rgba(0,0,0,0.3)';
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(0,0,0,0.18)';
                     }}
                     onMouseOut={(e) => {
-                      e.target.style.transform = 'translateY(0)';
-                      e.target.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
                     }}
                   >
                     ✅ Continuar para Pagamento
@@ -1060,7 +1068,7 @@ const NovoPedido = () => {
                   setCaminhaoData={setCaminhaoData}
                   carrinho={carrinho}
                   onNext={handleNext}
-                  onPrev={handlePrev}
+                  onPrev={handlePrevious}
                   errors={validationErrors}
                 />
               </div>
@@ -1191,7 +1199,7 @@ const NovoPedido = () => {
                 setCaminhaoData={setCaminhaoData}
                 carrinho={carrinho}
                 onNext={handleNext}
-                onPrev={handlePrev}
+                onPrev={handlePrevious}
                 errors={validationErrors}
               />
             )}
@@ -3094,4 +3102,35 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   );
 };
 
-export default NovoPedido; 
+const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPrev, errors = {} }) => {
+  const podeContinuar = Boolean(
+    caminhaoData?.tipo &&
+    caminhaoData?.marca &&
+    caminhaoData?.modelo &&
+    caminhaoData?.voltagem
+  );
+
+  return (
+    <div className="vehicle-form-container">
+      <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={errors} />
+
+      <div className="form-actions">
+        <button className="btn-back-secondary" onClick={onPrev}>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+          Voltar
+        </button>
+
+        <button className="btn-continue" onClick={onNext} disabled={!podeContinuar}>
+          <span>Continuar</span>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default NovoPedido;
