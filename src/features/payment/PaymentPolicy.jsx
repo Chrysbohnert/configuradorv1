@@ -1756,6 +1756,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           </>
         )}
 
+          {!modoConcessionaria && (
           <div className="form-group">
             <label>Desconto Adicional do Vendedor</label>
                 
@@ -2031,6 +2032,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   </div>
                 )}
               </div>
+          )}
 
           {percentualEntrada === 'financiamento' && (
             <div className="pp-banner ok" style={{ marginTop: 12 }}>

@@ -910,6 +910,19 @@ const NovoPedido = () => {
     console.log('🧹 [NovoPedido] Pedido atual limpo para novo pedido');
   };
 
+  const limparCarrinhoAcumulativo = () => {
+    setCarrinhoAcumulativo([]);
+    localStorage.removeItem('carrinhoAcumulativo');
+    console.log('🧹 [NovoPedido] Carrinho acumulativo limpo');
+  };
+
+  const removerDoCarrinhoAcumulativo = (pedidoId) => {
+    const novoCarrinho = carrinhoAcumulativo.filter(p => p.id !== pedidoId);
+    setCarrinhoAcumulativo(novoCarrinho);
+    localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinho));
+    console.log('🗑️ [NovoPedido] Pedido removido do carrinho acumulativo:', pedidoId);
+  };
+
   const getTotalCarrinhoAcumulativo = () => {
     return carrinhoAcumulativo.reduce((total, pedido) => {
       return total + pedido.carrinho.reduce((subtotal, item) => {
@@ -1123,57 +1136,6 @@ const NovoPedido = () => {
                   <p>Revise e gere o PDF</p>
                 </div>
                 
-                {/* Carrinho Acumulativo Display */}
-                {carrinhoAcumulativo.length > 0 && (
-                  <div style={{ 
-                    marginBottom: '30px', 
-                    padding: '20px', 
-                    background: 'linear-gradient(135deg, #28a745 0%, #20c997 100%)', 
-                    borderRadius: '12px', 
-                    color: 'white' 
-                  }}>
-                    <h3 style={{ margin: '0 0 15px 0', fontSize: '1.2rem' }}>📦 Pedidos no Carrinho ({carrinhoAcumulativo.length})</h3>
-                    <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '15px' }}>
-                      {carrinhoAcumulativo.map((pedido, idx) => (
-                        <div key={pedido.id} style={{ 
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center', 
-                          padding: '10px 0', 
-                          borderBottom: idx < carrinhoAcumulativo.length - 1 ? '1px solid rgba(255,255,255,0.2)' : 'none' 
-                        }}>
-                          <div>
-                            <div style={{ fontWeight: 'bold', fontSize: '1rem' }}>
-                              Pedido #{idx + 1} - {pedido.carrinho.length} guindaste(s)
-                            </div>
-                            <div style={{ fontSize: '0.85rem', opacity: 0.9 }}>
-                              {new Date(pedido.timestamp).toLocaleString('pt-BR')}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>
-                              {formatCurrency(pedido.carrinho.reduce((sum, item) => sum + (parseFloat(item.preco) || 0) * (parseInt(item.quantidade) || 1), 0))}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                      <div style={{ 
-                        marginTop: '15px', 
-                        paddingTop: '15px', 
-                        borderTop: '2px solid rgba(255,255,255,0.3)', 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center' 
-                      }}>
-                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>TOTAL ACUMULADO:</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                          {formatCurrency(getTotalCarrinhoAcumulativo())}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
                 <ResumoPedido 
                   carrinho={carrinho}
                   clienteData={clienteData}
@@ -1187,10 +1149,13 @@ const NovoPedido = () => {
                   onRemoverItem={removerItemPorIndex}
                   onLimparCarrinho={limparCarrinho}
                   isConcessionariaCompra={true}
+                  concessionariaInfo={concessionariaInfo}
                   regiaoCompraSelecionada={regiaoClienteSelecionada}
                   carrinhoAcumulativo={carrinhoAcumulativo}
                   onAdicionarAoCarrinho={adicionarPedidoAoCarrinhoAcumulativo}
                   onLimparPedidoAtual={limparPedidoAtual}
+                  onLimparCarrinhoAcumulativo={limparCarrinhoAcumulativo}
+                  onRemoverDoCarrinhoAcumulativo={removerDoCarrinhoAcumulativo}
                 />
               </div>
             ) : (
@@ -1201,6 +1166,15 @@ const NovoPedido = () => {
                 onNext={handleNext}
                 onPrev={handlePrevious}
                 errors={validationErrors}
+                onPropostaRapida={() => {
+                  console.log('⚡ Proposta Rápida - avançando sem validação');
+                  const totalSteps = steps.length;
+                  if (currentStep < totalSteps) {
+                    setCurrentStep(currentStep + 1);
+                    setMaxStepReached(Math.max(maxStepReached, currentStep + 1));
+                    setValidationErrors({});
+                  }
+                }}
               />
             )}
           </div>
@@ -2480,7 +2454,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 };
 
 // Componente Resumo do Pedido
-const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId, isConcessionariaCompra = false, regiaoCompraSelecionada = '' }) => {
+const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId, isConcessionariaCompra = false, concessionariaInfo = null, regiaoCompraSelecionada = '', carrinhoAcumulativo = [], onAdicionarAoCarrinho, onLimparPedidoAtual, onLimparCarrinhoAcumulativo, onRemoverDoCarrinhoAcumulativo }) => {
   // Log para depuração dos dados do equipamento
   useEffect(() => {
     if (carrinho && carrinho.length > 0) {
@@ -2630,7 +2604,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         const timestamp = Date.now().toString();
         const numeroPedido = `PC${timestamp.slice(-8)}`;
 
-        const valorTotal = pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
+        const valorTotal = pagamentoData.valorFinal || carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
 
         const pedidoDataToSave = {
           numero_proposta: numeroPedido,
@@ -2640,11 +2614,11 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
           cliente_documento: concessionariaInfo?.cnpj || clienteData?.documento || null,
           valor_total: valorTotal,
-          tipo: 'pedido_compra_concessionaria',
+          tipo: 'proposta',
           status: 'finalizado',
           concessionaria_id: user?.concessionaria_id || null,
           dados_serializados: {
-            carrinho,
+            carrinho: carrinhoFinal,
             pagamentoData,
             regiaoCompraSelecionada: regiaoCompraSelecionada || null,
             concessionaria_id: user?.concessionaria_id || null,
@@ -2781,7 +2755,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   };
 
   // Buscar dados completos dos guindastes do carrinho
-  const guindastesCompletos = carrinho
+  // Combinar carrinho acumulativo + carrinho atual para concessionária
+  const carrinhoFinal = isConcessionariaCompra && carrinhoAcumulativo.length > 0
+    ? [...carrinhoAcumulativo.flatMap(p => p.carrinho), ...carrinho]
+    : carrinho;
+
+  const guindastesCompletos = carrinhoFinal
     .filter(item => item.tipo === 'guindaste')
     .map(item => {
       // Buscar guindaste completo da lista carregada (fallback)
@@ -2804,7 +2783,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     });
 
   const pedidoData = {
-    carrinho,
+    carrinho: carrinhoFinal,
     clienteData,
     caminhaoData,
     pagamentoData,
@@ -2820,10 +2799,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       <div className="resumo-section">
         <div className="section-header">
           <h3>🛒 Itens Selecionados</h3>
-          <span className="item-count">{carrinho.length} {carrinho.length === 1 ? 'item' : 'itens'}</span>
+          <span className="item-count">{carrinhoFinal.length} {carrinhoFinal.length === 1 ? 'item' : 'itens'}</span>
         </div>
         <div className="resumo-total">
-          <span>Total: {formatCurrency(carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
+          <span>Total: {formatCurrency(carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
         </div>
       </div>
 
@@ -3091,18 +3070,119 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
       <div className="resumo-section">
         <h3>Ações</h3>
+        {isConcessionariaCompra && (
+          <>
+            {/* Itens acumulados anteriormente */}
+            {carrinhoAcumulativo.length > 0 && (
+              <div style={{
+                marginBottom: '16px',
+                padding: '16px',
+                background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+                borderRadius: '10px',
+                border: '1px solid #a5d6a7'
+              }}>
+                <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#2e7d32', marginBottom: '10px' }}>
+                  📦 Equipamentos já adicionados ({carrinhoAcumulativo.length})
+                </div>
+                {carrinhoAcumulativo.map((pedido, idx) => (
+                  <div key={pedido.id} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '8px 12px',
+                    background: 'white',
+                    borderRadius: '6px',
+                    marginBottom: idx < carrinhoAcumulativo.length - 1 ? '6px' : '0',
+                    fontSize: '0.9rem'
+                  }}>
+                    <div>
+                      <strong>#{idx + 1}</strong> — {pedido.carrinho.map(i => i.nome).join(', ')}
+                      <span style={{ color: '#666', marginLeft: '8px' }}>
+                        ({formatCurrency(pedido.carrinho.reduce((s, i) => s + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0))})
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}
+                      style={{
+                        background: '#ef5350',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        padding: '4px 10px',
+                        cursor: 'pointer',
+                        fontSize: '0.8rem',
+                        fontWeight: 'bold'
+                      }}
+                      title="Remover do carrinho"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+                <div style={{ marginTop: '10px', padding: '8px 12px', background: 'rgba(46,125,50,0.1)', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem', color: '#2e7d32', textAlign: 'right' }}>
+                  + Pedido atual ({carrinho.map(i => i.nome).join(', ')})
+                </div>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
+              <button
+                onClick={() => {
+                  if (window.confirm('Deseja adicionar este pedido ao carrinho e continuar escolhendo mais equipamentos?')) {
+                    onAdicionarAoCarrinho();
+                    onLimparPedidoAtual();
+                  }
+                }}
+                style={{
+                  background: 'linear-gradient(135deg, #28a745, #20c997)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '12px 24px',
+                  borderRadius: '8px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.3s ease'
+                }}
+                onMouseOver={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+                }}
+                onMouseOut={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                ➕ Adicionar Mais Equipamentos
+              </button>
+            </div>
+          </>
+        )}
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <LazyPDFGenerator 
             pedidoData={pedidoData} 
-            onGenerate={handlePDFGenerated}
+            onGenerate={(fileName) => {
+              if (isConcessionariaCompra && onLimparCarrinhoAcumulativo) {
+                onLimparCarrinhoAcumulativo();
+              }
+              handlePDFGenerated(fileName);
+            }}
           />
+          {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
+            <div style={{ fontSize: '0.85rem', color: '#666', display: 'flex', alignItems: 'center' }}>
+              O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
 
-const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPrev, errors = {} }) => {
+const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPrev, errors = {}, onPropostaRapida }) => {
   const podeContinuar = Boolean(
     caminhaoData?.tipo &&
     caminhaoData?.marca &&
@@ -3112,14 +3192,82 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
 
   return (
     <div className="vehicle-form-container">
+      {/* Banner informativo sobre Proposta Rápida */}
+      <div style={{
+        background: 'linear-gradient(135deg, #fff9e6, #fff3cd)',
+        border: '2px solid #ffc107',
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '20px',
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '12px'
+      }}>
+        <span style={{ fontSize: '24px' }}>⚡</span>
+        <div>
+          <strong style={{ color: '#856404', display: 'block', marginBottom: '4px' }}>
+            Precisa de uma proposta rápida?
+          </strong>
+          <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
+            Clique em "Gerar Proposta Rápida" para criar um orçamento preliminar.
+            Os dados do veículo serão marcados como "PREENCHER" e você poderá completá-los depois.
+          </p>
+        </div>
+      </div>
+
       <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={errors} />
 
-      <div className="form-actions">
+      <div className="form-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', gap: '12px' }}>
         <button className="btn-back-secondary" onClick={onPrev}>
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
           </svg>
           Voltar
+        </button>
+
+        <button
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            background: 'linear-gradient(135deg, #ffc107, #ffca28)',
+            color: '#856404',
+            border: '2px solid #ffc107',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '14px',
+            transition: 'all 0.3s ease',
+            boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
+          }}
+          onClick={() => {
+            console.log('⚡ Gerando Proposta Rápida...');
+            setCaminhaoData({
+              tipo: 'PREENCHER',
+              marca: 'PREENCHER',
+              modelo: 'PREENCHER',
+              ano: '',
+              voltagem: 'PREENCHER',
+              observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
+            });
+            if (onPropostaRapida) {
+              onPropostaRapida();
+            } else {
+              onNext();
+            }
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
+          }}
+        >
+          <span>⚡</span>
+          <span>Gerar Proposta Rápida</span>
         </button>
 
         <button className="btn-continue" onClick={onNext} disabled={!podeContinuar}>
