@@ -56,7 +56,9 @@ const Login = () => {
     setError('');
 
     try {
-      const { email, senha } = formData;
+      const rawEmail = formData.email;
+      const senha = formData.senha;
+      const email = (rawEmail || '').trim().toLowerCase();
       
       // Validação simples
       if (!email || !senha) {
