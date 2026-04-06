@@ -1502,6 +1502,490 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
   return el;
 };
 
+// ====================================
+//  PDF SIMPLIFICADO - COMPRA CONCESSIONÁRIA
+// ====================================
+
+// CAPA SIMPLIFICADA para pedido de compra concessionária
+const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = false } = {}) => {
+  const el = createContainer('pdf-capa-compra', { inline });
+  const data = new Date().toLocaleDateString('pt-BR');
+  const c = pedidoData.clienteData || {};
+  const vendedor = pedidoData.vendedor || 'Não informado';
+  const vendedorTelefone = pedidoData.vendedorTelefone || '';
+  const guindastes = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
+  const opcionais = (pedidoData.carrinho || []).filter(i => i.tipo === 'opcional');
+  const totalEquipamentos = guindastes.reduce((acc, g) => acc + ((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1)), 0);
+  const totalOpcionais = opcionais.reduce((acc, o) => acc + ((parseFloat(o.preco) || 0) * (parseInt(o.quantidade, 10) || 1)), 0);
+
+  el.innerHTML = `
+    <div class="wrap" style="padding:14px 5mm 14px 12mm; width:250mm; margin:0;">
+
+      <!-- Título -->
+      <div style="text-align:center; margin-top:6mm; line-height:1.1;">
+        <div style="font-size:7mm; font-weight:700; letter-spacing:0.4mm;">PEDIDO DE COMPRA STARK</div>
+      </div>
+
+      <!-- BLOCO 1: STARK GUINDASTES -->
+      <div style="margin-top:8mm; font-size:4.2mm; line-height:1.45;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK GUINDASTES LTDA</div>
+        <div><b>CNPJ:</b> 33.228.312/0001-06</div>
+        <div><b>ENDEREÇO:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
+        <div><b>CONTATO:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
+      </div>
+
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
+
+      <!-- BLOCO 2: CONCESSIONÁRIA -->
+      <div style="font-size:4.2mm; line-height:1.45;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">CONCESSIONÁRIA</div>
+        <div><b>NOME:</b> ${c.nome || 'Não informado'}</div>
+        <div><b>CNPJ/CPF:</b> ${c.documento || 'Não informado'}</div>
+        ${c.telefone ? `<div><b>TELEFONE:</b> ${c.telefone}</div>` : ''}
+        ${c.email ? `<div><b>E-MAIL:</b> ${c.email}</div>` : ''}
+      </div>
+
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
+
+      <!-- BLOCO 3: REPRESENTANTE / ADMIN -->
+      <div style="font-size:4.2mm; line-height:1.45;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">ADMIN CONCESSIONÁRIA</div>
+        <div><b>NOME:</b> ${vendedor}</div>
+        ${vendedorTelefone ? `<div><b>TELEFONE:</b> ${vendedorTelefone}</div>` : ''}
+      </div>
+
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
+
+      <!-- BLOCO 4: TABELA DE EQUIPAMENTOS -->
+      <div style="font-size:4.2mm; line-height:1.45;">
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:3mm;">EQUIPAMENTOS (${guindastes.length})</div>
+        <table style="width:100%; border-collapse:collapse; font-size:3.8mm;">
+          <thead>
+            <tr style="background:#f0f0f0; border-bottom:1px solid #ccc;">
+              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">#</th>
+              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">EQUIPAMENTO</th>
+              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">MODELO</th>
+              <th style="padding:2.5mm 2mm; text-align:right; font-weight:700;">VALOR UNIT.</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${guindastes.map((g, idx) => `
+              <tr style="border-bottom:0.5px solid #ddd;">
+                <td style="padding:2mm; font-weight:600;">${idx + 1}</td>
+                <td style="padding:2mm; font-weight:700;">${g.nome || 'Guindaste'}</td>
+                <td style="padding:2mm;">${g.modelo || '-'}</td>
+                <td style="padding:2mm; text-align:right; font-weight:700;">${formatCurrency((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1))}</td>
+              </tr>
+            `).join('')}
+            ${opcionais.length > 0 ? opcionais.map(op => `
+              <tr style="border-bottom:0.5px solid #eee; background:#fafafa;">
+                <td style="padding:2mm;"></td>
+                <td colspan="2" style="padding:2mm; font-style:italic; font-size:3.5mm;">↳ ${op.nome}${op.descricao ? ` — ${op.descricao}` : ''}</td>
+                <td style="padding:2mm; text-align:right; font-size:3.5mm;">${formatCurrency((parseFloat(op.preco) || 0) * (parseInt(op.quantidade, 10) || 1))}</td>
+              </tr>
+            `).join('') : ''}
+          </tbody>
+          <tfoot>
+            <tr style="border-top:2px solid #333; background:#f8f8f8;">
+              <td colspan="3" style="padding:3mm 2mm; font-weight:800; font-size:4.2mm;">TOTAL DOS EQUIPAMENTOS</td>
+              <td style="padding:3mm 2mm; text-align:right; font-weight:800; font-size:4.5mm;">${formatCurrency(totalEquipamentos + totalOpcionais)}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- Proposta info -->
+      <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0 4mm;"></div>
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); text-align:center; font-size:4.2mm; gap:8mm; margin-top:2mm;">
+        <div>
+          <div style="font-weight:700;">Nº PEDIDO</div>
+          <div style="font-weight:600; font-size:4.5mm; margin-top:1mm;">#${numeroProposta}</div>
+        </div>
+        <div>
+          <div style="font-weight:700;">DATA DE EMISSÃO</div>
+          <div style="font-weight:600; font-size:4.5mm; margin-top:1mm;">${data}</div>
+        </div>
+        <div>
+          <div style="font-weight:700;">VALIDADE</div>
+          <div style="font-weight:600; font-size:4.5mm; margin-top:1mm;">10 DIAS</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return el;
+};
+
+// Render financeiro COMPLETO para compra concessionária
+// Igual ao renderFinanceiro mas SEM restrição tipoCliente para ENTRADA + breakdown por equipamento
+const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
+  const p = pedidoData.pagamentoData || {};
+  const lang = getLang(pedidoData);
+  const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
+  const extraValor = parseFloat(p.extraValor || 0);
+  const extraDescricao = (p.extraDescricao || '').trim();
+  const observacoesNegociacao = (p.observacoesNegociacao || '').trim();
+  const percentualEntradaNum = parseFloat(p.percentualEntrada || 0) || 0;
+
+  // 1. Descontos sobre o valor base
+  const valorDescontoVendedor = p.desconto ? (totalBase * p.desconto / 100) : 0;
+  const valorDescontoPrazo = p.descontoPrazo ? (totalBase * p.descontoPrazo / 100) : 0;
+  const valorAcrescimo = p.acrescimo ? (totalBase * p.acrescimo / 100) : 0;
+  const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
+
+  const valorFinalPolitica = parseFloat(p.valorFinal || p.total || 0) || 0;
+  const valorFreteInformado = parseFloat(p.valorFrete || 0) || 0;
+  const valorInstalacaoInformado = parseFloat(p.valorInstalacao || 0) || 0;
+  const freteInferido = (
+    String(p.tipoFrete).toUpperCase() === 'CIF' &&
+    valorFreteInformado === 0 &&
+    valorFinalPolitica > 0
+  ) ? Math.max(0, valorFinalPolitica - (baseComDescontos + extraValor + valorInstalacaoInformado)) : 0;
+  const valorFreteFinal = valorFreteInformado || freteInferido;
+
+  const subtotalComAdicionais = baseComDescontos + extraValor + valorFreteFinal + valorInstalacaoInformado;
+  const valorTotalFinal = valorFinalPolitica > 0 ? valorFinalPolitica : subtotalComAdicionais;
+
+  const moeda = String(p.moeda || 'BRL').toUpperCase();
+  const cotacaoUsd = Number(p.cotacao_usd);
+  const isUSD = moeda === 'USD';
+  const fmt = isUSD ? formatCurrencyUSD : formatCurrency;
+  const divisor = isUSD && Number.isFinite(cotacaoUsd) && cotacaoUsd > 0 ? cotacaoUsd : 1;
+  const convert = (v) => (Number(v) || 0) / divisor;
+
+  // Entrada e saldo
+  const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
+  const sinalPago = p.valorSinal || 0;
+  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
+
+  // Parcelas
+  const numParcelas = p.parcelas?.length || 1;
+  const valorParcela = saldoAPagarCalc / numParcelas;
+  let somaAcumulada = 0;
+  const parcelasCorrigidas = p.parcelas?.map((parcela, idx) => {
+    const isUltima = idx === numParcelas - 1;
+    const valor = isUltima
+      ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
+      : Math.round(valorParcela * 100) / 100;
+    somaAcumulada += valor;
+    return { ...parcela, valor };
+  }) || [];
+
+  // Logos bancários
+  const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
+  const logoSicredi = await renderImageToDataURL('/sicredi.png');
+  const logoSicoob = await renderImageToDataURL('/sicoob.png');
+
+  // Breakdown por equipamento (quando múltiplos guindastes)
+  const guindastes = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
+  const mostrarBreakdown = guindastes.length > 1;
+
+  let breakdownHtml = '';
+  if (mostrarBreakdown) {
+    breakdownHtml = `
+      <div style="margin-top:12px; padding:12px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
+        <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:10px;">DETALHAMENTO POR EQUIPAMENTO</div>
+        ${guindastes.map((g, idx) => {
+          const precoUnit = parseFloat(g.preco) || 0;
+          const entradaUnit = percentualEntradaNum > 0 ? (precoUnit * percentualEntradaNum / 100) : 0;
+          const saldoUnit = precoUnit - entradaUnit;
+          return `
+            <div style="padding:10px; margin-bottom:8px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-weight:700; font-size:14px; color:#000;">${idx + 1}. ${(g.nome || g.modelo || 'Guindaste').toUpperCase()}</span>
+                <span style="font-weight:800; font-size:16px; color:#000;">${fmt(convert(precoUnit))}</span>
+              </div>
+              ${percentualEntradaNum > 0 ? `
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">
+                  <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:600;">Entrada (${percentualEntradaNum}%):</span>
+                    <span style="font-weight:700;">${fmt(convert(entradaUnit))}</span>
+                  </div>
+                  <div style="display:flex; justify-content:space-between;">
+                    <span style="font-weight:600;">Saldo:</span>
+                    <span style="font-weight:700;">${fmt(convert(saldoUnit))}</span>
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  const el = createContainer('pdf-financeiro-compra', { inline });
+  el.innerHTML = `
+    <div class="wrap" style="padding:14px 10px;">
+      <div class="title" style="font-size:26px; margin-bottom:12px; font-weight:800;">CONDIÇÕES COMERCIAIS E FINANCEIRAS</div>
+
+      ${isUSD ? `
+        <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:800; font-size:14px; margin-bottom:4px;">USD</div>
+          <div style="font-weight:600; font-size:12px;">Cotação aplicada: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
+        </div>
+      ` : ''}
+
+      ${observacoesNegociacao ? `
+        <div style="margin-top:10px; padding:10px 12px; background:#fff; border:1px solid #ddd; border-radius:4px;">
+          <div style="font-weight:700; font-size:14px; color:#000; margin-bottom:6px;">Observações de Negociação</div>
+          <div style="font-size:13px; color:#000; line-height:1.4; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
+        </div>
+      ` : ''}
+
+      <!-- LAYOUT 2 COLUNAS: VALOR BASE + DESCONTOS -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
+        <div style="padding:12px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">① VALOR BASE DO EQUIPAMENTO</div>
+          <div style="font-size:24px; font-weight:700; color:#000;">${fmt(convert(totalBase))}</div>
+        </div>
+
+        ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
+          <div style="padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+            <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">③ DESCONTOS E AJUSTES</div>
+            ${p.desconto ? `
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
+                <span style="font-weight:600; color:#000;">Desconto Vendedor (${p.desconto}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoVendedor))}</span>
+              </div>
+            ` : ''}
+            ${p.descontoPrazo ? `
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
+                <span style="font-weight:600; color:#000;">Desconto Prazo (${p.descontoPrazo}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoPrazo))}</span>
+              </div>
+            ` : ''}
+            ${p.acrescimo ? `
+              <div style="display:flex; justify-content:space-between; font-size:14px;">
+                <span style="font-weight:600; color:#000;">Acréscimo (${p.acrescimo}%)</span>
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorAcrescimo))}</span>
+              </div>
+            ` : ''}
+          </div>
+        ` : '<div></div>'}
+      </div>
+
+      <!-- FRETE E INSTALAÇÃO -->
+      ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">② FRETE E INSTALAÇÃO</div>
+          ${p.tipoFrete ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
+              <span style="font-weight:600; color:#000;">Frete: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ' - Incluso' : ''}</span>
+              ${valorFreteFinal > 0 ? `
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorFreteFinal))}</span>
+              ` : `
+                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
+              `}
+            </div>
+          ` : ''}
+          ${p.tipoInstalacao ? `
+            <div style="display:flex; justify-content:space-between; font-size:14px;">
+              <span style="font-weight:600; color:#000;">Instalação: ${p.tipoInstalacao.toUpperCase()}</span>
+              ${valorInstalacaoInformado > 0 ? `
+                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
+              ` : `
+                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
+              `}
+            </div>
+          ` : ''}
+          ${p.localInstalacao ? `
+            <div style="margin-top:5px; padding-top:5px; border-top:1px solid #ddd; font-size:13px;">
+              <span style="font-weight:600; color:#000;">📍 Local de Instalação:</span>
+              <span style="font-weight:700; color:#000; margin-left:5px;">${p.localInstalacao.toUpperCase()}</span>
+            </div>
+          ` : ''}
+        </div>
+      ` : ''}
+
+      ${(extraValor > 0) ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">EXTRA</div>
+          <div style="display:flex; justify-content:space-between; font-size:14px;">
+            <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : 'AJUSTE COMERCIAL'}</span>
+            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(extraValor))}</span>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- VALOR TOTAL -->
+      <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:800; font-size:18px; color:#000;">VALOR TOTAL DA PROPOSTA</span>
+          <span style="font-weight:800; font-size:26px; color:#000;">${fmt(convert(valorTotalFinal))}</span>
+        </div>
+      </div>
+
+      <!-- BREAKDOWN POR EQUIPAMENTO (quando múltiplos guindastes) -->
+      ${breakdownHtml}
+
+      <!-- ENTRADA (sempre mostra quando percentualEntrada > 0) -->
+      ${percentualEntradaNum > 0 ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ENTRADA (${percentualEntradaNum}% do valor total)</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
+            <span style="font-weight:600; color:#000;">Valor da entrada</span>
+            <span style="font-weight:700; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
+          </div>
+          ${p.formaEntrada ? `
+            <div style="margin-bottom:6px; padding:8px; background:#fff; border-radius:4px; border:1px solid #ddd;">
+              <span style="font-weight:600; color:#000; font-size:13px;">💳 Forma de Pagamento:</span>
+              <span style="font-weight:700; color:#000; margin-left:5px; font-size:14px;">${p.formaEntrada.toUpperCase()}</span>
+            </div>
+          ` : ''}
+          ${sinalPago > 0 ? `
+            <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #ddd; margin-top:6px; font-size:13px;">
+              <span style="font-weight:600; color:#000;">Sinal já pago</span>
+              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(sinalPago))}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px;">
+              <span style="font-weight:600; color:#000;">Falta pagar</span>
+              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(entradaTotalCalc - sinalPago))}</span>
+            </div>
+          ` : ''}
+        </div>
+
+        <!-- SALDO A PAGAR -->
+        <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:6px;">⑤ SALDO A PAGAR (APÓS FATURAMENTO)</div>
+          <div style="font-size:13px; color:#000; margin-bottom:6px;">Este valor será parcelado</div>
+          <div style="font-weight:800; font-size:24px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
+        </div>
+      ` : ''}
+
+      <!-- PRAZO E PARCELAMENTO -->
+      ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">
+            ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+          </div>
+          <div style="font-size:13px; color:#000; margin-bottom:8px; font-weight:600;">Saldo de ${fmt(convert(saldoAPagarCalc))} dividido em ${parcelasCorrigidas.length} parcelas:</div>
+          <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
+            ${parcelasCorrigidas.map((parcela, idx) => `
+              <div style="background:#fff; padding:8px; border-radius:4px; text-align:center; border:1px solid #ddd;">
+                <div style="font-size:12px; color:#000; margin-bottom:3px; font-weight:600;">Parcela ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:700; color:#000; font-size:16px;">${fmt(convert(parcela.valor || 0))}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : (p.prazoPagamento ? `
+        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
+          <div style="font-weight:700; font-size:15px; color:#000;">
+            ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+          </div>
+        </div>
+      ` : '')}
+
+      <!-- DADOS BANCÁRIOS -->
+      <div style="margin-top:16px; padding-top:12px; border-top:2px solid #ddd;">
+        <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">DADOS BANCÁRIOS – STARK GUINDASTES LTDA</div>
+        <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
+          <div>
+            <img src="${logoBB}" alt="Banco do Brasil" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+            <div style="font-weight:700; font-size:13px;">Banco do Brasil (001)</div>
+            <div style="font-weight:600;">Ag: 0339-5</div>
+            <div style="font-weight:600;">CC: 60548-4</div>
+          </div>
+          <div>
+            <img src="${logoSicredi}" alt="Sicredi" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+            <div style="font-weight:700; font-size:13px;">Sicredi (748)</div>
+            <div style="font-weight:600;">Ag: 0307</div>
+            <div style="font-weight:600;">CC: 40771-1</div>
+          </div>
+          <div>
+            <img src="${logoSicoob}" alt="Sicoob" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
+            <div style="font-weight:700; font-size:13px;">Sicoob (756)</div>
+            <div style="font-weight:600;">Ag: 3072-4</div>
+            <div style="font-weight:600;">CC: 33276-3</div>
+          </div>
+        </div>
+        <div style="margin-top:10px; font-size:12px; line-height:1.6;">
+          <div style="font-weight:700;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
+          <div style="margin-top:5px; font-weight:600;">
+            Pix CNPJ: <b>33228312000106</b> (Sicredi) |
+            Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  return el;
+};
+
+// Render descrição técnica individual de um equipamento para compra concessionária
+const renderEquipamentoIndividualCompra = (pedidoData, guindaste, idx, total, { inline = false } = {}) => {
+  const el = createContainer(`pdf-equip-compra-${idx}`, { inline });
+
+  const banco = (pedidoData.guindastes || []).find(g =>
+    (g?.id && guindaste?.id && g.id === guindaste.id) ||
+    (g?.nome && guindaste?.nome && g.nome === guindaste.nome) ||
+    (g?.modelo && guindaste?.modelo && g.modelo === guindaste.modelo)
+  );
+
+  const g = { ...guindaste, ...(banco || {}) };
+  const desc = formatarTexto(g.descricao || '');
+  const naoIncluido = formatarTexto(g.nao_incluido || '');
+
+  const opcionaisSelecionados = (pedidoData.carrinho || [])
+    .filter(i => i.tipo === 'opcional')
+    .map(i => i.nome);
+  const codigo = generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || g.codigo_produto || '-';
+
+  el.innerHTML = `
+    <div class="wrap" style="padding:18px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <div class="title" style="font-size:22px; margin:0;">EQUIPAMENTO ${idx + 1}/${total} — ${(g.nome || g.modelo || 'GUINDASTE').toUpperCase()}</div>
+        <div style="font-size:20px; font-weight:800; color:#000;">${formatCurrency((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1))}</div>
+      </div>
+
+      <!-- Dados básicos -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <tbody>
+            <tr style="border-bottom:0.5px solid #ddd;">
+              <td style="font-weight:600; width:40%; padding:6px 4px;">NOME / MODELO</td>
+              <td style="font-weight:700; padding:6px 4px;">${g.nome || g.modelo || '-'}</td>
+            </tr>
+            <tr style="border-bottom:0.5px solid #ddd;">
+              <td style="font-weight:600; padding:6px 4px;">CÓDIGO</td>
+              <td style="font-weight:700; padding:6px 4px;">${codigo}</td>
+            </tr>
+          </tbody>
+        </table>
+        <table style="width:100%; border-collapse:collapse; font-size:13px;">
+          <tbody>
+            <tr style="border-bottom:0.5px solid #ddd;">
+              <td style="font-weight:600; width:40%; padding:6px 4px;">FINAME</td>
+              <td style="font-weight:700; padding:6px 4px;">${g.finame || 'Não informado'}</td>
+            </tr>
+            <tr style="border-bottom:0.5px solid #ddd;">
+              <td style="font-weight:600; padding:6px 4px;">NCM</td>
+              <td style="font-weight:700; padding:6px 4px;">${g.ncm || 'Não informado'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Descrição técnica -->
+      ${desc ? `
+        <div style="margin-bottom:10px;">
+          <div class="subtitle" style="font-size:15px; margin-bottom:6px;">DESCRIÇÃO TÉCNICA</div>
+          <div style="font-size:12px; line-height:1.3; white-space:pre-line; text-transform:uppercase;">${desc}</div>
+        </div>
+      ` : ''}
+
+      ${naoIncluido ? `
+        <div style="margin-bottom:10px;">
+          <div class="subtitle" style="font-size:15px; margin-bottom:6px;">NÃO INCLUÍDO</div>
+          <div style="font-size:12px; line-height:1.3; white-space:pre-line; text-transform:uppercase;">${naoIncluido}</div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  return el;
+};
+
 /**
  * ==========================
  *  ANEXO DE GRÁFICOS (PDF)
@@ -1631,22 +2115,73 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
 
       const isCompra = !!pedidoData?.isConcessionariaCompra;
 
-      // ==== PÁGINA 1: CAPA
-      {
-        const el = await renderCapa(pedidoDataLang, numeroProposta, { inline: false });
-        const cv = await htmlToCanvas(el);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-      }
+      if (isCompra) {
+        // =====================================================
+        //  PDF SIMPLIFICADO — PEDIDO DE COMPRA CONCESSIONÁRIA
+        // =====================================================
 
-      // ==== PÁGINA 2: DADOS DO EQUIPAMENTO
-      {
-        const el = renderEquipamento(pedidoDataLang, { inline: false });
-        const cv = await htmlToCanvas(el);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-      }
+        // 1. CAPA: Stark + Concessionária + Tabela de equipamentos
+        {
+          const el = renderCapaCompraConcessionaria(pedidoDataLang, numeroProposta, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
 
-      if (!isCompra) {
-        // ==== GRÁFICOS DE CARGA (logo após dados do equipamento)
+        // 2. POR EQUIPAMENTO: descrição técnica individual
+        const guindastesList = (pedidoDataLang.carrinho || []).filter(i => i.tipo === 'guindaste');
+        for (let i = 0; i < guindastesList.length; i++) {
+          const el = renderEquipamentoIndividualCompra(pedidoDataLang, guindastesList[i], i, guindastesList.length, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // 3. ESTUDO VEICULAR (se houver dados de caminhão preenchidos)
+        const v = pedidoDataLang.caminhaoData || {};
+        const temDadosVeiculo = v.tipo && v.tipo !== 'PREENCHER' && v.marca && v.marca !== 'PREENCHER';
+        if (temDadosVeiculo) {
+          const root = createContainer('page-estudo-compra', { inline: true });
+          root.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
+          root.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
+          const cv = await htmlToCanvas(root);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // 4. CONDIÇÕES DE PAGAMENTO (completas + breakdown por equipamento)
+        {
+          const el = await renderFinanceiroCompra(pedidoDataLang, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // 5. CLÁUSULAS + ASSINATURAS
+        {
+          const root = createContainer('page-clausulas-compra', { inline: true });
+          root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
+          root.appendChild(renderAssinaturas(pedidoDataLang, { inline: true }));
+          const cv = await htmlToCanvas(root);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+      } else {
+        // =====================================================
+        //  PDF PADRÃO — PROPOSTA COMERCIAL (vendedores normais)
+        // =====================================================
+
+        // ==== PÁGINA 1: CAPA
+        {
+          const el = await renderCapa(pedidoDataLang, numeroProposta, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // ==== PÁGINA 2: DADOS DO EQUIPAMENTO
+        {
+          const el = renderEquipamento(pedidoDataLang, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // ==== GRÁFICOS DE CARGA
         await appendGraficosDeCarga(pdf, pedidoData, headerDataURL, footerDataURL, ts);
 
         // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR
@@ -1657,22 +2192,22 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           const cv = await htmlToCanvas(root);
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }
-      }
 
-      // ==== FINANCEIRO
-      {
-        const el = await renderFinanceiro(pedidoDataLang, { inline: false });
-        const cv = await htmlToCanvas(el);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-      }
+        // ==== FINANCEIRO
+        {
+          const el = await renderFinanceiro(pedidoDataLang, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
 
-      // ==== CLÁUSULAS + ASSINATURAS
-      {
-        const root = createContainer('page4-root', { inline: true });
-        root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
-        root.appendChild(renderAssinaturas(pedidoDataLang, { inline: true }));
-        const cv = await htmlToCanvas(root);
-        addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        // ==== CLÁUSULAS + ASSINATURAS
+        {
+          const root = createContainer('page4-root', { inline: true });
+          root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
+          root.appendChild(renderAssinaturas(pedidoDataLang, { inline: true }));
+          const cv = await htmlToCanvas(root);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
       }
 
       const nomeDocumento = isCompra

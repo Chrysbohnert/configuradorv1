@@ -23,7 +23,9 @@ const ResumoPedido = ({
   isConcessionariaCompra = false,
   carrinhoAcumulativo = [],
   onAdicionarAoCarrinho,
-  onLimparPedidoAtual
+  onLimparPedidoAtual,
+  onLimparCarrinhoAcumulativo,
+  onRemoverDoCarrinhoAcumulativo
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
 
@@ -565,84 +567,115 @@ const ResumoPedido = ({
           {isConcessionariaCompra ? (
             /* Ações para Concessionária */
             <>
-              <button
-                onClick={() => {
-                  if (window.confirm('Deseja adicionar este pedido ao carrinho acumulativo e continuar comprando?')) {
-                    onAdicionarAoCarrinho();
-                    onLimparPedidoAtual();
-                    alert('Pedido adicionado ao carrinho! Você pode continuar adicionando mais equipamentos.');
-                  }
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #28a745, #20c997)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
-                ➕ Adicionar Mais ao Carrinho
-              </button>
-              
-              <button
-                onClick={() => {
-                  if (carrinhoAcumulativo.length > 0) {
-                    if (window.confirm(`Você tem ${carrinhoAcumulativo.length} pedido(s) no carrinho acumulativo. Deseja gerar o PDF final com todos os pedidos?`)) {
-                      // Gerar PDF com carrinho acumulativo
-                      const pedidoDataAcumulativo = {
-                        ...pedidoData,
-                        carrinho: carrinhoAcumulativo.flatMap(p => p.carrinho),
-                        isPedidoMultiplo: true,
-                        totalPedidos: carrinhoAcumulativo.length
-                      };
-                      // Chamar PDFGenerator com dados acumulativos
-                      alert('Gerando PDF com múltiplos equipamentos...');
+              {/* Itens acumulados anteriormente */}
+              {carrinhoAcumulativo.length > 0 && (
+                <div style={{
+                  width: '100%',
+                  marginBottom: '16px',
+                  padding: '16px',
+                  background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
+                  borderRadius: '10px',
+                  border: '1px solid #a5d6a7'
+                }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#2e7d32', marginBottom: '10px' }}>
+                    📦 Equipamentos já adicionados ({carrinhoAcumulativo.length})
+                  </div>
+                  {carrinhoAcumulativo.map((pedido, idx) => (
+                    <div key={pedido.id} style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      padding: '8px 12px',
+                      background: 'white',
+                      borderRadius: '6px',
+                      marginBottom: idx < carrinhoAcumulativo.length - 1 ? '6px' : '0',
+                      fontSize: '0.9rem'
+                    }}>
+                      <div>
+                        <strong>#{idx + 1}</strong> — {pedido.carrinho.map(i => i.nome).join(', ')}
+                        <span style={{ color: '#666', marginLeft: '8px' }}>
+                          ({formatCurrency(pedido.carrinho.reduce((s, i) => s + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0))})
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}
+                        style={{
+                          background: '#ef5350',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '4px',
+                          padding: '4px 10px',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: 'bold'
+                        }}
+                        title="Remover do carrinho"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', width: '100%' }}>
+                <button
+                  onClick={() => {
+                    if (window.confirm('Deseja adicionar este pedido ao carrinho e continuar comprando?')) {
+                      onAdicionarAoCarrinho();
+                      onLimparPedidoAtual();
                     }
-                  } else {
-                    // Gerar PDF apenas do pedido atual
-                    alert('Gerando PDF do pedido atual...');
-                  }
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #007bff, #0056b3)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.target.style.transform = 'translateY(-2px)';
-                  e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.target.style.transform = 'translateY(0)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              >
-                📄 Gerar PDF {carrinhoAcumulativo.length > 0 ? `Final (${carrinhoAcumulativo.length + 1} pedidos)` : 'do Pedido'}
-              </button>
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #28a745, #20c997)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)';
+                    e.currentTarget.style.boxShadow = 'none';
+                  }}
+                >
+                  ➕ Adicionar Mais Equipamentos
+                </button>
+              </div>
+
+              {/* Gerar PDF com todos os itens (acumulados + atual) */}
+              <div style={{ marginTop: '12px', width: '100%' }}>
+                <PDFGenerator 
+                  pedidoData={{
+                    ...pedidoData,
+                    carrinho: [
+                      ...carrinhoAcumulativo.flatMap(p => p.carrinho),
+                      ...carrinho
+                    ]
+                  }}
+                  onGenerate={(fileName) => {
+                    if (onLimparCarrinhoAcumulativo) {
+                      onLimparCarrinhoAcumulativo();
+                    }
+                    handlePDFGenerated(fileName);
+                  }}
+                />
+                {carrinhoAcumulativo.length > 0 && (
+                  <div style={{ fontSize: '0.85rem', color: '#666', marginTop: '6px' }}>
+                    O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s) — {carrinhoAcumulativo.length} acumulado(s) + pedido atual
+                  </div>
+                )}
+              </div>
             </>
           ) : (
             /* Ações normais */
