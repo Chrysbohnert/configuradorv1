@@ -2873,18 +2873,21 @@ if (typeof window !== 'undefined') {
       // Verificar se existe na tabela users
       if (user) {
         try {
+          // IMPORTANTE: `user.id` aqui é o UUID do Supabase Auth.
+          // A tabela `users` do app costuma ter `id` numérico; então buscar por `id = UUID` causa 400.
+          // Usar `email` como ponte (ou ajuste para `auth_id` se existir no schema).
           const { data: userData, error: dbError } = await supabase
             .from('users')
             .select('*')
-            .eq('id', user.id)
-            .single();
+            .eq('email', user.email)
+            .maybeSingle();
           
           if (dbError) {
             console.error('❌ Erro ao buscar na tabela users:', dbError);
           } else if (userData) {
             console.log('✅ Usuário encontrado na tabela users:', userData);
           } else {
-            console.log('❌ Usuário não encontrado na tabela users');
+            console.log('❌ Usuário não encontrado na tabela users (por email)');
           }
         } catch (error) {
           console.error('❌ Erro ao verificar tabela users:', error);

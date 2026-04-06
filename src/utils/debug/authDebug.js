@@ -91,7 +91,7 @@ export const debugLogin = async (email, senha) => {
     const { data: users, error } = await supabase
       .from('users')
       .select('*')
-      .eq('email', email);
+      .ilike('email', email);
     
     if (error) {
       console.error('❌ Erro ao buscar usuário:', error);

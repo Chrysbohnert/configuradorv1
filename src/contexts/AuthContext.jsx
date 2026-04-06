@@ -129,7 +129,7 @@ export const AuthProvider = ({ children }) => {
       const { data: users, error: dbError } = await supabase
         .from('users')
         .select('*')
-        .eq('email', email)
+        .ilike('email', email)
         .single();
 
       if (dbError || !users) {
