@@ -260,6 +260,7 @@ const NovoPedido = () => {
       medida_b: caminhaoData.medidaB || null,
       medida_c: caminhaoData.medidaC || null,
       medida_d: caminhaoData.medidaD || null,
+      comprimento_chassi: caminhaoData.comprimentoChassi || null,
       patolamento: caminhaoData.patolamento || null
     };
   };
@@ -2400,6 +2401,16 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                     placeholder="Ex: 30cm"
                   />
                 </div>
+
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>📏 Comprimento do Chassi (cm)</label>
+                  <input
+                    type="text"
+                    value={formData.comprimentoChassi || ''}
+                    onChange={(e) => handleChange('comprimentoChassi', e.target.value)}
+                    placeholder="Ex: 750cm"
+                  />
+                </div>
               </div>
               
               {/* Patolamento Calculado Automaticamente */}
@@ -2477,7 +2488,13 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       modelo: data.modelo,
       ano: data.ano || null,
       voltagem: data.voltagem,
-      observacoes: data.observacoes || null
+      observacoes: data.observacoes || null,
+      medida_a: data.medidaA || null,
+      medida_b: data.medidaB || null,
+      medida_c: data.medidaC || null,
+      medida_d: data.medidaD || null,
+      comprimento_chassi: data.comprimentoChassi || null,
+      patolamento: data.patolamento || null
     };
   };
 
@@ -3249,6 +3266,7 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
               modelo: 'PREENCHER',
               ano: '',
               voltagem: 'PREENCHER',
+              comprimentoChassi: 'PREENCHER',
               observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
             });
             if (onPropostaRapida) {

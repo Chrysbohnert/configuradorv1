@@ -146,7 +146,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
   if (!open) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay">
       <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
         <div className="modal-header">
           <h2>Preços por Região</h2>

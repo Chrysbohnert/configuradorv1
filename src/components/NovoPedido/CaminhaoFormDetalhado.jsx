@@ -255,6 +255,16 @@ const CaminhaoFormDetalhado = ({ formData, setFormData, errors = {} }) => {
                     placeholder="Ex: 30"
                   />
                 </div>
+
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label>📏 Comprimento do Chassi (cm)</label>
+                  <input
+                    type="text"
+                    value={formData.comprimentoChassi || ''}
+                    onChange={(e) => handleChange('comprimentoChassi', e.target.value)}
+                    placeholder="Ex: 750"
+                  />
+                </div>
               </div>
               
               {/* Patolamento Calculado Automaticamente */}

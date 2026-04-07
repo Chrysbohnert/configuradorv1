@@ -328,7 +328,7 @@ const Concessionarias = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Nova Concessionária</h2>
@@ -397,31 +397,6 @@ const Concessionarias = () => {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label>Desconto Base (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    step="0.1"
-                    value={formData.desconto_base}
-                    onChange={(e) => handleInputChange('desconto_base', e.target.value)}
-                    placeholder="Ex: 10"
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label>Desconto Compra (%)</label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="50"
-                    step="0.1"
-                    value={formData.desconto_compra}
-                    onChange={(e) => handleInputChange('desconto_compra', e.target.value)}
-                    placeholder="Ex: 15"
-                  />
-                </div>
 
                 {!isEditMode && (
                   <>

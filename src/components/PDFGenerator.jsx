@@ -1030,7 +1030,7 @@ const renderCaminhao = (pedidoData, { inline = false } = {}) => {
 // ESTUDO VEICULAR
 const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
   const v = pedidoData.caminhaoData || {};
-  const temMedidas = v.medidaA || v.medidaB || v.medidaC || v.medidaD;
+  const temMedidas = v.medidaA || v.medidaB || v.medidaC || v.medidaD || v.comprimentoChassi;
   const lang = getLang(pedidoData);
 
   const el = createContainer('pdf-estudo', { inline });
@@ -1075,6 +1075,12 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
                   <tr>
                     <td style="font-weight:600;font-size:12px;">D (Dist. Entre Eixos)</td>
                     <td style="text-align:center;font-weight:700;font-size:15px;">${v.medidaD}cm</td>
+                  </tr>
+                ` : ''}
+                ${v.comprimentoChassi ? `
+                  <tr>
+                    <td style="font-weight:600;font-size:12px;">📏 Comprimento do Chassi</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.comprimentoChassi}cm</td>
                   </tr>
                 ` : ''}
               </tbody>

@@ -361,7 +361,7 @@ const GerenciarVendedores = () => {
 
       {/* Modal de Cadastro/Edição */}
       {showModal && (
-        <div className="modal-overlay" onClick={handleCloseModal}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingVendedor ? 'Editar Vendedor' : 'Novo Vendedor'}</h2>
@@ -549,7 +549,7 @@ const GerenciarVendedores = () => {
       )}
 
       {confirmDelete.open && (
-        <div className="modal-overlay" onClick={() => setConfirmDelete({ open: false, id: null, nome: '' })}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Confirmar Remoção</h2>

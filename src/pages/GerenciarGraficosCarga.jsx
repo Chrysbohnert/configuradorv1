@@ -315,7 +315,7 @@ const GerenciarGraficosCarga = () => {
         </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingGrafico ? 'Editar Gráfico' : 'Adicionar Gráfico'}</h2>
