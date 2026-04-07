@@ -186,7 +186,7 @@ const GerenciarVendedores = () => {
       email: vendedor.email,
       telefone: vendedor.telefone,
       cpf: vendedor.cpf,
-      comissao: vendedor.comissao.toString(),
+      comissao: (vendedor.comissao ?? '').toString(),
       regiao: vendedor.regiao || '',
       regioes_operacao: vendedor.regioes_operacao || [],
       tipo: vendedor.tipo,
