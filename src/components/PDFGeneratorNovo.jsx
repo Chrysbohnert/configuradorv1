@@ -605,7 +605,7 @@ const renderPagina6EstudoVeicular = async (pedidoData) => {
   const bgDataUrl = await renderImageToDataURL(bgUrl);
   
   const v = pedidoData.caminhao || pedidoData.caminhaoData || {};
-  const temMedidas = v.medidaA || v.medidaB || v.medidaC || v.medidaD;
+  const temMedidas = v.medidaA || v.medidaB || v.medidaC || v.medidaD || v.comprimentoChassi;
 
   return `
     <style>
@@ -708,6 +708,12 @@ const renderPagina6EstudoVeicular = async (pedidoData) => {
                       <tr>
                         <td style="font-weight: 600; font-size: 12px;">D (DIST. ENTRE EIXOS)</td>
                         <td style="text-align: center; font-weight: 700; font-size: 15px;">${v.medidaD}cm</td>
+                      </tr>
+                    ` : ''}
+                    ${v.comprimentoChassi ? `
+                      <tr>
+                        <td style="font-weight: 600; font-size: 12px;">📏 COMPRIMENTO DO CHASSI</td>
+                        <td style="text-align: center; font-weight: 700; font-size: 15px;">${v.comprimentoChassi}cm</td>
                       </tr>
                     ` : ''}
                   </tbody>

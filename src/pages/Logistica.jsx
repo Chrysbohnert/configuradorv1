@@ -224,7 +224,7 @@ const Logistica = () => {
             </div>
 
             {isNotaModalOpen && (
-              <div className="nota-modal-overlay" onClick={()=>{ setIsNotaModalOpen(false); setNotaAtual({ id:null, data:'', titulo:'', descricao:'' }); }}>
+              <div className="nota-modal-overlay">
                 <div className="nota-modal" onClick={(e)=>e.stopPropagation()}>
                   <div className="nota-modal-header">
                     <h3>{new Date((notaAtual.data || '')).toLocaleDateString()}</h3>

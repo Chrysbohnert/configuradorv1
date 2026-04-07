@@ -119,7 +119,13 @@ const ResumoPedido = ({
         modelo: data.modelo,
         ano: data.ano || null,
         voltagem: data.voltagem,
-        observacoes: data.observacoes || null
+        observacoes: data.observacoes || null,
+        medida_a: data.medidaA || null,
+        medida_b: data.medidaB || null,
+        medida_c: data.medidaC || null,
+        medida_d: data.medidaD || null,
+        comprimento_chassi: data.comprimentoChassi || null,
+        patolamento: data.patolamento || null
       });
 
       const caminhaoDataToSave = {
@@ -380,6 +386,12 @@ const ResumoPedido = ({
                 <div className="data-row">
                   <span className="label">Medida D:</span>
                   <span className="value">{caminhaoData.medidaD} cm </span>
+                </div>
+              )}
+              {caminhaoData.comprimentoChassi && (
+                <div className="data-row">
+                  <span className="label">📏 Comprimento do Chassi:</span>
+                  <span className="value">{caminhaoData.comprimentoChassi} cm</span>
                 </div>
               )}
               {caminhaoData.patolamento && (

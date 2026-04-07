@@ -1222,7 +1222,7 @@ const GerenciarGuindastes = () => {
       )}
 
       {showPrecoConcessionariaModal && (
-        <div className="modal-overlay" onClick={closePrecoConcessionaria}>
+        <div className="modal-overlay">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Preço da Concessionária</h2>
