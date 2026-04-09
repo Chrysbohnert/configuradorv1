@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useReducer } from 'react';
+import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
@@ -36,6 +36,7 @@ export default function PaymentPolicy({
   onFinish, // Callback para finalizar e ir para próxima etapa
   regiaoClienteSelecionada = '', // Região selecionada do cliente
   caminhaoData = {}, // Dados do caminhão (para calcular conversor de voltagem)
+  initialPaymentData = null, // Dados salvos para restauração (modo edição)
   debug = false,
 }) {
   const user = useMemo(() => {
@@ -112,6 +113,8 @@ export default function PaymentPolicy({
 
   // =============== ESTADO PRINCIPAL (7 ETAPAS) ===================
   const [etapa, setEtapa] = useState(1);
+  const isRestoringRef = useRef(false);
+  const hasRestoredRef = useRef(false);
 
   // 1) Tipo de cliente
   const [tipoCliente, setTipoCliente] = useState(''); // 'cliente' | 'revenda'
@@ -155,6 +158,51 @@ export default function PaymentPolicy({
   const [modalSolicitacaoOpen, setModalSolicitacaoOpen] = useState(false);
   const [solicitacaoId, setSolicitacaoId] = useState(null);
   const [aguardandoAprovacao, setAguardandoAprovacao] = useState(false);
+
+  // =============== RESTAURAÇÃO DE DADOS (MODO EDIÇÃO) =============
+  useEffect(() => {
+    if (!initialPaymentData || hasRestoredRef.current || modoConcessionaria) return;
+
+    console.log('📝 [PaymentPolicy] Restaurando dados salvos (modo edição):', initialPaymentData);
+    isRestoringRef.current = true;
+    hasRestoredRef.current = true;
+
+    // Restaurar todos os estados internos de uma vez
+    if (initialPaymentData.tipoCliente) setTipoCliente(initialPaymentData.tipoCliente);
+    if (initialPaymentData.participacaoRevenda) setParticipacaoRevenda(initialPaymentData.participacaoRevenda);
+    if (initialPaymentData.tipoIE) setTipoIE(initialPaymentData.tipoIE);
+    if (initialPaymentData.instalacao) setInstalacao(initialPaymentData.instalacao);
+    if (initialPaymentData.tipoFrete) setTipoFrete(initialPaymentData.tipoFrete);
+    if (initialPaymentData.localInstalacao) setLocalInstalacao(initialPaymentData.localInstalacao);
+    if (initialPaymentData.tipoEntrega) setTipoEntrega(initialPaymentData.tipoEntrega);
+
+    // Entrada: verificar se é financiamento ou percentual
+    if (initialPaymentData.financiamentoBancario === 'sim') {
+      setPercentualEntrada('financiamento');
+    } else if (initialPaymentData.percentualEntrada) {
+      setPercentualEntrada(String(initialPaymentData.percentualEntrada));
+    }
+
+    if (initialPaymentData.valorSinal) setValorSinal(String(initialPaymentData.valorSinal));
+    if (initialPaymentData.formaEntrada) setFormaEntrada(initialPaymentData.formaEntrada);
+    if (initialPaymentData.observacoesNegociacao) setObservacoesNegociacao(initialPaymentData.observacoesNegociacao);
+    if (initialPaymentData.extraDescricao) setExtraDescricao(initialPaymentData.extraDescricao);
+    if (initialPaymentData.extraValor) setExtraValor(String(initialPaymentData.extraValor));
+
+    // Desconto do vendedor
+    if (initialPaymentData.desconto !== undefined && initialPaymentData.desconto !== null) {
+      setDescontoVendedor(Number(initialPaymentData.desconto) || 0);
+    }
+
+    // Ir para etapa 7 (resumo) com tudo preenchido
+    setEtapa(7);
+
+    // Liberar reset effects após restauração
+    setTimeout(() => {
+      isRestoringRef.current = false;
+      console.log('✅ [PaymentPolicy] Restauração concluída - navegação livre entre etapas');
+    }, 300);
+  }, [initialPaymentData, modoConcessionaria]);
 
   // Hook para buscar dados de frete baseado no local de instalação
   const { dadosFreteAtual } = useFretes(localInstalacao);
@@ -528,9 +576,25 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     return base.filter(p => p.entry_percent_required === pNum);
   }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc, planosLiberados]);
 
+  // Restaurar planoSelecionado após os planos serem carregados (modo edição)
+  useEffect(() => {
+    if (!initialPaymentData?.prazoPagamento || !hasRestoredRef.current) return;
+    if (planoSelecionado) return; // Já foi restaurado
+
+    const planosParaBuscar = planosFiltrados?.length > 0 ? planosFiltrados : todosPlanos;
+    const planoSalvo = planosParaBuscar.find(
+      p => p.description === initialPaymentData.prazoPagamento
+    );
+    if (planoSalvo) {
+      console.log('📝 [PaymentPolicy] Plano restaurado:', planoSalvo.description);
+      setPlanoSelecionado(planoSalvo);
+    }
+  }, [initialPaymentData, todosPlanos, planosFiltrados, planoSelecionado]);
+
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
   useEffect(() => {
     if (modoConcessionaria) return;
+    if (isRestoringRef.current) return; // Não resetar durante restauração
     // Mudou tipo de cliente? zera dependentes
     setParticipacaoRevenda('');
     setTipoIE('');
@@ -555,6 +619,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [tipoCliente, modoConcessionaria]);
 
   useEffect(() => {
+    if (isRestoringRef.current) return; // Não resetar durante restauração
     // Se a regra do diagrama exigir travar IE em "produtor", faz e mantém bloqueado
     if (travaIEProdutor && tipoIE !== 'produtor') setTipoIE('produtor');
     // Ao mudar participação revenda, limpa IE se não for travado
@@ -562,6 +627,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [travaIEProdutor, participacaoRevenda, tipoIE]);
 
   useEffect(() => {
+    if (isRestoringRef.current) return; // Não resetar durante restauração
     // Quando cliente organiza frete: limpa apenas tipo de entrega (local permanece obrigatório)
     if (tipoFrete === 'FOB') {
       setTipoEntrega('');
@@ -570,6 +636,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [tipoFrete]);
 
   useEffect(() => {
+    if (isRestoringRef.current) return; // Não resetar durante restauração
     // Mudou entrada/financiamento → limpar plano & sinal quando necessário
     if (percentualEntrada === 'financiamento') {
       setPlanoSelecionado(null);
@@ -1267,13 +1334,15 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       {/* Stepper */}
     <div className="pp-stepper">
       {etapasVisiveis.map(n => {
-        const isLocked =
+        const isRestored = hasRestoredRef.current;
+        const isLocked = isRestored ? false : (
           (n === 2 && !podeIrEtapa2) ||
           (n === 3 && !podeIrEtapa3) ||
           (n === 4 && !podeIrEtapa4) ||
           (n === 5 && !podeIrEtapa5) ||
           (n === 6 && !podeIrEtapa6) ||
-          (n === 7 && !podeIrEtapa7);
+          (n === 7 && !podeIrEtapa7)
+        );
 
         const labelModoConcessionaria =
           n === 4 ? 'F' :
@@ -1284,7 +1353,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         return (
           <div
             key={n}
-            className={`pp-step ${etapa === n ? 'active' : etapa > n ? 'done' : ''} ${isLocked ? 'locked' : ''}`}
+            className={`pp-step ${etapa === n ? 'active' : (isRestored || etapa > n) ? 'done' : ''} ${isLocked ? 'locked' : ''}`}
             onClick={() => {
               if (isLocked) return;
               setEtapa(n);
