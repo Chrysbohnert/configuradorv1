@@ -543,11 +543,11 @@ const NovoPedido = () => {
           try {
             const temIE = determinarClienteTemIE();
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
-            console.log(`🌍 [adicionarGuindaste] Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
-            precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoParaBusca);
-            console.log(`💰 [adicionarGuindaste] Preço encontrado: R$ ${precoGuindaste}`);
+            console.log(`🌍 [adicionarGuindaste] (COMPRA CONCESSIONÁRIA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
+            console.log(`💰 [adicionarGuindaste] Preço compra concessionária encontrado: R$ ${precoGuindaste}`);
           } catch (error) {
-            console.error('❌ [adicionarGuindaste] Erro ao buscar preço do guindaste:', error);
+            console.error('❌ [adicionarGuindaste] Erro ao buscar preço de compra do guindaste:', error);
             precoGuindaste = guindaste.preco || 0;
           }
         } else {
@@ -601,6 +601,8 @@ const NovoPedido = () => {
 
   // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
   useEffect(() => {
+    // Não resetar pagamento no modo edição (dados já carregados)
+    if (isEdicao) return;
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
       console.log('🔄 Voltou para Step 1, resetando dados de pagamento');
@@ -1063,6 +1065,7 @@ const NovoPedido = () => {
               descontoConcessionaria={descontoConcessionaria}
               cotacaoUSD={cotacaoUSD}
               caminhaoData={caminhaoData}
+              initialPaymentData={isEdicao ? pagamentoData : null}
             />
           </div>
         );
