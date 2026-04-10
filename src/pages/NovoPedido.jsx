@@ -256,10 +256,6 @@ const NovoPedido = () => {
       ano: caminhaoData.ano || null,
       voltagem: caminhaoData.voltagem,
       observacoes: caminhaoData.observacoes || null,
-      medida_a: caminhaoData.medidaA || null,
-      medida_b: caminhaoData.medidaB || null,
-      medida_c: caminhaoData.medidaC || null,
-      medida_d: caminhaoData.medidaD || null,
       comprimento_chassi: caminhaoData.comprimentoChassi || null,
       patolamento: caminhaoData.patolamento || null
     };
@@ -2307,8 +2303,8 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               className={errors.voltagem ? 'error' : ''}
             >
               <option value="">Selecione a voltagem</option>
-              <option value="12V">12V</option>
-              <option value="24V">24V</option>
+              <option value="12V (1 bateria)">12V</option>
+              <option value="24V (2 baterias)">24V</option>
             </select>
             {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
           </div>
@@ -2331,7 +2327,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
       {/* Seção de Medidas */}
       <div className="form-section">
         <div className="section-header">
-          <h3>📐 Estudo Veicular - Medidas</h3>
+          <h3> Estudo Veicular - Medidas</h3>
           <p>Medidas técnicas para instalação do guindaste</p>
         </div>
           
@@ -2406,12 +2402,12 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                 </div>
 
                 <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>📏 Comprimento do Chassi (cm)</label>
+                  <label>📏 Comprimento do Chassi (metros)</label>
                   <input
                     type="text"
                     value={formData.comprimentoChassi || ''}
                     onChange={(e) => handleChange('comprimentoChassi', e.target.value)}
-                    placeholder="Ex: 750cm"
+                    placeholder="Ex: 10 metros"
                   />
                 </div>
               </div>
@@ -2484,22 +2480,16 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   }, [carrinho]);
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
-  const filterCaminhaoDataForDB = (data) => {
-    return {
-      tipo: data.tipo,
-      marca: data.marca,
-      modelo: data.modelo,
-      ano: data.ano || null,
-      voltagem: data.voltagem,
-      observacoes: data.observacoes || null,
-      medida_a: data.medidaA || null,
-      medida_b: data.medidaB || null,
-      medida_c: data.medidaC || null,
-      medida_d: data.medidaD || null,
-      comprimento_chassi: data.comprimentoChassi || null,
-      patolamento: data.patolamento || null
-    };
-  };
+  const filterCaminhaoDataForDB = (data) => ({
+    tipo: data.tipo,
+    marca: data.marca,
+    modelo: data.modelo,
+    ano: data.ano || null,
+    voltagem: data.voltagem,
+    observacoes: data.observacoes || null,
+    comprimento_chassi: data.comprimentoChassi || null,
+    patolamento: data.patolamento || null
+  });
 
   // Modo edição de verdade vem da URL (propostaId). Isso evita timing issues de estado
   // que podem fazer o fluxo cair em INSERT e duplicar registros.
@@ -2592,6 +2582,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         // Buscar o ID do guindaste principal no carrinho
         const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
         const guindasteId = guindasteNoCarrinho?.id || null;
+
+        const documentoClienteDB = (String(clienteData.documento || proposta?.cliente_documento || '')
+          .replace(/\D/g, '')
+          .slice(0, 10)) || null;
         
         const dadosAtualizados = {
           data: new Date().toISOString(),
@@ -2607,7 +2601,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           },
           // Atualizar também campos principais se mudaram
           cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
-          cliente_documento: clienteData.documento || proposta?.cliente_documento || null
+          cliente_documento: documentoClienteDB
         };
         
         console.log('📋 Dados para atualização:', dadosAtualizados);
@@ -2626,13 +2620,17 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
         const valorTotal = pagamentoData.valorFinal || carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
 
+        const clienteDocumentoDB = (String(concessionariaInfo?.cnpj || clienteData?.documento || '')
+          .replace(/\D/g, '')
+          .slice(0, 10)) || null;
+
         const pedidoDataToSave = {
           numero_proposta: numeroPedido,
           data: new Date().toISOString(),
           vendedor_id: user.id,
           vendedor_nome: user.nome || 'Não informado',
           cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
-          cliente_documento: concessionariaInfo?.cnpj || clienteData?.documento || null,
+          cliente_documento: clienteDocumentoDB,
           valor_total: valorTotal,
           tipo: 'proposta',
           status: 'finalizado',
@@ -2725,13 +2723,17 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
             
             
+      const clienteDocumentoDB = (String(cliente.documento || '')
+        .replace(/\D/g, '')
+        .slice(0, 10)) || null;
+
       const pedidoDataToSave = {
         numero_proposta: numeroPedido,
         data: new Date().toISOString(),
         vendedor_id: user.id,
         vendedor_nome: user.nome || 'Não informado',
         cliente_nome: cliente.nome || 'Não informado',
-        cliente_documento: cliente.documento || null,
+        cliente_documento: clienteDocumentoDB,
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
         tipo: 'proposta',
         status: 'finalizado',

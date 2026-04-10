@@ -1594,7 +1594,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     {/* 5) Local de Instalação & Tipo de Entrega */}
     {etapa === 5 && (
       <section className="payment-section">
-        <h3>5) Local & Tipo de Entrega</h3>
+        <h3>5) Oficina autorizada e pagamento instalação</h3>
 
         {/* Local de Instalação - SEMPRE obrigatório */}
         <div className="form-row">
@@ -1606,17 +1606,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 <option key={uf} value={uf}>{uf}</option>
               ))}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label>Buscar</label>
-            <input
-              type="text"
-              value={buscaInstalacao}
-              onChange={e => setBuscaInstalacao(e.target.value)}
-              placeholder="Cidade, oficina ou UF"
-              maxLength={60}
-            />
           </div>
         </div>
 
@@ -1691,7 +1680,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     {/* 6) Entrada, Financiamento e Plano */}
     {etapa === 6 && (
       <section className="payment-section">
-        <h3>6) Entrada & Plano</h3>
+        <h3>6) Forma de pagamento</h3>
 
         <div className="form-row">
           <div className="form-group">
@@ -1705,25 +1694,44 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
                     .map(v => (
                       v === 'financiamento'
-                        ? <option key="financiamento" value="financiamento">🏦 Financiamento Bancário</option>
+                        ? <option key="financiamento" value="financiamento">Financiamento Bancário</option>
                         : <option key={v} value={v}>{v}%</option>
                     ))}
             </select>
           </div>
 
-          {percentualEntrada && percentualEntrada !== 'financiamento' && (
-            <>
-              <div className="form-group">
-                <label>Valor do Sinal</label>
-                <input
-                  type="number"
-                  value={valorSinal}
-                  onChange={e => setValorSinal(e.target.value)}
-                  placeholder="R$"
-                  min="0"
-                  step="0.01"
-                />
-              </div>
+              {percentualEntrada && percentualEntrada !== 'financiamento' && (
+      <>
+        <div className="form-group">
+          <label>Valor do Sinal</label>
+
+          <select
+            value={['10000', '15000', '20000', '25000'].includes(String(valorSinal)) ? String(valorSinal) : 'outro'}
+            onChange={e => {
+              if (e.target.value === 'outro') {
+                setValorSinal('');
+              } else {
+                setValorSinal(e.target.value);
+              }
+            }}
+          >
+            <option value="">Selecione uma opção</option>
+            <option value="10000">R$ 10.000,00</option>
+            <option value="15000">R$ 15.000,00</option>
+            <option value="20000">R$ 20.000,00</option>
+            <option value="25000">R$ 25.000,00</option>
+            <option value="outro">Outro</option>
+          </select>
+
+          <input
+            type="number"
+            value={valorSinal}
+            onChange={e => setValorSinal(e.target.value)}
+            placeholder="R$"
+            min="0"
+            step="0.01"
+          />
+        </div>
               
               <div className="form-group">
                 <label>Forma de Pagamento da Entrada</label>
