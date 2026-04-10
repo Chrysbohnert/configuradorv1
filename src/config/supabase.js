@@ -1462,32 +1462,94 @@ class DatabaseService {
   }
 
   async createCaminhao(caminhaoData) {
-    const payload = { ...(caminhaoData || {}) };
+    const raw = { ...(caminhaoData || {}) };
 
-    if (payload.medidaA !== undefined && payload.medida_a === undefined) payload.medida_a = payload.medidaA;
-    if (payload.medidaB !== undefined && payload.medida_b === undefined) payload.medida_b = payload.medidaB;
-    if (payload.medidaC !== undefined && payload.medida_c === undefined) payload.medida_c = payload.medidaC;
-    if (payload.medidaD !== undefined && payload.medida_d === undefined) payload.medida_d = payload.medidaD;
+    // Alguns ambientes usam schema com colunas camelCase (medidaA) e outros snake_case (medida_a).
+    // Para evitar quebra por divergência de schema, preparamos os 2 payloads e fazemos fallback em PGRST204.
+    const camelPayload = { ...raw };
+    if (camelPayload.medida_a !== undefined && camelPayload.medidaA === undefined) camelPayload.medidaA = camelPayload.medida_a;
+    if (camelPayload.medida_b !== undefined && camelPayload.medidaB === undefined) camelPayload.medidaB = camelPayload.medida_b;
+    if (camelPayload.medida_c !== undefined && camelPayload.medidaC === undefined) camelPayload.medidaC = camelPayload.medida_c;
+    if (camelPayload.medida_d !== undefined && camelPayload.medidaD === undefined) camelPayload.medidaD = camelPayload.medida_d;
+    if (camelPayload.comprimento_chassi !== undefined && camelPayload.comprimentoChassi === undefined) camelPayload.comprimentoChassi = camelPayload.comprimento_chassi;
 
-    delete payload.medidaA;
-    delete payload.medidaB;
-    delete payload.medidaC;
-    delete payload.medidaD;
+    delete camelPayload.medida_a;
+    delete camelPayload.medida_b;
+    delete camelPayload.medida_c;
+    delete camelPayload.medida_d;
+    delete camelPayload.comprimento_chassi;
 
-    console.log('🔍 Tentando criar caminhão com dados:', payload);
-    
-    const { data, error } = await supabase
-      .from('caminhoes')
-      .insert([payload])
-      .select()
-      .single();
-    
+    const snakePayload = { ...raw };
+    if (snakePayload.medidaA !== undefined && snakePayload.medida_a === undefined) snakePayload.medida_a = snakePayload.medidaA;
+    if (snakePayload.medidaB !== undefined && snakePayload.medida_b === undefined) snakePayload.medida_b = snakePayload.medidaB;
+    if (snakePayload.medidaC !== undefined && snakePayload.medida_c === undefined) snakePayload.medida_c = snakePayload.medidaC;
+    if (snakePayload.medidaD !== undefined && snakePayload.medida_d === undefined) snakePayload.medida_d = snakePayload.medidaD;
+    if (snakePayload.comprimentoChassi !== undefined && snakePayload.comprimento_chassi === undefined) snakePayload.comprimento_chassi = snakePayload.comprimentoChassi;
+
+    delete snakePayload.medidaA;
+    delete snakePayload.medidaB;
+    delete snakePayload.medidaC;
+    delete snakePayload.medidaD;
+    delete snakePayload.comprimentoChassi;
+
+    const hasSnakeKeys = Object.keys(raw).some((k) => k.includes('_'));
+    const primaryPayload = { ...(hasSnakeKeys ? snakePayload : camelPayload) };
+    const fallbackPayload = { ...(hasSnakeKeys ? camelPayload : snakePayload) };
+
+    const tryInsert = async (payloadToInsert) => {
+      return supabase.from('caminhoes').insert([payloadToInsert]).select().single();
+    };
+
+    const removeMissingColumnAndRetry = async (initialPayload) => {
+      const payloadToInsert = { ...(initialPayload || {}) };
+      let attempts = 0;
+
+      while (attempts < 15) {
+        attempts += 1;
+        const res = await tryInsert(payloadToInsert);
+        if (!res.error) return res;
+
+        if (res.error.code !== 'PGRST204' || typeof res.error.message !== 'string') {
+          return res;
+        }
+
+        const match = res.error.message.match(/Could not find the '([^']+)' column/i);
+        const missingColumn = match?.[1];
+        if (!missingColumn) return res;
+
+        if (Object.prototype.hasOwnProperty.call(payloadToInsert, missingColumn)) {
+          delete payloadToInsert[missingColumn];
+          continue;
+        }
+
+        return res;
+      }
+
+      return {
+        data: null,
+        error: {
+          code: 'PGRST204',
+          message: 'Too many retries while removing missing columns from payload',
+        },
+      };
+    };
+
+    console.log('🔍 Tentando criar caminhão com dados:', primaryPayload);
+    let { data, error } = await removeMissingColumnAndRetry(primaryPayload);
+
+    if (error && error.code === 'PGRST204') {
+      console.warn('⚠️ Schema mismatch ao criar caminhão. Tentando payload alternativo...');
+      console.log('🔍 Tentando criar caminhão (fallback) com dados:', fallbackPayload);
+      ({ data, error } = await removeMissingColumnAndRetry(fallbackPayload));
+    }
+
     if (error) {
       console.error('❌ Erro na criação do caminhão:', error);
-      console.error('📋 Dados enviados:', payload);
+      console.error('📋 Dados enviados (primary):', primaryPayload);
+      console.error('📋 Dados enviados (fallback):', fallbackPayload);
       throw error;
     }
-    
+
     console.log('✅ Caminhão criado com sucesso:', data);
     return data;
   }

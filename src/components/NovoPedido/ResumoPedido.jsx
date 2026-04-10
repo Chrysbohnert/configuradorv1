@@ -120,10 +120,6 @@ const ResumoPedido = ({
         ano: data.ano || null,
         voltagem: data.voltagem,
         observacoes: data.observacoes || null,
-        medida_a: data.medidaA || null,
-        medida_b: data.medidaB || null,
-        medida_c: data.medidaC || null,
-        medida_d: data.medidaD || null,
         comprimento_chassi: data.comprimentoChassi || null,
         patolamento: data.patolamento || null
       });
