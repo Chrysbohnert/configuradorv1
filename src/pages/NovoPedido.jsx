@@ -34,6 +34,7 @@ const NovoPedido = () => {
     'Sul-Sudeste',
     'RS com Inscrição Estadual',
     'RS sem Inscrição Estadual',
+    'Comércio Exterior',
   ]), []);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
@@ -72,6 +73,13 @@ const NovoPedido = () => {
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
+  // Auto-set região para modo concessionária (usa regiao_preco da concessionária cadastrada)
+  React.useEffect(() => {
+    if (!isModoConcessionaria || !concessionariaInfo) return;
+    const regiao = concessionariaInfo.regiao_preco || '';
+    if (regiao) setRegiaoClienteSelecionada(regiao);
+  }, [isModoConcessionaria, concessionariaInfo]);
+
   // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
   React.useEffect(() => {
     if (!propostaId && !location.state?.fromDetalhes) {
@@ -88,7 +96,7 @@ const NovoPedido = () => {
         localInstalacao: '',
         tipoInstalacao: ''
       });
-      setRegiaoClienteSelecionada('');
+      if (!isModoConcessionaria) setRegiaoClienteSelecionada('');
       setCurrentStep(1);
       setMaxStepReached(1);
       localStorage.removeItem('carrinho');
@@ -146,9 +154,25 @@ const NovoPedido = () => {
     }
   }, [location.pathname, isAdminStark, navigate]);
 
+  // Auto-set region for vendedor_exterior without regioes_operacao
   useEffect(() => {
     if (!user) return;
-    if (user?.tipo !== 'vendedor_exterior') {
+    const isExteriorType = user.tipo === 'vendedor_exterior';
+    const isExteriorRegiao = normalizarRegiao(user.regiao) === 'comercio-exterior';
+    const regioes = user.regioes_operacao || [];
+    if ((isExteriorType || isExteriorRegiao) && regioes.length === 0) {
+      setRegiaoClienteSelecionada('Comércio Exterior');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const isExteriorUser =
+      user.tipo === 'vendedor_exterior' ||
+      normalizarRegiao(user.regiao) === 'comercio-exterior' ||
+      (user.regioes_operacao || []).some(r => normalizarRegiao(r) === 'comercio-exterior');
+
+    if (!isExteriorUser) {
       setCotacaoUSD(null);
       return;
     }
@@ -312,7 +336,8 @@ const NovoPedido = () => {
     const regioes = user?.regioes_operacao || [];
     
     // ✅ NOVO: Não recalcular se região não foi selecionada
-    if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && (regioes.length === 0))) {
+    const isExteriorRegioAtual = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
+    if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && !isExteriorRegioAtual && regioes.length === 0)) {
       console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
         carrinhoLength: carrinho.length,
         regioesOperacao: regioes.length,
@@ -368,9 +393,10 @@ const NovoPedido = () => {
             console.log(`➡️ [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
           }
 
+          const isExteriorRecalc = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
           carrinhoAtualizado.push({
             ...item,
-            preco: novoPreco || item.preco || 0
+            preco: isExteriorRecalc ? (novoPreco || 0) : (novoPreco || item.preco || 0)
           });
         } catch (error) {
           console.error(`❌ [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
@@ -709,13 +735,16 @@ const NovoPedido = () => {
       let precoGuindaste = 0;
       let regiaoInicial = 'concessionaria';
       if (isModoConcessionaria) {
-        if (!regiaoClienteSelecionada) {
-          alert('Selecione a Região de Compra antes de escolher o equipamento.');
+        const regiaoParaUsar = regiaoClienteSelecionada ||
+          concessionariaInfo?.regiao_preco || '';
+        if (!regiaoParaUsar) {
+          alert('Região de compra não definida. Configure a região no cadastro do usuário.');
           setIsLoading(false);
           return;
         }
+        if (!regiaoClienteSelecionada) setRegiaoClienteSelecionada(regiaoParaUsar);
 
-        regiaoInicial = normalizarRegiao(regiaoClienteSelecionada, true);
+        regiaoInicial = normalizarRegiao(regiaoParaUsar, true);
         precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoInicial);
         logger.log(`Preço inicial (compra concessionária): R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
@@ -724,11 +753,21 @@ const NovoPedido = () => {
           return;
         }
       } else {
-        regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+        const isExteriorSel = user?.tipo === 'vendedor_exterior' ||
+          normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
+        if (isExteriorSel) {
+          regiaoInicial = 'comercio-exterior';
+        } else {
+          regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+        }
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
         logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
-          alert('Este equipamento não possui preço definido para sua região.');
+          alert(
+            isExteriorSel
+              ? 'Este equipamento não possui preço definido para Comércio Exterior.'
+              : 'Este equipamento não possui preço definido para sua região.'
+          );
           setIsLoading(false);
           return;
         }
@@ -942,20 +981,29 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             <>
-              {/* Seletor de região */}
-              <div className="step-header">
-                <h2>{isModoConcessionaria ? '📍 Região de Compra' : '📍 Região do Cliente'}</h2>
-                <p>{isModoConcessionaria ? 'Selecione a região para definir a tabela de preço de compra' : 'Selecione a região para definir a tabela de preços'}</p>
-              </div>
-
-              <SeletorRegiaoCliente
-                regiaoSelecionada={regiaoClienteSelecionada}
-                onRegiaoChange={setRegiaoClienteSelecionada}
-                regioesDisponiveis={isModoConcessionaria ? regioesCompraDisponiveis : (user?.regioes_operacao || [])}
-                title={isModoConcessionaria ? 'Região de Compra' : 'Região do Cliente'}
-                subtitle={isModoConcessionaria ? 'Selecione a região para aplicar a tabela de preço de compra' : 'Selecione a região onde o cliente está localizado'}
-                questionLabel={isModoConcessionaria ? 'Qual a região de compra?' : 'Qual região o cliente está?'}
-              />
+              {isModoConcessionaria ? (
+                <div className="step-header">
+                  <h2>📍 Região de Compra</h2>
+                  <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
+                    Região definida no cadastro: <strong>{regiaoClienteSelecionada || '...'}</strong>
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="step-header">
+                    <h2>📍 Região do Cliente</h2>
+                    <p>Selecione a região para definir a tabela de preços</p>
+                  </div>
+                  <SeletorRegiaoCliente
+                    regiaoSelecionada={regiaoClienteSelecionada}
+                    onRegiaoChange={setRegiaoClienteSelecionada}
+                    regioesDisponiveis={user?.regioes_operacao || []}
+                    title="Região do Cliente"
+                    subtitle="Selecione a região onde o cliente está localizado"
+                    questionLabel="Qual região o cliente está?"
+                  />
+                </>
+              )}
             </>
 
             <div className="step-header" style={{ marginTop: '40px' }}>
@@ -2303,8 +2351,8 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               className={errors.voltagem ? 'error' : ''}
             >
               <option value="">Selecione a voltagem</option>
-              <option value="12V (1 bateria)">12V</option>
-              <option value="24V (2 baterias)">24V</option>
+              <option value="12V (1 bateria)">12V (1 bateria)</option>
+              <option value="24V (2 baterias)">24V (2 baterias)</option>
             </select>
             {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
           </div>

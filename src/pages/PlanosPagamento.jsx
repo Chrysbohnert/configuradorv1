@@ -6,9 +6,9 @@ import { getPaymentPlans } from '../services/paymentPlans';
 import '../styles/PlanosPagamento.css';
 
 const AUDIENCES = [
-  { value: 'cliente', label: 'Cliente' },
-  { value: 'revenda', label: 'Revenda' },
-  { value: 'concessionaria_compra', label: 'Compra Concessionária' }
+  { value: 'cliente', label: 'Vendedor' },
+  { value: 'concessionaria_compra', label: 'Compra Concessionária' },
+  { value: 'comercio_exterior', label: 'Comércio Exterior' }
 ];
 
 const ENTRY_FILTERS = [

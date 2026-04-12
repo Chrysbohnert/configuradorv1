@@ -7,6 +7,7 @@ const regioes = [
   { id: 'sul-sudeste', nome: 'Sul-Sudeste', descricao: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
   { id: 'rs-com-ie', nome: 'RS com Inscrição Estadual', descricao: '🚜 Produtor Rural (Com IE)', destaque: true },
   { id: 'rs-sem-ie', nome: 'RS sem Inscrição Estadual', descricao: '📄 CNPJ/CPF (Sem IE)', destaque: true },
+  { id: 'comercio-exterior', nome: 'Comércio Exterior', descricao: '🌐 Exportação / USD', destaque: true },
 ];
 
 const formatarMoeda = (valor) => {

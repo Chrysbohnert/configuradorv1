@@ -22,6 +22,11 @@ export function getPaymentPlans(audience) {
     return all.filter(p => p.audience === 'revenda');
   }
 
+  // Comércio exterior: retorna apenas os planos da audiência
+  if (audience === 'comercio_exterior') {
+    return all.filter(p => p.audience === 'comercio_exterior');
+  }
+
   return filtered;
 }
 

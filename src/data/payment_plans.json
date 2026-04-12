@@ -457,6 +457,27 @@
     "entry_percent_required": 0.30,
     "discount_percent": 0.00,
     "surcharge_percent": 0.04
+  },
+  {
+    "audience": "comercio_exterior",
+    "order": 1,
+    "description": "À Vista (100%)",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
+  },
+  {
+    "audience": "comercio_exterior",
+    "order": 2,
+    "description": "Pós Faturamento",
+    "installments": 1,
+    "active": true,
+    "nature": "Venda",
+    "entry_percent_required": 0.50,
+    "discount_percent": 0.00,
+    "surcharge_percent": 0.00
   }
 ]
 

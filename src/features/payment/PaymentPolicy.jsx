@@ -4,6 +4,7 @@ import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
 import { useFretes } from '../../hooks/useFretes';
 import { temControleRemoto } from '../../utils/guindasteHelper';
+import { normalizarRegiao } from '../../utils/regiaoHelper';
 import { getPaymentPlans, getPlanLabel } from '../../services/paymentPlans';
 import SolicitarDescontoModal from '../../components/SolicitarDescontoModal';
 import './PaymentPolicy.css';
@@ -48,6 +49,12 @@ export default function PaymentPolicy({
   }, []);
   const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
   const isVendedorExterior = user?.tipo === 'vendedor_exterior';
+
+  // Detecta região Comércio Exterior tanto pelo tipo do usuário quanto pela região selecionada
+  const isComercioExterior = useMemo(() => {
+    if (isVendedorExterior) return true;
+    return normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
+  }, [isVendedorExterior, regiaoClienteSelecionada]);
 
   // =============== DERIVAÇÃO DE PRODUTOS (GSE/GSI) ===============
   const itens = useMemo(() => (carrinho?.length ? carrinho : equipamentos || []), [carrinho, equipamentos]);
@@ -112,7 +119,14 @@ export default function PaymentPolicy({
   }, [itens, caminhaoData?.voltagem]);
 
   // =============== ESTADO PRINCIPAL (7 ETAPAS) ===================
-  const [etapa, setEtapa] = useState(1);
+  const [etapa, setEtapa] = useState(() => {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || 'null');
+      if (u?.tipo === 'vendedor_exterior') return 3;
+    } catch {}
+    if (normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior') return 3;
+    return 1;
+  });
   const isRestoringRef = useRef(false);
   const hasRestoredRef = useRef(false);
 
@@ -351,7 +365,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
             const cUsd = Number(cotacaoUSD);
-            const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+            const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
               ? (valorFinal / cUsd)
               : 0;
 
@@ -408,8 +422,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
 
               // Comércio exterior
-              moeda: isVendedorExterior ? 'USD' : 'BRL',
-              cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+              moeda: isComercioExterior ? 'USD' : 'BRL',
+              cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
               valorFinalUSD,
               
               // Campos em percentual para o PDF
@@ -490,9 +504,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI, dadosFreteAtual, valorFreteCalculado]);
 
   // =============== PLANOS DISPONÍVEIS ============================
-  const audience = modoConcessionaria
-    ? 'concessionaria_compra'
-    : (tipoCliente === 'revenda' ? 'revenda' : 'cliente');
+  const audience = isComercioExterior
+    ? 'comercio_exterior'
+    : modoConcessionaria
+      ? 'concessionaria_compra'
+      : (tipoCliente === 'revenda' ? 'revenda' : 'cliente');
   const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
 
   const entradaOpcoes = null;
@@ -521,7 +537,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           }
         }
 
-        const scope = isConcessionariaUser ? 'concessionaria' : 'stark';
+        // modoConcessionaria = compra da concessionária para a Stark → planos definidos no escopo Stark
+        const scope = modoConcessionaria ? 'stark' : (isConcessionariaUser ? 'concessionaria' : 'stark');
         const concessionaria_id = user?.concessionaria_id || null;
 
         if (scope === 'concessionaria' && !concessionaria_id) {
@@ -569,12 +586,21 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       base = base.filter(p => planosLiberados.has(String(p.description).trim()));
     }
 
+    // Comércio exterior: filtrar pelos planos da audiência
+    if (isComercioExterior) {
+      if (!percentualEntrada) return [];
+      if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
+      const pNum = percentualEntradaNumCalc / 100;
+      return base.filter(p => p.entry_percent_required === pNum);
+    }
+
     if (tipoCliente !== 'cliente') return base;
     if (!percentualEntrada) return [];
     if (percentualEntrada === 'financiamento') return base.filter(p => !p.entry_percent_required);
+    if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
     const pNum = percentualEntradaNumCalc / 100;
     return base.filter(p => p.entry_percent_required === pNum);
-  }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc, planosLiberados]);
+  }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc, planosLiberados, isComercioExterior]);
 
   // Restaurar planoSelecionado após os planos serem carregados (modo edição)
   useEffect(() => {
@@ -595,6 +621,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   useEffect(() => {
     if (modoConcessionaria) return;
     if (isRestoringRef.current) return; // Não resetar durante restauração
+    if (isComercioExterior) return; // Comércio Exterior: etapas 1 e 2 são auto-inicializadas
     // Mudou tipo de cliente? zera dependentes
     setParticipacaoRevenda('');
     setTipoIE('');
@@ -616,7 +643,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // salta etapa correta (cliente precisa decidir participação; revenda não)
     setEtapa( tipoCliente ? (tipoCliente === 'cliente' ? 2 : 3) : 1 );
-  }, [tipoCliente, modoConcessionaria]);
+  }, [tipoCliente, modoConcessionaria, isComercioExterior]);
 
   useEffect(() => {
     if (isRestoringRef.current) return; // Não resetar durante restauração
@@ -668,7 +695,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         : 0;
 
       const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
-      const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+      const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
         ? (valorFinalFinanciamento / cUsd)
         : 0;
       const r = {
@@ -717,8 +744,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         extraValor: extraValorNum,
 
         // Comércio exterior
-        moeda: isVendedorExterior ? 'USD' : 'BRL',
-        cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+        moeda: isComercioExterior ? 'USD' : 'BRL',
+        cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
         valorFinalUSD,
       };
 
@@ -761,7 +788,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
       const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
 
-      const valorFinalUSD = (isVendedorExterior && Number.isFinite(cUsd) && cUsd > 0)
+      const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
         ? (valorFinal / cUsd)
         : 0;
 
@@ -838,8 +865,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         formaEntrada: formaEntrada || '',
 
         // Comércio exterior
-        moeda: isVendedorExterior ? 'USD' : 'BRL',
-        cotacao_usd: isVendedorExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+        moeda: isComercioExterior ? 'USD' : 'BRL',
+        cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
         valorFinalUSD,
         
         // CORREÇÃO: Usar parcelas recalculadas
@@ -924,10 +951,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   const podeIrEtapa4 = tipoCliente === 'revenda' ? true : !!instalacao; // Revenda não precisa selecionar instalação
   const podeIrEtapa5 = !!tipoFrete && !!localInstalacao && (tipoFrete === 'FOB' || !!tipoEntrega);
   const podeIrEtapa6 = true; // entrada/plano sempre liberados após 5
-  const podeIrEtapa7 = percentualEntrada === 'financiamento' ? true : !!planoSelecionado;
+  const podeIrEtapa7 = isComercioExterior
+    ? !!percentualEntrada
+    : (percentualEntrada === 'financiamento' ? true : !!planoSelecionado);
 
   const next = () => setEtapa(e => Math.min(e + 1, 7));
-  const prev = () => setEtapa(e => Math.max(e - 1, 1));
+  const prev = () => setEtapa(e => Math.max(e - 1, isComercioExterior ? 3 : 1));
 
   // =============== SOLICITAR DESCONTO ADICIONAL AO GESTOR ========
   const handleSolicitarDesconto = async (justificativa, descontoDesejado) => {
@@ -1194,19 +1223,21 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSE, temGSI, tipoCliente]);
 
   const moedaResumo = useMemo(() => {
-    if (!isVendedorExterior) return 'BRL';
+    if (!isComercioExterior) return 'BRL';
     return 'USD';
-  }, [isVendedorExterior]);
+  }, [isComercioExterior]);
 
   const valorFlutuanteUSD = useMemo(() => {
-    if (!isVendedorExterior) return 0;
+    if (!isComercioExterior) return 0;
     const c = Number(cotacaoUSD);
     if (!Number.isFinite(c) || c <= 0) return 0;
     return valorFlutuante / c;
-  }, [isVendedorExterior, cotacaoUSD, valorFlutuante]);
+  }, [isComercioExterior, cotacaoUSD, valorFlutuante]);
 
   // =============== RENDER ========================================
-  const etapasVisiveis = modoConcessionaria ? [4, 5, 6, 7] : [1, 2, 3, 4, 5, 6, 7];
+  const etapasVisiveis = isComercioExterior
+    ? [3, 4, 5, 6, 7]
+    : (modoConcessionaria ? [4, 5, 6, 7] : [1, 2, 3, 4, 5, 6, 7]);
 
   useEffect(() => {
     if (!modoConcessionaria) return;
@@ -1219,6 +1250,25 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     setTipoEntrega('');
     setEtapa(4); // Começar na etapa 4 (Frete) para concessionária
   }, [modoConcessionaria]);
+
+  // Auto-inicializar etapas 1 e 2 para região Comércio Exterior (pula direto para etapa 3)
+  useEffect(() => {
+    if (!isComercioExterior) return;
+    setTipoCliente('cliente');
+    setParticipacaoRevenda('nao');
+    setTipoIE('cnpj_cpf');
+    setEtapa(3);
+  }, [isComercioExterior]);
+
+  // Auto-selecionar plano À Vista quando percentual de entrada for 100% (exterior ou não)
+  useEffect(() => {
+    if (percentualEntrada !== '100') return;
+    const aVistaPlano = todosPlanos.find(p => !p.entry_percent_required);
+    if (aVistaPlano) {
+      setPlanoSelecionado(aVistaPlano);
+      onPlanSelected?.(aVistaPlano);
+    }
+  }, [percentualEntrada, todosPlanos]);
 
   useEffect(() => {
     if (!modoConcessionaria) return;
@@ -1267,8 +1317,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         </div>
 
         <div className="floating-price-value">
-          <span className="price">{isVendedorExterior ? formatCurrencyUSD(valorFlutuanteUSD) : formatCurrency(valorFlutuante)}</span>
-          {isVendedorExterior && (
+          <span className="price">{isComercioExterior ? formatCurrencyUSD(valorFlutuanteUSD) : formatCurrency(valorFlutuante)}</span>
+          {isComercioExterior && (
             <div style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>
               Câmbio: 1 USD = {formatCurrency(Number(cotacaoUSD) || 0)}
             </div>
@@ -1375,7 +1425,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     </div>
 
     {/* 1) Tipo de Cliente */}
-    {!modoConcessionaria && etapa === 1 && (
+    {!modoConcessionaria && !isComercioExterior && etapa === 1 && (
       <section className="payment-section">
         <h3>1) Tipo de Cliente</h3>
         <div className="radio-group">
@@ -1408,7 +1458,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     )}
 
     {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
-    {!modoConcessionaria && etapa === 2 && (
+    {!modoConcessionaria && !isComercioExterior && etapa === 2 && (
       <section className="payment-section">
         <h3>2) Participação da Revenda & Escolha de Cliente</h3>
 
@@ -1684,23 +1734,50 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
         <div className="form-row">
           <div className="form-group">
-            <label>Percentual de Entrada *</label>
-            <select
-              value={percentualEntrada}
-              onChange={e => setPercentualEntrada(e.target.value)}
-            >
-              <option value="">Selecione...</option>
-              {(entradaOpcoes || ['30', '50', 'financiamento'])
-                .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
-                    .map(v => (
-                      v === 'financiamento'
-                        ? <option key="financiamento" value="financiamento">Financiamento Bancário</option>
-                        : <option key={v} value={v}>{v}%</option>
-                    ))}
-            </select>
+            <label>Forma de Pagamento *</label>
+            {isComercioExterior ? (
+              <div className="radio-group">
+                <label className={`radio-option ${percentualEntrada === '100' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="opcaoPagamentoExterior"
+                    value="100"
+                    checked={percentualEntrada === '100'}
+                    onChange={() => setPercentualEntrada('100')}
+                  />
+                  <span>100% À Vista no Pedido</span>
+                </label>
+                <label className={`radio-option ${percentualEntrada === '50' ? 'selected' : ''}`}>
+                  <input
+                    type="radio"
+                    name="opcaoPagamentoExterior"
+                    value="50"
+                    checked={percentualEntrada === '50'}
+                    onChange={() => setPercentualEntrada('50')}
+                  />
+                  <span>50% Entrada + 50% Pós Faturamento</span>
+                </label>
+              </div>
+            ) : (
+              <select
+                value={percentualEntrada}
+                onChange={e => setPercentualEntrada(e.target.value)}
+              >
+                <option value="">Selecione...</option>
+                {(entradaOpcoes || ['30', '50', '100', 'financiamento'])
+                  .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
+                      .map(v => (
+                        v === 'financiamento'
+                          ? <option key="financiamento" value="financiamento">Financiamento Bancário</option>
+                          : v === '100'
+                            ? <option key="100" value="100">100% À Vista no Pedido</option>
+                            : <option key={v} value={v}>{v}%</option>
+                      ))}
+              </select>
+            )}
           </div>
 
-              {percentualEntrada && percentualEntrada !== 'financiamento' && (
+              {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && (
       <>
         <div className="form-group">
           <label>Valor do Sinal</label>
@@ -1799,7 +1876,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           />
         </div>
 
-        {percentualEntrada !== 'financiamento' && (
+        {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && (
           <>
             <div className="form-group">
               <label>Plano de Pagamento *</label>
