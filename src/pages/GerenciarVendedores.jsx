@@ -461,6 +461,7 @@ const GerenciarVendedores = () => {
                     <option value="Sul-Sudeste">Sul-Sudeste (PR, SC, SP, RJ, MG, ES - exceto RS)</option>
                     <option value="RS com Inscrição Estadual">RS com Inscrição Estadual (🚜 Produtor Rural)</option>
                     <option value="RS sem Inscrição Estadual">RS sem Inscrição Estadual (📄 CNPJ/CPF)</option>
+                    <option value="Comércio Exterior">Comércio Exterior (🌐 Exportação / USD)</option>
                   </select>
                   <small style={{ display: 'block', marginTop: '6px', color: '#6c757d' }}>
                     💡 Selecione o GRUPO DE REGIÃO principal. Este é o padrão usado quando nenhuma região específica for selecionada.
@@ -477,7 +478,8 @@ const GerenciarVendedores = () => {
                       { id: 'centro-oeste', label: 'Centro-Oeste', value: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
                       { id: 'sul-sudeste', label: 'Sul-Sudeste', value: 'Sul', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
                       { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', value: 'Rio Grande do Sul', desc: '🚜 Produtor Rural (com IE)' },
-                      { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', value: 'Rio Grande do Sul', desc: '📄 CNPJ/CPF (sem IE)' }
+                      { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', value: 'Rio Grande do Sul', desc: '📄 CNPJ/CPF (sem IE)' },
+                      { id: 'comercio-exterior', label: 'Comércio Exterior', value: 'Comércio Exterior', desc: '🌐 Exportação / Preços USD' }
                     ].map(regiao => {
                       const active = formData.regioes_operacao?.includes(regiao.label);
                       return (

@@ -43,6 +43,16 @@ export const normalizarRegiao = (regiao, temIE = true) => {
   if (regiaoLower === 'centro-oeste' || regiaoLower === 'centro oeste') {
     return 'centro-oeste';
   }
+
+  // Comércio Exterior
+  if (
+    regiaoLower === 'comércio exterior' ||
+    regiaoLower === 'comercio exterior' ||
+    regiaoLower === 'comercio-exterior' ||
+    regiaoLower === 'comércio-exterior'
+  ) {
+    return 'comercio-exterior';
+  }
   
   // Default para casos não mapeados
   return 'sul-sudeste';
@@ -74,7 +84,8 @@ export const REGIOES_VALIDAS = [
   'sul-sudeste',
   'centro-oeste',
   'rs-com-ie',
-  'rs-sem-ie'
+  'rs-sem-ie',
+  'comercio-exterior'
 ];
 
 /**
@@ -97,7 +108,8 @@ export const getNomeAmigavelRegiao = (regiao) => {
     'sul-sudeste': 'Sul/Sudeste',
     'centro-oeste': 'Centro-Oeste',
     'rs-com-ie': 'Rio Grande do Sul (Com IE)',
-    'rs-sem-ie': 'Rio Grande do Sul (Sem IE)'
+    'rs-sem-ie': 'Rio Grande do Sul (Sem IE)',
+    'comercio-exterior': 'Comércio Exterior'
   };
   
   return mapa[regiao] || regiao;
