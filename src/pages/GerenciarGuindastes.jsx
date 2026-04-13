@@ -44,7 +44,8 @@ const GerenciarGuindastes = () => {
     quantidade_disponivel: 0,
     is_prototipo: false,
     prototipo_label: '',
-    prototipo_observacoes_pdf: ''
+    prototipo_observacoes_pdf: '',
+    is_comercio_exterior: false
   });
 
   const [vendedoresDisponiveis, setVendedoresDisponiveis] = useState([]);
@@ -242,7 +243,8 @@ const GerenciarGuindastes = () => {
         quantidade_disponivel: guindasteData.quantidade_disponivel || 0,
         is_prototipo: !!guindasteData.is_prototipo,
         prototipo_label: guindasteData.prototipo_label || '',
-        prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || ''
+        prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || '',
+        is_comercio_exterior: !!guindasteData.is_comercio_exterior
       };
       console.log('📝 [handleEdit] FormData sendo definido:', newFormData);
       setFormData(newFormData);
@@ -286,7 +288,8 @@ const GerenciarGuindastes = () => {
       quantidade_disponivel: 0,
       is_prototipo: false,
       prototipo_label: '',
-      prototipo_observacoes_pdf: ''
+      prototipo_observacoes_pdf: '',
+      is_comercio_exterior: false
     });
     document.body.classList.remove('modal-open');
   };
@@ -314,7 +317,8 @@ const GerenciarGuindastes = () => {
       quantidade_disponivel: 0,
       is_prototipo: false,
       prototipo_label: '',
-      prototipo_observacoes_pdf: ''
+      prototipo_observacoes_pdf: '',
+      is_comercio_exterior: false
     });
     setShowModal(true);
     document.body.classList.add('modal-open');
@@ -438,7 +442,8 @@ const GerenciarGuindastes = () => {
         quantidade_disponivel: formData.quantidade_disponivel,
         is_prototipo: !!formData.is_prototipo,
         prototipo_label: (formData.prototipo_label || '').trim() || null,
-        prototipo_observacoes_pdf: (formData.prototipo_observacoes_pdf || '').trim() || null
+        prototipo_observacoes_pdf: (formData.prototipo_observacoes_pdf || '').trim() || null,
+        is_comercio_exterior: !!formData.is_comercio_exterior
       };
 
       console.log('📋 [handleSubmit] Dados do formulário:', formData);
@@ -638,6 +643,11 @@ const GerenciarGuindastes = () => {
                                           Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
                                         </p>
                                       )}
+                                      {guindaste.is_comercio_exterior && (
+                                        <p className="codigo-referencia">
+                                          <span className="badge">Comércio Exterior</span>
+                                        </p>
+                                      )}
                                     </div>
                                   </div>
                                   <div className="guindaste-actions">
@@ -737,6 +747,11 @@ const GerenciarGuindastes = () => {
                                   {isAdminConcessionaria && (
                                     <p className="codigo-referencia">
                                       Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
+                                    </p>
+                                  )}
+                                  {guindaste.is_comercio_exterior && (
+                                    <p className="codigo-referencia">
+                                      <span className="badge">Comércio Exterior</span>
                                     </p>
                                   )}
                                 </div>
@@ -983,6 +998,29 @@ const GerenciarGuindastes = () => {
                     <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">🔧🦾 EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador</option>
                   </select>
                   <small className="form-help">Selecione a configuração completa do guindaste</small>
+                </div>
+              </div>
+
+              <div className="form-section">
+                <div className="section-header">
+                  <h3>🌐 Comércio Exterior</h3>
+                  <div className="section-divider"></div>
+                </div>
+                <div className="form-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={!!formData.is_comercio_exterior}
+                      onChange={e => handleInputChange('is_comercio_exterior', e.target.checked)}
+                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                    />
+                    <span>
+                      <strong>Equipamento exclusivo para Comércio Exterior</strong>
+                      <small style={{ display: 'block', fontWeight: 'normal', color: '#6b7280', marginTop: '2px' }}>
+                        Quando marcado, este equipamento só aparecerá para vendedores e concessionárias com permissão de Comércio Exterior.
+                      </small>
+                    </span>
+                  </label>
                 </div>
               </div>
 

@@ -19,9 +19,9 @@ const CONTENT_H = PAGE.height - HEADER_H - FOOTER_H - 8; // -8 para respiro adic
 
 // Tipografia / estilo base
 const STYLE = {
-  TITLE_SIZE: 30,
-  SUBTITLE_SIZE: 18,
-  BODY_SIZE: 15,
+  TITLE_SIZE: 22,
+  SUBTITLE_SIZE: 16,
+  BODY_SIZE: 14,
   CLAUSE_SIZE: 11,
   LINE: 5,
   FONT: 'helvetica',
@@ -374,15 +374,15 @@ const createContainer = (id = 'pdf-section', { inline = false } = {}) => {
       .wrap { font-family: Arial, Helvetica, sans-serif; color: #000; padding: 20px; }
       .title {
         text-transform: uppercase;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 0.6px;
         font-size: ${STYLE.TITLE_SIZE}px;
         text-align: center;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
       }
       .subtitle {
         text-transform: uppercase;
-        font-weight: 700;
+        font-weight: 800;
         letter-spacing: 0.4px;
         font-size: ${STYLE.SUBTITLE_SIZE}px;
         margin: 12px 0 6px 0;
@@ -521,6 +521,20 @@ const formatarTexto = (texto) => {
   let textoFormatado = texto.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   
   return textoFormatado;
+};
+
+// Converte linhas com hífen em lista HTML estilizada
+const convertHyphensToList = (text) => {
+  if (!text) return '';
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  const hasHyphens = lines.some(l => l.startsWith('-'));
+  if (!hasHyphens) return `<span style="white-space:pre-line;">${text}</span>`;
+  return `<ul style="margin:0; padding-left:18px; list-style-type:disc;">` +
+    lines.map(l => {
+      const content = l.startsWith('-') ? l.slice(1).trim() : l;
+      return content ? `<li style="margin-bottom:5px;">${content}</li>` : '';
+    }).join('') +
+    `</ul>`;
 };
 
 /**
@@ -896,7 +910,7 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   let html = `
     <div class="wrap" style="padding:22px;">
     <div style="page-break-before: always;"></div>
-      <div class="title" style="font-size:26px;margin-bottom:16px;">${t(lang, 'equipmentTechDescription')}</div>
+      <div class="title" style="font-size:22px;margin-bottom:16px;font-weight:800;">${t(lang, 'equipmentTechDescription')}</div>
   `;
 
   if (gList.length === 0) {
@@ -908,31 +922,63 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       const descLang = lang === 'es' ? translatePtToEsHeuristic(desc) : desc;
       const naoIncluidoLang = lang === 'es' ? translatePtToEsHeuristic(naoIncluido) : naoIncluido;
 
+      const nomeEquip = (g.subgrupo || g.nome || g.modelo || '').toUpperCase();
       html += `
-        ${idx > 0 ? '<div class="rule"></div>' : ''}
-        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${descLang || t(lang, 'notProvided')}</div>
+        ${idx > 0 ? '<div style="border-top:2px solid #e2e8f0; margin:18px 0;"></div>' : ''}
 
-        <div class="small-gap"></div>
-        <div class="subtitle">${t(lang, 'notIncluded')}</div>
-        <div class="p p-justify caps" style="white-space: pre-line; font-size: 13px; line-height: 1.25;">${naoIncluidoLang || t(lang, 'notProvided')}</div>
-        <!-- PROGRAMA DE REVISÕES DENTRO DA GARANTIA -->
-<div class="small-gap"></div>
-<div class="subtitle">${t(lang, 'warrantyProgramTitle')}</div>
-<div class="p lower" style="font-size: 13px; line-height: 1.35; text-transform:none;">
-  <ul style="margin-left: 16px; padding-left: 8px; list-style-type: disc;">
-    <li>${t(lang, 'warrantyBullet1')}</li>
-    <ul style="margin-left: 20px; list-style-type: circle;">
-      <li>${t(lang, 'warrantyBullet2')}</li>
-      <li>${t(lang, 'warrantyBullet3')}</li>
-    </ul>
-        <li>${t(lang, 'warrantyBullet4')}</li>
-        <li>${t(lang, 'warrantyBullet5')}</li>
-      </ul>
-        <li>${t(lang, 'warrantyBullet6')}</li>
-        <li>${t(lang, 'warrantyBullet7')}</li>
-        <li>${t(lang, 'warrantyBullet8')}</li>
-        <li>${t(lang, 'warrantyBullet9')}</li>
-       <li>${t(lang, 'warrantyBullet10')}</li>
+        <!-- BANNER DO EQUIPAMENTO -->
+        ${nomeEquip ? `
+        <div style="background:#111827; color:#fff; padding:10px 16px; margin-bottom:14px; display:flex; align-items:center; gap:12px; border-radius:2px;">
+          <div style="width:4px; height:36px; background:#fff; flex-shrink:0; border-radius:2px;"></div>
+          <div>
+            <div style="font-size:9px; letter-spacing:2px; color:#9ca3af; text-transform:uppercase; margin-bottom:3px;">EQUIPAMENTO</div>
+            <div style="font-size:14px; font-weight:800; letter-spacing:0.5px;">${nomeEquip}</div>
+          </div>
+        </div>` : ''}
+
+        <!-- DESCRIÇÃO TÉCNICA -->
+        <div style="border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; margin-bottom:11px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">
+            DESCRICAO TECNICA
+          </div>
+          <div style="font-size:11.5px; line-height:1.65; text-transform:uppercase;">
+            ${descLang ? convertHyphensToList(descLang) : t(lang, 'notProvided')}
+          </div>
+        </div>
+
+        <!-- NAO INCLUIDO -->
+        <div style="border-left:4px solid #dc2626; background:#fef2f2; padding:13px 15px; margin-bottom:11px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#dc2626; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fca5a5;">
+            ${t(lang, 'notIncluded')}
+          </div>
+          <div style="font-size:11.5px; line-height:1.65; text-transform:uppercase; white-space:pre-line;">
+            ${naoIncluidoLang || t(lang, 'notProvided')}
+          </div>
+        </div>
+
+        <!-- GARANTIA -->
+        <div style="border-left:4px solid #16a34a; background:#f0fdf4; padding:13px 15px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#16a34a; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #86efac;">
+            ${t(lang, 'warrantyProgramTitle')}
+          </div>
+          <div style="font-size:11px; line-height:1.65; text-transform:none;">
+            <ul style="margin:0; padding-left:18px; list-style-type:disc;">
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet1')}
+                <ul style="margin-top:4px; padding-left:16px; list-style-type:circle;">
+                  <li style="margin-bottom:3px;">${t(lang, 'warrantyBullet2')}</li>
+                  <li style="margin-bottom:3px;">${t(lang, 'warrantyBullet3')}</li>
+                </ul>
+              </li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet4')}</li>
+              <li style="margin-bottom:8px;">${t(lang, 'warrantyBullet5')}</li>
+              <li style="margin-bottom:4px; font-weight:700;">${t(lang, 'warrantyBullet6')}</li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet7')}</li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet8')}</li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet9')}</li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet10')}</li>
+            </ul>
+          </div>
+        </div>
       `;
     });
   }
@@ -1036,7 +1082,7 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
   const el = createContainer('pdf-estudo', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:18px;">
-      <div class="title" style="font-size:20px;margin-bottom:10px;">${t(lang, 'vehicleStudyTitle')}</div>
+      <div class="title" style="font-size:22px;margin-bottom:14px;font-weight:800;">${t(lang, 'vehicleStudyTitle')}</div>
       <div class="center" style="margin:8px 0;">
         <img src="/estudoveicular.png" alt="Estudo Veicular" style="max-width:600px;width:100%;height:auto;"/>
       </div>
@@ -1192,25 +1238,25 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const el = createContainer('pdf-financeiro', { inline });
   el.innerHTML += `
     <div class="wrap" style="padding:14px 10px;">
-      <div class="title" style="font-size:26px; margin-bottom:12px; font-weight:800;">${t(lang, 'conditionsTitle')}</div>
+      <div class="title" style="font-size:22px; margin-bottom:14px; font-weight:800;">${t(lang, 'conditionsTitle')}</div>
 
       ${isUSD ? `
-        <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:800; font-size:14px; margin-bottom:4px;">USD</div>
-          <div style="font-weight:600; font-size:12px;">${t(lang, 'exchangeRateApplied')}: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
+        <div style="margin-bottom:11px; border-left:4px solid #0284c7; background:#f0f9ff; padding:10px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#0284c7; margin-bottom:5px;">USD</div>
+          <div style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'exchangeRateApplied')}: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
         </div>
       ` : ''}
 
       ${p.financiamentoBancario === 'sim' ? `
-        <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:14px; color:#000;">${t(lang, 'financingModeShort')}</div>
+        <div style="margin-bottom:11px; border-left:4px solid #16a34a; background:#f0fdf4; padding:10px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#16a34a;">${t(lang, 'financingModeShort')}</div>
         </div>
       ` : ''}
 
       ${observacoesNegociacao ? `
-        <div style="margin-top:10px; padding:10px 12px; background:#fff; border:1px solid #ddd; border-radius:4px;">
-          <div style="font-weight:700; font-size:14px; color:#000; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
-          <div style="font-size:13px; color:#000; line-height:1.4; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
+        <div style="margin-bottom:11px; border-left:4px solid #475569; background:#f8fafc; padding:10px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#475569; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
+          <div style="font-size:12px; color:#000; line-height:1.5; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
 
@@ -1218,31 +1264,31 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
         
         <!-- COLUNA 1: VALOR BASE -->
-        <div style="padding:12px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'baseEquipmentValue')}</div>
-          <div style="font-size:24px; font-weight:700; color:#000;">${fmt(convert(totalBase))}</div>
+        <div style="border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">${t(lang, 'baseEquipmentValue')}</div>
+          <div style="font-size:22px; font-weight:800; color:#000;">${fmt(convert(totalBase))}</div>
         </div>
 
         <!-- COLUNA 2: DESCONTOS -->
         ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
-          <div style="padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-            <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'discountsAndAdjustments')}</div>
+          <div style="border-left:4px solid #b45309; background:#fffbeb; padding:13px 15px; border-radius:3px;">
+            <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#b45309; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fde68a;">${t(lang, 'discountsAndAdjustments')}</div>
             ${p.desconto ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoVendedor))}</span>
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
+                <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
               </div>
             ` : ''}
             ${p.descontoPrazo ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">${t(lang, 'termDiscount')} (${p.descontoPrazo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoPrazo))}</span>
+              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'termDiscount')} (${p.descontoPrazo}%)</span>
+                <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoPrazo))}</span>
               </div>
             ` : ''}
             ${p.acrescimo ? `
-              <div style="display:flex; justify-content:space-between; font-size:14px;">
-                <span style="font-weight:600; color:#000;">${t(lang, 'surcharge')} (${p.acrescimo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorAcrescimo))}</span>
+              <div style="display:flex; justify-content:space-between;">
+                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'surcharge')} (${p.acrescimo}%)</span>
+                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorAcrescimo))}</span>
               </div>
             ` : ''}
           </div>
@@ -1251,31 +1297,31 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       <!-- FRETE E INSTALAÇÃO -->
       ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'freightAndInstallation')}</div>
+        <div style="margin-top:11px; border-left:4px solid #1d4ed8; background:#eff6ff; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1d4ed8; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #bfdbfe;">${t(lang, 'freightAndInstallation')}</div>
           ${p.tipoFrete ? `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'freight')}: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` - ${t(lang, 'included')}` : ''}</span>
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'freight')}: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` - ${t(lang, 'included')}` : ''}</span>
               ${valorFreteFinal > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorFreteFinal))}</span>
+                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorFreteFinal))}</span>
               ` : `
-                <span style="color:#555; font-size:12px;">${t(lang, 'customerPaysDirectly')}</span>
+                <span style="font-size:12px; color:#64748b;">${t(lang, 'customerPaysDirectly')}</span>
               `}
             </div>
           ` : ''}
           ${p.tipoInstalacao ? `
-            <div style="display:flex; justify-content:space-between; font-size:14px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'installation')}: ${p.tipoInstalacao.toUpperCase()}</span>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'installation')}: ${p.tipoInstalacao.toUpperCase()}</span>
               ${valorInstalacaoInformado > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
+                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
               ` : `
-                <span style="color:#555; font-size:12px;">${t(lang, 'customerPaysDirectly')}</span>
+                <span style="font-size:12px; color:#64748b;">${t(lang, 'customerPaysDirectly')}</span>
               `}
             </div>
           ` : ''}
           ${p.localInstalacao ? `
-            <div style="margin-top:5px; padding-top:5px; border-top:1px solid #ddd; font-size:13px;">
-              <span style="font-weight:600; color:#000;">📍 ${t(lang, 'installationLocation')}:</span>
+            <div style="margin-top:7px; padding-top:6px; border-top:1px solid #bfdbfe; font-size:12px;">
+              <span style="font-weight:600; color:#000;">${t(lang, 'installationLocation')}:</span>
               <span style="font-weight:700; color:#000; margin-left:5px;">${p.localInstalacao.toUpperCase()}</span>
             </div>
           ` : ''}
@@ -1283,82 +1329,78 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       ${(extraValor > 0) ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">${t(lang, 'extra')}</div>
-          <div style="display:flex; justify-content:space-between; font-size:14px;">
-            <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : t(lang, 'commercialAdjustment')}</span>
-            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(extraValor))}</span>
+        <div style="margin-top:11px; border-left:4px solid #7c3aed; background:#faf5ff; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#7c3aed; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #e9d5ff;">${t(lang, 'extra')}</div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:12px; font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : t(lang, 'commercialAdjustment')}</span>
+            <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(extraValor))}</span>
           </div>
         </div>
       ` : ''}
 
       ${(parseFloat(p.valorConversor || 0) > 0) ? `
-        <div style="margin-top:12px; padding:12px; background:#fff3cd; border-left:4px solid #ffc107; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">⚡ CONVERSOR DE VOLTAGEM</div>
-          <div style="display:flex; justify-content:space-between; font-size:14px;">
-            <span style="font-weight:600; color:#000;">CONTROLE REMOTO + CAMINHÃO 12V</span>
-            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
+        <div style="margin-top:11px; border-left:4px solid #d97706; background:#fffbeb; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#d97706; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fde68a;">CONVERSOR DE VOLTAGEM</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <span style="font-size:12px; font-weight:600; color:#000;">CONTROLE REMOTO + CAMINHÃO 12V</span>
+            <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
           </div>
-          <div style="margin-top:5px; font-size:12px; color:#856404; font-style:italic;">
-            * Necessário conversor de voltagem para compatibilidade
-          </div>
+          <div style="font-size:11px; color:#555; font-style:italic;">* Necessário conversor de voltagem para compatibilidade</div>
         </div>
       ` : ''}
 
       <!-- VALOR TOTAL -->
-      <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:800; font-size:18px; color:#000;">${t(lang, 'totalProposal')}</span>
-          <span style="font-weight:800; font-size:26px; color:#000;">${fmt(convert(valorTotalFinal))}</span>
-        </div>
+      <div style="margin-top:11px; border-left:4px solid #16a34a; background:#f0fdf4; padding:13px 15px; border-radius:3px;">
+        <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#16a34a; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #86efac;">${t(lang, 'totalProposal')}</div>
+        <div style="font-size:24px; font-weight:800; color:#000;">${fmt(convert(valorTotalFinal))}</div>
       </div>
 
       <!-- ENTRADA (se houver) -->
       ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ${t(lang, 'entry')} (${percentualEntradaNum}% do valor total)</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-            <span style="font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
-            <span style="font-weight:700; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
+        <div style="margin-top:11px; border-left:4px solid #0284c7; background:#f0f9ff; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#0284c7; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #bae6fd;">④ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+            <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
+            <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
           </div>
           ${p.formaEntrada ? `
-            <div style="margin-bottom:6px; padding:8px; background:#fff; border-radius:4px; border:1px solid #ddd;">
-              <span style="font-weight:600; color:#000; font-size:13px;">💳 ${t(lang, 'paymentMethod')}:</span>
-              <span style="font-weight:700; color:#000; margin-left:5px; font-size:14px;">${p.formaEntrada.toUpperCase()}</span>
+            <div style="margin-bottom:6px; padding:7px 10px; background:#fff; border-radius:3px; border:1px solid #bae6fd;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')}:</span>
+              <span style="font-weight:700; color:#000; margin-left:5px; font-size:12px;">${p.formaEntrada.toUpperCase()}</span>
             </div>
           ` : ''}
           ${sinalPago > 0 ? `
-            <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #ddd; margin-top:6px; font-size:13px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
-              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(sinalPago))}</span>
+            <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #bae6fd; margin-top:6px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
+              <span style="font-weight:700; color:#000; font-size:13px;">${fmt(convert(sinalPago))}</span>
             </div>
-            <div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'remainingToPay')}</span>
-              <span style="font-weight:700; color:#000; font-size:14px;">${fmt(convert(entradaTotalCalc - sinalPago))}</span>
+            <div style="display:flex; justify-content:space-between; margin-top:4px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'remainingToPay')}</span>
+              <span style="font-weight:700; color:#000; font-size:13px;">${fmt(convert(entradaTotalCalc - sinalPago))}</span>
             </div>
           ` : ''}
         </div>
 
         <!-- SALDO A PAGAR -->
-        <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #555; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:6px;">⑤ ${t(lang, 'balanceToPay')}</div>
-          <div style="font-size:13px; color:#000; margin-bottom:6px;">${t(lang, 'thisAmountWillBeInstallments')}</div>
-          <div style="font-weight:800; font-size:24px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
+        <div style="margin-top:11px; border-left:4px solid #4f46e5; background:#eef2ff; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#4f46e5; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #c7d2fe;">⑤ ${t(lang, 'balanceToPay')}</div>
+          <div style="font-size:12px; color:#000; margin-bottom:6px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
+          <div style="font-weight:800; font-size:22px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
         </div>
       ` : ''}
 
       <!-- PRAZO E PARCELAMENTO UNIFICADOS -->
       ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #6d6e6fff; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">
+        <div style="margin-top:11px; border-left:4px solid #475569; background:#f8fafc; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#475569; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">
             ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:13px; color:#000; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${parcelasCorrigidas.length} ${t(lang, 'installments')}:</div>
+          <div style="font-size:12px; color:#000; margin-bottom:9px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${parcelasCorrigidas.length} ${t(lang, 'installments')}:</div>
           <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
             ${parcelasCorrigidas.map((parcela, idx) => `
-              <div style="background:#fff; padding:8px; border-radius:4px; text-align:center; border:1px solid #ddd;">
-                <div style="font-size:12px; color:#000; margin-bottom:3px; font-weight:600;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:700; color:#000; font-size:16px;">${fmt(convert(parcela.valor || 0))}</div>
+              <div style="background:#fff; padding:9px; border-radius:3px; text-align:center; border:1px solid #cbd5e1;">
+                <div style="font-size:11px; color:#000; margin-bottom:3px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:800; color:#000; font-size:14px;">${fmt(convert(parcela.valor || 0))}</div>
               </div>
             `).join('')}
           </div>
@@ -1366,48 +1408,42 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       <!-- DADOS BANCÁRIOS (MESMA PÁGINA) -->
-      <div style="margin-top:16px; padding-top:12px; border-top:2px solid #ddd;">
+      <div style="margin-top:11px; border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; border-radius:3px;">
+        <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">
+          ${usarDadosConcessionaria ? `DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}` : t(lang, 'bankData')}
+        </div>
         ${usarDadosConcessionaria ? `
-          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">
-            DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}
-          </div>
           ${concessionariaLogo ? `
-            <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:140px; max-height:60px; margin-bottom:10px; display:block;"/>
+            <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:120px; max-height:50px; margin-bottom:9px; display:block;"/>
           ` : ''}
-          <div style="font-size:12px; line-height:1.6; white-space:pre-line; font-weight:600;">
+          <div style="font-size:12px; line-height:1.6; white-space:pre-line; font-weight:600; color:#000;">
             ${dadosBancariosConcessionaria || 'Dados bancários não informados.'}
           </div>
         ` : `
-          <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">${t(lang, 'bankData')}</div>
-          
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5; margin-bottom:9px;">
             <div>
-              <img src="${logoBB}" alt="Banco do Brasil" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:13px;">Banco do Brasil (001)</div>
-              <div style="font-weight:600;">Ag: 0339-5</div>
-              <div style="font-weight:600;">CC: 60548-4</div>
+              <img src="${logoBB}" alt="Banco do Brasil" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:12px; color:#000;">Banco do Brasil (001)</div>
+              <div style="font-weight:600; color:#000;">Ag: 0339-5</div>
+              <div style="font-weight:600; color:#000;">CC: 60548-4</div>
             </div>
-
             <div>
-              <img src="${logoSicredi}" alt="Sicredi" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:13px;">Sicredi (748)</div>
-              <div style="font-weight:600;">Ag: 0307</div>
-              <div style="font-weight:600;">CC: 40771-1</div>
+              <img src="${logoSicredi}" alt="Sicredi" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:12px; color:#000;">Sicredi (748)</div>
+              <div style="font-weight:600; color:#000;">Ag: 0307</div>
+              <div style="font-weight:600; color:#000;">CC: 40771-1</div>
             </div>
-
             <div>
-              <img src="${logoSicoob}" alt="Sicoob" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:13px;">Sicoob (756)</div>
-              <div style="font-weight:600;">Ag: 3072-4</div>
-              <div style="font-weight:600;">CC: 33276-3</div>
+              <img src="${logoSicoob}" alt="Sicoob" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
+              <div style="font-weight:700; font-size:12px; color:#000;">Sicoob (756)</div>
+              <div style="font-weight:600; color:#000;">Ag: 3072-4</div>
+              <div style="font-weight:600; color:#000;">CC: 33276-3</div>
             </div>
           </div>
-
-          <div style="margin-top:10px; font-size:12px; line-height:1.6;">
-            <div style="font-weight:700;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
-            <div style="margin-top:5px; font-weight:600;">
-              Pix CNPJ: <b>33228312000106</b> (Sicredi) | 
-              Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
+          <div style="padding-top:8px; border-top:1px solid #cbd5e1; font-size:12px; line-height:1.6;">
+            <div style="font-weight:700; color:#000;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
+            <div style="margin-top:4px; font-weight:600; color:#000;">
+              Pix CNPJ: <b>33228312000106</b> (Sicredi) | Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
             </div>
           </div>
         `}
@@ -1997,7 +2033,8 @@ const renderEquipamentoIndividualCompra = (pedidoData, guindaste, idx, total, { 
  *  ANEXO DE GRÁFICOS (PDF)
  * ==========================
  */
-const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataURL, timestampText) => {
+// Retorna lista de URLs de gráficos de carga correspondentes ao pedido
+const getGraficoUrls = async (pedidoData) => {
   try {
     const graficosCadastrados = await db.getGraficosCarga();
 
@@ -2028,50 +2065,19 @@ const appendGraficosDeCarga = async (pdf, pedidoData, headerDataURL, footerDataU
       if (url) resolved.set(k, url);
     }
 
+    const urls = [];
     const urlsIncluidas = new Set();
     for (const [, url] of resolved) {
-      if (urlsIncluidas.has(url)) continue;
-      urlsIncluidas.add(url);
-
-      // Renderizar gráfico como imagem
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      await new Promise((resolve, reject) => {
-        img.onload = resolve;
-        img.onerror = reject;
-        img.src = url;
-      });
-
-      const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-
-      pdf.addPage();
-      
-      // CALCULAR TAMANHO DA IMAGEM (página inteira)
-      const maxW = PAGE.width;
-      const maxH = PAGE.height;
-      
-      const scaledH = (canvas.height * maxW) / canvas.width;
-      let drawW = maxW;
-      let drawH = scaledH;
-      
-      if (scaledH > maxH) {
-        drawH = maxH;
-        drawW = (canvas.width * maxH) / canvas.height;
+      if (!urlsIncluidas.has(url)) {
+        urlsIncluidas.add(url);
+        urls.push(url);
       }
-      
-      // Centralizar na página inteira
-      const x = (PAGE.width - drawW) / 2;
-      const y = (PAGE.height - drawH) / 2;
-      
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', x, y, drawW, drawH);
     }
+    console.log(`📊 [getGraficoUrls] ${urls.length} gráfico(s) encontrado(s)`);
+    return urls;
   } catch (e) {
-    console.error('Erro ao anexar gráficos de carga:', e);
+    console.error('Erro ao buscar gráficos de carga:', e);
+    return [];
   }
 };
 
@@ -2187,9 +2193,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }
 
-        // ==== GRÁFICOS DE CARGA
-        await appendGraficosDeCarga(pdf, pedidoData, headerDataURL, footerDataURL, ts);
-
         // ==== PÁGINA 3: VEÍCULO + ESTUDO VEICULAR
         {
           const root = createContainer('page2-root', { inline: true });
@@ -2224,7 +2227,43 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       const fileName = isCompra
         ? `Pedido_Compra_Concessionaria_${nomeSanitizado}.pdf`
         : `Proposta_Stark_${nomeSanitizado}.pdf`;
-      pdf.save(fileName);
+
+      // ==== ANEXAR GRÁFICOS DE CARGA (PDFs) via pdf-lib
+      const graficoUrls = await getGraficoUrls(pedidoData);
+      if (graficoUrls.length > 0) {
+        try {
+          const { PDFDocument } = await import('pdf-lib');
+          const mainBytes = pdf.output('arraybuffer');
+          const mainDoc = await PDFDocument.load(mainBytes);
+          for (const url of graficoUrls) {
+            try {
+              const resp = await fetch(url);
+              if (!resp.ok) { console.warn('⚠️ Gráfico não acessível:', url); continue; }
+              const grafBytes = await resp.arrayBuffer();
+              const grafDoc = await PDFDocument.load(grafBytes);
+              const copied = await mainDoc.copyPages(grafDoc, grafDoc.getPageIndices());
+              copied.forEach(p => mainDoc.addPage(p));
+              console.log('✅ Gráfico anexado:', url);
+            } catch (e) {
+              console.error('⚠️ Erro ao incluir gráfico individual:', e);
+            }
+          }
+          const mergedBytes = await mainDoc.save();
+          const blob = new Blob([mergedBytes], { type: 'application/pdf' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fileName;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+        } catch (e) {
+          console.error('Erro ao mesclar gráficos, salvando PDF sem gráficos:', e);
+          pdf.save(fileName);
+        }
+      } else {
+        pdf.save(fileName);
+      }
 
       onGenerate && onGenerate(fileName);
     } catch (e) {
