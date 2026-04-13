@@ -506,6 +506,11 @@ const NovoPedido = () => {
       setGuindastesVisiveisParaVendedor(idsSet);
 
       
+      const isVendedorCE = (user?.regioes_operacao || []).some(r => {
+        const rLower = (r || '').toLowerCase().trim();
+        return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
+      });
+
       const filtrados = (all || []).filter(g => {
         // Filtro de protótipos
         if (g?.is_prototipo) {
@@ -513,8 +518,12 @@ const NovoPedido = () => {
             if (!idsSet || !idsSet.has(g.id)) return false;
           }
         }
+
+        // Filtro de Comércio Exterior: só vendedores CE ou admin stark
+        if (g?.is_comercio_exterior) {
+          if (!isAdminStark && !isVendedorCE) return false;
+        }
         
-                
         return true;
       });
 

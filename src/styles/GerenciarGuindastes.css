@@ -1920,3 +1920,15 @@ textarea:focus {
   color: #374151;
   border-color: #d1d5db;
 }
+
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: #0ea5e9;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}

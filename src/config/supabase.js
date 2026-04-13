@@ -848,7 +848,7 @@ class DatabaseService {
       // As imagens serão carregadas sob demanda quando necessário
       const { data, error } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_payment_set_id')
+        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_payment_set_id, is_comercio_exterior')
         .order('subgrupo')
         .range(from, to);
 
@@ -1011,6 +1011,7 @@ class DatabaseService {
       prototipo_label: guindasteData.prototipo_label || null,
       prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || null,
       prototipo_payment_set_id: guindasteData.prototipo_payment_set_id || null,
+      is_comercio_exterior: !!guindasteData.is_comercio_exterior,
       quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined) 
         ? 0 
         : parseInt(guindasteData.quantidade_disponivel, 10)
@@ -1107,6 +1108,7 @@ class DatabaseService {
         prototipo_label: guindasteData.prototipo_label || null,
         prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || null,
         prototipo_payment_set_id: guindasteData.prototipo_payment_set_id || null,
+        is_comercio_exterior: !!guindasteData.is_comercio_exterior,
         quantidade_disponivel: (guindasteData.quantidade_disponivel === '' || guindasteData.quantidade_disponivel === null || guindasteData.quantidade_disponivel === undefined)
           ? 0
           : parseInt(guindasteData.quantidade_disponivel, 10)
