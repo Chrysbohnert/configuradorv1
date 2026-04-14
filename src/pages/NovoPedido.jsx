@@ -1338,13 +1338,13 @@ const NovoPedido = () => {
       case 3:
         if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
         if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
-        // Email não é mais obrigatório
-        if (!clienteData.documento) errors.documento = 'CNPJ ou CPF é obrigatório';
-        // Inscrição Estadual só é obrigatória se não for marcado como "ISENTO"
-        if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
-          errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+        if (!clienteData.modoInternacional) {
+          if (!clienteData.documento) errors.documento = 'CNPJ ou CPF é obrigatório';
+          if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
+            errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+          }
+          if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
         }
-        if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
         break;
       case 4:
         if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
@@ -1406,12 +1406,15 @@ const NovoPedido = () => {
                pagamentoData.participacaoRevenda &&
                (pagamentoData.participacaoRevenda ? pagamentoData.revendaTemIE : true);
       case 3:
-        return clienteData.nome && 
+        if (clienteData.modoInternacional) {
+          return !!(clienteData.nome && clienteData.telefone);
+        }
+        return !!(clienteData.nome && 
                clienteData.telefone && 
                clienteData.email && 
                clienteData.documento && 
-               clienteData.inscricao_estadual && // Pode ser "ISENTO" ou um número
-               clienteData.endereco;
+               clienteData.inscricao_estadual && 
+               clienteData.endereco);
       case 4:
         return caminhaoData.tipo && 
                caminhaoData.marca && 
@@ -1888,6 +1891,10 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
   const [semEmail, setSemEmail] = React.useState(false);
   const [modoInternacional, setModoInternacional] = React.useState(isExteriorUser);
 
+  React.useEffect(() => {
+    setFormData(prev => ({ ...prev, modoInternacional }));
+  }, [modoInternacional]);
+
   const toggleModo = () => {
     setModoInternacional(prev => {
       const next = !prev;
@@ -2079,7 +2086,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
           <div className="form-group">
             <label>
               <span className="label-icon">🆔</span>
-              {modoInternacional ? 'Documento / ID *' : 'CNPJ ou CPF *'}
+              {modoInternacional ? 'Documento / ID' : 'CNPJ ou CPF *'}
             </label>
             <input
               type="text"
@@ -2165,70 +2172,14 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
         {modoInternacional ? (
           /* ── MODO INTERNACIONAL ── */
           <div className="form-group full-width">
-            <label>Endereço *</label>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>País *</label>
-                <input
-                  type="text"
-                  value={formData.pais || ''}
-                  onChange={(e) => handleChange('pais', e.target.value)}
-                  placeholder="Ex: Argentina, Chile, Peru..."
-                />
-              </div>
-              <div className="form-group">
-                <label>Estado / Província</label>
-                <input
-                  type="text"
-                  value={formData.uf || ''}
-                  onChange={(e) => handleChange('uf', e.target.value)}
-                  placeholder="Ex: Buenos Aires, Santiago..."
-                />
-              </div>
-              <div className="form-group">
-                <label>Cidade *</label>
-                <input
-                  type="text"
-                  value={formData.cidade || ''}
-                  onChange={(e) => handleChange('cidade', e.target.value)}
-                  placeholder="Nome da cidade"
-                />
-              </div>
-              <div className="form-group">
-                <label>Rua / Avenida</label>
-                <input
-                  type="text"
-                  value={formData.logradouro || ''}
-                  onChange={(e) => handleChange('logradouro', e.target.value)}
-                  placeholder="Logradouro"
-                />
-              </div>
-              <div className="form-group">
-                <label>Número</label>
-                <input
-                  type="text"
-                  value={formData.numero || ''}
-                  onChange={(e) => handleChange('numero', e.target.value)}
-                  placeholder="Número"
-                />
-              </div>
-              <div className="form-group">
-                <label>Código Postal</label>
-                <input
-                  type="text"
-                  value={formData.cep || ''}
-                  onChange={(e) => handleChange('cep', e.target.value.replace(/[^a-zA-Z0-9\s-]/g, ''))}
-                  placeholder="Código postal"
-                />
-              </div>
-            </div>
-            <input
-              type="text"
+            <label>Endereço</label>
+            <textarea
               value={formData.endereco || ''}
-              readOnly
-              placeholder="Endereço completo (gerado automaticamente)"
+              onChange={(e) => handleChange('endereco', e.target.value)}
+              placeholder="Digite o endereço completo (rua, número, cidade, estado, país, código postal...)"
+              rows={4}
+              style={{ width: '100%', resize: 'vertical' }}
               className={errors.endereco ? 'error' : ''}
-              style={{ marginTop: '8px' }}
             />
             {errors.endereco && <span className="error-message">{errors.endereco}</span>}
           </div>
