@@ -2632,7 +2632,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       }
       
       // Critérios mínimos para salvar automaticamente sem interromper a experiência
-      const camposClienteOK = Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
+      const camposClienteOK = clienteData?.modoInternacional
+        ? Boolean(clienteData?.nome && clienteData?.telefone)
+        : Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
       
       // Para proposta preliminar: apenas tipo, marca, modelo (voltagem pode estar vazio)
       // Para proposta normal: exigir todos os campos incluindo voltagem
