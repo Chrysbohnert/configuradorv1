@@ -648,7 +648,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
       ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}`
       : '';
     const cep = c.cep ? ` - CEP: ${c.cep}` : '';
-    return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || t(lang, 'notProvided');
+    return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || t(lang, 'notProvided');
   })();
 
   el.innerHTML += `
