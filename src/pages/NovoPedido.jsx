@@ -1162,7 +1162,7 @@ const NovoPedido = () => {
                 </div>
                 
                 <div className="client-form-container">
-                  <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} />
+                  <ClienteForm formData={clienteData} setFormData={setClienteData} errors={validationErrors} user={user} />
                   
                   <div className="form-actions">
                     <button 
@@ -1848,7 +1848,10 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
 // Componente Política de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
 
 // Componente Form do Cliente
-const ClienteForm = ({ formData, setFormData, errors = {} }) => {
+const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
+  const isExteriorUser = user?.tipo === 'vendedor_exterior' ||
+    (user?.regioes_operacao || []).some(r => (r || '').toLowerCase().includes('exterior'));
+
   const onlyDigits = (value) => (value || '').replace(/\D/g, '');
   const maskCEP = (value) => {
     const digits = onlyDigits(value).slice(0, 8);
@@ -1858,7 +1861,7 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const maskPhone = (value) => {
     const digits = onlyDigits(value).slice(0, 11);
     const ddd = digits.slice(0, 2);
-    const isMobile = digits.length > 10; // 11 dígitos
+    const isMobile = digits.length > 10;
     const partA = isMobile ? digits.slice(2, 7) : digits.slice(2, 6);
     const partB = isMobile ? digits.slice(7, 11) : digits.slice(6, 10);
     let out = '';
@@ -1868,13 +1871,14 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
     if (partB) out += `-${partB}`;
     return out;
   };
-  const composeEndereco = (data) => {
+  const composeEndereco = (data, internacional = false) => {
     const parts = [];
     if (data.logradouro) parts.push(data.logradouro);
     if (data.numero) parts.push(`, ${data.numero}`);
     if (data.bairro) parts.push(` - ${data.bairro}`);
     if (data.cidade || data.uf) parts.push(` - ${data.cidade || ''}${data.uf ? (data.cidade ? '/' : '') + data.uf : ''}`);
-    if (data.cep) parts.push(` - CEP: ${data.cep}`);
+    if (data.cep) parts.push(internacional ? ` - ${data.cep}` : ` - CEP: ${data.cep}`);
+    if (internacional && data.pais) parts.push(` - ${data.pais}`);
     return parts.join('');
   };
   const [cidadesUF, setCidadesUF] = React.useState([]);
@@ -1882,17 +1886,33 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
   const [manualEndereco, setManualEndereco] = React.useState(false);
   const [isentoIE, setIsentoIE] = React.useState(false);
   const [semEmail, setSemEmail] = React.useState(false);
+  const [modoInternacional, setModoInternacional] = React.useState(isExteriorUser);
+
+  const toggleModo = () => {
+    setModoInternacional(prev => {
+      const next = !prev;
+      setFormData(d => {
+        const cleared = { ...d, uf: '', cidade: '', cep: '', pais: next ? (d.pais || '') : '' };
+        cleared.endereco = composeEndereco(cleared, next);
+        return cleared;
+      });
+      return next;
+    });
+  };
 
   const handleChange = (field, value) => {
     setFormData(prev => {
       let maskedValue = value;
       // Campos numéricos: aceitar apenas dígitos
       if (field === 'telefone') maskedValue = maskPhone(value.replace(/\D/g, ''));
-      else if (field === 'cep') maskedValue = maskCEP(value.replace(/\D/g, ''));
+      else if (field === 'cep') maskedValue = modoInternacional ? value : maskCEP(value.replace(/\D/g, ''));
       else if (field === 'documento') {
-        // CPF/CNPJ: aceitar apenas números
-        const digits = value.replace(/\D/g, '');
-        maskedValue = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
+        if (modoInternacional) {
+          maskedValue = value;
+        } else {
+          const digits = value.replace(/\D/g, '');
+          maskedValue = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
+        }
       }
       else if (field === 'inscricao_estadual' && value !== 'ISENTO') {
         // IE: aceitar apenas números (exceto quando é ISENTO)
@@ -1902,26 +1922,28 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
         maskedValue = value;
       }
       const next = { ...prev, [field]: maskedValue };
-      // Consistência: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
-      if (field === 'uf') {
-        next.cidade = '';
-        if (!manualEndereco && next.cep) next.cep = '';
-      }
-      if (field === 'cidade') {
-        if (!manualEndereco && next.cep) next.cep = '';
+      // Consistência BR: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
+      if (!modoInternacional) {
+        if (field === 'uf') {
+          next.cidade = '';
+          if (!manualEndereco && next.cep) next.cep = '';
+        }
+        if (field === 'cidade') {
+          if (!manualEndereco && next.cep) next.cep = '';
+        }
       }
       // Se o campo alterado é parte do endereço detalhado, atualizar 'endereco' composto
       if ([
-        'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep'
+        'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep', 'pais'
       ].includes(field)) {
-        next.endereco = composeEndereco(next);
+        next.endereco = composeEndereco(next, modoInternacional);
       }
       return next;
     });
   };
 
   React.useEffect(() => {
-    if (manualEndereco) return; // não sobrescrever quando edição manual estiver ativa
+    if (manualEndereco || modoInternacional) return;
     const raw = onlyDigits(formData.cep || '');
     if (raw.length !== 8) return;
     let cancelled = false;
@@ -2057,165 +2079,237 @@ const ClienteForm = ({ formData, setFormData, errors = {} }) => {
           <div className="form-group">
             <label>
               <span className="label-icon">🆔</span>
-              CNPJ ou CPF *
+              {modoInternacional ? 'Documento / ID *' : 'CNPJ ou CPF *'}
             </label>
             <input
               type="text"
               value={formData.documento || ''}
               onChange={(e) => handleChange('documento', e.target.value)}
-              placeholder="000.000.000-00"
+              placeholder={modoInternacional ? 'Número de identificação fiscal' : '000.000.000-00'}
               className={errors.documento ? 'error' : ''}
             />
             {errors.documento && <span className="error-message">{errors.documento}</span>}
           </div>
 
-          <div className="form-group">
-            <label>
-              <span className="label-icon">🏢</span>
-              Inscrição Estadual {!isentoIE && '*'}
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-              <input
-                type="checkbox"
-                id="isentoIE"
-                checked={isentoIE}
-                onChange={(e) => {
-                  setIsentoIE(e.target.checked);
-                  if (e.target.checked) {
-                    handleChange('inscricao_estadual', 'ISENTO');
-                  } else {
-                    handleChange('inscricao_estadual', '');
-                  }
-                }}
-                style={{ width: 'auto', margin: '0' }}
-              />
-              <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
-                Isento de Inscrição Estadual
+          {!modoInternacional && (
+            <div className="form-group">
+              <label>
+                <span className="label-icon">🏢</span>
+                Inscrição Estadual {!isentoIE && '*'}
               </label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+                <input
+                  type="checkbox"
+                  id="isentoIE"
+                  checked={isentoIE}
+                  onChange={(e) => {
+                    setIsentoIE(e.target.checked);
+                    if (e.target.checked) {
+                      handleChange('inscricao_estadual', 'ISENTO');
+                    } else {
+                      handleChange('inscricao_estadual', '');
+                    }
+                  }}
+                  style={{ width: 'auto', margin: '0' }}
+                />
+                <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
+                  Isento de Inscrição Estadual
+                </label>
+              </div>
+              <input
+                type="text"
+                value={formData.inscricao_estadual || ''}
+                onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
+                placeholder={isentoIE ? 'ISENTO' : '00000000000000'}
+                className={errors.inscricao_estadual ? 'error' : ''}
+                disabled={isentoIE}
+                style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
+              />
+              {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
             </div>
-            <input
-              type="text"
-              value={formData.inscricao_estadual || ''}
-              onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
-              placeholder={isentoIE ? "ISENTO" : "00000000000000"}
-              className={errors.inscricao_estadual ? 'error' : ''}
-              disabled={isentoIE}
-              style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
-            />
-            {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
-          </div>
+          )}
         </div>
       </div>
       
       {/* Endereço */}
       <div className="form-section">
-        <div className="section-header">
-          <h3>📍 Endereço</h3>
-          <p>Localização do cliente</p>
-        </div>
-        
-        {/* Endereço - fluxo em cascata: CEP → UF → Cidade → Rua/Número/Bairro */}
-        <div className="form-group full-width">
-          <label>Endereço *</label>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>CEP</label>
-              <input
-                type="text"
-                value={formData.cep || ''}
-                onChange={(e) => handleChange('cep', e.target.value)}
-                placeholder="00000-000"
-              />
-              {onlyDigits(formData.cep || '').length === 8 && !manualEndereco && (
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => setManualEndereco(true)}
-                  style={{ marginTop: '6px' }}
-                >
-                  Editar manualmente UF/Cidade
-                </button>
-              )}
-              {onlyDigits(formData.cep || '').length === 8 && manualEndereco && (
-                <button
-                  type="button"
-                  className="btn-link"
-                  onClick={() => setManualEndereco(false)}
-                  style={{ marginTop: '6px' }}
-                >
-                  Voltar ao modo CEP
-                </button>
-              )}
-            </div>
-            <div className="form-group">
-              <label>UF</label>
-              <select
-                value={formData.uf || ''}
-                onChange={(e) => handleChange('uf', e.target.value)}
-                disabled={onlyDigits(formData.cep || '').length === 8 && !manualEndereco}
-              >
-                <option value="">Selecione UF</option>
-                {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(uf => (
-                  <option key={uf} value={uf}>{uf}</option>
-                ))}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Cidade</label>
-              <select
-                value={formData.cidade || ''}
-                onChange={(e) => handleChange('cidade', e.target.value)}
-                disabled={!formData.uf || loadingCidades || (onlyDigits(formData.cep || '').length === 8 && !manualEndereco)}
-              >
-                <option value="">{loadingCidades ? 'Carregando...' : (formData.uf ? 'Selecione a cidade' : 'Selecione UF primeiro')}</option>
-                {cidadesUF.map((nome) => (
-                  <option key={nome} value={nome}>{nome}</option>
-                ))}
-              </select>
-            </div>
-            {formData.uf && formData.cidade && (
-              <>
-                <div className="form-group">
-                  <label>Rua/Avenida</label>
-                  <input
-                    type="text"
-                    value={formData.logradouro || ''}
-                    onChange={(e) => handleChange('logradouro', e.target.value)}
-                    placeholder="Logradouro"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Número</label>
-                  <input
-                    type="text"
-                    value={formData.numero || ''}
-                    onChange={(e) => handleChange('numero', e.target.value)}
-                    placeholder="Número"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Bairro</label>
-                  <input
-                    type="text"
-                    value={formData.bairro || ''}
-                    onChange={(e) => handleChange('bairro', e.target.value)}
-                    placeholder="Bairro"
-                  />
-                </div>
-              </>
-            )}
+        <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <div>
+            <h3>📍 Endereço</h3>
+            <p>Localização do cliente</p>
           </div>
-          {/* Campo composto (somente leitura) */}
-          <input
-            type="text"
-            value={formData.endereco || ''}
-            readOnly
-            placeholder="Endereço completo (gerado automaticamente)"
-            className={errors.endereco ? 'error' : ''}
-            style={{ marginTop: '8px' }}
-          />
-          {errors.endereco && <span className="error-message">{errors.endereco}</span>}
+          {isExteriorUser && (
+            <button
+              type="button"
+              onClick={toggleModo}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: modoInternacional ? '1.5px solid #1d4ed8' : '1.5px solid #cbd5e1',
+                background: modoInternacional ? '#eff6ff' : '#f8fafc',
+                color: modoInternacional ? '#1d4ed8' : '#475569',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {modoInternacional ? '🌍 Internacional (ativo)' : '🌍 Endereço Internacional'}
+            </button>
+          )}
         </div>
+
+        {modoInternacional ? (
+          /* ── MODO INTERNACIONAL ── */
+          <div className="form-group full-width">
+            <label>Endereço *</label>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>País *</label>
+                <input
+                  type="text"
+                  value={formData.pais || ''}
+                  onChange={(e) => handleChange('pais', e.target.value)}
+                  placeholder="Ex: Argentina, Chile, Peru..."
+                />
+              </div>
+              <div className="form-group">
+                <label>Estado / Província</label>
+                <input
+                  type="text"
+                  value={formData.uf || ''}
+                  onChange={(e) => handleChange('uf', e.target.value)}
+                  placeholder="Ex: Buenos Aires, Santiago..."
+                />
+              </div>
+              <div className="form-group">
+                <label>Cidade *</label>
+                <input
+                  type="text"
+                  value={formData.cidade || ''}
+                  onChange={(e) => handleChange('cidade', e.target.value)}
+                  placeholder="Nome da cidade"
+                />
+              </div>
+              <div className="form-group">
+                <label>Rua / Avenida</label>
+                <input
+                  type="text"
+                  value={formData.logradouro || ''}
+                  onChange={(e) => handleChange('logradouro', e.target.value)}
+                  placeholder="Logradouro"
+                />
+              </div>
+              <div className="form-group">
+                <label>Número</label>
+                <input
+                  type="text"
+                  value={formData.numero || ''}
+                  onChange={(e) => handleChange('numero', e.target.value)}
+                  placeholder="Número"
+                />
+              </div>
+              <div className="form-group">
+                <label>Código Postal</label>
+                <input
+                  type="text"
+                  value={formData.cep || ''}
+                  onChange={(e) => handleChange('cep', e.target.value.replace(/[^a-zA-Z0-9\s-]/g, ''))}
+                  placeholder="Código postal"
+                />
+              </div>
+            </div>
+            <input
+              type="text"
+              value={formData.endereco || ''}
+              readOnly
+              placeholder="Endereço completo (gerado automaticamente)"
+              className={errors.endereco ? 'error' : ''}
+              style={{ marginTop: '8px' }}
+            />
+            {errors.endereco && <span className="error-message">{errors.endereco}</span>}
+          </div>
+        ) : (
+          /* ── MODO BRASIL ── */
+          <div className="form-group full-width">
+            <label>Endereço *</label>
+            <div className="form-grid">
+              <div className="form-group">
+                <label>CEP</label>
+                <input
+                  type="text"
+                  value={formData.cep || ''}
+                  onChange={(e) => handleChange('cep', e.target.value)}
+                  placeholder="00000-000"
+                />
+                {onlyDigits(formData.cep || '').length === 8 && !manualEndereco && (
+                  <button type="button" className="btn-link" onClick={() => setManualEndereco(true)} style={{ marginTop: '6px' }}>
+                    Editar manualmente UF/Cidade
+                  </button>
+                )}
+                {onlyDigits(formData.cep || '').length === 8 && manualEndereco && (
+                  <button type="button" className="btn-link" onClick={() => setManualEndereco(false)} style={{ marginTop: '6px' }}>
+                    Voltar ao modo CEP
+                  </button>
+                )}
+              </div>
+              <div className="form-group">
+                <label>UF</label>
+                <select
+                  value={formData.uf || ''}
+                  onChange={(e) => handleChange('uf', e.target.value)}
+                  disabled={onlyDigits(formData.cep || '').length === 8 && !manualEndereco}
+                >
+                  <option value="">Selecione UF</option>
+                  {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(uf => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>Cidade</label>
+                <select
+                  value={formData.cidade || ''}
+                  onChange={(e) => handleChange('cidade', e.target.value)}
+                  disabled={!formData.uf || loadingCidades || (onlyDigits(formData.cep || '').length === 8 && !manualEndereco)}
+                >
+                  <option value="">{loadingCidades ? 'Carregando...' : (formData.uf ? 'Selecione a cidade' : 'Selecione UF primeiro')}</option>
+                  {cidadesUF.map((nome) => (
+                    <option key={nome} value={nome}>{nome}</option>
+                  ))}
+                </select>
+              </div>
+              {formData.uf && formData.cidade && (
+                <>
+                  <div className="form-group">
+                    <label>Rua/Avenida</label>
+                    <input type="text" value={formData.logradouro || ''} onChange={(e) => handleChange('logradouro', e.target.value)} placeholder="Logradouro" />
+                  </div>
+                  <div className="form-group">
+                    <label>Número</label>
+                    <input type="text" value={formData.numero || ''} onChange={(e) => handleChange('numero', e.target.value)} placeholder="Número" />
+                  </div>
+                  <div className="form-group">
+                    <label>Bairro</label>
+                    <input type="text" value={formData.bairro || ''} onChange={(e) => handleChange('bairro', e.target.value)} placeholder="Bairro" />
+                  </div>
+                </>
+              )}
+            </div>
+            <input
+              type="text"
+              value={formData.endereco || ''}
+              readOnly
+              placeholder="Endereço completo (gerado automaticamente)"
+              className={errors.endereco ? 'error' : ''}
+              style={{ marginTop: '8px' }}
+            />
+            {errors.endereco && <span className="error-message">{errors.endereco}</span>}
+          </div>
+        )}
         
         <div className="form-group">
           <label>

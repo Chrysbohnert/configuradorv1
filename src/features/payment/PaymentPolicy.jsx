@@ -1777,7 +1777,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             )}
           </div>
 
-              {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && (
+              {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && !isComercioExterior && (
       <>
         <div className="form-group">
           <label>Valor do Sinal</label>
@@ -1808,8 +1808,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             min="0"
             step="0.01"
           />
-        </div>
-              
+        </div>              
               <div className="form-group">
                 <label>Forma de Pagamento da Entrada</label>
                 <select
@@ -1822,7 +1821,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                   <option value="CHEQUE">CHEQUE</option>
                   <option value="DINHEIRO">DINHEIRO</option>
                   <option value="CARTÃO">CARTÃO</option>
-                  {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO'].includes(formaEntrada) && (
+                  <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
+                  {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
                     <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
                   )}
                 </select>
@@ -1832,6 +1832,32 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
               </div>
             </>
           )}
+
+              {isComercioExterior && percentualEntrada && percentualEntrada !== 'financiamento' && (
+                <div className="form-group">
+                  <label>Forma de Pagamento{percentualEntrada === '50' ? ' da Entrada' : ''} *</label>
+                  {percentualEntrada === '50' && (
+                    <small style={{ display: 'block', marginBottom: '6px', color: '#1d4ed8', fontSize: '0.85em', fontWeight: 600 }}>
+                      📌 Entrada automática: 50% do valor total (R$ {resultado ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format((resultado.valorFinal || 0) * 0.5) : '---'})
+                    </small>
+                  )}
+                  <select
+                    value={formaEntrada}
+                    onChange={e => setFormaEntrada(e.target.value)}
+                  >
+                    <option value="">Selecione...</option>
+                    <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
+                    <option value="PIX">PIX</option>
+                    <option value="BOLETO">BOLETO</option>
+                    <option value="CHEQUE">CHEQUE</option>
+                    <option value="DINHEIRO">DINHEIRO</option>
+                    <option value="CARTÃO">CARTÃO</option>
+                    {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
+                      <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
+                    )}
+                  </select>
+                </div>
+              )}
 
           {percentualEntrada && (
             <>
