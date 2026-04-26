@@ -16,6 +16,7 @@ const RelatorioCompleto = () => {
   const [filtroVendedor, setFiltroVendedor] = useState('');
   const [filtroMes, setFiltroMes] = useState('');
   const [busca, setBusca] = useState('');
+  const [excluindo, setExcluindo] = useState(null);
 
   const csvEscape = (value) => {
     const str = String(value ?? '');
@@ -48,6 +49,26 @@ const RelatorioCompleto = () => {
       .filter(Boolean);
 
     return nomes.join(' + ');
+  };
+
+  const handleGerarPDF = (id) => {
+    window.open(`/proposta/${id}`, '_blank');
+  };
+
+  const handleExcluir = async (id, numeroProposta) => {
+    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta ação não pode ser desfeita e os dados serão removidos do banco.`)) {
+      return;
+    }
+    setExcluindo(id);
+    try {
+      await db.deletePropostaPermanente(id);
+      setTodosPedidos(prev => prev.filter(p => p.id !== id));
+    } catch (error) {
+      console.error('Erro ao excluir proposta:', error);
+      alert('Erro ao excluir proposta');
+    } finally {
+      setExcluindo(null);
+    }
   };
 
   const loadRelatorio = async () => {
@@ -482,6 +503,7 @@ const RelatorioCompleto = () => {
                       <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Cliente</th>
                       <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Status</th>
                       <th style={{ textAlign: 'right', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Valor</th>
+                      <th style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Ações</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -495,11 +517,48 @@ const RelatorioCompleto = () => {
                         <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{p.cliente_nome || p.cliente?.nome || '-'}</td>
                         <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', color: corStatus('finalizado') }}>{textoStatus('finalizado')}</td>
                         <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>{formatCurrency(p.valor_total || 0)}</td>
+                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <button
+                              onClick={() => handleGerarPDF(p.id)}
+                              style={{
+                                padding: '4px 10px',
+                                background: '#1a7a4a',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                              title="Visualizar e gerar proposta comercial em PDF"
+                            >
+                              📄 PDF
+                            </button>
+                            <button
+                              onClick={() => handleExcluir(p.id, p.numero_proposta)}
+                              disabled={excluindo === p.id}
+                              style={{
+                                padding: '4px 10px',
+                                background: excluindo === p.id ? '#6c757d' : '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: excluindo === p.id ? 'not-allowed' : 'pointer'
+                              }}
+                              title="Excluir proposta permanentemente"
+                            >
+                              {excluindo === p.id ? '...' : '🗑️'}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     ))}
                     {pedidosFiltrados.length === 0 && (
                       <tr>
-                        <td colSpan="6" style={{ padding: 16, textAlign: 'center', color: '#6b7280' }}>Sem dados para os filtros selecionados</td>
+                        <td colSpan="7" style={{ padding: 16, textAlign: 'center', color: '#6b7280' }}>Sem dados para os filtros selecionados</td>
                       </tr>
                     )}
                   </tbody>
@@ -508,6 +567,7 @@ const RelatorioCompleto = () => {
                       <tr>
                         <td colSpan="5" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>Total (finalizados):</td>
                         <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(resumo.valorTotal)}</td>
+                        <td></td>
                       </tr>
                     </tfoot>
                   )}

@@ -1,159 +1,646 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
-import '../styles/Dashboard.css';
 import '../styles/DashboardVendedor.css';
+import '../styles/Dashboard.css';
 
 const DashboardVendedor = () => {
   const navigate = useNavigate();
-  const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
-  const [isLoading, setIsLoading] = useState(false);
+  const { user } = useOutletContext();
+
+  const [periodo, setPeriodo] = useState('30');
   const [stats, setStats] = useState({
-    totalPedidos: 0,
-    valorTotal: 0
+    vendasMes: 0,
+    propostasEnviadas: 0,
+    taxaConversao: 0,
+    atividadesRecentes: [],
   });
+  const [propostas, setPropostas] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [metaMes, setMetaMes] = useState({ meta_propostas: 0, meta_valor: 0 });
 
   useEffect(() => {
-    if (!user) {
-      navigate('/');
-      return;
-    }
+    if (!user) return;
+    const hoje = new Date();
+    db.getMetaVendedor(user.id, hoje.getFullYear(), hoje.getMonth() + 1)
+      .then((m) => { if (m) setMetaMes({ meta_propostas: m.meta_propostas || 0, meta_valor: m.meta_valor || 0 }); })
+      .catch(() => {});
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
 
     const loadDashboardData = async () => {
+      setIsLoading(true);
       try {
-        setIsLoading(true);
-        
-        // Carregar propostas do vendedor
-        const propostas = await db.getPropostas({ vendedor_id: user?.id });
-        
-        // Calcular estatísticas do mês atual (apenas propostas finalizadas)
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const propostasFinalizadasMes = propostas.filter(proposta => {
-          // Contar apenas propostas finalizadas
-          if (proposta.status !== 'finalizado') return false;
-          const d = new Date(proposta.data || proposta.created_at);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-        });
-        const valorTotalMes = propostasFinalizadasMes.reduce((total, proposta) => total + (proposta.valor_total || 0), 0);
+        const propostasResp = await db.getPropostas({ vendedor_id: user?.id });
+        const lista = Array.isArray(propostasResp) ? propostasResp : [];
+        setPropostas(lista);
 
-        console.log('📊 [Dashboard] Propostas finalizadas do mês:', propostasFinalizadasMes.length);
-        console.log('💰 [Dashboard] Valor total:', valorTotalMes);
+        const propostasNoPeriodo = lista.filter((p) => {
+          if (periodo === 'all') return true;
+          const dias = parseInt(periodo, 10);
+          const dataProposta = p?.created_at ? new Date(p.created_at) : null;
+          if (!dataProposta) return false;
+          const dataLimite = new Date();
+          dataLimite.setDate(dataLimite.getDate() - dias);
+          return dataProposta >= dataLimite;
+        });
+
+        const vendasEfetivadas = propostasNoPeriodo.filter(
+          (p) => p.resultado_venda === 'efetivada' || p.status === 'finalizado'
+        );
+
+        const valorVendas = vendasEfetivadas.reduce((acc, p) => acc + (p.valor_total || 0), 0);
+
+        const propostasGanhas = propostasNoPeriodo.filter(
+          (p) => p.resultado_venda === 'efetivada'
+        ).length;
+
+        const propostasComResultado = propostasNoPeriodo.filter(
+          (p) => p.resultado_venda === 'efetivada' || p.resultado_venda === 'perdida'
+        ).length;
+
+        const atividadesRecentes = [...lista]
+          .sort((a, b) => {
+            const da = new Date(b.created_at || 0).getTime();
+            const dbb = new Date(a.created_at || 0).getTime();
+            return da - dbb;
+          })
+          .slice(0, 6)
+          .map((p) => {
+            const cliente = p.cliente_nome || p.nome_cliente || 'Cliente';
+            const valor = formatCurrency(p.valor_total || 0);
+            const status = p.resultado_venda
+              ? p.resultado_venda
+              : p.status || 'em andamento';
+            return {
+              texto: `Proposta para ${cliente} (${valor}) está ${status}.`,
+              tipo:
+                p.resultado_venda === 'efetivada'
+                  ? 'success'
+                  : p.resultado_venda === 'perdida'
+                  ? 'danger'
+                  : 'info',
+            };
+          });
 
         setStats({
-          totalPedidos: propostasFinalizadasMes.length,
-          valorTotal: valorTotalMes
+          vendasMes: valorVendas,
+          propostasEnviadas: propostasNoPeriodo.length,
+          taxaConversao:
+            propostasComResultado > 0
+              ? Math.round((propostasGanhas / propostasComResultado) * 100)
+              : 0,
+          atividadesRecentes,
         });
-
-        // (Removido resumo de pronta-entrega no dashboard)
-        
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
-        alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+        setPropostas([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     loadDashboardData();
-  }, [navigate, user?.id]);
+  }, [user, periodo]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('supabaseSession');
-    localStorage.removeItem('carrinho');
-    navigate('/');
-  };
+  const propostasFiltradas = useMemo(() => {
+    return propostas.filter((p) => {
+      if (periodo === 'all') return true;
+      const dias = parseInt(periodo, 10);
+      const dataProposta = p?.created_at ? new Date(p.created_at) : null;
+      if (!dataProposta) return false;
+      const dataLimite = new Date();
+      dataLimite.setDate(dataLimite.getDate() - dias);
+      return dataProposta >= dataLimite;
+    });
+  }, [propostas, periodo]);
 
-  if (!user) {
-    return null;
-  }
+  const progressoValor = metaMes.meta_valor > 0 ? Math.min((stats.vendasMes / metaMes.meta_valor) * 100, 100) : 0;
+  const progressoPropostas = metaMes.meta_propostas > 0 ? Math.min((stats.propostasEnviadas / metaMes.meta_propostas) * 100, 100) : 0;
+
+  const ticketMedio = useMemo(() => {
+    return stats.propostasEnviadas > 0 ? stats.vendasMes / stats.propostasEnviadas : 0;
+  }, [stats.propostasEnviadas, stats.vendasMes]);
+
+  const emNegociacao = useMemo(() => {
+    return propostasFiltradas.filter((p) => !p.resultado_venda && p.status !== 'finalizado');
+  }, [propostasFiltradas]);
+
+  const ganhosRecentes = useMemo(() => {
+    return propostasFiltradas.filter((p) => p.resultado_venda === 'efetivada');
+  }, [propostasFiltradas]);
+
+  const perdidas = useMemo(() => {
+    return propostasFiltradas.filter((p) => p.resultado_venda === 'perdida');
+  }, [propostasFiltradas]);
+
+  const aguardandoDecisao = useMemo(() => {
+    return propostasFiltradas.filter((p) => {
+      const status = (p.status || '').toLowerCase();
+      return !p.resultado_venda && (status.includes('aguard') || status.includes('analise'));
+    });
+  }, [propostasFiltradas]);
+
+  const oportunidadesQuentes = useMemo(() => {
+    return [...emNegociacao]
+      .sort((a, b) => (b.valor_total || 0) - (a.valor_total || 0))
+      .slice(0, 3);
+  }, [emNegociacao]);
+
+  const propostasRecentes = useMemo(() => {
+    return [...propostasFiltradas]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 5);
+  }, [propostasFiltradas]);
+
+  const periodLabel = useMemo(() => {
+    if (periodo === '30') return 'Últimos 30 dias';
+    if (periodo === '90') return 'Últimos 90 dias';
+    return 'Todo o período';
+  }, [periodo]);
+
+  const seriePropostas = useMemo(() => {
+    const dias = periodo === 'all' ? 12 : periodo === '90' ? 12 : 10;
+    const hoje = new Date();
+    const pontos = [];
+
+    for (let i = dias - 1; i >= 0; i -= 1) {
+      const d = new Date(hoje);
+      d.setDate(d.getDate() - i);
+
+      const valor = propostasFiltradas.filter((p) => {
+        if (!p.created_at) return false;
+        const data = new Date(p.created_at);
+        return (
+          data.getDate() === d.getDate() &&
+          data.getMonth() === d.getMonth() &&
+          data.getFullYear() === d.getFullYear()
+        );
+      }).length;
+
+      pontos.push({
+        label: d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' }),
+        value: valor,
+      });
+    }
+
+    return pontos;
+  }, [propostasFiltradas, periodo]);
+
+  const pipelineData = [
+    {
+      label: 'Em Negociação',
+      count: emNegociacao.length,
+      value: emNegociacao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      tone: 'warning',
+    },
+    {
+      label: 'Aguardando Decisão',
+      count: aguardandoDecisao.length,
+      value: aguardandoDecisao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      tone: 'info',
+    },
+    {
+      label: 'Ganhos Recentes',
+      count: ganhosRecentes.length,
+      value: ganhosRecentes.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      tone: 'success',
+    },
+    {
+      label: 'Perdidas',
+      count: perdidas.length,
+      value: perdidas.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      tone: 'danger',
+    },
+  ];
+
+  if (!user) return null;
 
   return (
     <>
       <UnifiedHeader
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={true}
         user={user}
-        title="Dashboard Vendedor"
-        subtitle="Painel de controle do vendedor"
+        title="Meu Dashboard"
+        subtitle={`Olá, ${user.nome}! Aqui está o resumo do seu desempenho.`}
       />
-      <div className="dashboard-container">
-        <div className="dashboard-content">
-          {/* Header de Boas-vindas */}
-          <div className="welcome-header">
-            <h1>Bem-vindo, {user.nome}!</h1>
-            <p>Gerencie suas propostas e orçamentos</p>
-          </div>
 
-          {/* Seção Missão, Visão e Valores */}
-          <div className="mvv-grid">
-            <div className="mvv-card">
-              <div className="mvv-icon info">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2a10 10 0 100 20 10 10 0 000-20zm-1 5h2v2h-2V7zm0 4h2v6h-2v-6z"/>
-                </svg>
-              </div>
-              <h3>MISSÃO</h3>
-              <p>Tornar eficiente o trabalho no campo e na cidade.</p>
+      <div className="dashboard-container-redesigned vendedor-dashboard-premium">
+        <section className="seller-hero">
+          <div className="seller-hero-glow seller-hero-glow-1" />
+          <div className="seller-hero-glow seller-hero-glow-2" />
+
+          <div className="seller-hero-top">
+            <div>
+              <span className="seller-eyebrow">Painel Comercial</span>
+              <h1 className="seller-hero-title">Desempenho do Vendedor</h1>
+              <p className="seller-hero-subtitle">
+                Acompanhe sua evolução, pipeline, atividades e oportunidades com uma visão mais estratégica.
+              </p>
             </div>
-            
-            <div className="mvv-card">
-              <div className="mvv-icon vision">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-              <h3>VISÃO</h3>
-              <p>Ser referência no segmento de elevação e movimentação cargas, através produtos inovadores com alta qualidade, confiabilidade produtividade em todo o território nacional até 2030. Primando por rentabilidade crescimento financeiro da empresa.</p>
-            </div>
-            
-            <div className="mvv-card">
-              <div className="mvv-icon values">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2a10 10 0 1010 10A10 10 0 0012 2zm-1 15l-5-5 1.41-1.41L11 13.17l5.59-5.59L18 9z"/>
-                </svg>
-              </div>
-              <h3>VALORES</h3>
-              <p>Ambição em fazer o melhor e crescer juntos, com transparência, honestidade e qualidade.</p>
+
+            <div className="seller-hero-pill-group">
+              <span className="seller-hero-pill">{periodLabel}</span>
+              <span className="seller-hero-pill seller-hero-pill-dark">
+                {formatCurrency(stats.vendasMes)} em vendas
+              </span>
             </div>
           </div>
 
-          {/* Métricas do Vendedor */}
-          <div className="metrics-grid">
-            <div className="metric-card">
-              <div className="metric-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>
-                </svg>
-              </div>
-              <div className="metric-content">
-                <div className="metric-value">{stats.totalPedidos}</div>
-                <div className="metric-label">PROPOSTAS NO MÊS</div>
+          <div className="dashboard-header-redesigned">
+            <div className="filters-container">
+              <div className="filter-group">
+                <label className="filter-label">Período</label>
+                <select
+                  className="filter-select"
+                  value={periodo}
+                  onChange={(e) => setPeriodo(e.target.value)}
+                >
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                  <option value="all">Todo o período</option>
+                </select>
               </div>
             </div>
 
-            <div className="metric-card">
-              <div className="metric-icon">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M11.8 10.9c-2.27-.59-3-1.2-3-2.15 0-1.09 1.01-1.85 2.7-1.85 1.78 0 2.44.85 2.5 2.1h2.21c-.07-1.72-1.12-3.3-3.21-3.81V3h-3v2.16c-1.94.42-3.5 1.68-3.5 3.61 0 2.31 1.91 3.46 4.7 4.13 2.5.6 3 1.48 3 2.41 0 .69-.49 1.79-2.7 1.79-2.06 0-2.87-.92-2.98-2.1h-2.2c.12 2.19 1.76 3.42 3.68 3.83V21h3v-2.15c1.95-.37 3.5-1.5 3.5-3.55 0-2.84-2.43-3.81-4.7-4.4z"/>
-                </svg>
+            <div className="actions-container">
+              <button className="btn btn-secondary seller-action-btn" onClick={() => navigate('/propostas')}>
+                Ver Propostas
+              </button>
+              <button className="btn btn-primary seller-action-btn" onClick={() => navigate('/novo-pedido')}>
+                + Nova Proposta
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section className="kpi-grid">
+          <div className="card kpi-card seller-kpi-card seller-kpi-sales">
+            <div className="seller-kpi-icon">💰</div>
+            <span className="kpi-label">Vendas no Período</span>
+            <span className="kpi-value">{formatCurrency(stats.vendasMes)}</span>
+            <small className="kpi-helper-text">Valor total efetivado no período selecionado</small>
+            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
+          </div>
+
+          <div className="card kpi-card seller-kpi-card seller-kpi-proposals">
+            <div className="seller-kpi-icon">📄</div>
+            <span className="kpi-label">Propostas Enviadas</span>
+            <span className="kpi-value">{stats.propostasEnviadas}</span>
+            <small className="kpi-helper-text">Total de propostas registradas no período</small>
+            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
+          </div>
+
+          <div className="card kpi-card seller-kpi-card seller-kpi-conversion">
+            <div className="seller-kpi-icon">📈</div>
+            <span className="kpi-label">Taxa de Conversão</span>
+            <span className="kpi-value">{stats.taxaConversao}%</span>
+            <small className="kpi-helper-text">Conversão sobre propostas com resultado</small>
+            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
+          </div>
+
+          <div className="card kpi-card seller-kpi-card meta-card seller-kpi-meta">
+            <div className="seller-kpi-icon">🎯</div>
+            <span className="kpi-label">Meta Mensal</span>
+
+            {metaMes.meta_valor > 0 || metaMes.meta_propostas > 0 ? (
+              <>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>
+                      <span>Valor vendido</span>
+                      <span>{Math.round(progressoValor)}%</span>
+                    </div>
+                    <div className="meta-progress-container">
+                      <div className="meta-progress-bar" style={{ width: `${progressoValor}%` }} />
+                    </div>
+                    <span className="meta-value" style={{ fontSize: 13 }}>
+                      {formatCurrency(stats.vendasMes)} / {formatCurrency(metaMes.meta_valor)}
+                    </span>
+                  </div>
+
+                  {metaMes.meta_propostas > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, fontWeight: 600, color: '#64748b', marginBottom: 4 }}>
+                        <span>Propostas geradas</span>
+                        <span>{Math.round(progressoPropostas)}%</span>
+                      </div>
+                      <div className="meta-progress-container">
+                        <div className="meta-progress-bar" style={{ width: `${progressoPropostas}%`, background: 'linear-gradient(90deg,#8b5cf6,#6d28d9)' }} />
+                      </div>
+                      <span className="meta-value" style={{ fontSize: 13 }}>
+                        {stats.propostasEnviadas} / {metaMes.meta_propostas} propostas
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="meta-progress-container">
+                  <div className="meta-progress-bar" style={{ width: '0%' }} />
+                </div>
+                <small className="kpi-helper-text" style={{ marginTop: 8, display: 'block' }}>Sem meta definida para este mês.<br/>O admin pode configurar em Gerenciar Vendedores.</small>
+              </>
+            )}
+          </div>
+        </section>
+
+        <section className="seller-middle-grid">
+          <div className="card seller-chart-card">
+            <div className="card-top-row">
+              <div>
+                <h3 className="section-title">Evolução das Propostas</h3>
+                <p className="section-subtitle">
+                  Veja o ritmo de geração de propostas no período selecionado.
+                </p>
               </div>
-              <div className="metric-content">
-                <div className="metric-value">{formatCurrency(stats.valorTotal)}</div>
-                <div className="metric-label">VENDAS NO MÊS</div>
+              <span className="seller-chip seller-chip-primary">{periodLabel}</span>
+            </div>
+
+            <SimpleLineChart data={seriePropostas} />
+          </div>
+
+          <div className="card seller-summary-card">
+            <div className="card-top-row">
+              <div>
+                <h3 className="section-title">Resumo Comercial</h3>
+                <p className="section-subtitle">Indicadores rápidos do teu momento atual.</p>
+              </div>
+            </div>
+
+            <div className="seller-summary-grid">
+              <div className="seller-summary-item">
+                <span className="seller-summary-label">Ticket Médio</span>
+                <strong>{formatCurrency(ticketMedio)}</strong>
+              </div>
+              <div className="seller-summary-item">
+                <span className="seller-summary-label">Em Negociação</span>
+                <strong>{emNegociacao.length}</strong>
+              </div>
+              <div className="seller-summary-item">
+                <span className="seller-summary-label">Ganhos</span>
+                <strong>{ganhosRecentes.length}</strong>
+              </div>
+              <div className="seller-summary-item">
+                <span className="seller-summary-label">Perdidas</span>
+                <strong>{perdidas.length}</strong>
               </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        <section className="card seller-funnel-card">
+          <div className="card-top-row">
+            <div>
+              <h3 className="section-title">Meu Funil de Vendas</h3>
+              <p className="section-subtitle">
+                Acompanhe o volume e o valor das oportunidades em cada etapa.
+              </p>
+            </div>
+          </div>
+
+          <div className="seller-funnel-grid">
+            {pipelineData.map((item) => (
+              <div key={item.label} className={`seller-funnel-column tone-${item.tone}`}>
+                <div className="seller-funnel-column-header">
+                  <h4>{item.label}</h4>
+                  <span className="seller-funnel-count">{item.count}</span>
+                </div>
+
+                <div className="seller-funnel-value">{formatCurrency(item.value)}</div>
+
+                <div className="seller-funnel-cards">
+                  {item.count > 0 ? (
+                    [...propostasFiltradas]
+                      .filter((p) => {
+                        if (item.label === 'Em Negociação') {
+                          return !p.resultado_venda && p.status !== 'finalizado';
+                        }
+                        if (item.label === 'Aguardando Decisão') {
+                          const status = (p.status || '').toLowerCase();
+                          return !p.resultado_venda && (status.includes('aguard') || status.includes('analise'));
+                        }
+                        if (item.label === 'Ganhos Recentes') {
+                          return p.resultado_venda === 'efetivada';
+                        }
+                        return p.resultado_venda === 'perdida';
+                      })
+                      .slice(0, 3)
+                      .map((p, idx) => (
+                        <div key={`${item.label}-${idx}`} className="seller-funnel-mini-card">
+                          <strong>{p.cliente_nome || p.nome_cliente || 'Cliente'}</strong>
+                          <span>{formatCurrency(p.valor_total || 0)}</span>
+                        </div>
+                      ))
+                  ) : (
+                    <div className="seller-funnel-empty">Sem registros nesta etapa.</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="seller-bottom-grid">
+          <div className="card seller-activities-card">
+            <div className="card-top-row">
+              <div>
+                <h3 className="section-title">Atividades Recentes</h3>
+                <p className="section-subtitle">Últimas movimentações relacionadas às tuas propostas.</p>
+              </div>
+            </div>
+
+            <ul className="activity-feed seller-activity-feed">
+              {stats.atividadesRecentes.map((activity, index) => (
+                <li key={index} className={`activity-item tone-${activity.tipo || 'info'}`}>
+                  <span className="activity-dot" />
+                  <span>{activity.texto || activity}</span>
+                </li>
+              ))}
+              {stats.atividadesRecentes.length === 0 && (
+                <li className="activity-item empty">Nenhuma atividade recente.</li>
+              )}
+            </ul>
+          </div>
+
+          <div className="seller-side-stack">
+            <div className="card seller-opportunities-card">
+              <div className="card-top-row">
+                <div>
+                  <h3 className="section-title">Oportunidades Quentes</h3>
+                  <p className="section-subtitle">Maiores negociações abertas no período.</p>
+                </div>
+              </div>
+
+              <div className="opportunity-list">
+                {oportunidadesQuentes.length > 0 ? (
+                  oportunidadesQuentes.map((item, index) => (
+                    <div className="opportunity-item" key={index}>
+                      <div>
+                        <strong>{item.cliente_nome || item.nome_cliente || 'Cliente'}</strong>
+                        <small>{item.status || 'Em andamento'}</small>
+                      </div>
+                      <span>{formatCurrency(item.valor_total || 0)}</span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state-inline">Nenhuma oportunidade quente no período.</div>
+                )}
+              </div>
+            </div>
+
+            <div className="card seller-recent-proposals-card">
+              <div className="card-top-row">
+                <div>
+                  <h3 className="section-title">Propostas Recentes</h3>
+                  <p className="section-subtitle">Últimas propostas registradas por ti.</p>
+                </div>
+              </div>
+
+              <div className="recent-proposals-list">
+                {propostasRecentes.length > 0 ? (
+                  propostasRecentes.map((item, index) => (
+                    <div className="recent-proposal-row" key={index}>
+                      <div className="recent-proposal-main">
+                        <strong>{item.cliente_nome || item.nome_cliente || 'Cliente'}</strong>
+                        <small>
+                          {new Date(item.created_at || Date.now()).toLocaleDateString('pt-BR')}
+                        </small>
+                      </div>
+                      <div className="recent-proposal-side">
+                        <span>{formatCurrency(item.valor_total || 0)}</span>
+                        <small>{item.resultado_venda || item.status || 'Em andamento'}</small>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="empty-state-inline">Nenhuma proposta recente encontrada.</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {isLoading && (
+          <div className="dashboard-loading-overlay">
+            <div className="dashboard-loading-card">
+              <div className="loading-spinner" />
+              <span>Carregando seu dashboard...</span>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
 };
+
+function MiniSparkline({ data = [] }) {
+  const width = 160;
+  const height = 42;
+
+  if (!data.length) {
+    return <div className="sparkline-fallback" />;
+  }
+
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const range = max - min || 1;
+
+  const points = data
+    .map((value, index) => {
+      const x = (index / Math.max(data.length - 1, 1)) * width;
+      const y = height - ((value - min) / range) * (height - 8) - 4;
+      return `${x},${y}`;
+    })
+    .join(' ');
+
+  return (
+    <svg className="mini-sparkline" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+      <polyline fill="none" stroke="currentColor" strokeWidth="2.5" points={points} />
+    </svg>
+  );
+}
+
+function SimpleLineChart({ data = [] }) {
+  const width = 760;
+  const height = 250;
+  const padding = 18;
+
+  if (!data.length) {
+    return <div className="chart-empty">Sem dados para exibir.</div>;
+  }
+
+  const max = Math.max(...data.map((item) => item.value), 1);
+
+  const points = data.map((item, index) => {
+    const x = padding + (index / Math.max(data.length - 1, 1)) * (width - padding * 2);
+    const y = height - padding - (item.value / max) * (height - padding * 2);
+    return { ...item, x, y };
+  });
+
+  const polyline = points.map((p) => `${p.x},${p.y}`).join(' ');
+
+  return (
+    <div className="seller-line-chart-wrap">
+      <svg className="seller-line-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="sellerLineFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="rgba(245,158,11,0.28)" />
+            <stop offset="100%" stopColor="rgba(245,158,11,0.02)" />
+          </linearGradient>
+        </defs>
+
+        {[0.25, 0.5, 0.75].map((fraction) => {
+          const y = padding + fraction * (height - padding * 2);
+          return (
+            <line
+              key={fraction}
+              x1={padding}
+              x2={width - padding}
+              y1={y}
+              y2={y}
+              stroke="rgba(148,163,184,0.18)"
+              strokeWidth="1"
+            />
+          );
+        })}
+
+        <path
+          d={`M ${points[0].x} ${height - padding}
+              L ${points[0].x} ${points[0].y}
+              ${points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ')}
+              L ${points[points.length - 1].x} ${height - padding}
+              Z`}
+          fill="url(#sellerLineFill)"
+        />
+
+        <polyline
+          fill="none"
+          stroke="#f59e0b"
+          strokeWidth="4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          points={polyline}
+        />
+
+        {points.map((p, index) => (
+          <circle key={index} cx={p.x} cy={p.y} r="4.5" fill="#f59e0b" />
+        ))}
+      </svg>
+
+      <div className="seller-line-labels">
+        {data.map((item, index) =>
+          index % Math.ceil(data.length / 4) === 0 || index === data.length - 1 ? (
+            <span key={index}>{item.label}</span>
+          ) : null
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default DashboardVendedor;

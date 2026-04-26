@@ -1058,7 +1058,7 @@
 
 .step.completed .step-number {
   background: linear-gradient(135deg, #10b981, #059669);
-  color: #5b5a5a;
+  color: #1f2937;
   border-color: #10b981;
   box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
@@ -1076,7 +1076,7 @@
 .step-title {
   font-size: 1rem;
   font-weight: 800;
-  color: #000000;
+  color: #1f2937;
   margin-bottom: 0.15rem;
   transition: all 0.3s ease;
   text-align: center;
@@ -1084,20 +1084,20 @@
 }
 
 .step.active .step-title {
-  color: #000000;
+  color: #111827;
   font-size: 1.1rem;
   font-weight: 900;
 }
 
 .step.completed .step-title {
-  color: #000000;
+  color: #374151;
   font-weight: 800;
   font-size: 1.05rem;
 }
 
 .step-description {
   font-size: 0.875rem;
-  color: #000000;
+  color: #4b5563;
   font-weight: 600;
   line-height: 1.35;
   transition: all 0.3s ease;
@@ -1106,14 +1106,14 @@
 }
 
 .step.active .step-description {
-  color: #000000;
+  color: #1f2937;
   font-weight: 700;
   opacity: 1;
   font-size: 0.9375rem;
 }
 
 .step.completed .step-description {
-  color: #000000;
+  color: #4b5563;
   font-weight: 700;
   font-size: 0.875rem;
 }
@@ -1159,7 +1159,7 @@
 
 .progress-step:not(.active):not(.completed) .step-number {
   background: #f8fafc;
-  color: #111827;
+  color: #1f2937;
   border: 1px solid #e5e7eb;
 }
 
@@ -1178,13 +1178,13 @@
 .progress-step span {
   font-size: 12px;
   font-weight: 500;
-  color: #000000;
+  color: #4b5563;
   text-align: center;
 }
 
 .progress-step.active span,
 .progress-step.completed span {
-  color: #000000;
+  color: #111827;
   font-weight: 600;
 }
 
@@ -1298,7 +1298,7 @@
 .section-header h3 {
   font-size: 1.25rem;
   font-weight: 700;
-  color: #000000;
+  color: #1f2937;
   margin: 0;
   display: flex;
   align-items: center;
@@ -1317,7 +1317,7 @@
 .empty-state {
   text-align: center;
   padding: 3rem 1rem;
-  color: #000000;
+  color: #6b7280;
 }
 
 .empty-icon {
@@ -2520,6 +2520,15 @@
   font-weight: 600;
 }
 
+.hover-scale-slight {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale-slight:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.1), 0 8px 10px -2px rgba(0,0,0,0.05) !important;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
   .main-content {
@@ -2916,7 +2925,6 @@
     font-size: 12px;
     padding: 3px 5px;
   }
-} 
 
 /* Estilos para o novo sistema de filtros */
 .filter-row {

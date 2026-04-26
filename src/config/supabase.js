@@ -756,26 +756,22 @@ class DatabaseService {
     return data || [];
   }
 
-  // Versão super otimizada para dashboard (apenas contagem)
+  // Versão para dashboard (apenas contagem via select de IDs)
   async getGuindastesCountForDashboard() {
-    console.log('📊 [getGuindastesCountForDashboard] Obtendo contagem...');
-    
     try {
-      // Query otimizada: apenas contagem sem carregar dados
-      const { count, error } = await supabase
+      const { data, error } = await supabase
         .from('guindastes')
-        .select('*', { count: 'exact', head: true }); // head: true = apenas count, sem dados
-      
+        .select('id');
+
       if (error) {
         console.error('❌ [getGuindastesCountForDashboard] Erro:', error);
-        throw error;
+        return 0;
       }
-      
-      console.log('✅ [getGuindastesCountForDashboard] Total:', count);
-      return count || 0;
+
+      return data?.length || 0;
     } catch (err) {
       console.error('❌ [getGuindastesCountForDashboard] Exceção:', err);
-      return 0; // Retorna 0 em caso de erro
+      return 0;
     }
   }
   
@@ -2007,7 +2003,7 @@ class DatabaseService {
   async getPropostas(filters = {}) {
     let query = supabase
       .from('propostas')
-      .select('id, numero_proposta, vendedor_id, vendedor_nome, cliente_nome, data, valor_total, status, created_at')
+      .select('*')
       .order('data', { ascending: false })
       .limit(100);
 
@@ -2538,14 +2534,10 @@ class DatabaseService {
    * @returns {Array} Lista de solicitações
    */
   async getHistoricoSolicitacoes(filtros = {}) {
-    console.log('📊 [getHistoricoSolicitacoes] Buscando histórico:', filtros);
-    
     let query = supabase
       .from('solicitacoes_desconto')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .select('id, vendedor_id, cliente_id, created_at, status, desconto_aprovado, aprovador_id, aprovador_nome, observacao_gestor, respondido_at');
     
-    // Aplicar filtros
     if (filtros.status) {
       query = query.eq('status', filtros.status);
     }
@@ -2567,6 +2559,66 @@ class DatabaseService {
     }
     
     console.log(`✅ [getHistoricoSolicitacoes] ${data?.length || 0} registros encontrados`);
+    return data || [];
+  }
+
+  // ===== METAS DE VENDEDORES =====
+
+  async getMetaVendedor(vendedorId, ano, mes) {
+    const { data, error } = await supabase
+      .from('metas_vendedores')
+      .select('*')
+      .eq('vendedor_id', vendedorId)
+      .eq('ano', ano)
+      .eq('mes', mes)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  async getMetasAnoVendedor(vendedorId, ano) {
+    const { data, error } = await supabase
+      .from('metas_vendedores')
+      .select('*')
+      .eq('vendedor_id', vendedorId)
+      .eq('ano', ano)
+      .order('mes');
+    if (error) throw error;
+    return data || [];
+  }
+
+  async setMetaVendedor(vendedorId, ano, mes, metaPropostas, metaValor) {
+    const { data, error } = await supabase
+      .from('metas_vendedores')
+      .upsert(
+        {
+          vendedor_id: vendedorId,
+          ano,
+          mes,
+          meta_propostas: parseInt(metaPropostas, 10) || 0,
+          meta_valor: parseFloat(metaValor) || 0,
+        },
+        { onConflict: 'vendedor_id,ano,mes' }
+      )
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
+  async setMetasAnoVendedor(vendedorId, ano, metas) {
+    const rows = metas.map((m) => ({
+      vendedor_id: vendedorId,
+      ano,
+      mes: m.mes,
+      meta_propostas: parseInt(m.meta_propostas, 10) || 0,
+      meta_valor: parseFloat(m.meta_valor) || 0,
+    }));
+    const { data, error } = await supabase
+      .from('metas_vendedores')
+      .upsert(rows, { onConflict: 'vendedor_id,ano,mes' })
+      .select();
+    if (error) throw error;
     return data || [];
   }
 }
