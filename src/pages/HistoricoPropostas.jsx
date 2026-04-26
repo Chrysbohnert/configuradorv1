@@ -110,12 +110,12 @@ const HistoricoPropostas = () => {
   };
 
   const handleExcluir = async (id, numeroProposta) => {
-    if (!window.confirm(`Tem certeza que deseja excluir a proposta ${numeroProposta}?`)) {
+    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta ação não pode ser desfeita e os dados serão removidos do banco.`)) {
       return;
     }
 
     try {
-      await db.deleteProposta(id);
+      await db.deletePropostaPermanente(id);
       alert('Proposta excluída com sucesso!');
       carregarPropostas();
     } catch (error) {
@@ -466,25 +466,23 @@ const HistoricoPropostas = () => {
                     </>
                   )}
 
-                  {proposta.status === 'pendente' && (
-                    <button
-                      onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: '600',
-                        cursor: 'pointer'
-                      }}
-                      title="Excluir proposta"
-                    >
-                      🗑️ Excluir
-                    </button>
-                  )}
+                  <button
+                    onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      background: '#dc3545',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }}
+                    title="Excluir proposta permanentemente"
+                  >
+                    🗑️ Excluir
+                  </button>
 
                   {proposta.status === 'excluido' && (
                     <span style={{ fontSize: '12px', color: '#999' }}>
@@ -599,24 +597,22 @@ const HistoricoPropostas = () => {
                             >
                               📈 Resultado
                             </button>
-                            {proposta.status === 'pendente' && (
-                              <button
-                                onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                                style={{
-                                  padding: '6px 12px',
-                                  background: '#dc3545',
-                                  color: 'white',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  cursor: 'pointer'
-                                }}
-                                title="Excluir proposta"
-                              >
-                                🗑️
-                              </button>
-                            )}
+                            <button
+                              onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                              style={{
+                                padding: '6px 12px',
+                                background: '#dc3545',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: '600',
+                                cursor: 'pointer'
+                              }}
+                              title="Excluir proposta permanentemente"
+                            >
+                              🗑️
+                            </button>
                           </>
                         )}
                         {proposta.status === 'excluido' && (

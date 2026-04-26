@@ -637,7 +637,7 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const opcionaisSelecionados = (pedidoData.carrinho || [])
     .filter(i => i.tipo === 'opcional')
     .map(i => i.nome);
-  const codigo = generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || g.codigo_produto || '-';
+  const codigo = g.codigo_produto || g.codigo_referencia || generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || '-';
   
   console.log('🔍 [renderCapa] Código gerado:', codigo);
 
@@ -1972,7 +1972,7 @@ const renderEquipamentoIndividualCompra = (pedidoData, guindaste, idx, total, { 
   const opcionaisSelecionados = (pedidoData.carrinho || [])
     .filter(i => i.tipo === 'opcional')
     .map(i => i.nome);
-  const codigo = generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || g.codigo_produto || '-';
+  const codigo = g.codigo_produto || g.codigo_referencia || generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || '-';
 
   el.innerHTML = `
     <div class="wrap" style="padding:18px;">
@@ -2306,15 +2306,17 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
             : 'linear-gradient(135deg, #111 0%, #222 100%)',
           color: 'white',
           border: 'none',
-          padding: '12px 20px',
-          borderRadius: '8px',
-          fontSize: '14px',
-          fontWeight: '600',
+          padding: '16px 24px',
+          borderRadius: '12px',
+          fontSize: '15px',
+          fontWeight: '700',
           cursor: isGenerating ? 'not-allowed' : 'pointer',
           transition: 'all 0.3s ease',
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
+          justifyContent: 'flex-start',
+          gap: '10px',
+          width: '100%',
           opacity: isGenerating ? 0.7 : 1
         }}
       >

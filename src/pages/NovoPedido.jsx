@@ -13,6 +13,7 @@ import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '../utils/masks';
 import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
 import { createLogger } from '../utils/productionLogger';
 import { createDealInSalesIfNotExists } from '../utils/bitrixClient';
+import ResumoPedidoExterno from '../components/NovoPedido/ResumoPedido';
 import '../styles/NovoPedido.css';
 
 // ⚡ Logger otimizado
@@ -1193,7 +1194,7 @@ const NovoPedido = () => {
                   <p>Revise e gere o PDF</p>
                 </div>
                 
-                <ResumoPedido 
+                <ResumoPedidoExterno
                   carrinho={carrinho}
                   clienteData={clienteData}
                   caminhaoData={caminhaoData}
@@ -1244,7 +1245,7 @@ const NovoPedido = () => {
               <h2>Resumo da Proposta</h2>
               <p>Revise e confirme as informações</p>
             </div>
-            <ResumoPedido 
+            <ResumoPedidoExterno
               carrinho={carrinho}
               clienteData={clienteData}
               caminhaoData={caminhaoData}
