@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
+import BlobButton from '../components/BlobButton';
 import { db, supabase } from '../config/supabase';
 import '../styles/GerenciarGraficosCarga.css';
 
@@ -215,20 +216,19 @@ const GerenciarGraficosCarga = () => {
               <p>Faça upload e gerencie os gráficos técnicos dos guindastes</p>
             </div>
 
-            <button
+            <BlobButton
               onClick={() => {
                 setEditingGrafico(null);
                 resetForm();
                 setShowModal(true);
               }}
               className="add-btn"
-              type="button"
             >
               <svg viewBox="0 0 24 24" fill="currentColor">
                 <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
               </svg>
               Adicionar Gráfico
-            </button>
+            </BlobButton>
           </div>
 
           <div className="graficos-list">
@@ -295,38 +295,35 @@ const GerenciarGraficosCarga = () => {
                     </div>
 
                     <div className="grafico-actions">
-                      <button
+                      <BlobButton
                         onClick={() => handleEdit(grafico)}
                         className="edit-btn"
-                        type="button"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                         </svg>
                         Editar
-                      </button>
+                      </BlobButton>
 
-                      <button
+                      <BlobButton
                         onClick={() => handleDelete(grafico.id)}
                         className="delete-btn"
-                        type="button"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
                         </svg>
                         Excluir
-                      </button>
+                      </BlobButton>
 
-                      <button
+                      <BlobButton
                         onClick={() => window.open(grafico.arquivo_url, '_blank')}
                         className="view-btn"
-                        type="button"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z" />
                         </svg>
                         Visualizar
-                      </button>
+                      </BlobButton>
                     </div>
                   </div>
                 ))}
@@ -341,15 +338,14 @@ const GerenciarGraficosCarga = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>{editingGrafico ? 'Editar Gráfico' : 'Adicionar Gráfico'}</h2>
-              <button
+              <BlobButton
                 onClick={() => setShowModal(false)}
                 className="close-btn"
-                type="button"
               >
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
                 </svg>
-              </button>
+              </BlobButton>
             </div>
 
             <form onSubmit={handleSubmit} className="modal-form">
@@ -383,17 +379,16 @@ const GerenciarGraficosCarga = () => {
               </div>
 
               <div className="modal-actions">
-                <button
-                  type="button"
+                <BlobButton
                   onClick={() => setShowModal(false)}
                   className="cancel-btn"
                 >
                   Cancelar
-                </button>
+                </BlobButton>
 
-                <button type="submit" className="save-btn" disabled={isLoading}>
+                <BlobButton type="submit" className="save-btn" disabled={isLoading}>
                   {isLoading ? 'Salvando...' : editingGrafico ? 'Atualizar' : 'Salvar'}
-                </button>
+                </BlobButton>
               </div>
             </form>
           </div>

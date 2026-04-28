@@ -1342,10 +1342,10 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         <div style="margin-top:11px; border-left:4px solid #d97706; background:#fffbeb; padding:13px 15px; border-radius:3px;">
           <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#d97706; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fde68a;">CONVERSOR DE VOLTAGEM</div>
           <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <span style="font-size:12px; font-weight:600; color:#000;">CONTROLE REMOTO + CAMINHÃO 12V</span>
+            <span style="font-size:12px; font-weight:600; color:#000;">CAMINHÃO 12V — CONVERSOR DE VOLTAGEM</span>
             <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
           </div>
-          <div style="font-size:11px; color:#555; font-style:italic;">* Necessário conversor de voltagem para compatibilidade</div>
+          <div style="font-size:11px; color:#555; font-style:italic;">* Caminhão 12V requer conversor de voltagem para compatibilidade com o guindaste</div>
         </div>
       ` : ''}
 

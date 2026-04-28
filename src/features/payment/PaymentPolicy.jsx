@@ -101,22 +101,14 @@ export default function PaymentPolicy({
     return t.includes('GSI');
   }), [itens]);
 
-  // Calcular valor do conversor de voltagem (CR + 12V = +R$ 400)
+  // Calcular valor do conversor de voltagem (Caminhão 12V = +R$ 450)
   const valorConversor = useMemo(() => {
-    // Verifica se algum guindaste tem controle remoto (CR)
-    const guindasteComCR = itens.find(i => {
-      if (i?.tipo !== 'guindaste') return false;
-      const subgrupo = i?.subgrupo || i?.nome || '';
-      return temControleRemoto(subgrupo);
-    });
-
-    // Se tem CR e voltagem do caminhão é 12V, adiciona R$ 400
-    if (guindasteComCR && caminhaoData?.voltagem === '12V') {
-      return 400;
+    // Caminhão 12V exige conversor de voltagem
+    if (caminhaoData?.voltagem === '12V') {
+      return 450;
     }
-
     return 0;
-  }, [itens, caminhaoData?.voltagem]);
+  }, [caminhaoData?.voltagem]);
 
   // =============== ESTADO PRINCIPAL (7 ETAPAS) ===================
   const [etapa, setEtapa] = useState(() => {
@@ -378,8 +370,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             
             const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
             
-            // CORREÇÃO: Saldo a pagar = Valor Final - Entrada
-            const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+            // Saldo a pagar = Total - max(entrada%, sinal)
+            const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
+            const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
 
             // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
             const numParcelas = r.parcelas?.length || 1;
@@ -722,7 +715,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorAjustado: valorAposExtra,
         valorFrete,
         valorInstalacao,
-        valorConversor, // Conversor de voltagem (CR + 12V = R$ 400)
+        valorConversor, // Conversor de voltagem (Caminhão 12V = R$ 450)
         entrada: 0,
         saldo: valorFinalFinanciamento,
         parcelas: [],
@@ -801,8 +794,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       
       const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
       
-      // CORREÇÃO: Saldo a pagar = Valor Final - Entrada (não considera sinal aqui)
-      const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+      // Saldo a pagar = Total - max(entrada%, sinal)
+      // O sinal já foi pago: se não há entrada%, ele é a própria dedução
+      const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
+      const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
 
       // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
       const numParcelas = r.parcelas?.length || 1;
@@ -846,7 +841,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         extraValor: extraValorNum,
         valorFrete,
         valorInstalacao,
-        valorConversor, // Conversor de voltagem (CR + 12V = R$ 400)
+        valorConversor, // Conversor de voltagem (Caminhão 12V = R$ 450)
         total: valorFinal,
         valorFinal, // Adicionar também como valorFinal para compatibilidade com PDF
         financiamentoBancario: 'nao', // Não é financiamento bancário
@@ -1075,8 +1070,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         
         const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
         
-        // CORREÇÃO: Saldo a pagar = Valor Final - Entrada
-        const saldoAPagarCalc = valorFinal - entradaTotalCalc;
+        // Saldo a pagar = Total - max(entrada%, sinal)
+        const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
+        const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
 
         // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
         const numParcelas = r.parcelas?.length || 1;
