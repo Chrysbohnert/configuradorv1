@@ -2406,8 +2406,8 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
               className={errors.voltagem ? 'error' : ''}
             >
               <option value="">Selecione a voltagem</option>
-              <option value="12V (1 bateria)">12V (1 bateria)</option>
-              <option value="24V (2 baterias)">24V (2 baterias)</option>
+              <option value="12V">12V (1 bateria)</option>
+              <option value="24V">24V (2 baterias)</option>
             </select>
             {errors.voltagem && <span className="error-message">{errors.voltagem}</span>}
           </div>

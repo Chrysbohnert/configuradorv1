@@ -482,36 +482,65 @@ const GerenciarVendedores = () => {
                     <div className="card-actions">
                       <button
                         onClick={() => handleOpenMetas(vendedor)}
-                        className="action-btn-modern"
+                        className="action-btn-modern blob-btn metas-btn-modern"
                         title="Definir Metas"
-                        style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: '#fff', border: 'none' }}
                       >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-                        </svg>
-                        Metas
+                        <span className="btn-content">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
+                          </svg>
+                          Metas
+                        </span>
+                        <span className="blob-btn__inner">
+                          <span className="blob-btn__blobs">
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                          </span>
+                        </span>
                       </button>
 
                       <button
                         onClick={() => handleEditVendedor(vendedor)}
-                        className="action-btn-modern edit-btn-modern"
+                        className="action-btn-modern blob-btn edit-btn-modern"
                         title="Editar Vendedor"
                       >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                        </svg>
-                        Editar
+                        <span className="btn-content">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                          </svg>
+                          Editar
+                        </span>
+                        <span className="blob-btn__inner">
+                          <span className="blob-btn__blobs">
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                          </span>
+                        </span>
                       </button>
 
                       <button
                         onClick={() => handleDeleteVendedor(vendedor.id)}
-                        className="action-btn-modern delete-btn-modern"
+                        className="action-btn-modern blob-btn delete-btn-modern"
                         title="Remover Vendedor"
                       >
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                        </svg>
-                        Remover
+                        <span className="btn-content">
+                          <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                          </svg>
+                          Remover
+                        </span>
+                        <span className="blob-btn__inner">
+                          <span className="blob-btn__blobs">
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                            <span className="blob-btn__blob"></span>
+                          </span>
+                        </span>
                       </button>
                     </div>
                   </div>
@@ -846,6 +875,16 @@ const GerenciarVendedores = () => {
           </div>
         )}
       </div>
+
+      <svg xmlns="http://www.w3.org/2000/svg" version="1.1" style={{ position: 'absolute', width: 0, height: 0 }}>
+        <defs>
+          <filter id="goo">
+            <feGaussianBlur in="SourceGraphic" result="blur" stdDeviation="10" />
+            <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 21 -7" result="goo" />
+            <feBlend in2="goo" in="SourceGraphic" result="mix" />
+          </filter>
+        </defs>
+      </svg>
     </>
   );
 };

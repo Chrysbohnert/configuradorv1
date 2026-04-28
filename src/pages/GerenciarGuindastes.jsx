@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
+import BlobButton from '../components/BlobButton';
 import ImageUpload from '../components/ImageUpload';
 import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
@@ -528,7 +529,7 @@ const GerenciarGuindastes = () => {
 
           <div className="tabs-container">
             <div className="tabs">
-              <button
+              <BlobButton
                 className={`tab ${activeTab === 'guindastes' ? 'active' : ''}`}
                 onClick={() => setActiveTab('guindastes')}
               >
@@ -536,7 +537,7 @@ const GerenciarGuindastes = () => {
                   <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                 </svg>
                 Guindastes
-              </button>
+              </BlobButton>
             </div>
           </div>
 
@@ -553,7 +554,7 @@ const GerenciarGuindastes = () => {
                   <div className="content-header">
                     <h2>Guindastes Cadastrados</h2>
                     <div className="header-actions">
-                      <button
+                      <BlobButton
                         onClick={() => loadData(page, true)}
                         className="refresh-btn"
                         title="Atualizar dados"
@@ -565,14 +566,14 @@ const GerenciarGuindastes = () => {
                           <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
                         </svg>
                         Atualizar
-                      </button>
+                      </BlobButton>
                       {!isAdminConcessionaria && (
-                        <button onClick={handleAddNew} className="add-btn">
+                        <BlobButton onClick={handleAddNew} className="add-btn">
                           <svg viewBox="0 0 24 24" fill="currentColor">
                             <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
                           </svg>
                           Novo Guindaste
-                        </button>
+                        </BlobButton>
                       )}
                     </div>
                   </div>
@@ -580,22 +581,22 @@ const GerenciarGuindastes = () => {
                   <div className="filtro-container">
                     <div className="capacity-chips">
                       {getCapacidadesUnicas().map((capacidade) => (
-                        <button
+                        <BlobButton
                           key={capacidade}
                           type="button"
                           className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
                           onClick={() => setFiltroCapacidade(capacidade)}
                         >
                           {capacidade}
-                        </button>
+                        </BlobButton>
                       ))}
-                      <button
+                      <BlobButton
                         type="button"
                         className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
                         onClick={() => setFiltroCapacidade('todos')}
                       >
                         Todos
-                      </button>
+                      </BlobButton>
                     </div>
                     <div className="filtro-info">
                       <span className="resultado-count">
@@ -652,7 +653,7 @@ const GerenciarGuindastes = () => {
                                   </div>
                                   <div className="guindaste-actions">
                                     {isAdminConcessionaria ? (
-                                      <button
+                                      <BlobButton
                                         className="action-btn price-btn"
                                         title="Preço da Concessionária"
                                         aria-label="Preço da Concessionária"
@@ -663,10 +664,10 @@ const GerenciarGuindastes = () => {
                                           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                         </svg>
                                         Preço
-                                      </button>
+                                      </BlobButton>
                                     ) : (
                                       <>
-                                        <button
+                                        <BlobButton
                                           onClick={() => handleEdit(guindaste)}
                                           className="action-btn edit-btn"
                                           title="Editar Guindaste"
@@ -677,8 +678,8 @@ const GerenciarGuindastes = () => {
                                             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                           </svg>
                                           Editar
-                                        </button>
-                                        <button
+                                        </BlobButton>
+                                        <BlobButton
                                           onClick={() => handleDeleteClick(guindaste.id)}
                                           className="action-btn delete-btn"
                                           title="Remover Guindaste"
@@ -691,8 +692,8 @@ const GerenciarGuindastes = () => {
                                             <line x1="14" y1="11" x2="14" y2="17" />
                                           </svg>
                                           Excluir
-                                        </button>
-                                        <button
+                                        </BlobButton>
+                                        <BlobButton
                                           className="action-btn price-btn"
                                           title="Preços por Região"
                                           aria-label="Preços por Região"
@@ -703,7 +704,7 @@ const GerenciarGuindastes = () => {
                                             <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                           </svg>
                                           Preços
-                                        </button>
+                                        </BlobButton>
                                       </>
                                     )}
                                   </div>
@@ -758,7 +759,7 @@ const GerenciarGuindastes = () => {
                               </div>
                               <div className="guindaste-actions">
                                 {isAdminConcessionaria ? (
-                                  <button
+                                  <BlobButton
                                     className="action-btn price-btn"
                                     title="Preço da Concessionária"
                                     aria-label="Preço da Concessionária"
@@ -769,10 +770,10 @@ const GerenciarGuindastes = () => {
                                       <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                     </svg>
                                     Preço
-                                  </button>
+                                  </BlobButton>
                                 ) : (
                                   <>
-                                    <button
+                                    <BlobButton
                                       onClick={() => handleEdit(guindaste)}
                                       className="action-btn edit-btn"
                                       title="Editar Guindaste"
@@ -783,8 +784,8 @@ const GerenciarGuindastes = () => {
                                         <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                                       </svg>
                                       Editar
-                                    </button>
-                                    <button
+                                    </BlobButton>
+                                    <BlobButton
                                       onClick={() => handleDeleteClick(guindaste.id)}
                                       className="action-btn delete-btn"
                                       title="Remover Guindaste"
@@ -797,8 +798,8 @@ const GerenciarGuindastes = () => {
                                         <line x1="14" y1="11" x2="14" y2="17" />
                                       </svg>
                                       Excluir
-                                    </button>
-                                    <button
+                                    </BlobButton>
+                                    <BlobButton
                                       className="action-btn price-btn"
                                       title="Preços por Região"
                                       aria-label="Preços por Região"
@@ -809,7 +810,7 @@ const GerenciarGuindastes = () => {
                                         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                       </svg>
                                       Preços
-                                    </button>
+                                    </BlobButton>
                                   </>
                                 )}
                               </div>
@@ -823,21 +824,21 @@ const GerenciarGuindastes = () => {
                   {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
                   {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
                     <div className="pagination">
-                      <button
+                      <BlobButton
                         className="page-btn ghost"
                         disabled={page <= 1}
                         onClick={() => loadData(page - 1)}
                       >
                         Anterior
-                      </button>
+                      </BlobButton>
                       <div className="page-info">Página {page} de {totalPages}</div>
-                      <button
+                      <BlobButton
                         className="page-btn primary"
                         disabled={page >= totalPages}
                         onClick={() => loadData(page + 1)}
                       >
                         Próxima
-                      </button>
+                      </BlobButton>
                     </div>
                   )}
                 </>
@@ -850,397 +851,286 @@ const GerenciarGuindastes = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay">
-          <div className="modal-content guindaste-form-modal">
-            <div className="modal-header">
-              <div className="modal-title-section">
-                <h2>{editingGuindaste ? 'Editar Guindaste' : 'Novo Guindaste'}</h2>
-                <div className="modal-subtitle">
-                  {editingGuindaste ? `Editando: ${editingGuindaste.modelo}` : 'Preencha os dados do novo guindaste'}
-                </div>
-              </div>
-              <div className="modal-header-actions">
-                <button onClick={handleCloseModal} className="close-btn">×</button>
+        <div className="modern-modal-overlay" onClick={handleCloseModal}>
+          <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modern-header">
+              <h2>{formData.subgrupo || (editingGuindaste ? 'Editar Guindaste' : 'Novo Guindaste')}</h2>
+              <div className="modern-header-actions">
+                <button type="button" onClick={handleCloseModal} className="btn-modern-cancel">
+                  Cancelar
+                </button>
+                <button type="submit" form="guindaste-form" className="btn-modern-save" disabled={isLoading}>
+                  {isLoading ? 'Salvando...' : 'Salvar produto'}
+                </button>
               </div>
             </div>
 
-            <form id="guindaste-form" onSubmit={handleSubmit} className="modal-form">
-              {/* Seção: Informações Básicas */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>📋 Informações Básicas</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🏗️</span>
-                      Subgrupo
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.subgrupo}
-                      onChange={e => handleInputChange('subgrupo', e.target.value)}
-                      placeholder="Ex: Guindaste Hidráulico"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Categoria principal do equipamento</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🔧</span>
-                      Modelo
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.modelo}
-                      onChange={e => handleInputChange('modelo', e.target.value)}
-                      placeholder="Ex: GH-25T"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Nome/identificação do modelo</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🏷️</span>
-                      Grupo *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.grupo}
-                      onChange={e => handleInputChange('grupo', e.target.value)}
-                      placeholder="Ex: Interno, Externo"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Categoria do grupo do guindaste</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🏷️</span>
-                      Código de Referência *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.codigo_referencia}
-                      onChange={e => handleInputChange('codigo_referencia', e.target.value)}
-                      placeholder="Ex: GSI65001, GSE80010"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Código único para identificação do produto</small>
-                  </div>
-                </div>
-              </div>
-              {/* Seção: Configuração Técnica */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>⚙️ Configuração Técnica</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🔗</span>
-                      Configuração de Lanças
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.peso_kg}
-                      onChange={e => handleInputChange('peso_kg', e.target.value)}
-                      placeholder="Ex: 3h1m, 4h2m, etc"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Ex: 3h1m = 3 hidráulicas + 1 manual</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🎮</span>
-                      Controle Remoto
-                    </label>
-                    <select
-                      value={formData.tem_contr}
-                      onChange={e => handleInputChange('tem_contr', e.target.value)}
-                      required
-                      className="form-select"
-                    >
-                      <option value="Sim">✅ Sim</option>
-                      <option value="Não">❌ Não</option>
-                    </select>
-                    <small className="form-help">Campo automático baseado na configuração</small>
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label>
-                    <span className="label-icon">🔧</span>
-                    Configuração Completa
-                  </label>
-                  <select
-                    value={formData.configuração}
-                    onChange={e => handleInputChange('configuração', e.target.value)}
-                    required
-                    className="form-select"
-                  >
-                    <option value="">Selecione uma configuração</option>
-                    <option value="STANDARD - Pedido Padrão">📦 STANDARD - Pedido Padrão</option>
-                    <option value="CR - Controle Remoto">🎮 CR - Controle Remoto</option>
-                    <option value="EH - Extensiva Hidráulica">🔧 EH - Extensiva Hidráulica</option>
-                    <option value="P - Preparação p/ Perfuratriz">🔨 P - Preparação p/ Perfuratriz</option>
-                    <option value="GR - Preparação p/ Garra e Rotator">🦾 GR - Preparação p/ Garra e Rotator</option>
-                    <option value="Caminhão 3/4">🚛 Caminhão 3/4</option>
-                    <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">🎮🔧 CR/EH - Controle Remoto e Extensiva Hidráulica</option>
-                    <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">🎮🔧🔨 CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
-                    <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">🔧🔨 EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz</option>
-                    <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">🎮🦾 CR/GR - Controle Remoto e Preparação p/ Garra e Rotator</option>
-                    <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">🔧🦾 EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador</option>
-                  </select>
-                  <small className="form-help">Selecione a configuração completa do guindaste</small>
-                </div>
+            <form id="guindaste-form" onSubmit={handleSubmit} className="modern-body">
+              
+              <div className="modern-form-group modern-nome-full">
+                <label>Nome / Subgrupo *</label>
+                <input
+                  type="text"
+                  value={formData.subgrupo}
+                  onChange={e => handleInputChange('subgrupo', e.target.value)}
+                  placeholder="Ex: Guindaste Hidráulico"
+                  required
+                  className="modern-input"
+                />
               </div>
 
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>🌐 Comércio Exterior</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-group">
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={!!formData.is_comercio_exterior}
-                      onChange={e => handleInputChange('is_comercio_exterior', e.target.checked)}
-                      style={{ width: '18px', height: '18px', cursor: 'pointer' }}
-                    />
-                    <span>
-                      <strong>Equipamento exclusivo para Comércio Exterior</strong>
-                      <small style={{ display: 'block', fontWeight: 'normal', color: '#6b7280', marginTop: '2px' }}>
-                        Quando marcado, este equipamento só aparecerá para vendedores e concessionárias com permissão de Comércio Exterior.
-                      </small>
-                    </span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>🧪 Protótipo</h3>
-                  <div className="section-divider"></div>
-                </div>
-
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🧪</span>
-                      É protótipo?
-                    </label>
-                    <select
-                      value={formData.is_prototipo ? 'sim' : 'nao'}
-                      onChange={e => handleInputChange('is_prototipo', e.target.value === 'sim')}
-                      className="form-select"
-                    >
-                      <option value="nao">❌ Não</option>
-                      <option value="sim">✅ Sim</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🏷️</span>
-                      Label do protótipo (opcional)
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.prototipo_label}
-                      onChange={e => handleInputChange('prototipo_label', e.target.value)}
-                      placeholder="Ex: PROTÓTIPO - PRÉ SÉRIE"
-                      className="form-input"
-                      disabled={!formData.is_prototipo}
-                    />
+              <div className="modern-top-section">
+                <div className="modern-left-col">
+                  <div className="modern-image-box">
+                    <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
+                    {formData.imagem_url && (
+                      <div className="modern-image-preview">
+                        <img src={formData.imagem_url} alt="Principal" />
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="form-group full-width">
-                  <label>
-                    <span className="label-icon">📄</span>
-                    Observações no PDF (opcional)
-                  </label>
-                  <textarea
-                    value={formData.prototipo_observacoes_pdf}
-                    onChange={e => handleInputChange('prototipo_observacoes_pdf', e.target.value)}
-                    placeholder="Ex: Equipamento protótipo, sujeito a disponibilidade..."
-                    className="form-textarea"
-                    rows="3"
-                    disabled={!formData.is_prototipo}
-                  />
-                </div>
-              </div>
-
-              {/* Seção: Mídia e Documentação */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>📸 Mídia e Documentação</h3>
-                  <div className="section-divider"></div>
-                </div>
-
-                <div className="form-group">
-                  <label>
-                    <span className="label-icon">🖼️</span>
-                    Imagem Principal *
-                  </label>
-                  <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
-                  {formData.imagem_url && (
-                    <div className="image-preview">
-                      <img
-                        src={resolveGuindasteImage({ imagem_url: formData.imagem_url })}
-                        alt="Preview da Imagem Principal"
-                        className="uploaded-image-thumbnail"
-                        onError={(e) => { e.currentTarget.src = '/header-bg.jpg'; }}
+                <div className="modern-right-col">
+                  <div className="modern-grid-3">
+                    <div className="modern-form-group">
+                      <label>Código (SKU) <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <input
+                        type="text"
+                        value={formData.codigo_referencia}
+                        onChange={e => handleInputChange('codigo_referencia', e.target.value)}
+                        placeholder="Ex: GSI65001"
+                        required
+                        className="modern-input"
                       />
-                      <small className="form-help">Preview da imagem principal</small>
                     </div>
-                  )}
+                    <div className="modern-form-group">
+                      <label>Modelo *</label>
+                      <input
+                        type="text"
+                        value={formData.modelo}
+                        onChange={e => handleInputChange('modelo', e.target.value)}
+                        placeholder="Ex: GH-25T"
+                        required
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="modern-form-group">
+                      <label>Grupo *</label>
+                      <input
+                        type="text"
+                        value={formData.grupo}
+                        onChange={e => handleInputChange('grupo', e.target.value)}
+                        placeholder="Ex: Interno"
+                        required
+                        className="modern-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="modern-grid-3">
+                    <div className="modern-form-group">
+                      <label>FINAME *</label>
+                      <input
+                        type="text"
+                        value={formData.finame}
+                        onChange={e => handleInputChange('finame', e.target.value)}
+                        placeholder="Ex: 123456789"
+                        required
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="modern-form-group">
+                      <label>NCM *</label>
+                      <input
+                        type="text"
+                        value={formData.ncm}
+                        onChange={e => handleInputChange('ncm', e.target.value)}
+                        placeholder="Ex: 84264100"
+                        required
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="modern-form-group">
+                      <label>Qtde. Disponível <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={formData.quantidade_disponivel}
+                        onChange={e => {
+                          const val = e.target.value;
+                          if (val === '') { handleInputChange('quantidade_disponivel', ''); return; }
+                          const num = parseInt(val, 10);
+                          handleInputChange('quantidade_disponivel', isNaN(num) ? 0 : num);
+                        }}
+                        onBlur={e => {
+                          const val = e.target.value;
+                          if (val === '' || val === null || val === undefined) {
+                            handleInputChange('quantidade_disponivel', 0);
+                          }
+                        }}
+                        className="modern-input"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="modern-grid-2">
+                    <div className="modern-form-group">
+                      <label>Configuração Completa *</label>
+                      <select
+                        value={formData.configuração}
+                        onChange={e => handleInputChange('configuração', e.target.value)}
+                        required
+                        className="modern-input"
+                      >
+                        <option value="">Selecione uma configuração</option>
+                        <option value="STANDARD - Pedido Padrão">STANDARD - Pedido Padrão</option>
+                        <option value="CR - Controle Remoto">CR - Controle Remoto</option>
+                        <option value="EH - Extensiva Hidráulica">EH - Extensiva Hidráulica</option>
+                        <option value="P - Preparação p/ Perfuratriz">P - Preparação p/ Perfuratriz</option>
+                        <option value="GR - Preparação p/ Garra e Rotator">GR - Preparação p/ Garra e Rotator</option>
+                        <option value="Caminhão 3/4">Caminhão 3/4</option>
+                        <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">CR/EH - CR e Extensiva Hidráulica</option>
+                        <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">CR/EH/P - CR, Ext. Hidr. e Prep. Perfuratriz</option>
+                        <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">EH/P - Ext. Hidr. e Prep. Perfuratriz</option>
+                        <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">CR/GR - CR e Prep. Garra/Rotator</option>
+                        <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">EH/GR - Ext. Hidr. e Prep. Garra/Rotador</option>
+                      </select>
+                    </div>
+                    <div className="modern-form-group">
+                      <label>Controle Remoto</label>
+                      <select
+                        value={formData.tem_contr}
+                        onChange={e => handleInputChange('tem_contr', e.target.value)}
+                        required
+                        className="modern-input"
+                      >
+                        <option value="Sim">Sim</option>
+                        <option value="Não">Não</option>
+                      </select>
+                    </div>
+                  </div>
+                  
+                  <div className="modern-grid-3">
+                    <div className="modern-form-group">
+                      <label>Lanças (Config. Kg) <span title="Ex: 3h1m" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <input
+                        type="text"
+                        value={formData.peso_kg}
+                        onChange={e => handleInputChange('peso_kg', e.target.value)}
+                        placeholder="Ex: 3h1m"
+                        required
+                        className="modern-input"
+                      />
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* TABS E SEÇÕES INFERIORES */}
+              <div className="modern-section-tabs">
+                <div className="modern-tab-item">Características e Detalhes</div>
+              </div>
+
+              <div className="modern-bottom-section">
+                <div className="modern-grid-2" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <div className="modern-form-group">
+                    <label>Descrição Técnica *</label>
+                    <textarea
+                      value={formData.descricao}
+                      onChange={e => handleInputChange('descricao', e.target.value)}
+                      placeholder="Descreva as características técnicas do guindaste..."
+                      required
+                      className="modern-textarea"
+                    />
+                  </div>
+                  <div className="modern-form-group">
+                    <label>O que NÃO está incluído *</label>
+                    <textarea
+                      value={formData.nao_incluido}
+                      onChange={e => handleInputChange('nao_incluido', e.target.value)}
+                      placeholder="Liste os itens que não estão incluídos no produto..."
+                      required
+                      className="modern-textarea"
+                    />
+                  </div>
                 </div>
 
-                <div className="form-group full-width">
-                  <label>Imagens Adicionais:</label>
+                <div className="modern-divider"></div>
+
+                <div className="modern-form-group">
+                  <label style={{ fontSize: '14px', color: '#334155', fontWeight: '600' }}>Imagens Adicionais</label>
                   <input
                     type="file"
                     multiple
                     onChange={handleImagensAdicionaisChange}
                     accept="image/*"
+                    className="modern-file-input"
                   />
-                  <div className="additional-images-preview">
-                    {formData.imagens_adicionais.map((imgUrl, index) => (
-                      <div key={index} className="additional-image-item">
-                        <img src={imgUrl} alt={`Adicional ${index + 1}`} className="uploaded-image-thumbnail" />
-                        <button type="button" onClick={() => removeImagemAdicional(index)} className="remove-image-btn">X</button>
-                      </div>
-                    ))}
+                  {formData.imagens_adicionais && formData.imagens_adicionais.length > 0 && (
+                    <div className="modern-imagens-grid">
+                      {formData.imagens_adicionais.map((imgUrl, index) => (
+                        <div key={index} className="modern-imagem-item">
+                          <img src={imgUrl} alt={`Adicional ${index + 1}`} />
+                          <button type="button" onClick={() => removeImagemAdicional(index)} className="modern-remove-img">✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="modern-divider"></div>
+
+                <div className="modern-grid-3">
+                  <div className="modern-form-group">
+                    <label>Equipamento de Comércio Exterior?</label>
+                    <select
+                      value={formData.is_comercio_exterior ? 'sim' : 'nao'}
+                      onChange={e => handleInputChange('is_comercio_exterior', e.target.value === 'sim')}
+                      className="modern-input"
+                    >
+                      <option value="nao">Não</option>
+                      <option value="sim">Sim, Exclusivo</option>
+                    </select>
                   </div>
-                </div>
-              </div>
-
-              {/* Seção: Descrições e Especificações */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>📝 Descrições e Especificações</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-group full-width">
-                  <label>
-                    <span className="label-icon">📄</span>
-                    Descrição Técnica *
-                  </label>
-                  <textarea
-                    value={formData.descricao}
-                    onChange={e => handleInputChange('descricao', e.target.value)}
-                    placeholder="Descreva as características técnicas do guindaste..."
-                    required
-                    className="form-textarea"
-                    rows="4"
-                  />
-                  <small className="form-help">Descrição detalhada das especificações técnicas</small>
-                </div>
-
-                <div className="form-group full-width">
-                  <label>
-                    <span className="label-icon">❌</span>
-                    O que NÃO está incluído *
-                  </label>
-                  <textarea
-                    value={formData.nao_incluido}
-                    onChange={e => handleInputChange('nao_incluido', e.target.value)}
-                    placeholder="Liste os itens que não estão incluídos no produto..."
-                    required
-                    className="form-textarea"
-                    rows="3"
-                  />
-                  <small className="form-help">Especifique claramente o que não está incluído</small>
-                </div>
-              </div>
-
-              {/* Seção: Códigos e Classificações */}
-              <div className="form-section">
-                <div className="section-header">
-                  <h3>🏷️ Códigos e Classificações</h3>
-                  <div className="section-divider"></div>
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">🏦</span>
-                      Código FINAME *
-                    </label>
+                  <div className="modern-form-group">
+                    <label>É protótipo?</label>
+                    <select
+                      value={formData.is_prototipo ? 'sim' : 'nao'}
+                      onChange={e => handleInputChange('is_prototipo', e.target.value === 'sim')}
+                      className="modern-input"
+                    >
+                      <option value="nao">Não</option>
+                      <option value="sim">Sim</option>
+                    </select>
+                  </div>
+                  <div className="modern-form-group">
+                    <label>Label do Protótipo</label>
                     <input
                       type="text"
-                      value={formData.finame}
-                      onChange={e => handleInputChange('finame', e.target.value)}
-                      placeholder="Ex: 123456789"
-                      required
-                      className="form-input"
+                      value={formData.prototipo_label}
+                      onChange={e => handleInputChange('prototipo_label', e.target.value)}
+                      placeholder="Ex: PROTÓTIPO"
+                      className="modern-input"
+                      disabled={!formData.is_prototipo}
                     />
-                    <small className="form-help">Código para financiamento FINAME</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">📊</span>
-                      Código NCM *
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.ncm}
-                      onChange={e => handleInputChange('ncm', e.target.value)}
-                      placeholder="Ex: 84264100"
-                      required
-                      className="form-input"
-                    />
-                    <small className="form-help">Nomenclatura Comum do Mercosul</small>
-                  </div>
-                  <div className="form-group">
-                    <label>
-                      <span className="label-icon">📦</span>
-                      Quantidade Disponível
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      value={formData.quantidade_disponivel}
-                      onChange={e => {
-                        const val = e.target.value;
-                        // Permitir campo vazio durante a digitação
-                        if (val === '') {
-                          handleInputChange('quantidade_disponivel', '');
-                          return;
-                        }
-                        const num = parseInt(val, 10);
-                        handleInputChange('quantidade_disponivel', isNaN(num) ? 0 : num);
-                      }}
-                      onBlur={e => {
-                        // Ao sair do campo, garantir que seja número
-                        const val = e.target.value;
-                        if (val === '' || val === null || val === undefined) {
-                          handleInputChange('quantidade_disponivel', 0);
-                        }
-                      }}
-                      placeholder="Ex: 5"
-                      className="form-input"
-                    />
-                    <small className="form-help">Quantidade em estoque para pronta entrega</small>
                   </div>
                 </div>
-              </div>
-
-              <div className="form-actions">
-                <button type="submit" className="submit-btn" disabled={isLoading}>
-                  {isLoading ? 'Salvando...' : (editingGuindaste ? 'Atualizar Guindaste' : 'Criar Guindaste')}
-                </button>
-                <button type="button" className="cancel-btn" onClick={handleCloseModal}>
-                  Cancelar
-                </button>
+                
+                <div className="modern-form-group">
+                  <label>Observações do Protótipo no PDF</label>
+                  <input
+                    type="text"
+                    value={formData.prototipo_observacoes_pdf}
+                    onChange={e => handleInputChange('prototipo_observacoes_pdf', e.target.value)}
+                    placeholder="Ex: Equipamento protótipo, sujeito a disponibilidade..."
+                    className="modern-input"
+                    disabled={!formData.is_prototipo}
+                  />
+                </div>
+                
               </div>
             </form>
           </div>
@@ -1264,11 +1154,11 @@ const GerenciarGuindastes = () => {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
               <h2>Preço da Concessionária</h2>
-              <button onClick={closePrecoConcessionaria} className="close-btn">
+              <BlobButton onClick={closePrecoConcessionaria} className="close-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
                 </svg>
-              </button>
+              </BlobButton>
             </div>
 
             <div style={{ padding: '0 24px 24px 24px' }}>
@@ -1305,8 +1195,8 @@ const GerenciarGuindastes = () => {
               </div>
 
               <div className="modal-actions" style={{ marginTop: '18px' }}>
-                <button type="button" onClick={closePrecoConcessionaria} className="cancel-btn">Cancelar</button>
-                <button type="button" onClick={salvarPrecoConcessionaria} className="save-btn">Salvar Preço</button>
+                <BlobButton type="button" onClick={closePrecoConcessionaria} className="cancel-btn">Cancelar</BlobButton>
+                <BlobButton type="button" onClick={salvarPrecoConcessionaria} className="save-btn">Salvar Preço</BlobButton>
               </div>
             </div>
           </div>
@@ -1319,19 +1209,19 @@ const GerenciarGuindastes = () => {
           <div className="modal-content delete-modal">
             <div className="modal-header">
               <h2>⚠️ Confirmar Exclusão</h2>
-              <button onClick={() => setShowDeleteModal(false)} className="close-btn">×</button>
+              <BlobButton onClick={() => setShowDeleteModal(false)} className="close-btn">×</BlobButton>
             </div>
             <div className="modal-body">
               <p>Tem certeza que deseja excluir este guindaste?</p>
               <p className="warning-text">Esta ação não pode ser desfeita.</p>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setShowDeleteModal(false)} className="cancel-btn">
+              <BlobButton onClick={() => setShowDeleteModal(false)} className="cancel-btn">
                 Cancelar
-              </button>
-              <button onClick={handleConfirmDelete} className="delete-btn">
+              </BlobButton>
+              <BlobButton onClick={handleConfirmDelete} className="delete-btn">
                 Excluir
-              </button>
+              </BlobButton>
             </div>
           </div>
         </div>
