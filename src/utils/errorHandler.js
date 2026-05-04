@@ -46,6 +46,5 @@ export const handleError = (error, context = '') => {
 
 export const showError = (error, context = '') => {
   const handledError = handleError(error, context);
-  alert(handledError.message);
   return handledError;
 };

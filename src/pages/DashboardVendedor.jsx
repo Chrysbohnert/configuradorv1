@@ -11,12 +11,6 @@ const DashboardVendedor = () => {
   const { user } = useOutletContext();
 
   const [periodo, setPeriodo] = useState('30');
-  const [stats, setStats] = useState({
-    vendasMes: 0,
-    propostasEnviadas: 0,
-    taxaConversao: 0,
-    atividadesRecentes: [],
-  });
   const [propostas, setPropostas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [metaMes, setMetaMes] = useState({ meta_propostas: 0, meta_valor: 0 });
@@ -29,6 +23,7 @@ const DashboardVendedor = () => {
       .catch(() => {});
   }, [user]);
 
+  // Fetch apenas quando user muda — não refaz requisição ao banco por mudança de período
   useEffect(() => {
     if (!user) return;
 
@@ -36,66 +31,7 @@ const DashboardVendedor = () => {
       setIsLoading(true);
       try {
         const propostasResp = await db.getPropostas({ vendedor_id: user?.id });
-        const lista = Array.isArray(propostasResp) ? propostasResp : [];
-        setPropostas(lista);
-
-        const propostasNoPeriodo = lista.filter((p) => {
-          if (periodo === 'all') return true;
-          const dias = parseInt(periodo, 10);
-          const dataProposta = p?.created_at ? new Date(p.created_at) : null;
-          if (!dataProposta) return false;
-          const dataLimite = new Date();
-          dataLimite.setDate(dataLimite.getDate() - dias);
-          return dataProposta >= dataLimite;
-        });
-
-        const vendasEfetivadas = propostasNoPeriodo.filter(
-          (p) => p.resultado_venda === 'efetivada' || p.status === 'finalizado'
-        );
-
-        const valorVendas = vendasEfetivadas.reduce((acc, p) => acc + (p.valor_total || 0), 0);
-
-        const propostasGanhas = propostasNoPeriodo.filter(
-          (p) => p.resultado_venda === 'efetivada'
-        ).length;
-
-        const propostasComResultado = propostasNoPeriodo.filter(
-          (p) => p.resultado_venda === 'efetivada' || p.resultado_venda === 'perdida'
-        ).length;
-
-        const atividadesRecentes = [...lista]
-          .sort((a, b) => {
-            const da = new Date(b.created_at || 0).getTime();
-            const dbb = new Date(a.created_at || 0).getTime();
-            return da - dbb;
-          })
-          .slice(0, 6)
-          .map((p) => {
-            const cliente = p.cliente_nome || p.nome_cliente || 'Cliente';
-            const valor = formatCurrency(p.valor_total || 0);
-            const status = p.resultado_venda
-              ? p.resultado_venda
-              : p.status || 'em andamento';
-            return {
-              texto: `Proposta para ${cliente} (${valor}) está ${status}.`,
-              tipo:
-                p.resultado_venda === 'efetivada'
-                  ? 'success'
-                  : p.resultado_venda === 'perdida'
-                  ? 'danger'
-                  : 'info',
-            };
-          });
-
-        setStats({
-          vendasMes: valorVendas,
-          propostasEnviadas: propostasNoPeriodo.length,
-          taxaConversao:
-            propostasComResultado > 0
-              ? Math.round((propostasGanhas / propostasComResultado) * 100)
-              : 0,
-          atividadesRecentes,
-        });
+        setPropostas(Array.isArray(propostasResp) ? propostasResp : []);
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);
         setPropostas([]);
@@ -105,7 +41,7 @@ const DashboardVendedor = () => {
     };
 
     loadDashboardData();
-  }, [user, periodo]);
+  }, [user]);
 
   const propostasFiltradas = useMemo(() => {
     return propostas.filter((p) => {
@@ -118,6 +54,36 @@ const DashboardVendedor = () => {
       return dataProposta >= dataLimite;
     });
   }, [propostas, periodo]);
+
+  // Recalcula stats client-side quando período ou propostas mudam
+  const stats = useMemo(() => {
+    const vendasEfetivadas = propostasFiltradas.filter(
+      (p) => p.resultado_venda === 'efetivada' || p.status === 'finalizado'
+    );
+    const valorVendas = vendasEfetivadas.reduce((acc, p) => acc + (p.valor_total || 0), 0);
+    const propostasGanhas = propostasFiltradas.filter((p) => p.resultado_venda === 'efetivada').length;
+    const propostasComResultado = propostasFiltradas.filter(
+      (p) => p.resultado_venda === 'efetivada' || p.resultado_venda === 'perdida'
+    ).length;
+    const atividadesRecentes = [...propostas]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, 6)
+      .map((p) => {
+        const cliente = p.cliente_nome || p.nome_cliente || 'Cliente';
+        const valor = formatCurrency(p.valor_total || 0);
+        const status = p.resultado_venda ? p.resultado_venda : p.status || 'em andamento';
+        return {
+          texto: `Proposta para ${cliente} (${valor}) está ${status}.`,
+          tipo: p.resultado_venda === 'efetivada' ? 'success' : p.resultado_venda === 'perdida' ? 'danger' : 'info',
+        };
+      });
+    return {
+      vendasMes: valorVendas,
+      propostasEnviadas: propostasFiltradas.length,
+      taxaConversao: propostasComResultado > 0 ? Math.round((propostasGanhas / propostasComResultado) * 100) : 0,
+      atividadesRecentes,
+    };
+  }, [propostasFiltradas, propostas]);
 
   const progressoValor = metaMes.meta_valor > 0 ? Math.min((stats.vendasMes / metaMes.meta_valor) * 100, 100) : 0;
   const progressoPropostas = metaMes.meta_propostas > 0 ? Math.min((stats.propostasEnviadas / metaMes.meta_propostas) * 100, 100) : 0;
@@ -191,7 +157,7 @@ const DashboardVendedor = () => {
     return pontos;
   }, [propostasFiltradas, periodo]);
 
-  const pipelineData = [
+  const pipelineData = useMemo(() => [
     {
       label: 'Em Negociação',
       count: emNegociacao.length,
@@ -216,7 +182,7 @@ const DashboardVendedor = () => {
       value: perdidas.reduce((acc, p) => acc + (p.valor_total || 0), 0),
       tone: 'danger',
     },
-  ];
+  ], [emNegociacao, aguardandoDecisao, ganhosRecentes, perdidas]);
 
   if (!user) return null;
 
@@ -283,7 +249,6 @@ const DashboardVendedor = () => {
             <span className="kpi-label">Vendas no Período</span>
             <span className="kpi-value">{formatCurrency(stats.vendasMes)}</span>
             <small className="kpi-helper-text">Valor total efetivado no período selecionado</small>
-            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
           </div>
 
           <div className="card kpi-card seller-kpi-card seller-kpi-proposals">
@@ -291,7 +256,6 @@ const DashboardVendedor = () => {
             <span className="kpi-label">Propostas Enviadas</span>
             <span className="kpi-value">{stats.propostasEnviadas}</span>
             <small className="kpi-helper-text">Total de propostas registradas no período</small>
-            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
           </div>
 
           <div className="card kpi-card seller-kpi-card seller-kpi-conversion">
@@ -299,7 +263,6 @@ const DashboardVendedor = () => {
             <span className="kpi-label">Taxa de Conversão</span>
             <span className="kpi-value">{stats.taxaConversao}%</span>
             <small className="kpi-helper-text">Conversão sobre propostas com resultado</small>
-            <MiniSparkline data={seriePropostas.map((item) => item.value)} />
           </div>
 
           <div className="card kpi-card seller-kpi-card meta-card seller-kpi-meta">
@@ -350,19 +313,69 @@ const DashboardVendedor = () => {
         </section>
 
         <section className="seller-middle-grid">
-          <div className="card seller-chart-card">
-            <div className="card-top-row">
-              <div>
-                <h3 className="section-title">Evolução das Propostas</h3>
-                <p className="section-subtitle">
-                  Veja o ritmo de geração de propostas no período selecionado.
-                </p>
-              </div>
-              <span className="seller-chip seller-chip-primary">{periodLabel}</span>
-            </div>
+         <div className="card seller-chart-card seller-period-table-card">
+  <div className="card-top-row">
+    <div>
+      <h3 className="section-title">Movimentação do Período</h3>
+      <p className="section-subtitle">
+        Últimas propostas registradas dentro do período selecionado.
+      </p>
+    </div>
+    <span className="seller-chip seller-chip-primary">{periodLabel}</span>
+  </div>
 
-            <SimpleLineChart data={seriePropostas} />
-          </div>
+      <div className="seller-period-table-wrap">
+        <table className="seller-period-table">
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Valor</th>
+              <th>Status</th>
+              <th>Data</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {propostasRecentes.length > 0 ? (
+              propostasRecentes.map((item, index) => (
+                <tr key={index}>
+                  <td>
+                    <strong>{item.cliente_nome || item.nome_cliente || 'Cliente'}</strong>
+                    <span>Proposta #{item.id || index + 1}</span>
+                  </td>
+
+                  <td>{formatCurrency(item.valor_total || 0)}</td>
+
+                  <td>
+                    <span
+                      className={`seller-status-badge ${
+                        item.resultado_venda === 'efetivada'
+                          ? 'status-success'
+                          : item.resultado_venda === 'perdida'
+                          ? 'status-danger'
+                          : 'status-neutral'
+                      }`}
+                    >
+                      {item.resultado_venda || item.status || 'Em andamento'}
+                    </span>
+                  </td>
+
+                  <td>
+                    {new Date(item.created_at || Date.now()).toLocaleDateString('pt-BR')}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan="4" className="seller-table-empty">
+                  Nenhuma proposta encontrada neste período.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
           <div className="card seller-summary-card">
             <div className="card-top-row">
@@ -562,84 +575,6 @@ function MiniSparkline({ data = [] }) {
     <svg className="mini-sparkline" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
       <polyline fill="none" stroke="currentColor" strokeWidth="2.5" points={points} />
     </svg>
-  );
-}
-
-function SimpleLineChart({ data = [] }) {
-  const width = 760;
-  const height = 250;
-  const padding = 18;
-
-  if (!data.length) {
-    return <div className="chart-empty">Sem dados para exibir.</div>;
-  }
-
-  const max = Math.max(...data.map((item) => item.value), 1);
-
-  const points = data.map((item, index) => {
-    const x = padding + (index / Math.max(data.length - 1, 1)) * (width - padding * 2);
-    const y = height - padding - (item.value / max) * (height - padding * 2);
-    return { ...item, x, y };
-  });
-
-  const polyline = points.map((p) => `${p.x},${p.y}`).join(' ');
-
-  return (
-    <div className="seller-line-chart-wrap">
-      <svg className="seller-line-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="sellerLineFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgba(245,158,11,0.28)" />
-            <stop offset="100%" stopColor="rgba(245,158,11,0.02)" />
-          </linearGradient>
-        </defs>
-
-        {[0.25, 0.5, 0.75].map((fraction) => {
-          const y = padding + fraction * (height - padding * 2);
-          return (
-            <line
-              key={fraction}
-              x1={padding}
-              x2={width - padding}
-              y1={y}
-              y2={y}
-              stroke="rgba(148,163,184,0.18)"
-              strokeWidth="1"
-            />
-          );
-        })}
-
-        <path
-          d={`M ${points[0].x} ${height - padding}
-              L ${points[0].x} ${points[0].y}
-              ${points.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ')}
-              L ${points[points.length - 1].x} ${height - padding}
-              Z`}
-          fill="url(#sellerLineFill)"
-        />
-
-        <polyline
-          fill="none"
-          stroke="#f59e0b"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          points={polyline}
-        />
-
-        {points.map((p, index) => (
-          <circle key={index} cx={p.x} cy={p.y} r="4.5" fill="#f59e0b" />
-        ))}
-      </svg>
-
-      <div className="seller-line-labels">
-        {data.map((item, index) =>
-          index % Math.ceil(data.length / 4) === 0 || index === data.length - 1 ? (
-            <span key={index}>{item.label}</span>
-          ) : null
-        )}
-      </div>
-    </div>
   );
 }
 

@@ -31,7 +31,6 @@
 
 .back-button:hover {
   background: rgba(255, 255, 255, 1);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
@@ -106,7 +105,6 @@
 }
 
 .contact-card:hover {
-  transform: translateY(-4px);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   border-color: #fd7e14;
 }
@@ -174,7 +172,6 @@
 }
 
 .contact-button.whatsapp:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37, 211, 102, 0.3);
 }
 
@@ -183,7 +180,6 @@
 }
 
 .contact-button.email:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(253, 126, 20, 0.3);
 }
 

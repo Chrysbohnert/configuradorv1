@@ -1305,623 +1305,317 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
   return (
     <div className="payment-policy">
-      {/* Card Flutuante de Valor em Tempo Real */}
-      <div className="floating-price-card">
-        <div className="floating-price-header">
-          <span className="floating-price-icon">💰</span>
-          <span className="floating-price-title">Valor em Tempo Real</span>
-        </div>
+      {/* COMPACT FORM LAYOUT */}
+      <div className="pp-form-wrap">
 
-        <div className="floating-price-value">
-          <span className="price">{isComercioExterior ? formatCurrencyUSD(valorFlutuanteUSD) : formatCurrency(valorFlutuante)}</span>
-          {isComercioExterior && (
-            <div style={{ marginTop: '6px', fontSize: '12px', color: '#6b7280', fontWeight: 600 }}>
-              Câmbio: 1 USD = {formatCurrency(Number(cotacaoUSD) || 0)}
-            </div>
-          )}
-        </div>
-
-        <div className="floating-price-breakdown">
-          <div className="breakdown-line">
-            <span>Base:</span>
-            <span>{formatCurrency(precoBase)}</span>
-          </div>
-
-          {resultado?.descontoValor > 0 && (
-            <div className="breakdown-line discount">
-              <span>- Desconto plano:</span>
-              <span>{formatCurrency(resultado.descontoValor)}</span>
-            </div>
-          )}
-
-          {resultado?.acrescimoValor > 0 && (
-            <div className="breakdown-line addition">
-              <span>+ Acréscimo:</span>
-              <span>{formatCurrency(resultado.acrescimoValor)}</span>
-            </div>
-          )}
-
-          {descontoVendedor > 0 && (
-            <div className="breakdown-line discount">
-              <span>- Desconto vendedor ({descontoVendedor}%):</span>
-              <span>{formatCurrency(precoBase * (descontoVendedor / 100))}</span>
-            </div>
-          )}
-
-          {parseFloat(extraValor) > 0 && (
-            <div className="breakdown-line addition">
-              <span>+ Extra{extraDescricao ? ` (${extraDescricao})` : ''}:</span>
-              <span>{formatCurrency(parseFloat(extraValor) || 0)}</span>
-            </div>
-          )}
-
-          {tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega && (
-            <div className="breakdown-line addition">
-              <span>+ Frete:</span>
-              <span>
-                {formatCurrency(
-                  tipoEntrega === 'prioridade'
-                    ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
-                    : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)
-                )}
-              </span>
-            </div>
-          )}
-
-          {tipoCliente === 'cliente' && instalacao === 'incluso' && (
-            <div className="breakdown-line addition">
-              <span>+ Instalação:</span>
-              <span>{formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Stepper */}
-    <div className="pp-stepper">
-      {etapasVisiveis.map(n => {
-        const isRestored = hasRestoredRef.current;
-        const isLocked = isRestored ? false : (
-          (n === 2 && !podeIrEtapa2) ||
-          (n === 3 && !podeIrEtapa3) ||
-          (n === 4 && !podeIrEtapa4) ||
-          (n === 5 && !podeIrEtapa5) ||
-          (n === 6 && !podeIrEtapa6) ||
-          (n === 7 && !podeIrEtapa7)
-        );
-
-        const labelModoConcessionaria =
-          n === 4 ? 'F' :
-          n === 5 ? 'L' :
-          n === 6 ? 'P' :
-          'R';
-
-        return (
-          <div
-            key={n}
-            className={`pp-step ${etapa === n ? 'active' : (isRestored || etapa > n) ? 'done' : ''} ${isLocked ? 'locked' : ''}`}
-            onClick={() => {
-              if (isLocked) return;
-              setEtapa(n);
-            }}
-            title={
-              n===1?'Tipo de Cliente':
-              n===2?'Participação & IE':
-              n===3?'Instalação':
-              n===4?'Frete':
-              n===5?'Local & Entrega':
-              n===6?'Entrada & Plano':
-              'Resumo'
-            }
-          >
-            <span>{modoConcessionaria ? labelModoConcessionaria : n}</span>
-          </div>
-        );
-      })}
-    </div>
-
-    {/* 1) Tipo de Cliente */}
-    {!modoConcessionaria && !isComercioExterior && etapa === 1 && (
-      <section className="payment-section">
-        <h3>1) Tipo de Cliente</h3>
-        <div className="radio-group">
-          <label className={`radio-option ${tipoCliente === 'cliente' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="tipoCliente"
-              value="cliente"
-              checked={tipoCliente === 'cliente'}
-              onChange={() => setTipoCliente('cliente')}
-            />
-            <span>Cliente</span>
-          </label>
-          <label className={`radio-option ${tipoCliente === 'revenda' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="tipoCliente"
-              value="revenda"
-              checked={tipoCliente === 'revenda'}
-              onChange={() => setTipoCliente('revenda')}
-            />
-            <span>Revenda</span>
-          </label>
-        </div>
-
-        <div className="payment-navigation">
-          <button className="payment-nav-btn" disabled={!podeIrEtapa2} onClick={next}>Continuar</button>
-        </div>
-      </section>
-    )}
-
-    {/* 2) Participação & Escolha de Cliente (só faz sentido para Cliente) */}
-    {!modoConcessionaria && !isComercioExterior && etapa === 2 && (
-      <section className="payment-section">
-        <h3>2) Participação da Revenda & Escolha de Cliente</h3>
-
-        {tipoCliente === 'cliente' ? (
-          <>
-            <div className="form-group">
-              <label>Há Participação de Revenda? *</label>
-              <div className="radio-group">
-                <label className={`radio-option ${participacaoRevenda === 'sim' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="participacao"
-                    value="sim"
-                    checked={participacaoRevenda === 'sim'}
-                    onChange={() => setParticipacaoRevenda('sim')}
-                  />
-                  <span>Sim</span>
-                </label>
-                <label className={`radio-option ${participacaoRevenda === 'nao' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="participacao"
-                    value="nao"
-                    checked={participacaoRevenda === 'nao'}
-                    onChange={() => setParticipacaoRevenda('nao')}
-                  />
-                  <span>Não</span>
-                </label>
-              </div>
-            </div>
-
-            {!!participacaoRevenda && (
-              <div className="form-group" style={{ marginTop: '12px' }}>
-                <label>Escolha Cliente*</label>
-                <div className="radio-group">
-                  {/* Produtor rural SEMPRE disponível */}
-                  <label className={`radio-option ${tipoIE === 'produtor' ? 'selected' : ''}`}>
-                    <input
-                      type="radio"
-                      name="tipoIE"
-                      value="produtor"
-                      checked={tipoIE === 'produtor'}
-                      onChange={() => setTipoIE('produtor')}
-                    />
-                    <span>Produtor rural</span>
-                  </label>
-
-                  {/* CNPJ/CPF: some quando a regra do diagrama manda travar */}
-                  {!travaIEProdutor && (
-                    <label className={`radio-option ${tipoIE === 'cnpj_cpf' ? 'selected' : ''}`}>
-                      <input
-                        type="radio"
-                        name="tipoIE"
-                        value="cnpj_cpf"
-                        checked={tipoIE === 'cnpj_cpf'}
-                        onChange={() => setTipoIE('cnpj_cpf')}
-                      />
-                      <span>CNPJ</span>
-                    </label>
-                  )}
-                </div>
-
-                {travaIEProdutor && (
-                  <div className="pp-banner warn" style={{ marginTop: '12px' }}>
-                    {temGSE ? 'GSE detectado' : 'GSI detectado'} com Participação de Revenda: somente <b>Produtor rural</b> é permitido nesta condição.
-                  </div>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="pp-banner ok">Cliente do tipo <b>Revenda</b> não exige definição de IE nesta etapa.</div>
-        )}
-
-        <div className="payment-navigation">
-          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-          <button className="payment-nav-btn" disabled={!podeIrEtapa3} onClick={next}>Continuar</button>
-        </div>
-      </section>
-    )}
-
-    {/* 3) Instalação */}
-    {!modoConcessionaria && etapa === 3 && (
-      <section className="payment-section">
-        <h3>3) Instalação</h3>
-
-        {tipoCliente === 'revenda' && (
-          <div className="pp-banner ok" style={{ marginBottom: '12px' }}>
-            ℹ️ <b>Revenda: instalação é opcional</b>
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.9em', opacity: 0.9 }}>
-              Se desejar, você pode incluir a instalação na proposta.
-            </p>
-          </div>
-        )}
-
-        <div className="radio-group">
-          <label className={`radio-option ${instalacao === 'cliente' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="instalacao"
-              value="cliente"
-              checked={instalacao === 'cliente'}
-              onChange={() => setInstalacao('cliente')}
-            />
-            <span>Cliente paga direto</span>
-          </label>
-          <label className={`radio-option ${instalacao === 'incluso' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="instalacao"
-              value="incluso"
-              checked={instalacao === 'incluso'}
-              onChange={() => setInstalacao('incluso')}
-            />
-            <span>Incluso no pedido</span>
-          </label>
-        </div>
-
-        {instalacao === 'cliente' && (
-          <div className="pp-banner warn" style={{ marginTop: '12px' }}>
-            ℹ️ Cliente pagará instalação diretamente ao instalador:
-            <b> {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)}</b>
-            <p style={{ margin: '8px 0 0 0', fontSize: '0.85em', opacity: 0.9 }}>
-              Este valor NÃO será incluído no pedido
-            </p>
-          </div>
-        )}
-
-        {instalacao === 'incluso' && (
-          <div className="pp-banner ok" style={{ marginTop: '12px' }}>
-            Valor da instalação será adicionado ao total:
-            <b> {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</b>
-          </div>
-        )}
-
-        <div className="payment-navigation">
-          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-          <button className="payment-nav-btn" disabled={!podeIrEtapa4} onClick={next}>Continuar</button>
-        </div>
-      </section>
-    )}
-
-    {/* 4) Organização do Frete */}
-    {etapa === 4 && (
-      <section className="payment-section">
-        <h3>4) Organização do Frete</h3>
-        <div className="radio-group">
-          <label className={`radio-option ${tipoFrete === 'FOB' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="frete"
-              value="FOB"
-              checked={tipoFrete === 'FOB'}
-              onChange={() => setTipoFrete('FOB')}
-            />
-            <span>Cliente organiza o frete</span>
-            <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
-              Cliente busca o equipamento ou contrata transportadora
-            </small>
-          </label>
-          <label className={`radio-option ${tipoFrete === 'CIF' ? 'selected' : ''}`}>
-            <input
-              type="radio"
-              name="frete"
-              value="CIF"
-              checked={tipoFrete === 'CIF'}
-              onChange={() => setTipoFrete('CIF')}
-            />
-            <span>Frete incluso no pedido</span>
-            <small style={{ display: 'block', marginTop: '4px', opacity: 0.7 }}>
-              Selecione o tipo de entrega na próxima etapa
-            </small>
-          </label>
-        </div>
-
-        <div className="payment-navigation">
-          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-          <button className="payment-nav-btn" disabled={!tipoFrete} onClick={next}>Continuar</button>
-        </div>
-      </section>
-    )}
-
-    {/* 5) Local de Instalação & Tipo de Entrega */}
-    {etapa === 5 && (
-      <section className="payment-section">
-        <h3>5) Oficina autorizada e pagamento instalação</h3>
-
-        {/* Local de Instalação - SEMPRE obrigatório */}
-        <div className="form-row">
-          <div className="form-group">
-            <label>UF (filtro)</label>
-            <select value={ufFiltroInstalacao} onChange={e => setUfFiltroInstalacao(e.target.value)}>
-              <option value="">Todas</option>
-              {ufsDisponiveis.map(uf => (
-                <option key={uf} value={uf}>{uf}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label>Local de Instalação *</label>
-          <select value={localInstalacao} onChange={e => setLocalInstalacao(e.target.value)}>
-            <option value="">Selecione...</option>
-            {pontosInstalacaoFiltrados.map((p, idx) => {
-              const uf = String(p?.uf || '').trim().toUpperCase();
-              const cidade = String(p?.cidade || '').trim();
-              const oficina = String(p?.oficina || p?.nome || '').trim();
-
-              const value = p.nome || `${oficina} - ${cidade}/${uf}`;
-              const label = cidade && uf
-                ? `${cidade}/${uf} — ${oficina || 'OFICINA'}`
-                : (p.nome || `${oficina} - ${cidade}/${uf}`);
-
-              return (
-                <option key={p.id || idx} value={value}>
-                  {label}
-                </option>
-              );
-            })}
-          </select>
-          <small className="form-help help-info">
-            {pontosInstalacao.length === 0 
-              ? '⚠️ Nenhum ponto de instalação disponível para sua região'
-              : `${pontosInstalacaoFiltrados.length} ponto(s) disponível(is)${ufFiltroInstalacao ? ` em ${ufFiltroInstalacao}` : ''}`}
-          </small>
-        </div>
-
-        {/* Tipo de Entrega - Apenas quando frete incluso */}
-        {tipoFrete === 'CIF' ? (
-          <div className="form-group" style={{ marginTop: '16px' }}>
-            <label>Tipo de Entrega *</label>
-            <select value={tipoEntrega} onChange={e => setTipoEntrega(e.target.value)}>
-              <option value="">Selecione...</option>
-              <option value="prioridade">
-                ⚡ Prioridade (carga exclusiva)
-                {dadosFreteAtual?.valor_prioridade ? ` - ${formatCurrency(dadosFreteAtual.valor_prioridade)}` : ''}
-              </option>
-              <option value="reaproveitamento">
-                ♻️ Reaproveitamento (quando fechar carga)
-                {dadosFreteAtual?.valor_reaproveitamento ? ` - ${formatCurrency(dadosFreteAtual.valor_reaproveitamento)}` : ''}
-              </option>
-            </select>
-            {!dadosFreteAtual && localInstalacao && (
-              <small className="form-help help-warn">
-                ⚠️ Valores de frete não disponíveis para este local
-              </small>
-            )}
-          </div>
-        ) : (
-          <div className="pp-banner ok" style={{ marginTop: '16px' }}>
-            🚚 Cliente responsável por organizar transporte até <b>{localInstalacao || '[selecione o local]'}</b>
-          </div>
-        )}
-
-        <div className="payment-navigation">
-          <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-          <button
-            className="payment-nav-btn"
-            disabled={!podeIrEtapa5}
-            onClick={next}
-          >
-            Continuar
+    {/* SEÇÃO 1 — Tipo de Venda */}
+    {!modoConcessionaria && !isComercioExterior && (
+      <section className="pp-section">
+        <span className="pp-section-label">Tipo de Venda</span>
+        <div className="pp-tabs">
+          <button type="button" className={`pp-tab ${tipoCliente === 'cliente' ? 'pp-tab-active' : ''}`} onClick={() => setTipoCliente('cliente')}>
+            Cliente Final
+          </button>
+          <button type="button" className={`pp-tab ${tipoCliente === 'revenda' ? 'pp-tab-active' : ''}`} onClick={() => setTipoCliente('revenda')}>
+            Revenda
           </button>
         </div>
       </section>
     )}
 
-    {/* 6) Entrada, Financiamento e Plano */}
-    {etapa === 6 && (
-      <section className="payment-section">
-        <h3>6) Forma de pagamento</h3>
-
-        <div className="form-row">
-          <div className="form-group">
-            <label>Forma de Pagamento *</label>
-            {isComercioExterior ? (
-              <div className="radio-group">
-                <label className={`radio-option ${percentualEntrada === '100' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="opcaoPagamentoExterior"
-                    value="100"
-                    checked={percentualEntrada === '100'}
-                    onChange={() => setPercentualEntrada('100')}
-                  />
-                  <span>100% À Vista no Pedido</span>
+    {/* SEÇÃO 2 — Participação de Revenda & Tipo de Cliente */}
+    {!modoConcessionaria && !isComercioExterior && tipoCliente === 'cliente' && (
+      <section className="pp-section">
+        <span className="pp-section-label">Participação de Revenda</span>
+        <div className="pp-tabs">
+          <button type="button" className={`pp-tab ${participacaoRevenda === 'sim' ? 'pp-tab-active' : ''}`} onClick={() => setParticipacaoRevenda('sim')}>
+            Sim
+          </button>
+          <button type="button" className={`pp-tab ${participacaoRevenda === 'nao' ? 'pp-tab-active' : ''}`} onClick={() => setParticipacaoRevenda('nao')}>
+            Não
+          </button>
+        </div>
+        {!!participacaoRevenda && (
+          <div className="pp-subsection">
+            <span className="pp-section-label">Tipo de Cliente</span>
+            <div className="pp-radio-list">
+              <label className={`pp-radio-row ${tipoIE === 'produtor' ? 'pp-radio-active' : ''}`} onClick={() => setTipoIE('produtor')}>
+                <span className="pp-radio-indicator">{tipoIE === 'produtor' ? '●' : '○'}</span>
+                <span className="pp-radio-text">
+                  <strong>Produtor Rural</strong>
+                  <small>Possui Inscrição Estadual rural</small>
+                </span>
+              </label>
+              {!travaIEProdutor && (
+                <label className={`pp-radio-row ${tipoIE === 'cnpj_cpf' ? 'pp-radio-active' : ''}`} onClick={() => setTipoIE('cnpj_cpf')}>
+                  <span className="pp-radio-indicator">{tipoIE === 'cnpj_cpf' ? '●' : '○'}</span>
+                  <span className="pp-radio-text">
+                    <strong>CNPJ / CPF</strong>
+                    <small>Sem Inscrição Estadual de produtor</small>
+                  </span>
                 </label>
-                <label className={`radio-option ${percentualEntrada === '50' ? 'selected' : ''}`}>
-                  <input
-                    type="radio"
-                    name="opcaoPagamentoExterior"
-                    value="50"
-                    checked={percentualEntrada === '50'}
-                    onChange={() => setPercentualEntrada('50')}
-                  />
-                  <span>50% Entrada + 50% Pós Faturamento</span>
-                </label>
+              )}
+            </div>
+            {travaIEProdutor && (
+              <div className="pp-info-note" style={{ marginTop: '8px' }}>
+                {temGSE ? 'GSE' : 'GSI'} com Participação de Revenda: somente <b>Produtor Rural</b> é permitido nesta condição.
               </div>
-            ) : (
-              <select
-                value={percentualEntrada}
-                onChange={e => setPercentualEntrada(e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                {(entradaOpcoes || ['30', '50', '100', 'financiamento'])
-                  .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
-                      .map(v => (
-                        v === 'financiamento'
-                          ? <option key="financiamento" value="financiamento">Financiamento Bancário</option>
-                          : v === '100'
-                            ? <option key="100" value="100">100% À Vista no Pedido</option>
-                            : <option key={v} value={v}>{v}%</option>
-                      ))}
-              </select>
             )}
           </div>
+        )}
+      </section>
+    )}
 
-              {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && !isComercioExterior && (
-      <>
-        <div className="form-group">
-          <label>Valor do Sinal</label>
+    {/* SEÇÕES 3 + 4 — Instalação e Frete lado a lado */}
+    {(!modoConcessionaria && (tipoCliente === 'revenda' || isComercioExterior || (tipoCliente === 'cliente' && podeIrEtapa3))) || podeIrEtapa4 ? (
+      <div className="pp-grid-2">
 
-          <select
-            value={['10000', '15000', '20000', '25000'].includes(String(valorSinal)) ? String(valorSinal) : 'outro'}
-            onChange={e => {
-              if (e.target.value === 'outro') {
-                setValorSinal('');
-              } else {
-                setValorSinal(e.target.value);
-              }
-            }}
-          >
-            <option value="">Selecione uma opção</option>
-            <option value="10000">R$ 10.000,00</option>
-            <option value="15000">R$ 15.000,00</option>
-            <option value="20000">R$ 20.000,00</option>
-            <option value="25000">R$ 25.000,00</option>
-            <option value="outro">Outro</option>
-          </select>
+    {/* SEÇÃO 3 — Instalação */}
+    {!modoConcessionaria && (tipoCliente === 'revenda' || isComercioExterior || (tipoCliente === 'cliente' && podeIrEtapa3)) && (
+      <section className="pp-section">
+        <span className="pp-section-label">Instalação</span>
+        {tipoCliente === 'revenda' && (
+          <div className="pp-info-note" style={{ marginBottom: '8px' }}>
+            Revenda: instalação opcional.
+          </div>
+        )}
+        <div className="pp-radio-list">
+          <label className={`pp-radio-row ${instalacao === 'cliente' ? 'pp-radio-active' : ''}`} onClick={() => setInstalacao('cliente')}>
+            <span className="pp-radio-indicator">{instalacao === 'cliente' ? '●' : '○'}</span>
+            <span className="pp-radio-text">
+              <strong>Cliente paga direto</strong>
+              <small>Ref. {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)} — fora do pedido</small>
+            </span>
+          </label>
+          <label className={`pp-radio-row ${instalacao === 'incluso' ? 'pp-radio-active' : ''}`} onClick={() => setInstalacao('incluso')}>
+            <span className="pp-radio-indicator">{instalacao === 'incluso' ? '●' : '○'}</span>
+            <span className="pp-radio-text">
+              <strong>Incluso no pedido</strong>
+              <small>+ {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)} no total</small>
+            </span>
+          </label>
+        </div>
+      </section>
+    )}
 
-          <input
-            type="number"
-            value={valorSinal}
-            onChange={e => setValorSinal(e.target.value)}
-            placeholder="R$"
-            min="0"
-            step="0.01"
-          />
-        </div>              
-              <div className="form-group">
-                <label>Forma de Pagamento da Entrada</label>
-                <select
-                  value={formaEntrada}
-                  onChange={e => setFormaEntrada(e.target.value)}
-                >
-                  <option value="">Selecione...</option>
-                  <option value="PIX">PIX</option>
-                  <option value="BOLETO">BOLETO</option>
-                  <option value="CHEQUE">CHEQUE</option>
-                  <option value="DINHEIRO">DINHEIRO</option>
-                  <option value="CARTÃO">CARTÃO</option>
-                  <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
-                  {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
-                    <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
-                  )}
+    {/* SEÇÃO 4 — Frete & Local de Instalação */}
+    {podeIrEtapa4 && (
+      <section className="pp-section">
+        <span className="pp-section-label">Frete & Local de Instalação</span>
+        <div className="pp-tabs">
+          <button type="button" className={`pp-tab ${tipoFrete === 'FOB' ? 'pp-tab-active' : ''}`} onClick={() => setTipoFrete('FOB')}>
+            FOB — Cliente organiza
+          </button>
+          <button type="button" className={`pp-tab ${tipoFrete === 'CIF' ? 'pp-tab-active' : ''}`} onClick={() => setTipoFrete('CIF')}>
+            CIF — Frete incluso
+          </button>
+        </div>
+
+        {tipoFrete && (
+          <div className="pp-subsection">
+            <div className="pp-fields-row">
+              <div className="form-group" style={{ flex: '0 0 100px' }}>
+                <label>UF</label>
+                <select value={ufFiltroInstalacao} onChange={e => setUfFiltroInstalacao(e.target.value)}>
+                  <option value="">Todas</option>
+                  {ufsDisponiveis.map(uf => <option key={uf} value={uf}>{uf}</option>)}
                 </select>
-                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
-                  💡 Informe como o cliente pagará a entrada (opcional)
+              </div>
+              <div className="form-group" style={{ flex: '1' }}>
+                <label>Local de Instalação *</label>
+                <select value={localInstalacao} onChange={e => setLocalInstalacao(e.target.value)}>
+                  <option value="">Selecione...</option>
+                  {pontosInstalacaoFiltrados.map((p, idx) => {
+                    const uf = String(p?.uf || '').trim().toUpperCase();
+                    const cidade = String(p?.cidade || '').trim();
+                    const oficina = String(p?.oficina || p?.nome || '').trim();
+                    const value = p.nome || `${oficina} - ${cidade}/${uf}`;
+                    const label = cidade && uf ? `${cidade}/${uf} — ${oficina || 'OFICINA'}` : (p.nome || `${oficina} - ${cidade}/${uf}`);
+                    return <option key={p.id || idx} value={value}>{label}</option>;
+                  })}
+                </select>
+                <small className="form-help help-info">
+                  {pontosInstalacao.length === 0
+                    ? 'Nenhum ponto disponível para sua região'
+                    : `${pontosInstalacaoFiltrados.length} ponto(s)${ufFiltroInstalacao ? ` em ${ufFiltroInstalacao}` : ''}`}
                 </small>
               </div>
-            </>
-          )}
+            </div>
 
-              {isComercioExterior && percentualEntrada && percentualEntrada !== 'financiamento' && (
-                <div className="form-group">
-                  <label>Forma de Pagamento{percentualEntrada === '50' ? ' da Entrada' : ''} *</label>
-                  {percentualEntrada === '50' && (
-                    <small style={{ display: 'block', marginBottom: '6px', color: '#1d4ed8', fontSize: '0.85em', fontWeight: 600 }}>
-                      📌 Entrada automática: 50% do valor total (R$ {resultado ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format((resultado.valorFinal || 0) * 0.5) : '---'})
-                    </small>
-                  )}
-                  <select
-                    value={formaEntrada}
-                    onChange={e => setFormaEntrada(e.target.value)}
-                  >
-                    <option value="">Selecione...</option>
-                    <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
-                    <option value="PIX">PIX</option>
-                    <option value="BOLETO">BOLETO</option>
-                    <option value="CHEQUE">CHEQUE</option>
-                    <option value="DINHEIRO">DINHEIRO</option>
-                    <option value="CARTÃO">CARTÃO</option>
-                    {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
-                      <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
-                    )}
-                  </select>
+            {tipoFrete === 'CIF' && localInstalacao && (
+              <div className="pp-subsection">
+                <span className="pp-section-label">Tipo de Entrega</span>
+                <div className="pp-radio-list">
+                  <label className={`pp-radio-row ${tipoEntrega === 'prioridade' ? 'pp-radio-active' : ''}`} onClick={() => setTipoEntrega('prioridade')}>
+                    <span className="pp-radio-indicator">{tipoEntrega === 'prioridade' ? '●' : '○'}</span>
+                    <span className="pp-radio-text">
+                      <strong>Prioridade</strong>
+                      <small>Carga exclusiva{dadosFreteAtual?.valor_prioridade ? ` — ${formatCurrency(dadosFreteAtual.valor_prioridade)}` : ''}</small>
+                    </span>
+                  </label>
+                  <label className={`pp-radio-row ${tipoEntrega === 'reaproveitamento' ? 'pp-radio-active' : ''}`} onClick={() => setTipoEntrega('reaproveitamento')}>
+                    <span className="pp-radio-indicator">{tipoEntrega === 'reaproveitamento' ? '●' : '○'}</span>
+                    <span className="pp-radio-text">
+                      <strong>Reaproveitamento</strong>
+                      <small>Quando fechar carga{dadosFreteAtual?.valor_reaproveitamento ? ` — ${formatCurrency(dadosFreteAtual.valor_reaproveitamento)}` : ''}</small>
+                    </span>
+                  </label>
                 </div>
-              )}
-
-          {percentualEntrada && (
-            <>
-              <div className="form-group">
-                <label>Descrição do Extra (opcional)</label>
-                <input
-                  type="text"
-                  value={extraDescricao}
-                  onChange={e => setExtraDescricao(e.target.value)}
-                  placeholder="Ex: Lança 3m"
-                  maxLength="80"
-                />
+                {!dadosFreteAtual && (
+                  <small className="form-help help-warn" style={{ marginTop: '6px', display: 'block' }}>
+                    Valores de frete não disponíveis para este local
+                  </small>
+                )}
               </div>
-
-              <div className="form-group">
-                <label>Valor do Extra (R$)</label>
-                <input
-                  type="number"
-                  value={extraValor}
-                  onChange={e => setExtraValor(e.target.value)}
-                  placeholder="R$"
-                  min="0"
-                  step="0.01"
-                />
-                <small style={{ display: 'block', marginTop: '4px', color: '#666', fontSize: '0.85em' }}>
-                  💡 Este valor será somado ao total (não sofre desconto)
-                </small>
+            )}
+            {tipoFrete === 'FOB' && localInstalacao && (
+              <div className="pp-info-note" style={{ marginTop: '8px' }}>
+                Cliente organiza transporte até <b>{localInstalacao}</b>
               </div>
-            </>
+            )}
+          </div>
+        )}
+      </section>
+    )}
+
+      </div>
+    ) : null}
+
+    {/* SEÇÃO 5 — Financeiro */}
+    {podeIrEtapa5 && (
+      <section className="pp-section">
+        <span className="pp-section-label">Forma de Pagamento</span>
+
+        <div className="pp-subsection">
+          <span className="pp-section-label">Percentual de Entrada</span>
+          {isComercioExterior ? (
+            <div className="pp-tabs">
+              <button type="button" className={`pp-tab ${percentualEntrada === '100' ? 'pp-tab-active' : ''}`} onClick={() => setPercentualEntrada('100')}>
+                100% À Vista
+              </button>
+              <button type="button" className={`pp-tab ${percentualEntrada === '50' ? 'pp-tab-active' : ''}`} onClick={() => setPercentualEntrada('50')}>
+                50% + 50%
+              </button>
+            </div>
+          ) : (
+            <div className="pp-entrada-btns">
+              {(entradaOpcoes || ['30', '50', '100', 'financiamento'])
+                .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
+                .map(v => (
+                  <button key={v} type="button" className={`pp-entrada-btn ${percentualEntrada === v ? 'selected' : ''}`} onClick={() => setPercentualEntrada(v)}>
+                    {v === 'financiamento' ? (<><strong>Financiamento</strong><small>Bancário</small></>) :
+                     v === '100' ? (<><strong>100%</strong><small>À Vista</small></>) :
+                     (<><strong>{v}%</strong><small>Entrada</small></>)}
+                  </button>
+                ))}
+            </div>
           )}
         </div>
 
-        <div className="form-group" style={{ marginTop: '10px' }}>
+        {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && !isComercioExterior && (
+          <div className="pp-fields-row pp-subsection">
+            <div className="form-group">
+              <label>Valor do Sinal</label>
+              <select
+                value={['10000', '15000', '20000', '25000'].includes(String(valorSinal)) ? String(valorSinal) : 'outro'}
+                onChange={e => { if (e.target.value === 'outro') setValorSinal(''); else setValorSinal(e.target.value); }}
+              >
+                <option value="">Selecione</option>
+                <option value="10000">R$ 10.000</option>
+                <option value="15000">R$ 15.000</option>
+                <option value="20000">R$ 20.000</option>
+                <option value="25000">R$ 25.000</option>
+                <option value="outro">Outro valor</option>
+              </select>
+              <input type="number" value={valorSinal} onChange={e => setValorSinal(e.target.value)} placeholder="R$" min="0" step="0.01" style={{ marginTop: '4px' }} />
+            </div>
+            <div className="form-group">
+              <label>Forma de Pagamento da Entrada</label>
+              <select value={formaEntrada} onChange={e => setFormaEntrada(e.target.value)}>
+                <option value="">Selecione...</option>
+                <option value="PIX">PIX</option>
+                <option value="BOLETO">BOLETO</option>
+                <option value="CHEQUE">CHEQUE</option>
+                <option value="DINHEIRO">DINHEIRO</option>
+                <option value="CARTÃO">CARTÃO</option>
+                <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
+                {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
+                  <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
+                )}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {isComercioExterior && percentualEntrada && percentualEntrada !== 'financiamento' && (
+          <div className="pp-subsection">
+            <div className="form-group">
+              <label>Forma de Pagamento{percentualEntrada === '50' ? ' da Entrada' : ''} *</label>
+              {percentualEntrada === '50' && (
+                <small style={{ display: 'block', marginBottom: '4px', color: '#1d4ed8', fontSize: '0.78em', fontWeight: 600 }}>
+                  Entrada automática: 50% do valor total (R$ {resultado ? new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format((resultado.valorFinal || 0) * 0.5) : '---'})
+                </small>
+              )}
+              <select value={formaEntrada} onChange={e => setFormaEntrada(e.target.value)}>
+                <option value="">Selecione...</option>
+                <option value="TRANSFERÊNCIA BANCÁRIA">TRANSFERÊNCIA BANCÁRIA</option>
+                <option value="PIX">PIX</option>
+                <option value="BOLETO">BOLETO</option>
+                <option value="CHEQUE">CHEQUE</option>
+                <option value="DINHEIRO">DINHEIRO</option>
+                <option value="CARTÃO">CARTÃO</option>
+                {formaEntrada && !['PIX', 'BOLETO', 'CHEQUE', 'DINHEIRO', 'CARTÃO', 'TRANSFERÊNCIA BANCÁRIA'].includes(formaEntrada) && (
+                  <option value={formaEntrada}>{`OUTRO (${formaEntrada})`}</option>
+                )}
+              </select>
+            </div>
+          </div>
+        )}
+
+        {percentualEntrada && (
+          <div className="pp-fields-row pp-subsection">
+            <div className="form-group">
+              <label>Extra — Descrição (opcional)</label>
+              <input type="text" value={extraDescricao} onChange={e => setExtraDescricao(e.target.value)} placeholder="Ex: Lança 3m" maxLength="80" />
+            </div>
+            <div className="form-group">
+              <label>Extra — Valor (R$)</label>
+              <input type="number" value={extraValor} onChange={e => setExtraValor(e.target.value)} placeholder="0,00" min="0" step="0.01" />
+            </div>
+          </div>
+        )}
+
+        <div className="form-group pp-subsection">
           <label>Observações da Negociação (opcional)</label>
           <textarea
             value={observacoesNegociacao}
             onChange={e => setObservacoesNegociacao(e.target.value)}
-            placeholder="Ex: Condição especial acordada, carência, observações sobre financiamento, etc."
-            rows={3}
+            placeholder="Ex: Condição especial, carência, observações sobre financiamento..."
+            rows={2}
             maxLength={500}
             style={{ width: '100%', resize: 'vertical' }}
           />
         </div>
 
-        {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && (
-          <>
+        <div className="pp-inner-2col pp-subsection">
+
+          {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && percentualEntrada && (
             <div className="form-group">
               <label>Plano de Pagamento *</label>
               <select
                 value={planoSelecionado ? `${planoSelecionado.order}::${planoSelecionado.description}` : ''}
                 onChange={e => {
                   const v = e.target.value || '';
-                  if (!v) {
-                    setPlanoSelecionado(null);
-                    onPlanSelected?.(null);
-                    return;
-                  }
-
+                  if (!v) { setPlanoSelecionado(null); onPlanSelected?.(null); return; }
                   const [orderStr, ...descParts] = v.split('::');
                   const order = parseInt(orderStr, 10);
                   const description = descParts.join('::');
-
                   const p = planosFiltrados.find(pl => pl.order === order && pl.description === description) || null;
                   setPlanoSelecionado(p);
                   onPlanSelected?.(p);
                 }}
               >
-                <option value="">Selecione...</option>
+                <option value="">Selecione o prazo...</option>
                 {planosFiltrados.map(p => (
                   <option key={`${p.audience}-${p.order}-${p.description}`} value={`${p.order}::${p.description}`}>
                     {getPlanLabel(p)}
@@ -1929,406 +1623,121 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 ))}
               </select>
             </div>
-          </>
-        )}
+          )}
 
           {!modoConcessionaria && (
-          <div className="form-group">
-            <label>Desconto Adicional do Vendedor</label>
-                
-                {/* GSI - REVENDA */}
-                {temGSI && tipoCliente === 'revenda' && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ marginBottom: '12px' }}>
-                      <strong style={{ fontSize: '14px', color: '#495057' }}>Desconto padrão (1 unidade):</strong>
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
-                      {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(valor => (
-                        <button
-                          key={valor}
-                          type="button"
-                          onClick={() => setDescontoVendedor(valor)}
-                          style={{
-                            padding: '10px 20px',
-                            border: descontoVendedor === valor ? '2px solid #007bff' : '2px solid #dee2e6',
-                            background: descontoVendedor === valor ? '#007bff' : '#fff',
-                            color: descontoVendedor === valor ? '#fff' : '#495057',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: descontoVendedor === valor ? '600' : '500',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#007bff';
-                              e.currentTarget.style.background = '#f8f9fa';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#dee2e6';
-                              e.currentTarget.style.background = '#fff';
-                            }
-                          }}
-                        >
-                          {valor}%
-                        </button>
-                      ))}
-                    </div>
-                    
-                    <div style={{ 
-                      borderTop: '1px solid #dee2e6', 
-                      paddingTop: '16px', 
-                      marginTop: '8px',
-                      marginBottom: '12px'
-                    }}>
-                      <strong style={{ fontSize: '14px', color: '#495057' }}>Descontos especiais por quantidade:</strong>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                      <button
-                        type="button"
-                        onClick={() => setDescontoVendedor(14)}
-                        style={{
-                          padding: '12px 24px',
-                          border: descontoVendedor === 14 ? '2px solid #28a745' : '2px solid #dee2e6',
-                          background: descontoVendedor === 14 ? '#28a745' : '#fff',
-                          color: descontoVendedor === 14 ? '#fff' : '#495057',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => {
-                          if (descontoVendedor !== 14) {
-                            e.currentTarget.style.borderColor = '#28a745';
-                            e.currentTarget.style.background = '#f8f9fa';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (descontoVendedor !== 14) {
-                            e.currentTarget.style.borderColor = '#dee2e6';
-                            e.currentTarget.style.background = '#fff';
-                          }
-                        }}
-                      >
-                        <span>14%</span>
-                        <span style={{ fontSize: '12px', opacity: 0.9 }}>📦 2 unidades</span>
-                      </button>
-                      
-                      <button
-                        type="button"
-                        onClick={() => setDescontoVendedor(15)}
-                        style={{
-                          padding: '12px 24px',
-                          border: descontoVendedor === 15 ? '2px solid #28a745' : '2px solid #dee2e6',
-                          background: descontoVendedor === 15 ? '#28a745' : '#fff',
-                          color: descontoVendedor === 15 ? '#fff' : '#495057',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '14px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          transition: 'all 0.2s ease'
-                        }}
-                        onMouseOver={(e) => {
-                          if (descontoVendedor !== 15) {
-                            e.currentTarget.style.borderColor = '#28a745';
-                            e.currentTarget.style.background = '#f8f9fa';
-                          }
-                        }}
-                        onMouseOut={(e) => {
-                          if (descontoVendedor !== 15) {
-                            e.currentTarget.style.borderColor = '#dee2e6';
-                            e.currentTarget.style.background = '#fff';
-                          }
-                        }}
-                      >
-                        <span>15%</span>
-                        <span style={{ fontSize: '12px', opacity: 0.9 }}>📦 3+ unidades</span>
-                      </button>
-                    </div>
-                    <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Selecione o desconto conforme a quantidade de equipamentos
-                    </small>
-                  </div>
-                )}
+            <div className="form-group">
+              <label>Desconto do Vendedor</label>
 
-                {/* CLIENTE SEM PARTICIPAÇÃO REVENDA */}
-                {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                      {((descontosBotoes || (temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3])))
-                        .map(valor => (
-                        <button
-                          key={valor}
-                          type="button"
-                          onClick={() => setDescontoVendedor(valor)}
-                          style={{
-                            padding: '10px 20px',
-                            border: descontoVendedor === valor ? '2px solid #007bff' : '2px solid #dee2e6',
-                            background: descontoVendedor === valor ? '#007bff' : '#fff',
-                            color: descontoVendedor === valor ? '#fff' : '#495057',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: descontoVendedor === valor ? '600' : '500',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#007bff';
-                              e.currentTarget.style.background = '#f8f9fa';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#dee2e6';
-                              e.currentTarget.style.background = '#fff';
-                            }
-                          }}
-                        >
-                          {valor}%
-                        </button>
-                      ))}
-                      
-                      {/* Botão [+] para solicitar desconto adicional */}
-                      {/* Botão movido para baixo para aparecer em todos os cenários */}
-                    </div>
-                    <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Para solicitar desconto adicional, clique em [+]
-                    </small>
-                  </div>
-                )}
-
-                {/* GSI - CLIENTE COM PARTICIPAÇÃO REVENDA (PRODUTOR RURAL) */}
-                {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && tipoIE === 'produtor' && (
-                  <div style={{ marginTop: '12px' }}>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                      {[0, 1, 2, 3, 4, 5].map(valor => (
-                        <button
-                          key={valor}
-                          type="button"
-                          onClick={() => setDescontoVendedor(valor)}
-                          style={{
-                            padding: '10px 20px',
-                            border: descontoVendedor === valor ? '2px solid #007bff' : '2px solid #dee2e6',
-                            background: descontoVendedor === valor ? '#007bff' : '#fff',
-                            color: descontoVendedor === valor ? '#fff' : '#495057',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            fontWeight: descontoVendedor === valor ? '600' : '500',
-                            fontSize: '14px',
-                            transition: 'all 0.2s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#007bff';
-                              e.currentTarget.style.background = '#f8f9fa';
-                            }
-                          }}
-                          onMouseOut={(e) => {
-                            if (descontoVendedor !== valor) {
-                              e.currentTarget.style.borderColor = '#dee2e6';
-                              e.currentTarget.style.background = '#fff';
-                            }
-                          }}
-                        >
-                          {valor}%
-                        </button>
-                      ))}
-                    </div>
-                    <small className="form-help help-info" style={{ display: 'block', marginTop: '12px' }}>
-                      ℹ️ Desconto máximo: 5%
-                    </small>
-                  </div>
-                )}
-
-                {/* GSE - CLIENTE COM PARTICIPAÇÃO REVENDA: SEM DESCONTO */}
-                {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && (
-                  <div style={{ 
-                    marginTop: '12px',
-                    padding: '12px',
-                    background: '#f8f9fa',
-                    borderRadius: '6px',
-                    border: '1px solid #dee2e6'
-                  }}>
-                    <p style={{ margin: 0, color: '#6c757d', fontSize: '14px' }}>
-                      ℹ️ Não há desconto disponível para GSE com participação de revenda
-                    </p>
-                  </div>
-                )}
-
-                {/* Botão [+] para solicitar desconto adicional (sempre disponível, exceto concessionária) */}
-                {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
-                  <div style={{ marginTop: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setModalSolicitacaoOpen(true)}
-                      disabled={aguardandoAprovacao}
-                      style={{
-                        padding: '10px 20px',
-                        border: '2px dashed #667eea',
-                        background: aguardandoAprovacao ? '#f8f9fa' : '#fff',
-                        color: aguardandoAprovacao ? '#6c757d' : '#667eea',
-                        borderRadius: '6px',
-                        cursor: aguardandoAprovacao ? 'not-allowed' : 'pointer',
-                        fontWeight: '600',
-                        fontSize: '14px',
-                        transition: 'all 0.2s ease',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                      onMouseOver={(e) => {
-                        if (!aguardandoAprovacao) {
-                          e.currentTarget.style.borderColor = '#667eea';
-                          e.currentTarget.style.background = '#f0f3ff';
-                        }
-                      }}
-                      onMouseOut={(e) => {
-                        if (!aguardandoAprovacao) {
-                          e.currentTarget.style.borderColor = '#667eea';
-                          e.currentTarget.style.background = '#fff';
-                        }
-                      }}
-                      title="Solicitar desconto extra"
-                    >
-                      {aguardandoAprovacao ? '⏳' : '+'} {aguardandoAprovacao ? 'Aguardando...' : 'Solicitar desconto'}
-                    </button>
-                    <small className="form-help help-info" style={{ display: 'block', marginTop: '10px' }}>
-                      ℹ️ Use este botão para solicitar aprovação de um desconto fora do padrão.
-                    </small>
-                  </div>
-                )}
-              </div>
-          )}
-
-          {percentualEntrada === 'financiamento' && (
-            <div className="pp-banner ok" style={{ marginTop: 12 }}>
-              🏦 Financiamento bancário selecionado — condições definidas pelo banco.
-            </div>
-          )}
-
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button
-              className="payment-nav-btn"
-              disabled={!podeIrEtapa6 || !(percentualEntrada && (percentualEntrada === 'financiamento' || planoSelecionado))}
-              onClick={next}
-            >
-              Continuar
-            </button>
-          </div>
-        </section>
-      )}
-
-      {/* 7) Resumo */}
-      {etapa === 7 && (
-        <section className="payment-section">
-          <h3>7) Resumo</h3>
-
-          {resultado ? (
-            <div className="summary-card">
-              <div className="summary-header">
-                <h4>📊 Informações do Pagamento</h4>
-              </div>
-              <div className="summary-content">
-                <div className="summary-item">
-                  <span className="summary-label">Preço Base</span>
-                  <span className="summary-value">{formatCurrency(precoBase)}</span>
+              {temGSI && tipoCliente === 'revenda' && (
+              <div>
+                <div className="pp-section-label" style={{ margin: '6px 0 4px' }}>Padrão (1 unidade)</div>
+                <div className="pp-desconto-btns">
+                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(v => (
+                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                  ))}
                 </div>
-
-                {resultado.descontoValor > 0 && (
-                  <div className="summary-item">
-                    <span className="summary-label">Desconto da Condição</span>
-                    <span className="summary-value">- {formatCurrency(resultado.descontoValor)}</span>
-                  </div>
-                )}
-
-                {resultado.acrescimoValor > 0 && (
-                  <div className="summary-item">
-                    <span className="summary-label">Acréscimo</span>
-                    <span className="summary-value">+ {formatCurrency(resultado.acrescimoValor)}</span>
-                  </div>
-                )}
-
-                {descontoVendedor > 0 && (
-                  <div className="summary-item">
-                    <span className="summary-label">Desconto do Vendedor ({descontoVendedor}%)</span>
-                    <span className="summary-value">- {formatCurrency(precoBase * (descontoVendedor / 100))}</span>
-                  </div>
-                )}
-
-                {parseFloat(extraValor) > 0 && (
-                  <div className="summary-item">
-                    <span className="summary-label">Extra{extraDescricao ? ` (${extraDescricao})` : ''}</span>
-                    <span className="summary-value">+ {formatCurrency(parseFloat(extraValor) || 0)}</span>
-                  </div>
-                )}
-
-                {tipoCliente === 'cliente' && instalacao === 'incluso' && (
-                  <div className="summary-item">
-                    <span className="summary-label">Instalação</span>
-                    <span className="summary-value">+ {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</span>
-                  </div>
-                )}
-
-                {tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega && (
-                  <div className="summary-item">
-                    <span className="summary-label">Frete</span>
-                    <span className="summary-value">+ {formatCurrency(
-                      tipoEntrega === 'prioridade'
-                        ? parseFloat(dadosFreteAtual.valor_prioridade || 0)
-                        : parseFloat(dadosFreteAtual.valor_reaproveitamento || 0)
-                    )}</span>
-                  </div>
-                )}
-
-                <div className="summary-item">
-                  <span className="summary-label">Total</span>
-                  <span className="summary-value">{formatCurrency(valorFlutuante)}</span>
+                <div className="pp-section-label" style={{ margin: '10px 0 4px' }}>Por quantidade</div>
+                <div className="pp-desconto-btns">
+                  {[{ v: 14, label: '14% — 2 un.' }, { v: 15, label: '15% — 3+ un.' }].map(({ v, label }) => (
+                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{label}</button>
+                  ))}
                 </div>
+                <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Selecione conforme a quantidade de equipamentos</small>
               </div>
+            )}
+
+            {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
+              <div className="pp-desconto-btns">
+                {((descontosBotoes || (temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3]))).map(v => (
+                  <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                ))}
+              </div>
+            )}
+
+            {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && tipoIE === 'produtor' && (
+              <div>
+                <div className="pp-desconto-btns">
+                  {[0, 1, 2, 3, 4, 5].map(v => (
+                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                  ))}
+                </div>
+                <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Desconto máximo: 5%</small>
+              </div>
+            )}
+
+            {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && (
+              <div className="pp-info-note" style={{ marginTop: '6px' }}>
+                Não há desconto disponível para GSE com participação de revenda.
+              </div>
+            )}
+
+            {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
+              <button
+                type="button"
+                className="pp-extra-btn"
+                onClick={() => setModalSolicitacaoOpen(true)}
+                disabled={aguardandoAprovacao}
+                style={{ marginTop: '10px' }}
+              >
+                {aguardandoAprovacao ? 'Aguardando aprovação...' : '+ Solicitar desconto adicional'}
+              </button>
+            )}
             </div>
-          ) : (
-            <div className="pp-banner warn">Complete as etapas para gerar o resumo.</div>
           )}
 
-          {percentualEntrada !== 'financiamento' && !planoSelecionado && (
-            <div className="pp-banner warn" style={{ marginBottom: '16px' }}>
-              ⚠️ Selecione um plano de pagamento na etapa 7 para continuar
-            </div>
-          )}
-          
-          <div className="payment-navigation">
-            <button className="payment-nav-btn" onClick={prev}>Voltar</button>
-            <button 
-              className="payment-nav-btn primary" 
-              onClick={() => {
-                console.log('🔘 Botão "Continuar" clicado');
-                console.log('📊 Resultado:', resultado);
-                console.log('🎯 onFinish existe?', !!onFinish);
-                if (onFinish) {
-                  console.log('✅ Chamando onFinish...');
-                  onFinish(resultado);
-                } else {
-                  console.warn('⚠️ onFinish não está definido!');
-                }
-              }}
-              disabled={!resultado || (percentualEntrada !== 'financiamento' && !planoSelecionado)}
-            >
-              {modoConcessionaria ? 'Finalizar e Ir para Resumo →' : 'Continuar para Dados do Cliente →'}
-            </button>
+        </div>{/* fim pp-inner-2col */}
+
+        {percentualEntrada === 'financiamento' && (
+          <div className="pp-info-note pp-subsection">
+            Financiamento bancário selecionado — condições definidas pelo banco.
           </div>
-        </section>
-      )}
+        )}
+
+      </section>
+    )}
+
+    </div>{/* fim pp-form-wrap */}
+
+    {/* CTA BAR — sempre visível, habilitado quando tudo está preenchido */}
+    <div className="pp-cta-bar">
+      <div className="pp-cta-total">
+        <span>Total da Proposta</span>
+        <strong>{isComercioExterior ? formatCurrencyUSD(valorFlutuanteUSD) : formatCurrency(valorFlutuante)}</strong>
+        <div className="pp-cta-breakdown">
+          {precoBase > 0 && <span className="pp-cta-item pp-cta-base">Base {formatCurrency(precoBase)}</span>}
+          {descontoVendedor > 0 && <span className="pp-cta-item pp-cta-minus">Desconto -{descontoVendedor}%</span>}
+          {(resultado?.descontoValor || 0) > 0 && <span className="pp-cta-item pp-cta-minus">Prazo -{formatCurrency(resultado.descontoValor)}</span>}
+          {(resultado?.acrescimoValor || 0) > 0 && <span className="pp-cta-item pp-cta-plus">Acréscimo +{formatCurrency(resultado.acrescimoValor)}</span>}
+          {valorFreteCalculado > 0 && <span className="pp-cta-item pp-cta-plus">Frete +{formatCurrency(valorFreteCalculado)}</span>}
+          {instalacao === 'incluso' && <span className="pp-cta-item pp-cta-plus">Instalação +{formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</span>}
+          {(parseFloat(extraValor) || 0) > 0 && <span className="pp-cta-item pp-cta-plus">{extraDescricao || 'Extra'} +{formatCurrency(parseFloat(extraValor))}</span>}
+          {resultado?.parcelas?.length > 0 && percentualEntrada !== 'financiamento' && (
+            <span className="pp-cta-item pp-cta-parcelas">
+              {resultado.parcelas.length}x {formatCurrency(resultado.parcelas[0]?.valor || 0)}
+            </span>
+          )}
+        </div>
+      </div>
+      <button
+        type="button"
+        className="pp-cta-btn"
+        disabled={!resultado || (percentualEntrada !== 'financiamento' && !planoSelecionado)}
+        onClick={() => {
+          console.log('🔘 Botão "Continuar" clicado');
+          console.log('📊 Resultado:', resultado);
+          console.log('🎯 onFinish existe?', !!onFinish);
+          if (onFinish) {
+            console.log('✅ Chamando onFinish...');
+            onFinish(resultado);
+          } else {
+            console.warn('⚠️ onFinish não está definido!');
+          }
+        }}
+      >
+        {modoConcessionaria ? 'Finalizar e Ir para Resumo →' : 'Continuar para Dados do Cliente →'}
+      </button>
+    </div>
 
       {/* Modal de Solicitação de Desconto */}
       {!isConcessionariaUser && permiteSolicitarDescontoExtra && (

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../config/supabase';
 import { formatCurrency } from '../utils/formatters';
+import { getCurrentUser } from '../utils/auth';
 
 /**
  * Página de Histórico de Propostas e Orçamentos
@@ -92,10 +93,10 @@ const HistoricoPropostas = () => {
   const carregarPropostas = async () => {
     try {
       setLoading(true);
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const user = getCurrentUser();
       
       const filters = {};
-      if (user.id) {
+      if (user?.id) {
         filters.vendedor_id = user.id;
       }
 
@@ -163,10 +164,10 @@ const HistoricoPropostas = () => {
           fontSize: '12px',
           fontWeight: '700',
           background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-          color: '#374151',
+          color: '#000000',
           border: '1px solid #e5e7eb'
         }}>
-          ⏳ Sem resultado
+          Sem resultado
         </span>
       );
     }
@@ -182,7 +183,7 @@ const HistoricoPropostas = () => {
           color: '#fff',
           border: '1px solid rgba(255,255,255,0.25)'
         }}>
-          ✅ Efetivada
+          Efetivada
         </span>
       );
     }
@@ -197,7 +198,7 @@ const HistoricoPropostas = () => {
         color: '#fff',
         border: '1px solid rgba(255,255,255,0.25)'
       }}>
-        ❌ Perdida
+        Perdida
       </span>
     );
   };
@@ -227,8 +228,8 @@ const HistoricoPropostas = () => {
 
   const getTipoBadge = (tipo) => {
     const styles = {
-      orcamento: { bg: '#e3f2fd', color: '#0d47a1', label: '📋 Orçamento', icon: '📋' },
-      proposta: { bg: '#f3e5f5', color: '#4a148c', label: '✅ Proposta', icon: '✅' }
+      orcamento: { bg: '#e3f2fd', color: '#0d47a1', label: ' Orçamento',  },
+      proposta: { bg: '#f3e5f5', color: '#4a148c', label: ' Proposta',  }
     };
     
     const style = styles[tipo] || styles.orcamento;
@@ -263,7 +264,7 @@ const HistoricoPropostas = () => {
         <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: '#111' }}>
           Propostas
         </h1>
-        <p style={{ color: '#666', fontSize: '14px' }}>
+        <p style={{ color: '#000000', fontSize: '14px' }}>
           Gerencie seus orçamentos e propostas comerciais. Edite orçamentos pendentes ou consulte propostas finalizadas.
         </p>
       </div>
@@ -325,18 +326,18 @@ const HistoricoPropostas = () => {
           <button
             onClick={carregarPropostas}
             style={{
-              width: '100%',
-              padding: '8px 12px',
-              background: '#111',
+              width: '50%',
+              padding: '3px 10px',
+              background: '#9ba6aa',
               color: 'white',
               border: 'none',
-              borderRadius: '6px',
-              fontSize: '14px',
-              fontWeight: '600',
+              borderRadius: '90px',
+              fontSize: '30px',
+              fontWeight: '900',
               cursor: 'pointer'
             }}
           >
-            🔄 Atualizar
+            🔄
           </button>
         </div>
       </div>
@@ -380,13 +381,13 @@ const HistoricoPropostas = () => {
                   <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
                     #{formatNumeroProposta(proposta.numero_proposta)}
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666', whiteSpace: 'nowrap' }}>
+                  <div style={{ fontSize: '12px', color: '#000000', whiteSpace: 'nowrap' }}>
                     {new Date(proposta.data).toLocaleDateString('pt-BR')}
                   </div>
                 </div>
 
-                <div style={{ fontSize: '13px', color: '#333' }}>
-                  <div style={{ fontWeight: '500' }}>{proposta.cliente_nome}</div>
+                <div style={{ fontSize: '13px', color: '#000000' }}>
+                  <div style={{ fontWeight: '300' }}>{proposta.cliente_nome}</div>
                   {proposta.cliente_documento && (
                     <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
                       {proposta.cliente_documento}
@@ -422,7 +423,7 @@ const HistoricoPropostas = () => {
                     }}
                     title="Marcar resultado da proposta"
                   >
-                    📈 Resultado
+                    Resultado
                   </button>
                 </div>
 
@@ -444,7 +445,7 @@ const HistoricoPropostas = () => {
                         }}
                         title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
                       >
-                        ✏️ Editar
+                        Editar
                       </button>
                       <button
                         onClick={() => openResultadoModal(proposta)}
@@ -461,7 +462,7 @@ const HistoricoPropostas = () => {
                         }}
                         title="Marcar resultado da proposta"
                       >
-                        📈 Resultado
+                        Resultado
                       </button>
                     </>
                   )}
@@ -481,7 +482,7 @@ const HistoricoPropostas = () => {
                     }}
                     title="Excluir proposta permanentemente"
                   >
-                    🗑️ Excluir
+                    ❌
                   </button>
 
                   {proposta.status === 'excluido' && (
@@ -502,123 +503,86 @@ const HistoricoPropostas = () => {
             overflowY: 'hidden',
             WebkitOverflowScrolling: 'touch'
           }}>
-            <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
+            <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ background: '#f9fafb', borderBottom: '2px solid #e5e5e5' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     Nº Proposta
                   </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     Cliente
                   </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                    Tipo
-                  </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'right', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     Valor Total
                   </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     Data
                   </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
-                    Status
-                  </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     Resultado
                   </th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '13px', fontWeight: '600', color: '#555' }}>
+                  <th style={{ padding: '11px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
                     Ações
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {propostasFiltradas.map((proposta) => (
-                  <tr key={proposta.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
+                  <tr
+                    key={proposta.id}
+                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.12s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <td style={{ padding: '13px 16px', fontSize: '13px', fontWeight: '700', color: '#1e293b', whiteSpace: 'nowrap' }}>
                       #{formatNumeroProposta(proposta.numero_proposta)}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '14px', color: '#333' }}>
-                      <div>{proposta.cliente_nome}</div>
+                    <td style={{ padding: '13px 16px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#000000' }}>{proposta.cliente_nome}</div>
                       {proposta.cliente_documento && (
-                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
                           {proposta.cliente_documento}
                         </div>
                       )}
                     </td>
-                    <td style={{ padding: '16px' }}>
-                      {getTipoBadge(proposta.tipo)}
-                    </td>
-                    <td style={{ padding: '16px', fontSize: '14px', fontWeight: '600', color: '#111' }}>
+                    <td style={{ padding: '13px 16px', fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'right', whiteSpace: 'nowrap' }}>
                       {formatCurrency(proposta.valor_total)}
                     </td>
-                    <td style={{ padding: '16px', fontSize: '14px', color: '#666' }}>
+                    <td style={{ padding: '13px 16px', fontSize: '13px', color: '#000000', whiteSpace: 'nowrap' }}>
                       {new Date(proposta.data).toLocaleDateString('pt-BR')}
                     </td>
-                    <td style={{ padding: '16px' }}>
-                      {getStatusBadge(proposta.status)}
-                    </td>
-                    <td style={{ padding: '16px' }}>
+                    <td style={{ padding: '13px 16px' }}>
                       {getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}
                     </td>
-                    <td style={{ padding: '16px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        {/* Permitir edição de propostas pendentes E finalizadas */}
+                    <td style={{ padding: '13px 16px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'nowrap' }}>
                         {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
                           <>
                             <button
                               onClick={() => handleReabrir(proposta)}
-                              style={{
-                                padding: '6px 12px',
-                                background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                              title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
+                              style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                              title="Editar proposta"
                             >
-                              ✏️ Editar
+                              Editar
                             </button>
                             <button
                               onClick={() => openResultadoModal(proposta)}
-                              style={{
-                                padding: '6px 12px',
-                                background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
+                              style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
                               title="Marcar resultado da proposta"
                             >
-                              📈 Resultado
+                              Resultado
                             </button>
                             <button
                               onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                              style={{
-                                padding: '6px 12px',
-                                background: '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                              title="Excluir proposta permanentemente"
+                              style={{ padding: '5px 10px', background: '#d3d3d3', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+                              title="Excluir proposta"
                             >
-                              🗑️
+                              ❌
                             </button>
                           </>
                         )}
                         {proposta.status === 'excluido' && (
-                          <span style={{ fontSize: '12px', color: '#999' }}>
-                            Excluída
-                          </span>
+                          <span style={{ fontSize: '12px', color: '#d3d3d3' }}>Excluída</span>
                         )}
                       </div>
                     </td>
@@ -640,14 +604,14 @@ const HistoricoPropostas = () => {
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <span style={{ fontSize: '14px', color: '#666' }}>
+        <span style={{ fontSize: '14px', color: '#d3d3d3' }}>
           Total: <strong>{propostasFiltradas.length}</strong> {propostasFiltradas.length === 1 ? 'proposta' : 'propostas'}
         </span>
         <button
           onClick={() => navigate('/novo-pedido')}
           style={{
             padding: '10px 20px',
-            background: '#28a745',
+            background: '#797979',
             color: 'white',
             border: 'none',
             borderRadius: '8px',
@@ -709,8 +673,8 @@ const HistoricoPropostas = () => {
                   width: '36px',
                   height: '36px',
                   borderRadius: '10px',
-                  border: '1px solid rgba(255,255,255,0.18)',
-                  background: 'rgba(255,255,255,0.10)',
+                  border: '1px solid #d3d3d3',
+                  background: '#d3d3d3',
                   color: 'white',
                   cursor: salvandoResultado ? 'not-allowed' : 'pointer',
                   fontWeight: '900'
@@ -746,7 +710,7 @@ const HistoricoPropostas = () => {
                     }}
                   >
                     <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>⏳ Sem resultado</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
                   </button>
 
                   <button
@@ -762,7 +726,7 @@ const HistoricoPropostas = () => {
                     }}
                   >
                     <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>✅ Efetivada</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Virou venda. Entra no cálculo de conversão do admin.</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Virou venda. Entra no cálculo de conversão do admin.</div>
                   </button>
 
                   <button
@@ -778,7 +742,7 @@ const HistoricoPropostas = () => {
                     }}
                   >
                     <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>❌ Perdida</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
                   </button>
                 </div>
               </div>

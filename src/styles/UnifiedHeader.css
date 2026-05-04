@@ -100,7 +100,6 @@
 .back-button:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.4);
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
@@ -190,7 +189,6 @@
 .support-button:hover {
   background: rgba(255, 193, 7, 0.1);
   border-color: rgba(255, 193, 7, 0.4);
-  transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(255, 193, 7, 0.25);
 }
 
@@ -233,7 +231,6 @@
 .user-profile:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 193, 7, 0.3);
-  transform: translateY(-1px);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
 }
 

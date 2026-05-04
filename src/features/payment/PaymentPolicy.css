@@ -6,10 +6,10 @@
 .payment-policy {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 0.4rem;
   max-width: 900px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem 1.5rem;
   background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   border-radius: 20px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
@@ -69,7 +69,7 @@
   border-radius: 16px;
   padding: 2rem;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-  border: 2px solid #e5e5e5;
+  border: 2px solid #000000;
   position: relative;
   overflow: hidden;
 }
@@ -598,4 +598,454 @@
 .form-help.help-warn {
   color: #ff9800;
   font-weight: 600;
+}
+
+/* =======================================================
+   🆕 COMPACT FORM — layout único estilo formulário
+   ======================================================= */
+
+.pp-form-wrap {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.pp-section {
+  background: transparent;
+  border-radius: 0;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-bottom: 1px solid #f2f2f2;
+  box-shadow: none;
+  animation: none;
+}
+.pp-section:last-child { border-bottom: none; }
+.pp-section::before { display: none; }
+.pp-section-badge   { display: none; }
+.pp-section-icon    { display: none; }
+
+.pp-section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.4rem;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.pp-section-header h3 {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+/* Pills (substituem os big choice cards) */
+.pp-big-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pp-choice-btn {
+  flex-direction: row;
+  min-height: 32px;
+  padding: 5px 13px;
+  gap: 5px;
+  border-radius: 6px;
+  border-width: 1.5px;
+  font-size: 0.83rem;
+  text-align: left;
+  justify-content: flex-start;
+}
+.pp-choice-btn:hover        { transform: none; box-shadow: none; border-color: #ffd700; background: #fffbf0; }
+.pp-choice-btn.selected     { box-shadow: none; }
+.pp-choice-btn.selected::after { top: 3px; right: 6px; font-size: 0.6rem; }
+.pp-choice-btn strong       { font-size: 0.83rem; }
+.pp-choice-btn small        { display: none; }
+.pp-choice-btn .pp-choice-icon { font-size: 0.95rem; margin-bottom: 0; }
+
+/* Botões de entrada */
+.pp-entrada-btns { gap: 6px; margin-top: 0; flex-wrap: wrap; }
+.pp-entrada-btn  {
+  flex: unset;
+  min-width: auto;
+  flex-direction: row;
+  padding: 5px 13px;
+  gap: 5px;
+  border-radius: 6px;
+  border-width: 1.5px;
+}
+.pp-entrada-btn:hover    { transform: none; box-shadow: none; border-color: #ffd700; background: #fffbf0; }
+.pp-entrada-btn.selected { box-shadow: none; }
+.pp-entrada-btn strong   { font-size: 0.85rem; }
+.pp-entrada-btn small    { font-size: 0.72rem; color: #000000; }
+
+/* Sub-seções */
+.pp-subsection       { margin-top: 0.6rem; padding-top: 0.6rem; }
+.pp-subsection-label { font-size: 0.72rem; margin-bottom: 0.4rem; }
+
+/* Frete row */
+.pp-frete-row { gap: 8px; }
+.pp-frete-row .form-group:first-child { flex: 0 0 100px; }
+.pp-frete-row .form-group:last-child  { flex: 1; }
+
+.pp-form-row-2 { gap: 10px; margin-top: 0.5rem; }
+
+@media (max-width: 600px) {
+  .pp-form-row-2 { grid-template-columns: 1fr; }
+  .pp-big-choice { flex-direction: column; }
+  .pp-entrada-btns { gap: 5px; }
+}
+
+/* =======================================================
+   💰 Barra CTA (botão de continuar)
+   ======================================================= */
+
+.pp-cta-bar {
+  background: linear-gradient(135deg, #111, #222);
+  border-radius: 16px;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  position: sticky;
+  bottom: 16px;
+  z-index: 50;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+  border: 1px solid #333;
+}
+
+.pp-cta-total {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pp-cta-total span {
+  font-size: 0.72rem;
+  color: #aaa;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pp-cta-total strong {
+  font-size: 1.5rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.pp-cta-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.pp-cta-item {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+}
+
+.pp-cta-base {
+  background: rgba(255,255,255,0.1);
+  color: #ccc;
+}
+
+.pp-cta-minus {
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+}
+
+.pp-cta-plus {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.pp-cta-parcelas {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde68a;
+}
+
+.pp-cta-btn {
+  padding: 0.9rem 2rem;
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  border: none;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+}
+
+.pp-cta-btn:hover:not(:disabled) {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
+}
+
+.pp-cta-btn:disabled {
+  background: #444;
+  color: #777;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+@media (max-width: 600px) {
+  .pp-cta-bar {
+    flex-direction: column;
+    text-align: center;
+  }
+  .pp-cta-btn {
+    width: 100%;
+    padding: 1rem;
+  }
+}
+
+/* =======================================================
+   REDESIGN — Step-1 style (tabs, radio rows, clean labels)
+   ======================================================= */
+
+.payment-policy {
+  background: transparent;
+  box-shadow: none;
+  border-radius: 0;
+  padding: 0;
+  gap: 8px;
+}
+
+.pp-form-wrap {
+  background: #fff;
+  border-radius: 10px;
+  border: 1.5px solid #e4e4e4;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.pp-section {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+.pp-section:last-child { border-bottom: none; }
+.pp-section::before   { display: none; }
+
+.pp-section-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.7px;
+  margin-bottom: 8px;
+}
+
+/* Tab toggles (like GSI/GSE) */
+.pp-tabs {
+  display: flex;
+  gap: 0;
+  margin-top: 2px;
+}
+.pp-tab {
+  flex: 1;
+  padding: 7px 14px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  color: #000000;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  text-align: center;
+}
+.pp-tab:first-child {
+  border-radius: 10px;
+}
+
+.pp-tab:last-child {
+  border-radius: 10px;
+  margin-left: 0;
+}
+
+.pp-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.pp-tab {
+  flex: 1;
+}
+
+.pp-tab-active {
+  background: #1a1a1a;
+  color: #fff;
+  border-color: #1a1a1a;
+  z-index: 1;
+}
+
+.pp-tab:not(.pp-tab-active):hover { background: #f5f5f5; border-color: #bbb; }
+
+/* Radio rows */
+.pp-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 4px;
+}
+.pp-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1.5px solid #e4e4e4;
+  border-radius: 7px;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.12s ease;
+  user-select: none;
+}
+.pp-radio-row:hover { border-color: #aaa; }
+.pp-radio-active    { border-color: #1a1a1a !important; background: #fafafa; }
+.pp-radio-indicator {
+  font-size: 1rem;
+  color: #000000;
+  line-height: 1;
+  min-width: 16px;
+  text-align: center;
+}
+.pp-radio-active .pp-radio-indicator { color: #1a1a1a; }
+.pp-radio-text { display: flex; flex-direction: column; gap: 1px; }
+.pp-radio-text strong { font-size: 0.84rem; font-weight: 600; color: #1a1a1a; }
+.pp-radio-text small  { font-size: 0.72rem; color: #000000; }
+
+/* Sub-sections */
+.pp-subsection {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f2f2f2;
+}
+
+/* Info note */
+.pp-info-note {
+  font-size: 0.78rem;
+  color: #000000;
+  background: #f8f8f8;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  padding: 7px 11px;
+  margin-top: 6px;
+}
+
+/* Fields row (2-col) */
+.pp-fields-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.pp-fields-row .form-group { margin-bottom: 0; }
+@media (max-width: 600px) { .pp-fields-row { flex-direction: column; } }
+
+/* Entrada buttons override */
+.pp-entrada-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.pp-entrada-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 7px 14px;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  gap: 1px;
+  transition: all 0.12s ease;
+  min-width: 72px;
+}
+.pp-entrada-btn:hover:not(.selected) { border-color: #bbb; background: #f8f8f8; }
+.pp-entrada-btn.selected { background: #1a1a1a; color: #fff; border-color: #1a1a1a; }
+.pp-entrada-btn strong { font-size: 0.88rem; font-weight: 700; }
+.pp-entrada-btn small  { font-size: 0.82rem; color: #000000; }
+.pp-entrada-btn.selected small { color: #aaa; }
+
+/* Discount buttons */
+.pp-desconto-btns { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.pp-desc-btn {
+  padding: 5px 11px;
+  border: 1.5px solid #e0e0e0;
+  background: #fff;
+  color: #000000;
+  border-radius: 5px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+.pp-desc-btn:hover { border-color: #aaa; }
+.pp-desc-active   { background: #1a1a1a !important; color: #fff !important; border-color: #1a1a1a !important; }
+
+/* Solicitar desconto extra button */
+.pp-extra-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 13px;
+  border: 1.5px dashed #667eea;
+  background: #fff;
+  color: #667eea;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+.pp-extra-btn:hover:not(:disabled) { background: #f0f3ff; }
+.pp-extra-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Floating card hidden in new design */
+.floating-price-card { display: none; }
+
+/* 2-column section grid */
+.pp-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid #f0f0f0;
+}
+.pp-grid-2 .pp-section {
+  border-bottom: none;
+  border-right: 1px solid #f0f0f0;
+}
+.pp-grid-2 .pp-section:last-child { border-right: none; }
+@media (max-width: 640px) {
+  .pp-grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .pp-grid-2 .pp-section { border-right: none; border-bottom: 1px solid #f0f0f0; }
+  .pp-grid-2 .pp-section:last-child { border-bottom: none; }
+}
+
+/* 2-column inside section (plano + desconto) */
+.pp-inner-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+  align-items: start;
+}
+@media (max-width: 640px) {
+  .pp-inner-2col { grid-template-columns: 1fr; }
 }

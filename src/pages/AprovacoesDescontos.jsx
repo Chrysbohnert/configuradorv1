@@ -308,7 +308,7 @@ export default function AprovacoesDescontos() {
         {/* Lista de solicitações */}
         {solicitacoes.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">✅</div>
+            <div className="empty-icon"></div>
             <h3>Nenhuma solicitação pendente</h3>
             <p>Todas as solicitações foram processadas!</p>
           </div>
@@ -319,7 +319,7 @@ export default function AprovacoesDescontos() {
                 {/* Header do Card */}
                 <div className="card-header">
                   <div className="vendedor-info">
-                    <span className="vendedor-icon">👤</span>
+                    <span className="vendedor-icon"> </span>
                     <div>
                       <h3>{solicitacao.vendedor_nome}</h3>
                       <small>{solicitacao.vendedor_email}</small>

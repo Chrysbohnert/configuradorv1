@@ -53,8 +53,10 @@ const GerenciarGuindastes = () => {
 
   const [showPrecosModal, setShowPrecosModal] = useState(false);
   const [guindasteIdPrecos, setGuindasteIdPrecos] = useState(null);
-  const [filtroCapacidade, setFiltroCapacidade] = useState('todos');
+  const [filtroCapacidade, setFiltroCapacidade] = useState('6.5');
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
+  const [selectedModeloGrupo, setSelectedModeloGrupo] = useState(null);
+  const [busca, setBusca] = useState('');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
@@ -151,6 +153,25 @@ const GerenciarGuindastes = () => {
     if (filtroCapacidade === 'todos') return guindastes;
     return (guindastes || []).filter(g => extractCapacidade(g) === filtroCapacidade);
   };
+
+  const getModeloBase = (g) => {
+    const subgrupo = g?.subgrupo || '';
+    return subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
+  };
+
+  const getUniqueModelos = () => {
+    const base = filtroCapacidade === 'todos' ? (guindastes || []) : (guindastes || []).filter(g => extractCapacidade(g) === filtroCapacidade);
+    const map = new Map();
+    base.forEach(g => {
+      const key = getModeloBase(g);
+      if (!map.has(key)) map.set(key, { key, representante: g, count: 0, capacidade: extractCapacidade(g) });
+      map.get(key).count++;
+    });
+    const lista = Array.from(map.values());
+    return busca ? lista.filter(m => m.key.toLowerCase().includes(busca.toLowerCase())) : lista;
+  };
+
+  const getGuindastesDoModelo = (modeloKey) => (guindastes || []).filter(g => getModeloBase(g) === modeloKey);
 
   useEffect(() => {
     if (!user) return;
@@ -578,269 +599,182 @@ const GerenciarGuindastes = () => {
                     </div>
                   </div>
 
-                  <div className="filtro-container">
-                    <div className="capacity-chips">
-                      {getCapacidadesUnicas().map((capacidade) => (
-                        <BlobButton
-                          key={capacidade}
-                          type="button"
-                          className={`chip ${filtroCapacidade === capacidade ? 'active' : ''}`}
-                          onClick={() => setFiltroCapacidade(capacidade)}
-                        >
-                          {capacidade}
-                        </BlobButton>
+                  {/* Barra de filtro e busca */}
+                  <div className="gg-filter-bar">
+                    <div className="gg-search-wrap">
+                      <svg className="gg-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                      </svg>
+                      <input
+                        className="gg-search-input"
+                        placeholder="Buscar modelo..."
+                        value={busca}
+                        onChange={e => { setBusca(e.target.value); setSelectedModeloGrupo(null); }}
+                      />
+                    </div>
+                    <div className="gg-capacity-chips">
+                      <button
+                        className={`gg-chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
+                        onClick={() => { setFiltroCapacidade('todos'); setSelectedModeloGrupo(null); }}
+                      >Todos</button>
+                      {getCapacidadesUnicas().map(cap => (
+                        <button
+                          key={cap}
+                          className={`gg-chip ${filtroCapacidade === cap ? 'active' : ''}`}
+                          onClick={() => { setFiltroCapacidade(cap); setSelectedModeloGrupo(null); }}
+                        >{cap} Ton</button>
                       ))}
-                      <BlobButton
-                        type="button"
-                        className={`chip ${filtroCapacidade === 'todos' ? 'active' : ''}`}
-                        onClick={() => setFiltroCapacidade('todos')}
-                      >
-                        Todos
-                      </BlobButton>
                     </div>
-                    <div className="filtro-info">
-                      <span className="resultado-count">
-                        {getGuindastesFiltrados().length} guindaste(s) listado(s)
-                      </span>
-                    </div>
+                    <span className="gg-total-count">{guindastes.length} guindaste(s) · {getUniqueModelos().length} modelo(s)</span>
                   </div>
 
-                  {filtroCapacidade === 'todos' ? (
-                    getCapacidadesUnicas().map((capacidade) => {
-                      const items = guindastes.filter(g => extractCapacidade(g) === capacidade);
-                      if (items.length === 0) return null;
-                      return (
-                        <section key={capacidade} className="capacity-section">
-                          <div className="capacity-header">
-                            <h3>{capacidade}</h3>
-                            <span className="capacity-count">{items.length}</span>
+                  {/* Workspace 2 painéis */}
+                  <div className="gg-workspace">
+                    {/* Painel esquerdo: lista de modelos */}
+                    <div className="gg-models-panel">
+                      <div className="gg-panel-header">
+                        <span>Modelos</span>
+                        <span className="gg-badge">{getUniqueModelos().length}</span>
+                      </div>
+                      <div className="gg-models-list">
+                        {getUniqueModelos().length === 0 ? (
+                          <div className="gg-no-models">Nenhum modelo encontrado</div>
+                        ) : (
+                          getUniqueModelos().map(m => (
+                            <button
+                              key={m.key}
+                              className={`gg-model-item ${selectedModeloGrupo === m.key ? 'active' : ''}`}
+                              onClick={() => setSelectedModeloGrupo(selectedModeloGrupo === m.key ? null : m.key)}
+                            >
+                              <div className="gg-model-thumb">
+                                <LazyGuindasteImage
+                                  guindasteId={m.representante.id}
+                                  subgrupo={m.representante.subgrupo}
+                                  className="gg-thumb-img"
+                                  alt={m.key}
+                                />
+                              </div>
+                              <div className="gg-model-meta">
+                                <span className="gg-model-name">{m.key}</span>
+                                <span className="gg-model-cap">{m.capacidade} Ton · {m.count} config.</span>
+                              </div>
+                              {selectedModeloGrupo === m.key && (
+                                <svg className="gg-model-arrow" viewBox="0 0 24 24" fill="currentColor">
+                                  <path d="M8 5v14l11-7z"/>
+                                </svg>
+                              )}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Painel direito: configurações do modelo selecionado */}
+                    <div className="gg-configs-panel">
+                      {selectedModeloGrupo ? (
+                        <>
+                          <div className="gg-configs-head">
+                            <div>
+                              <h3 className="gg-configs-title">{selectedModeloGrupo}</h3>
+                              <span className="gg-configs-sub">{getGuindastesDoModelo(selectedModeloGrupo).length} configurações disponíveis</span>
+                            </div>
                           </div>
-                          <div className="guindastes-grid">
-                            {items.map((guindaste) => {
-                              return (
-                                <div key={guindaste.id} className="guindaste-card">
-                                  <div className="guindaste-image">
-                                    <LazyGuindasteImage
-                                      guindasteId={guindaste.id}
-                                      subgrupo={guindaste.subgrupo}
-                                      className="guindaste-thumbnail"
-                                      alt={guindaste.subgrupo}
-                                    />
-                                    <div className="guindaste-icon" style={{ display: 'none' }}>
-                                      <svg viewBox="0 0 24 24" fill="currentColor">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                                      </svg>
-                                    </div>
-                                  </div>
-                                  <div className="guindaste-header">
-                                    <div className="guindaste-info">
-                                      <h3>{guindaste.subgrupo}</h3>
-                                      <p>{guindaste.modelo}</p>
-                                      {guindaste.codigo_referencia && (
-                                        <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
-                                      )}
-                                      {isAdminConcessionaria && (
-                                        <p className="codigo-referencia">
-                                          Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
-                                        </p>
-                                      )}
-                                      {guindaste.is_comercio_exterior && (
-                                        <p className="codigo-referencia">
-                                          <span className="badge">Comércio Exterior</span>
-                                        </p>
-                                      )}
-                                    </div>
-                                  </div>
-                                  <div className="guindaste-actions">
-                                    {isAdminConcessionaria ? (
-                                      <BlobButton
-                                        className="action-btn price-btn"
-                                        title="Preço da Concessionária"
-                                        aria-label="Preço da Concessionária"
-                                        onClick={() => openPrecoConcessionaria(guindaste)}
-                                      >
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                          <line x1="12" y1="1" x2="12" y2="23" />
-                                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                        </svg>
-                                        Preço
-                                      </BlobButton>
-                                    ) : (
-                                      <>
-                                        <BlobButton
-                                          onClick={() => handleEdit(guindaste)}
-                                          className="action-btn edit-btn"
-                                          title="Editar Guindaste"
-                                          aria-label="Editar"
-                                        >
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                          </svg>
-                                          Editar
-                                        </BlobButton>
-                                        <BlobButton
-                                          onClick={() => handleDeleteClick(guindaste.id)}
-                                          className="action-btn delete-btn"
-                                          title="Remover Guindaste"
-                                          aria-label="Remover"
-                                        >
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <polyline points="3 6 5 6 21 6" />
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                            <line x1="10" y1="11" x2="10" y2="17" />
-                                            <line x1="14" y1="11" x2="14" y2="17" />
-                                          </svg>
-                                          Excluir
-                                        </BlobButton>
-                                        <BlobButton
-                                          className="action-btn price-btn"
-                                          title="Preços por Região"
-                                          aria-label="Preços por Região"
-                                          onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
-                                        >
-                                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                            <line x1="12" y1="1" x2="12" y2="23" />
-                                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                          </svg>
-                                          Preços
-                                        </BlobButton>
-                                      </>
+                          <div className="gg-configs-list">
+                            {getGuindastesDoModelo(selectedModeloGrupo).map(guindaste => (
+                              <div key={guindaste.id} className="gg-config-row">
+                                <div className="gg-config-thumb">
+                                  <LazyGuindasteImage
+                                    guindasteId={guindaste.id}
+                                    subgrupo={guindaste.subgrupo}
+                                    className="gg-thumb-img"
+                                    alt={guindaste.subgrupo}
+                                  />
+                                </div>
+                                <div className="gg-config-info">
+                                  <span className="gg-config-name">{guindaste.subgrupo}</span>
+                                  <div className="gg-config-tags">
+                                    {guindaste.codigo_referencia && (
+                                      <span className="gg-tag gg-tag-code">{guindaste.codigo_referencia}</span>
+                                    )}
+                                    {guindaste.modelo && (
+                                      <span className="gg-tag gg-tag-model">{guindaste.modelo}</span>
+                                    )}
+                                    {guindaste.is_comercio_exterior && (
+                                      <span className="gg-tag gg-tag-ext">Comércio Exterior</span>
+                                    )}
+                                    {isAdminConcessionaria && (
+                                      <span className={`gg-tag ${precosConcessionariaMap[guindaste.id] ? 'gg-tag-price-set' : 'gg-tag-price-unset'}`}>
+                                        {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'Preço não definido'}
+                                      </span>
                                     )}
                                   </div>
                                 </div>
-                              );
-                            })}
-                          </div>
-                        </section>
-                      );
-                    })
-                  ) : (
-                    <section className="capacity-section">
-                      <div className="capacity-header">
-                        <h3>{filtroCapacidade}</h3>
-                        <span className="capacity-count">{getGuindastesFiltrados().length}</span>
-                      </div>
-                      <div className="guindastes-grid">
-                        {getGuindastesFiltrados().map((guindaste) => {
-                          return (
-                            <div key={guindaste.id} className="guindaste-card">
-                              <div className="guindaste-image">
-                                <LazyGuindasteImage
-                                  guindasteId={guindaste.id}
-                                  subgrupo={guindaste.subgrupo}
-                                  className="guindaste-thumbnail"
-                                  alt={guindaste.subgrupo}
-                                />
-                                <div className="guindaste-icon" style={{ display: 'none' }}>
-                                  <svg viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                                  </svg>
-                                </div>
-                              </div>
-                              <div className="guindaste-header">
-                                <div className="guindaste-info">
-                                  <h3>{guindaste.subgrupo}</h3>
-                                  <p>{guindaste.modelo}</p>
-                                  {guindaste.codigo_referencia && (
-                                    <p className="codigo-referencia">Código: {guindaste.codigo_referencia}</p>
-                                  )}
-                                  {isAdminConcessionaria && (
-                                    <p className="codigo-referencia">
-                                      Preço Concessionária: {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'NÃO DEFINIDO'}
-                                    </p>
-                                  )}
-                                  {guindaste.is_comercio_exterior && (
-                                    <p className="codigo-referencia">
-                                      <span className="badge">Comércio Exterior</span>
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="guindaste-actions">
-                                {isAdminConcessionaria ? (
-                                  <BlobButton
-                                    className="action-btn price-btn"
-                                    title="Preço da Concessionária"
-                                    aria-label="Preço da Concessionária"
-                                    onClick={() => openPrecoConcessionaria(guindaste)}
-                                  >
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                      <line x1="12" y1="1" x2="12" y2="23" />
-                                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-                                    </svg>
-                                    Preço
-                                  </BlobButton>
-                                ) : (
-                                  <>
+                                <div className="gg-config-actions">
+                                  {isAdminConcessionaria ? (
                                     <BlobButton
-                                      onClick={() => handleEdit(guindaste)}
-                                      className="action-btn edit-btn"
-                                      title="Editar Guindaste"
-                                      aria-label="Editar"
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                                      </svg>
-                                      Editar
-                                    </BlobButton>
-                                    <BlobButton
-                                      onClick={() => handleDeleteClick(guindaste.id)}
-                                      className="action-btn delete-btn"
-                                      title="Remover Guindaste"
-                                      aria-label="Remover"
-                                    >
-                                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <polyline points="3 6 5 6 21 6" />
-                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                        <line x1="10" y1="11" x2="10" y2="17" />
-                                        <line x1="14" y1="11" x2="14" y2="17" />
-                                      </svg>
-                                      Excluir
-                                    </BlobButton>
-                                    <BlobButton
-                                      className="action-btn price-btn"
-                                      title="Preços por Região"
-                                      aria-label="Preços por Região"
-                                      onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                      className="gg-action-btn gg-btn-price"
+                                      title="Preço da Concessionária"
+                                      onClick={() => openPrecoConcessionaria(guindaste)}
                                     >
                                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="12" y1="1" x2="12" y2="23" />
                                         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                       </svg>
-                                      Preços
+                                      Preço
                                     </BlobButton>
-                                  </>
-                                )}
+                                  ) : (
+                                    <>
+                                      <BlobButton
+                                        className="gg-action-btn gg-btn-edit"
+                                        title="Editar Guindaste"
+                                        onClick={() => handleEdit(guindaste)}
+                                      >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                                        </svg>
+                                        Editar
+                                      </BlobButton>
+                                      <BlobButton
+                                        className="gg-action-btn gg-btn-prices"
+                                        title="Preços por Região"
+                                        onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
+                                      >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <line x1="12" y1="1" x2="12" y2="23" />
+                                          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                        </svg>
+                                        Preços
+                                      </BlobButton>
+                                      <BlobButton
+                                        className="gg-action-btn gg-btn-delete"
+                                        title="Remover Guindaste"
+                                        onClick={() => handleDeleteClick(guindaste.id)}
+                                      >
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                          <polyline points="3 6 5 6 21 6" />
+                                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                          <line x1="10" y1="11" x2="10" y2="17" />
+                                          <line x1="14" y1="11" x2="14" y2="17" />
+                                        </svg>
+                                        Excluir
+                                      </BlobButton>
+                                    </>
+                                  )}
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </section>
-                  )}
-
-                  {/* Paginação: exibir apenas se houver mais de 10 itens no filtro atual */}
-                  {((filtroCapacidade === 'todos' ? total : getGuindastesFiltrados().length) > 10) && (
-                    <div className="pagination">
-                      <BlobButton
-                        className="page-btn ghost"
-                        disabled={page <= 1}
-                        onClick={() => loadData(page - 1)}
-                      >
-                        Anterior
-                      </BlobButton>
-                      <div className="page-info">Página {page} de {totalPages}</div>
-                      <BlobButton
-                        className="page-btn primary"
-                        disabled={page >= totalPages}
-                        onClick={() => loadData(page + 1)}
-                      >
-                        Próxima
-                      </BlobButton>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="gg-empty-selection">
+                          <div className="gg-empty-icon">🏗️</div>
+                          <h3>Selecione um modelo</h3>
+                          <p>Escolha um modelo na lista ao lado para ver suas configurações e ações disponíveis</p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </>
               )}
             </div>
@@ -894,7 +828,7 @@ const GerenciarGuindastes = () => {
                 <div className="modern-right-col">
                   <div className="modern-grid-3">
                     <div className="modern-form-group">
-                      <label>Código (SKU) <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <label>Código <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
                       <input
                         type="text"
                         value={formData.codigo_referencia}

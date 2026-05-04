@@ -327,7 +327,6 @@ html {
 
 .logout-btn:hover {
   background: #c82333;
-  transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
@@ -372,7 +371,6 @@ html {
 }
 
 .stat-card:hover {
-  transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
 }
 
@@ -614,7 +612,6 @@ html {
   background: #fef3c7;
   border-color: #f59e0b;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-  transform: translateY(-1px);
 }
 
 .alert-item.alert-success {
@@ -657,7 +654,7 @@ html {
 
 .quick-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
 .quick-btn { padding: 12px 16px; border-radius: 10px; border: 1px solid #e5e7eb; background: #fff; cursor: pointer; font-weight: 600; transition: all .2s ease; }
-.quick-btn:hover { background: #f9fafb; transform: translateY(-1px); }
+.quick-btn:hover { background: #f9fafb; }
 
 /* Utilitários de cor suave */
 .text-success { color: #065f46; }
@@ -683,7 +680,6 @@ html {
 }
 
 .action-card:hover {
-  transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
   border-color: #000000;
 }
@@ -905,7 +901,6 @@ html {
   background: #e9ecef;
   border-color: #000000;
   color: #000000;
-  transform: translateY(-1px);
 }
 
 .action-btn svg {
@@ -1185,7 +1180,6 @@ html {
 }
 
 .vendedor-card:hover {
-  transform: translateY(-4px);
   box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
 }
 
@@ -1430,7 +1424,6 @@ html {
 }
 
 .btn-relatorio:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
 }
 

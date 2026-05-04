@@ -3,7 +3,7 @@ import { useNavigate, useLocation, useOutletContext, useParams } from 'react-rou
 import UnifiedHeader from '../components/UnifiedHeader';
 import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
-import GuindasteSelector from '../components/GuindasteSelector';
+import GuindasteConfigurador from '../components/NovoPedido/GuindasteConfigurador';
 import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
 
 import { db } from '../config/supabase';
@@ -339,7 +339,7 @@ const NovoPedido = () => {
     // ✅ NOVO: Não recalcular se região não foi selecionada
     const isExteriorRegioAtual = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
     if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && !isExteriorRegioAtual && regioes.length === 0)) {
-      console.log('⚠️ [recalcularPrecosCarrinho] Condições não atendidas:', {
+      console.log(' [recalcularPrecosCarrinho] Condições não atendidas:', {
         carrinhoLength: carrinho.length,
         regioesOperacao: regioes.length,
         regiaoSelecionada: regiaoClienteSelecionada || '(vazia)'
@@ -347,16 +347,16 @@ const NovoPedido = () => {
       return;
     }
 
-    console.log('🔄 [recalcularPrecosCarrinho] INICIANDO recálculo...');
-    console.log('📊 [recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
+    console.log('[recalcularPrecosCarrinho] INICIANDO recálculo...');
+    console.log('[recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
     // ✅ NOVO: Usar regiaoClienteSelecionada
     const regiaoVendedor = normalizarRegiao(regiaoClienteSelecionada, temIE);
 
-    console.log(`🌍 [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região selecionada: ${regiaoClienteSelecionada}`);
-    console.log(`📍 [recalcularPrecosCarrinho] Regiões de operação disponíveis: ${regioes.join(', ')}`);
-    console.log(`🔑 [recalcularPrecosCarrinho] Região normalizada para busca: ${regiaoVendedor}`);
+    console.log(` [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região selecionada: ${regiaoClienteSelecionada}`);
+    console.log(` [recalcularPrecosCarrinho] Regiões de operação disponíveis: ${regioes.join(', ')}`);
+    console.log(` [recalcularPrecosCarrinho] Região normalizada para busca: ${regiaoVendedor}`);
 
     // ← NOVO: Testar preços de todas as regiões para comparação (se região selecionada é RS)
     if (regiaoClienteSelecionada?.toLowerCase().includes('rs') || regiaoClienteSelecionada === 'rio grande do sul') {
@@ -379,19 +379,19 @@ const NovoPedido = () => {
         try {
           let novoPreco = 0;
           if (isModoConcessionaria) {
-            console.log(`💰 [recalcularPrecosCarrinho] (COMPRA CONCESSIONÁRIA) Buscando preço por região para ${item.nome} (ID: ${item.id})`);
+            console.log(` [recalcularPrecosCarrinho] (COMPRA CONCESSIONÁRIA) Buscando preço por região para ${item.nome} (ID: ${item.id})`);
             novoPreco = await db.getPrecoCompraPorRegiao(item.id, regiaoVendedor);
           } else {
-            console.log(`💰 [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
+            console.log(` [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
             novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
           }
 
-          console.log(`✅ [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isConcessionariaUser ? 'concessionaria' : regiaoVendedor})`);
+          console.log(` [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isConcessionariaUser ? 'concessionaria' : regiaoVendedor})`);
 
           if (novoPreco !== item.preco) {
-            console.log(`🔄 [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
+            console.log(` [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
           } else {
-            console.log(`➡️ [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
+            console.log(` [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
           }
 
           const isExteriorRecalc = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
@@ -400,7 +400,7 @@ const NovoPedido = () => {
             preco: isExteriorRecalc ? (novoPreco || 0) : (novoPreco || item.preco || 0)
           });
         } catch (error) {
-          console.error(`❌ [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
+          console.error(` [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
           carrinhoAtualizado.push(item);
         }
       } else {
@@ -408,7 +408,7 @@ const NovoPedido = () => {
       }
     }
 
-    console.log('📊 [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
+    console.log(' [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     // Verificar se houve mudança real nos preços antes de atualizar
     const houveAlteracao = carrinhoAtualizado.some((itemNovo, index) => {
@@ -417,11 +417,11 @@ const NovoPedido = () => {
     });
 
     if (houveAlteracao) {
-      console.log('✅ [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
+      console.log(' [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
       setCarrinho(carrinhoAtualizado);
       localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
     } else {
-      console.log('➡️ [recalcularPrecosCarrinho] Nenhuma alteração de preço, carrinho mantido');
+      console.log(' [recalcularPrecosCarrinho] Nenhuma alteração de preço, carrinho mantido');
     }
   };
 
@@ -429,10 +429,10 @@ const NovoPedido = () => {
   useEffect(() => {
     console.log('📌 [useEffect recalcularPrecosCarrinho] Disparado! Carrinho:', carrinho.length, 'Região:', regiaoClienteSelecionada);
     if (carrinho.length > 0 && regiaoClienteSelecionada) {
-      console.log('✅ [useEffect recalcularPrecosCarrinho] Condições atendidas, chamando recalcularPrecosCarrinho');
+      console.log('[useEffect recalcularPrecosCarrinho] Condições atendidas, chamando recalcularPrecosCarrinho');
       recalcularPrecosCarrinho();
     } else {
-      console.log('⚠️ [useEffect recalcularPrecosCarrinho] Condições NÃO atendidas:', {
+      console.log(' [useEffect recalcularPrecosCarrinho] Condições NÃO atendidas:', {
         carrinhoLength: carrinho.length,
         regiaoClienteSelecionada: regiaoClienteSelecionada || '(vazia)'
       });
@@ -491,8 +491,8 @@ const NovoPedido = () => {
         if (chunk.length < pageSize) break;
       }
 
-      console.log('🔍 [NovoPedido] Guindastes carregados (paginação):', all.length);
-      console.log('🔍 [NovoPedido] Primeiros 3 guindastes:', all.slice(0, 3));
+      console.log(' [NovoPedido] Guindastes carregados (paginação):', all.length);
+      console.log(' [NovoPedido] Primeiros 3 guindastes:', all.slice(0, 3));
 
       let idsVisiveis = null;
       try {
@@ -500,7 +500,7 @@ const NovoPedido = () => {
           idsVisiveis = await db.getGuindasteIdsVisiveisParaUser(user.id);
         }
       } catch (e) {
-        console.warn('⚠️ [NovoPedido] Falha ao carregar visibilidade de protótipos:', e);
+        console.warn(' [NovoPedido] Falha ao carregar visibilidade de protótipos:', e);
       }
 
       const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
@@ -552,10 +552,10 @@ const NovoPedido = () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         
-        // ✅ VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação)
+        //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação)
         const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
         if (jaNoCarrinho) {
-          console.log('⚠️ [processarGuindasteSelecionado] Guindaste já está no carrinho, ignorando duplicação');
+          console.log(' [processarGuindasteSelecionado] Guindaste já está no carrinho, ignorando duplicação');
           // Limpar o state e retornar
           navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
           return;
@@ -575,11 +575,11 @@ const NovoPedido = () => {
           try {
             const temIE = determinarClienteTemIE();
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
-            console.log(`🌍 [adicionarGuindaste] (COMPRA CONCESSIONÁRIA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
+            console.log(` [adicionarGuindaste] (COMPRA CONCESSIONÁRIA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
             precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
-            console.log(`💰 [adicionarGuindaste] Preço compra concessionária encontrado: R$ ${precoGuindaste}`);
+            console.log(` [adicionarGuindaste] Preço compra concessionária encontrado: R$ ${precoGuindaste}`);
           } catch (error) {
-            console.error('❌ [adicionarGuindaste] Erro ao buscar preço de compra do guindaste:', error);
+            console.error(' [adicionarGuindaste] Erro ao buscar preço de compra do guindaste:', error);
             precoGuindaste = guindaste.preco || 0;
           }
         } else {
@@ -606,7 +606,7 @@ const NovoPedido = () => {
           tipo: 'guindaste'
         };
 
-        console.log('🛒 [adicionarGuindaste] Produto adicionado ao carrinho:', {
+        console.log(' [adicionarGuindaste] Produto adicionado ao carrinho:', {
           id: produto.id,
           nome: produto.nome,
           finame: produto.finame,
@@ -653,17 +653,17 @@ const NovoPedido = () => {
 
   const steps = isModoConcessionaria
     ? [
-        { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
-        { id: 2, title: 'Pagamento', icon: '💳', description: 'Condição de compra' },
-        { id: 3, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
-        { id: 4, title: 'Resumo', icon: '✅', description: 'Revisar e gerar PDF' }
+        { id: 1, title: 'Selecionar Guindaste', description: 'Escolha o guindaste ideal' },
+        { id: 2, title: 'Pagamento',  description: 'Condição de compra' },
+        { id: 3, title: 'Estudo Veicular',  description: 'Configuração do veículo' },
+        { id: 4, title: 'Resumo', description: 'Revisar e gerar PDF' }
       ]
     : [
-        { id: 1, title: 'Selecionar Guindaste', icon: '🏗️', description: 'Escolha o guindaste ideal' },
-        { id: 2, title: 'Pagamento', icon: '💳', description: 'Política de pagamento' },
-        { id: 3, title: 'Dados do Cliente', icon: '👤', description: 'Informações do cliente' },
-        { id: 4, title: 'Estudo Veicular', icon: '🚛', description: 'Configuração do veículo' },
-        { id: 5, title: 'Finalizar', icon: '✅', description: 'Revisar e confirmar' }
+        { id: 1, title: 'Selecionar Guindaste',  description: 'Escolha o guindaste ideal' },
+        { id: 2, title: 'Pagamento', description: 'Política de pagamento' },
+        { id: 3, title: 'Dados do Cliente',  description: 'Informações do cliente' },
+        { id: 4, title: 'Estudo Veicular',  description: 'Configuração do veículo' },
+        { id: 5, title: 'Finalizar',  description: 'Revisar e confirmar' }
       ];
 
   // Capacidades dinâmicas com base nos guindastes carregados
@@ -681,8 +681,8 @@ const NovoPedido = () => {
   };
 
   const getModelosPorCapacidade = (capacidade) => {
-    console.log('🔍 [getModelosPorCapacidade] Buscando modelos para capacidade:', capacidade);
-    console.log('🔍 [getModelosPorCapacidade] Total de guindastes:', guindastes?.length || 0);
+    console.log(' [getModelosPorCapacidade] Buscando modelos para capacidade:', capacidade);
+    console.log(' [getModelosPorCapacidade] Total de guindastes:', guindastes?.length || 0);
     
     const modelos = new Map();
     
@@ -692,7 +692,7 @@ const NovoPedido = () => {
       
       const match = modeloBase.match(/(\d+\.?\d*)/);
       if (match && match[1] === capacidade) {
-        console.log('🔍 [getModelosPorCapacidade] Encontrado modelo:', modeloBase, 'para guindaste:', guindaste.id);
+        console.log(' [getModelosPorCapacidade] Encontrado modelo:', modeloBase, 'para guindaste:', guindaste.id);
         // Agrupar por modelo base (GSI 6.5, GSE 8.0C, etc.) - coluna "Modelo" da tabela
         if (!modelos.has(modeloBase)) {
           modelos.set(modeloBase, guindaste);
@@ -701,7 +701,7 @@ const NovoPedido = () => {
     });
     
     const resultado = Array.from(modelos.values());
-    console.log('🔍 [getModelosPorCapacidade] Modelos encontrados:', resultado.length);
+    console.log(' [getModelosPorCapacidade] Modelos encontrados:', resultado.length);
     return resultado;
   };
 
@@ -720,7 +720,7 @@ const NovoPedido = () => {
   const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
   const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
   
-  console.log('🔍 [NovoPedido] Estado atual:', {
+  console.log(' [NovoPedido] Estado atual:', {
     selectedCapacidade,
     selectedModelo,
     totalGuindastes: guindastes?.length || 0,
@@ -728,7 +728,31 @@ const NovoPedido = () => {
     guindastesDisponiveis: guindastesDisponiveis?.length || 0
   });
 
-  // ⚡ OTIMIZADO: Função para selecionar guindaste com cache
+  const getPrecoParaConfigurador = useCallback(async (guindasteId) => {
+    try {
+      if (isModoConcessionaria) {
+        const regiaoParaUsar = regiaoClienteSelecionada || concessionariaInfo?.regiao_preco || '';
+        if (!regiaoParaUsar) return 0;
+        const regiao = normalizarRegiao(regiaoParaUsar, true);
+        return await db.getPrecoCompraPorRegiao(guindasteId, regiao);
+      }
+      const isExteriorSel = user?.tipo === 'vendedor_exterior' ||
+        normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
+      if (isExteriorSel) {
+        return await db.getPrecoPorRegiao(guindasteId, 'comercio-exterior');
+      }
+      const regiao = normalizarRegiao(regiaoClienteSelecionada || user?.regiao || '');
+      return await db.getPrecoPorRegiao(guindasteId, regiao);
+    } catch {
+      return 0;
+    }
+  }, [user, regiaoClienteSelecionada, isModoConcessionaria, concessionariaInfo]);
+
+  const getImagemParaConfigurador = useCallback((guindasteId) => {
+    return db.getGuindasteImagem(guindasteId);
+  }, []);
+
+  //  OTIMIZADO: Função para selecionar guindaste com cache
   const handleSelecionarGuindaste = async (guindaste) => {
     logger.log('Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
     
@@ -768,7 +792,7 @@ const NovoPedido = () => {
         if (isExteriorSel) {
           regiaoInicial = 'comercio-exterior';
         } else {
-          regiaoInicial = user?.regiao === 'rio grande do sul' ? 'rs-com-ie' : 'sul-sudeste';
+          regiaoInicial = normalizarRegiao(regiaoClienteSelecionada || user?.regiao || '');
         }
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
         logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
@@ -893,7 +917,7 @@ const NovoPedido = () => {
       // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
       const removedItem = prev[index];
       if (removedItem && removedItem.tipo === 'guindaste') {
-        console.log('🔄 Equipamento removido do carrinho:', removedItem.id);
+        console.log(' Equipamento removido do carrinho:', removedItem.id);
       }
 
       return newCart;
@@ -903,7 +927,7 @@ const NovoPedido = () => {
   const limparCarrinho = () => {
     setCarrinho([]);
     localStorage.removeItem('carrinho');
-    console.log('🔄 Carrinho limpo completamente');
+    console.log(' Carrinho limpo completamente');
   };
 
 
@@ -933,7 +957,7 @@ const NovoPedido = () => {
     setCarrinhoAcumulativo(novoCarrinhoAcumulativo);
     localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinhoAcumulativo));
     
-    console.log('📦 [NovoPedido] Pedido adicionado ao carrinho acumulativo:', novoPedido);
+    console.log(' [NovoPedido] Pedido adicionado ao carrinho acumulativo:', novoPedido);
     return novoPedido;
   };
 
@@ -955,20 +979,20 @@ const NovoPedido = () => {
     setMaxStepReached(1);
     localStorage.removeItem('carrinho');
     localStorage.removeItem('novoPedido_pagamentoData');
-    console.log('🧹 [NovoPedido] Pedido atual limpo para novo pedido');
+    console.log(' [NovoPedido] Pedido atual limpo para novo pedido');
   };
 
   const limparCarrinhoAcumulativo = () => {
     setCarrinhoAcumulativo([]);
     localStorage.removeItem('carrinhoAcumulativo');
-    console.log('🧹 [NovoPedido] Carrinho acumulativo limpo');
+    console.log(' [NovoPedido] Carrinho acumulativo limpo');
   };
 
   const removerDoCarrinhoAcumulativo = (pedidoId) => {
     const novoCarrinho = carrinhoAcumulativo.filter(p => p.id !== pedidoId);
     setCarrinhoAcumulativo(novoCarrinho);
     localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinho));
-    console.log('🗑️ [NovoPedido] Pedido removido do carrinho acumulativo:', pedidoId);
+    console.log(' [NovoPedido] Pedido removido do carrinho acumulativo:', pedidoId);
   };
 
   const getTotalCarrinhoAcumulativo = () => {
@@ -992,43 +1016,29 @@ const NovoPedido = () => {
           <div className="step-content">
             <>
               {isModoConcessionaria ? (
-                <div className="step-header">
-                  <h2>📍 Região de Compra</h2>
-                  <p style={{ color: '#6b7280', fontSize: '0.9rem' }}>
-                    Região definida no cadastro: <strong>{regiaoClienteSelecionada || '...'}</strong>
-                  </p>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
+                  <span>Região de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
                 </div>
               ) : (
-                <>
-                  <div className="step-header">
-                    <h2>📍 Região do Cliente</h2>
-                    <p>Selecione a região para definir a tabela de preços</p>
-                  </div>
-                  <SeletorRegiaoCliente
-                    regiaoSelecionada={regiaoClienteSelecionada}
-                    onRegiaoChange={setRegiaoClienteSelecionada}
-                    regioesDisponiveis={user?.regioes_operacao || []}
-                    title="Região do Cliente"
-                    subtitle="Selecione a região onde o cliente está localizado"
-                    questionLabel="Qual região o cliente está?"
-                  />
-                </>
+                <SeletorRegiaoCliente
+                  regiaoSelecionada={regiaoClienteSelecionada}
+                  onRegiaoChange={setRegiaoClienteSelecionada}
+                  regioesDisponiveis={user?.regioes_operacao || []}
+                  questionLabel="Região do cliente"
+                />
               )}
             </>
 
-            <div className="step-header" style={{ marginTop: '40px' }}>
-              <h2>🏗️ Selecionar Guindaste</h2>
-              <p>Escolha o guindaste ideal</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '12px 0 10px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#000000' }}> Selecionar Guindaste</span>
             </div>
 
-            <GuindasteSelector
+            <GuindasteConfigurador
               guindastes={guindastes}
               onGuindasteSelect={handleSelecionarGuindaste}
               isLoading={isLoading}
-              selectedCapacidade={selectedCapacidade}
-              selectedModelo={selectedModelo}
-              onCapacidadeSelect={handleSelecionarCapacidade}
-              onModeloSelect={handleSelecionarModelo}
+              getPreco={getPrecoParaConfigurador}
+              getImagem={getImagemParaConfigurador}
             />
 
             {/* Mostrar carrinho e botão de continuar para modo concessionária */}
@@ -1050,7 +1060,7 @@ const NovoPedido = () => {
                     <div style={{ fontWeight: 800, color: '#1f2937' }}>
                       Carrinho: {carrinho.reduce((sum, i) => sum + (parseInt(i.quantidade, 10) || 1), 0)} item(ns)
                     </div>
-                    <div style={{ fontSize: '0.95rem', color: '#374151' }}>
+                    <div style={{ fontSize: '0.95rem', color: '#000000' }}>
                       {carrinho
                         .filter(i => i.tipo === 'guindaste')
                         .map(i => `${i.nome}${i.modelo ? ` (${i.modelo})` : ''}`)
@@ -1157,8 +1167,8 @@ const NovoPedido = () => {
                   </button>
                   
                   <div className="step-header">
-                    <h2>👤 Dados do Cliente</h2>
-                    <p>Preencha as informações do cliente para finalizar o orçamento</p>
+                    <h2>Dados do Cliente</h2>
+                    <p>Preencha as informações do cliente para seguir</p>
                   </div>
                 </div>
                 
@@ -1225,7 +1235,7 @@ const NovoPedido = () => {
                 onPrev={handlePrevious}
                 errors={validationErrors}
                 onPropostaRapida={() => {
-                  console.log('⚡ Proposta Rápida - avançando sem validação');
+                  console.log(' Proposta Rápida - avançando sem validação');
                   const totalSteps = steps.length;
                   if (currentStep < totalSteps) {
                     setCurrentStep(currentStep + 1);
@@ -1677,22 +1687,22 @@ const extrairConfiguracoes = (subgrupo) => {
   
   // Extrair configurações do título (mais específico para evitar falsos positivos)
   if (subgrupo.includes(' CR') || subgrupo.includes('CR ') || subgrupo.includes('CR/')) {
-    configuracoes.push({ icon: '🕹️', text: 'CR - Controle Remoto' });
+    configuracoes.push({  text: 'CR - Controle Remoto' });
   }
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
-    configuracoes.push({ icon: '⚙️', text: 'EH - Extensiva Hidráulica' });
+    configuracoes.push({ text: 'EH - Extensiva Hidráulica' });
   }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
-    configuracoes.push({ icon: '⊓', text: 'ECS - Extensiva Cilindro Superior' });
+    configuracoes.push({ text: 'ECS - Extensiva Cilindro Superior' });
   }
   if (subgrupo.includes(' P') || subgrupo.includes('P ') || subgrupo.includes('/P')) {
-    configuracoes.push({ icon: '🔨', text: 'P - Preparação p/ Perfuratriz' });
+    configuracoes.push({ text: 'P - Preparação p/ Perfuratriz' });
   }
   if (subgrupo.includes(' GR') || subgrupo.includes('GR ') || subgrupo.includes('/GR')) {
-    configuracoes.push({ icon: '🦾', text: 'GR - Preparação p/ Garra e Rotator' });
+    configuracoes.push({ text: 'GR - Preparação p/ Garra e Rotator' });
   }
   if (subgrupo.includes('Caminhão 3/4')) {
-    configuracoes.push({ icon: '🚛', text: 'Caminhão 3/4' });
+    configuracoes.push({ text: 'Caminhão 3/4' });
   }
   
   return configuracoes;
@@ -1934,10 +1944,20 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
       if (!modoInternacional) {
         if (field === 'uf') {
           next.cidade = '';
-          if (!manualEndereco && next.cep) next.cep = '';
+          if (!manualEndereco) {
+            next.cep = '';
+            next.logradouro = '';
+            next.numero = '';
+            next.bairro = '';
+          }
         }
         if (field === 'cidade') {
-          if (!manualEndereco && next.cep) next.cep = '';
+          if (!manualEndereco && next.cep) {
+            next.cep = '';
+            next.logradouro = '';
+            next.numero = '';
+            next.bairro = '';
+          }
         }
       }
       // Se o campo alterado é parte do endereço detalhado, atualizar 'endereco' composto
@@ -2011,277 +2031,303 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
   return (
     <div className="client-form">
       {/* Informações Pessoais */}
-      <div className="form-section">
-        <div className="section-header">
-          <h3>📋 Informações Pessoais</h3>
+     <div className="client-form-container">
+  <div className="client-form">
+
+    {/* Informações pessoais */}
+    <div className="form-section">
+      <div className="section-header">
+        <div>
+          <h3>Informações pessoais</h3>
           <p>Dados básicos do cliente</p>
         </div>
-        
-        <div className="form-grid">
-          <div className="form-group">
-            <label>
-              <span className="label-icon">👤</span>
-              Nome Completo *
-            </label>
+      </div>
+
+      <div className="form-grid">
+        <div className="form-group">
+          <label>Nome completo *</label>
+          <input
+            type="text"
+            value={formData.nome || ''}
+            onChange={(e) => handleChange('nome', e.target.value)}
+            placeholder="Digite o nome completo"
+            className={errors.nome ? 'error' : ''}
+          />
+          {errors.nome && <span className="error-message">{errors.nome}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>Telefone *</label>
+          <input
+            type="tel"
+            value={formData.telefone || ''}
+            onChange={(e) => handleChange('telefone', e.target.value)}
+            placeholder="(00) 00000-0000"
+            className={errors.telefone ? 'error' : ''}
+          />
+          {errors.telefone && <span className="error-message">{errors.telefone}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>Email</label>
+
+          <div className="checkbox-row">
             <input
-              type="text"
-              value={formData.nome || ''}
-              onChange={(e) => handleChange('nome', e.target.value)}
-              placeholder="Digite o nome completo"
-              className={errors.nome ? 'error' : ''}
+              type="checkbox"
+              id="semEmail"
+              checked={semEmail}
+              onChange={(e) => {
+                setSemEmail(e.target.checked);
+                if (e.target.checked) {
+                  handleChange('email', 'naopossui@gmail.com');
+                } else {
+                  handleChange('email', '');
+                }
+              }}
             />
-            {errors.nome && <span className="error-message">{errors.nome}</span>}
+            <label htmlFor="semEmail">Não possui e-mail</label>
           </div>
-          
+
+          <input
+            type="email"
+            value={formData.email || ''}
+            onChange={(e) => handleChange('email', e.target.value)}
+            placeholder={semEmail ? 'naopossui@gmail.com' : 'email@exemplo.com'}
+            className={errors.email ? 'error' : ''}
+            disabled={semEmail}
+          />
+
+          {errors.email && <span className="error-message">{errors.email}</span>}
+        </div>
+
+        <div className="form-group">
+          <label>{modoInternacional ? 'Documento / ID' : 'CNPJ ou CPF *'}</label>
+          <input
+            type="text"
+            value={formData.documento || ''}
+            onChange={(e) => handleChange('documento', e.target.value)}
+            placeholder={modoInternacional ? 'Número de identificação fiscal' : '000.000.000-00'}
+            className={errors.documento ? 'error' : ''}
+          />
+          {errors.documento && <span className="error-message">{errors.documento}</span>}
+        </div>
+
+        {!modoInternacional && (
           <div className="form-group">
-            <label>
-              <span className="label-icon">📞</span>
-              Telefone *
-            </label>
-            <input
-              type="tel"
-              value={formData.telefone || ''}
-              onChange={(e) => handleChange('telefone', e.target.value)}
-              placeholder="(00) 00000-0000"
-              className={errors.telefone ? 'error' : ''}
-            />
-            {errors.telefone && <span className="error-message">{errors.telefone}</span>}
-          </div>
-          
-          <div className="form-group">
-            <label>
-              <span className="label-icon">📧</span>
-              Email
-            </label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+            <label>Inscrição Estadual {!isentoIE && '*'}</label>
+
+            <div className="checkbox-row">
               <input
                 type="checkbox"
-                id="semEmail"
-                checked={semEmail}
+                id="isentoIE"
+                checked={isentoIE}
                 onChange={(e) => {
-                  setSemEmail(e.target.checked);
+                  setIsentoIE(e.target.checked);
                   if (e.target.checked) {
-                    handleChange('email', 'naopossui@gmail.com');
+                    handleChange('inscricao_estadual', 'ISENTO');
                   } else {
-                    handleChange('email', '');
+                    handleChange('inscricao_estadual', '');
                   }
                 }}
-                style={{ width: 'auto', margin: '0' }}
               />
-              <label htmlFor="semEmail" style={{ margin: '0', fontWeight: 'normal' }}>
-                Não possui e-mail
-              </label>
+              <label htmlFor="isentoIE">Isento de Inscrição Estadual</label>
             </div>
-            <input
-              type="email"
-              value={formData.email || ''}
-              onChange={(e) => handleChange('email', e.target.value)}
-              placeholder={semEmail ? "naopossui@gmail.com" : "email@exemplo.com"}
-              className={errors.email ? 'error' : ''}
-              disabled={semEmail}
-              style={semEmail ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
-            />
-            {errors.email && <span className="error-message">{errors.email}</span>}
-          </div>
-          
-          <div className="form-group">
-            <label>
-              <span className="label-icon">🆔</span>
-              {modoInternacional ? 'Documento / ID' : 'CNPJ ou CPF *'}
-            </label>
+
             <input
               type="text"
-              value={formData.documento || ''}
-              onChange={(e) => handleChange('documento', e.target.value)}
-              placeholder={modoInternacional ? 'Número de identificação fiscal' : '000.000.000-00'}
-              className={errors.documento ? 'error' : ''}
+              value={formData.inscricao_estadual || ''}
+              onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
+              placeholder={isentoIE ? 'ISENTO' : '00000000000000'}
+              className={errors.inscricao_estadual ? 'error' : ''}
+              disabled={isentoIE}
             />
-            {errors.documento && <span className="error-message">{errors.documento}</span>}
-          </div>
 
-          {!modoInternacional && (
+            {errors.inscricao_estadual && (
+              <span className="error-message">{errors.inscricao_estadual}</span>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+
+    {/* Endereço */}
+    <div className="form-section">
+      <div className="section-header">
+        <div>
+          <h3>Endereço</h3>
+          <p>Localização do cliente</p>
+        </div>
+
+        {isExteriorUser && (
+          <button
+            type="button"
+            onClick={toggleModo}
+            className={`btn-mode-toggle ${modoInternacional ? 'active' : ''}`}
+          >
+            {modoInternacional ? 'Internacional ativo' : 'Endereço internacional'}
+          </button>
+        )}
+      </div>
+
+      {modoInternacional ? (
+        <div className="form-group full-width">
+          <label>Endereço completo *</label>
+          <textarea
+            value={formData.endereco || ''}
+            onChange={(e) => handleChange('endereco', e.target.value)}
+            placeholder="Digite o endereço completo: rua, número, cidade, estado, país e código postal"
+            rows={4}
+            className={errors.endereco ? 'error' : ''}
+          />
+          {errors.endereco && <span className="error-message">{errors.endereco}</span>}
+        </div>
+      ) : (
+        <div className="form-group full-width">
+          <label>Endereço *</label>
+
+          <div className="form-grid">
             <div className="form-group">
-              <label>
-                <span className="label-icon">🏢</span>
-                Inscrição Estadual {!isentoIE && '*'}
-              </label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-                <input
-                  type="checkbox"
-                  id="isentoIE"
-                  checked={isentoIE}
-                  onChange={(e) => {
-                    setIsentoIE(e.target.checked);
-                    if (e.target.checked) {
-                      handleChange('inscricao_estadual', 'ISENTO');
-                    } else {
-                      handleChange('inscricao_estadual', '');
-                    }
-                  }}
-                  style={{ width: 'auto', margin: '0' }}
-                />
-                <label htmlFor="isentoIE" style={{ margin: '0', fontWeight: 'normal' }}>
-                  Isento de Inscrição Estadual
-                </label>
-              </div>
+              <label>CEP</label>
               <input
                 type="text"
-                value={formData.inscricao_estadual || ''}
-                onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
-                placeholder={isentoIE ? 'ISENTO' : '00000000000000'}
-                className={errors.inscricao_estadual ? 'error' : ''}
-                disabled={isentoIE}
-                style={isentoIE ? { backgroundColor: '#f0f0f0', cursor: 'not-allowed' } : {}}
+                value={formData.cep || ''}
+                onChange={(e) => handleChange('cep', e.target.value)}
+                placeholder="00000-000"
               />
-              {errors.inscricao_estadual && <span className="error-message">{errors.inscricao_estadual}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-      
-      {/* Endereço */}
-      <div className="form-section">
-        <div className="section-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-          <div>
-            <h3>📍 Endereço</h3>
-            <p>Localização do cliente</p>
-          </div>
-          {isExteriorUser && (
-            <button
-              type="button"
-              onClick={toggleModo}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                border: modoInternacional ? '1.5px solid #1d4ed8' : '1.5px solid #cbd5e1',
-                background: modoInternacional ? '#eff6ff' : '#f8fafc',
-                color: modoInternacional ? '#1d4ed8' : '#475569',
-                fontSize: '12px',
-                fontWeight: 700,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {modoInternacional ? '🌍 Internacional (ativo)' : '🌍 Endereço Internacional'}
-            </button>
-          )}
-        </div>
 
-        {modoInternacional ? (
-          /* ── MODO INTERNACIONAL ── */
-          <div className="form-group full-width">
-            <label>Endereço</label>
-            <textarea
-              value={formData.endereco || ''}
-              onChange={(e) => handleChange('endereco', e.target.value)}
-              placeholder="Digite o endereço completo (rua, número, cidade, estado, país, código postal...)"
-              rows={4}
-              style={{ width: '100%', resize: 'vertical' }}
-              className={errors.endereco ? 'error' : ''}
-            />
-            {errors.endereco && <span className="error-message">{errors.endereco}</span>}
-          </div>
-        ) : (
-          /* ── MODO BRASIL ── */
-          <div className="form-group full-width">
-            <label>Endereço *</label>
-            <div className="form-grid">
-              <div className="form-group">
-                <label>CEP</label>
-                <input
-                  type="text"
-                  value={formData.cep || ''}
-                  onChange={(e) => handleChange('cep', e.target.value)}
-                  placeholder="00000-000"
-                />
-                {onlyDigits(formData.cep || '').length === 8 && !manualEndereco && (
-                  <button type="button" className="btn-link" onClick={() => setManualEndereco(true)} style={{ marginTop: '6px' }}>
-                    Editar manualmente UF/Cidade
-                  </button>
-                )}
-                {onlyDigits(formData.cep || '').length === 8 && manualEndereco && (
-                  <button type="button" className="btn-link" onClick={() => setManualEndereco(false)} style={{ marginTop: '6px' }}>
-                    Voltar ao modo CEP
-                  </button>
-                )}
-              </div>
-              <div className="form-group">
-                <label>UF</label>
-                <select
-                  value={formData.uf || ''}
-                  onChange={(e) => handleChange('uf', e.target.value)}
-                  disabled={onlyDigits(formData.cep || '').length === 8 && !manualEndereco}
+              {onlyDigits(formData.cep || '').length === 8 && !manualEndereco && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setManualEndereco(true)}
                 >
-                  <option value="">Selecione UF</option>
-                  {['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'].map(uf => (
-                    <option key={uf} value={uf}>{uf}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Cidade</label>
-                <select
-                  value={formData.cidade || ''}
-                  onChange={(e) => handleChange('cidade', e.target.value)}
-                  disabled={!formData.uf || loadingCidades || (onlyDigits(formData.cep || '').length === 8 && !manualEndereco)}
+                  Editar manualmente UF/Cidade
+                </button>
+              )}
+
+              {onlyDigits(formData.cep || '').length === 8 && manualEndereco && (
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={() => setManualEndereco(false)}
                 >
-                  <option value="">{loadingCidades ? 'Carregando...' : (formData.uf ? 'Selecione a cidade' : 'Selecione UF primeiro')}</option>
-                  {cidadesUF.map((nome) => (
-                    <option key={nome} value={nome}>{nome}</option>
-                  ))}
-                </select>
-              </div>
-              {formData.uf && formData.cidade && (
-                <>
-                  <div className="form-group">
-                    <label>Rua/Avenida</label>
-                    <input type="text" value={formData.logradouro || ''} onChange={(e) => handleChange('logradouro', e.target.value)} placeholder="Logradouro" />
-                  </div>
-                  <div className="form-group">
-                    <label>Número</label>
-                    <input type="text" value={formData.numero || ''} onChange={(e) => handleChange('numero', e.target.value)} placeholder="Número" />
-                  </div>
-                  <div className="form-group">
-                    <label>Bairro</label>
-                    <input type="text" value={formData.bairro || ''} onChange={(e) => handleChange('bairro', e.target.value)} placeholder="Bairro" />
-                  </div>
-                </>
+                  Voltar ao modo CEP
+                </button>
               )}
             </div>
+
+            <div className="form-group">
+              <label>UF</label>
+              <select
+                value={formData.uf || ''}
+                onChange={(e) => handleChange('uf', e.target.value)}
+                disabled={onlyDigits(formData.cep || '').length === 8 && !manualEndereco}
+              >
+                <option value="">Selecione UF</option>
+                {[
+                  'AC', 'AL', 'AM', 'AP', 'BA', 'CE', 'DF', 'ES', 'GO',
+                  'MA', 'MG', 'MS', 'MT', 'PA', 'PB', 'PE', 'PI', 'PR',
+                  'RJ', 'RN', 'RO', 'RR', 'RS', 'SC', 'SE', 'SP', 'TO'
+                ].map((uf) => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Cidade</label>
+              <select
+                value={formData.cidade || ''}
+                onChange={(e) => handleChange('cidade', e.target.value)}
+                disabled={
+                  !formData.uf ||
+                  loadingCidades ||
+                  (onlyDigits(formData.cep || '').length === 8 && !manualEndereco)
+                }
+              >
+                <option value="">
+                  {loadingCidades
+                    ? 'Carregando...'
+                    : formData.uf
+                      ? 'Selecione a cidade'
+                      : 'Selecione UF primeiro'}
+                </option>
+
+                {cidadesUF.map((nome) => (
+                  <option key={nome} value={nome}>{nome}</option>
+                ))}
+              </select>
+            </div>
+
+            {formData.uf && formData.cidade && (
+              <>
+                <div className="form-group">
+                  <label>Rua/Avenida</label>
+                  <input
+                    type="text"
+                    value={formData.logradouro || ''}
+                    onChange={(e) => handleChange('logradouro', e.target.value)}
+                    placeholder="Logradouro"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Número</label>
+                  <input
+                    type="text"
+                    value={formData.numero || ''}
+                    onChange={(e) => handleChange('numero', e.target.value)}
+                    placeholder="Número"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Bairro</label>
+                  <input
+                    type="text"
+                    value={formData.bairro || ''}
+                    onChange={(e) => handleChange('bairro', e.target.value)}
+                    placeholder="Bairro"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="form-group generated-address">
+            <label>Endereço completo</label>
             <input
               type="text"
               value={formData.endereco || ''}
               readOnly
-              placeholder="Endereço completo (gerado automaticamente)"
+              placeholder="Endereço completo gerado automaticamente"
               className={errors.endereco ? 'error' : ''}
-              style={{ marginTop: '8px' }}
             />
-            {errors.endereco && <span className="error-message">{errors.endereco}</span>}
           </div>
-        )}
-        
-        <div className="form-group">
-          <label>
-            <span className="label-icon">📝</span>
-            Observações
-          </label>
-          <textarea
-            value={formData.observacoes || ''}
-            onChange={(e) => handleChange('observacoes', e.target.value)}
-            placeholder="Informações adicionais..."
-            rows="3"
-          />
+
+          {errors.endereco && <span className="error-message">{errors.endereco}</span>}
         </div>
+      )}
+
+      <div className="form-group observacoes-group">
+        <label>Observações</label>
+        <textarea
+          value={formData.observacoes || ''}
+          onChange={(e) => handleChange('observacoes', e.target.value)}
+          placeholder="Informações adicionais sobre o cliente"
+          rows="3"
+        />
+      </div>
+    </div>
+      </div>
+
       </div>
     </div>
   );
 };
 
 // Componente Form do Caminhão
-const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
+const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
@@ -2298,6 +2344,27 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
     return '390mm';
   };
   
+  const temGSI = React.useMemo(() =>
+    carrinho.some(item => item.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSI')),
+    [carrinho]
+  );
+  const temGSE = React.useMemo(() =>
+    carrinho.some(item => item.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSE')),
+    [carrinho]
+  );
+  const noDetection = !temGSI && !temGSE;
+  const showMedidaA = noDetection || temGSI;
+  const showMedidaB = noDetection || temGSI;
+  const showMedidaD = (noDetection || temGSE) && formData.tipo === 'Bitruck';
+  const showComprimento = noDetection || temGSE;
+  const instrucaoMedidas = noDetection
+    ? 'Preencha conforme a imagem. Caminhão 1 = GSI Interno · Caminhão 2 = GSE Externo.'
+    : temGSI && !temGSE
+      ? 'Para instalação GSI, preencha as medidas A, B e C.'
+      : !temGSI && temGSE
+        ? 'Para instalação GSE, preencha a medida C (define patolamento), o comprimento do chassi e, se Bitruck, a medida D.'
+        : 'Preencha conforme a imagem. Caminhão 1 = GSI Interno · Caminhão 2 = GSE Externo.';
+
   const years = (() => {
     const current = new Date().getFullYear();
     const start = 1960;
@@ -2307,20 +2374,16 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
   })();
 
   return (
-    <div className="vehicle-form">
+    <div className="client-form-container">
       {/* Informações do Veículo */}
       <div className="form-section">
         <div className="section-header">
-          <h3>🚛 Informações do Veículo</h3>
-          <p>Dados técnicos do caminhão para instalação</p>
+          <h3>Informações do Veículo</h3>
         </div>
         
         <div className="form-grid">
           <div className="form-group">
-            <label>
-              <span className="label-icon">🚚</span>
-              Tipo *
-            </label>
+            <label>Tipo *</label>
             <select
               value={formData.tipo || ''}
               onChange={(e) => handleChange('tipo', e.target.value)}
@@ -2339,10 +2402,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
           
           <div className="form-group">
-            <label>
-              <span className="label-icon">🏭</span>
-              Marca *
-            </label>
+            <label>Marca *</label>
             <select
               value={formData.marca || ''}
               onChange={(e) => handleChange('marca', e.target.value)}
@@ -2364,10 +2424,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
         
           <div className="form-group">
-            <label>
-              <span className="label-icon">🚗</span>
-              Modelo *
-            </label>
+            <label>Modelo *</label>
             <input
               type="text"
               value={formData.modelo || ''}
@@ -2379,10 +2436,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
           
           <div className="form-group">
-            <label>
-              <span className="label-icon">📅</span>
-              Ano
-            </label>
+            <label>Ano</label>
             <select
               value={formData.ano || ''}
               onChange={(e) => handleChange('ano', e.target.value)}
@@ -2396,10 +2450,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
           
           <div className="form-group">
-            <label>
-              <span className="label-icon">⚡</span>
-              Voltagem *
-            </label>
+            <label>Voltagem *</label>
             <select
               value={formData.voltagem || ''}
               onChange={(e) => handleChange('voltagem', e.target.value)}
@@ -2413,15 +2464,12 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
           </div>
           
           <div className="form-group full-width">
-            <label>
-              <span className="label-icon">📝</span>
-              Observações
-            </label>
+            <label>Observações</label>
             <textarea
               value={formData.observacoes || ''}
               onChange={(e) => handleChange('observacoes', e.target.value)}
               placeholder="Informações adicionais sobre o caminhão..."
-              rows="3"
+              rows="2"
             />
           </div>
         </div>
@@ -2430,8 +2478,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
       {/* Seção de Medidas */}
       <div className="form-section">
         <div className="section-header">
-          <h3> Estudo Veicular - Medidas</h3>
-          <p>Medidas técnicas para instalação do guindaste</p>
+          <h3>Medidas para Instalação</h3>
         </div>
           
           <div className="estudo-veicular-container">
@@ -2453,33 +2500,35 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
 
             {/* Campos de Medidas */}
             <div className="estudo-veicular-form">
-              <p className="estudo-veicular-instructions">
-                Preencha as medidas conforme indicado na imagem, Caminhão 1 Guindaste GSI Interno, caminhão 2 GUindaste GSE Externo:
-              </p>
+              <p className="estudo-veicular-instructions">{instrucaoMedidas}</p>
               
-              <div className="estudo-veicular-grid">
+              <div className="form-grid">
+                {showMedidaA && (
                 <div className="form-group">
-                  <label>Medida A "CHASSI AO ASSOALHO" (cm)</label>
+                  <label>Medida A — Chassi ao Assoalho (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaA || ''}
                     onChange={(e) => handleChange('medidaA', e.target.value)}
-                    placeholder="Ex: 63cm"
+                    placeholder="Ex: 63"
                   />
                 </div>
+                )}
                 
+                {showMedidaB && (
                 <div className="form-group">
-                  <label>Medida B "CHASSI" (cm)</label>
+                  <label>Medida B — Chassi (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaB || ''}
                     onChange={(e) => handleChange('medidaB', e.target.value)}
-                    placeholder="Ex: 70cm"
+                    placeholder="Ex: 70"
                   />
                 </div>
+                )}
                 
                 <div className="form-group">
-                  <label>Medida C "SOLO AO CHASSI" (cm)</label>
+                  <label>Medida C — Solo ao Chassi (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
@@ -2494,69 +2543,41 @@ const CaminhaoForm = ({ formData, setFormData, errors = {} }) => {
                   />
                 </div>
                 
+                {showMedidaD && (
                 <div className="form-group">
-                  <label>Medida D QUANDO GSE "DIST ENTRE EIXOS" (cm)</label>
+                  <label>Medida D — Dist. entre Eixos, GSE (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
                     onChange={(e) => handleChange('medidaD', e.target.value)}
-                    placeholder="Ex: 30cm"
+                    placeholder="Ex: 30"
                   />
                 </div>
+                )}
 
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label>📏 Comprimento do Chassi (metros)</label>
+                {showComprimento && (
+                <div className="form-group full-width">
+                  <label>Comprimento do Chassi (metros)</label>
                   <input
                     type="text"
                     value={formData.comprimentoChassi || ''}
                     onChange={(e) => handleChange('comprimentoChassi', e.target.value)}
-                    placeholder="Ex: 10 metros"
+                    placeholder="Ex: 10"
                   />
                 </div>
+                )}
               </div>
               
-              {/* Patolamento Calculado Automaticamente */}
+              {/* Patolamento */}
               {formData.patolamento && (
-                <div style={{ 
-                  marginTop: '20px', 
-                  padding: '15px', 
-                  background: 'linear-gradient(135deg, #c9ccddff 0%, #caa72aff 100%)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                }}>
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '10px',
-                    color: 'white'
-                  }}>
-                    <span style={{ fontSize: '24px' }}>🔧</span>
-                    <div>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: '600',
-                        marginBottom: '4px'
-                      }}>
-                        Patolamento Calculado Automaticamente:
-                      </div>
-                      <div style={{ 
-                        fontSize: '24px', 
-                        fontWeight: 'bold',
-                        letterSpacing: '1px'
-                      }}>
-                        {formData.patolamento}
-                      </div>
-                      <div style={{ 
-                        fontSize: '12px', 
-                        opacity: '0.9',
-                        marginTop: '4px'
-                      }}>
-                        {parseFloat(formData.medidaC) >= 70 && 'Medida C ≥ 70cm'}
-                        {parseFloat(formData.medidaC) >= 60 && parseFloat(formData.medidaC) < 70 && 'Medida C entre 60-69cm'}
-                        {parseFloat(formData.medidaC) < 60 && 'Medida C < 60cm'}
-                      </div>
-                    </div>
-                  </div>
+                <div className="patolamento-result">
+                  <span className="patolamento-label">Patolamento calculado:</span>
+                  <span className="patolamento-value">{formData.patolamento}</span>
+                  <span className="patolamento-note">
+                    {parseFloat(formData.medidaC) >= 70 && 'Medida C ≥ 70cm'}
+                    {parseFloat(formData.medidaC) >= 60 && parseFloat(formData.medidaC) < 70 && 'Medida C entre 60–69cm'}
+                    {parseFloat(formData.medidaC) < 60 && 'Medida C < 60cm'}
+                  </span>
                 </div>
               )}
             </div>
@@ -2729,6 +2750,26 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           .replace(/\D/g, '')
           .slice(0, 10)) || null;
 
+        const canalVendaConcessionaria = (() => {
+          if (user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria') {
+            const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
+            const paisesInternacionais = ['PY','AR','UY','BO','CL','PE','CO','VE','EC','GY','SR'];
+            return paisesInternacionais.includes(ufConc)
+              ? 'Concessionária Internacional'
+              : 'Concessionária Nacional';
+          }
+          return 'Concessionária Nacional';
+        })();
+        const linhaCarrinhoConc = carrinhoFinal.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+          ? 'GSI'
+          : carrinhoFinal.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+          ? 'GSE'
+          : 'Outros';
+        const produtoPrincipalConc = (carrinhoFinal.find(i =>
+          i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
+          i.nome?.includes('GSI') || i.nome?.includes('GSE')
+        ) || carrinhoFinal[0])?.nome || null;
+
         const pedidoDataToSave = {
           numero_proposta: numeroPedido,
           data: new Date().toISOString(),
@@ -2740,6 +2781,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           tipo: 'proposta',
           status: 'finalizado',
           concessionaria_id: user?.concessionaria_id || null,
+          canal_venda: canalVendaConcessionaria,
+          segmento_cliente: clienteData?.segmento_cliente || null,
+          cliente_uf: (concessionariaInfo?.uf || clienteData?.uf || null),
+          cliente_cidade: (concessionariaInfo?.cidade || clienteData?.cidade || null),
+          produto_principal: produtoPrincipalConc,
+          linha_produto: linhaCarrinhoConc,
           dados_serializados: {
             carrinho: carrinhoFinal,
             pagamentoData,
@@ -2832,6 +2879,21 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         .replace(/\D/g, '')
         .slice(0, 10)) || null;
 
+      const canalVendaPropostal = (() => {
+        if (user?.tipo === 'vendedor_concessionaria') return 'Concessionária Nacional';
+        if (user?.tipo === 'admin_concessionaria') return 'Concessionária Nacional';
+        return 'Vendedor Interno';
+      })();
+      const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+        ? 'GSI'
+        : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+        ? 'GSE'
+        : 'Outros';
+      const produtoPrincipal = (carrinho.find(i =>
+        i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
+        i.nome?.includes('GSI') || i.nome?.includes('GSE')
+      ) || carrinho[0])?.nome || null;
+
       const pedidoDataToSave = {
         numero_proposta: numeroPedido,
         data: new Date().toISOString(),
@@ -2843,6 +2905,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         tipo: 'proposta',
         status: 'finalizado',
         concessionaria_id: user?.concessionaria_id || null,
+        canal_venda: canalVendaPropostal,
+        segmento_cliente: clienteData?.segmento_cliente || null,
+        cliente_uf: clienteData?.uf || null,
+        cliente_cidade: clienteData?.cidade || null,
+        produto_principal: produtoPrincipal,
+        linha_produto: linhaCarrinho,
         dados_serializados: {
           carrinho,
           clienteData: cliente,
@@ -2923,374 +2991,288 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
   return (
     <div className="resumo-container">
+      {/* Itens Selecionados */}
       <div className="resumo-section">
         <div className="section-header">
-          <h3>🛒 Itens Selecionados</h3>
-          <span className="item-count">{carrinhoFinal.length} {carrinhoFinal.length === 1 ? 'item' : 'itens'}</span>
+          <h3>Itens Selecionados</h3>
+          <span className="resumo-badge">{carrinhoFinal.length} {carrinhoFinal.length === 1 ? 'item' : 'itens'}</span>
         </div>
-        <div className="resumo-total">
-          <span>Total: {formatCurrency(carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
+        <div className="resumo-itens-list">
+          {carrinhoFinal.map((item, idx) => (
+            <div key={idx} className="resumo-item-row">
+              <span className="resumo-item-nome">{item.nome}</span>
+              <span className="resumo-item-preco">{formatCurrency((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1))}</span>
+            </div>
+          ))}
+          <div className="resumo-item-total">
+            <span>Total dos equipamentos</span>
+            <span>{formatCurrency(carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
+          </div>
         </div>
       </div>
 
+      {/* Dados do Cliente */}
       {!isConcessionariaCompra && (
         <div className="resumo-section">
-          <h3>Dados do Cliente</h3>
-          <div className="resumo-data">
-            <div className="data-row">
-              <span className="label">Nome:</span>
-              <span className="value">{clienteData.nome || 'Não informado'}</span>
+          <div className="section-header"><h3>Dados do Cliente</h3></div>
+          <div className="resumo-grid">
+            <div className="resumo-field">
+              <span className="resumo-label">Nome</span>
+              <span className="resumo-value">{clienteData.nome || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Telefone:</span>
-              <span className="value">{clienteData.telefone || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Telefone</span>
+              <span className="resumo-value">{clienteData.telefone || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Email:</span>
-              <span className="value">{clienteData.email || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Email</span>
+              <span className="resumo-value">{clienteData.email || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">CNPJ ou CPF:</span>
-              <span className="value">{clienteData.documento || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">CNPJ / CPF</span>
+              <span className="resumo-value">{clienteData.documento || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Inscrição Estadual:</span>
-              <span className="value">{clienteData.inscricao_estadual || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Inscrição Estadual</span>
+              <span className="resumo-value">{clienteData.inscricao_estadual || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Endereço:</span>
-              <span className="value">{clienteData.endereco || 'Não informado'}</span>
-            </div>
-            {clienteData.bairro && (
-              <div className="data-row">
-                <span className="label">Bairro:</span>
-                <span className="value">{clienteData.bairro}</span>
+            {(clienteData.cidade || clienteData.uf) && (
+              <div className="resumo-field">
+                <span className="resumo-label">Cidade / UF{clienteData.cep ? ' / CEP' : ''}</span>
+                <span className="resumo-value">{clienteData.cidade || '—'} / {clienteData.uf || '—'}{clienteData.cep ? ` — ${clienteData.cep}` : ''}</span>
               </div>
             )}
-            {(clienteData.cidade || clienteData.uf || clienteData.cep) && (
-              <div className="data-row">
-                <span className="label">Cidade/UF/CEP:</span>
-                <span className="value">{`${clienteData.cidade || '—'}/${clienteData.uf || '—'}${clienteData.cep ? ' - ' + clienteData.cep : ''}`}</span>
-              </div>
-            )}
+            <div className="resumo-field resumo-field-wide">
+              <span className="resumo-label">Endereço</span>
+              <span className="resumo-value">{clienteData.endereco || '—'}</span>
+            </div>
             {clienteData.observacoes && (
-              <div className="data-row">
-                <span className="label">Observações:</span>
-                <span className="value">{clienteData.observacoes}</span>
+              <div className="resumo-field resumo-field-wide">
+                <span className="resumo-label">Observações</span>
+                <span className="resumo-value">{clienteData.observacoes}</span>
               </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Estudo Veicular */}
       {!isConcessionariaCompra && (
         <div className="resumo-section">
-          <h3>Estudo Veicular</h3>
-          <div className="resumo-data">
-            <div className="data-row">
-              <span className="label">Tipo:</span>
-              <span className="value">{caminhaoData.tipo || 'Não informado'}</span>
+          <div className="section-header"><h3>Estudo Veicular</h3></div>
+          <div className="resumo-grid">
+            <div className="resumo-field">
+              <span className="resumo-label">Tipo</span>
+              <span className="resumo-value">{caminhaoData.tipo || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Marca:</span>
-              <span className="value">{caminhaoData.marca || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Marca</span>
+              <span className="resumo-value">{caminhaoData.marca || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Modelo:</span>
-              <span className="value">{caminhaoData.modelo || 'Não informado'}</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Modelo</span>
+              <span className="resumo-value">{caminhaoData.modelo || '—'}</span>
             </div>
-            <div className="data-row">
-              <span className="label">Voltagem:</span>
-              <span className="value">{caminhaoData.voltagem || 'Não informado'}</span>
-            </div>
-            {caminhaoData.observacoes && (
-              <div className="data-row">
-                <span className="label">Observações:</span>
-                <span className="value">{caminhaoData.observacoes}</span>
+            {caminhaoData.ano && (
+              <div className="resumo-field">
+                <span className="resumo-label">Ano</span>
+                <span className="resumo-value">{caminhaoData.ano}</span>
               </div>
             )}
-            
-            {/* Mostrar medidas do estudo veicular se alguma foi preenchida */}
-            {(caminhaoData.medidaA || caminhaoData.medidaB || caminhaoData.medidaC || caminhaoData.medidaD) && (
-              <>
-                <div className="data-row" style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px solid #dee2e6' }}>
-                  <span className="label" style={{ fontWeight: 'bold' }}>Medidas do Veículo:</span>
-                  <span className="value"></span>
-                </div>
-                {caminhaoData.medidaA && (
-                  <div className="data-row">
-                    <span className="label">Medida A:</span>
-                    <span className="value">{caminhaoData.medidaA} mm</span>
-                  </div>
-                )}
-                {caminhaoData.medidaB && (
-                  <div className="data-row">
-                    <span className="label">Medida B:</span>
-                    <span className="value">{caminhaoData.medidaB} mm</span>
-                  </div>
-                )}
-                {caminhaoData.medidaC && (
-                  <div className="data-row">
-                    <span className="label">Medida C:</span>
-                    <span className="value">{caminhaoData.medidaC} mm</span>
-                  </div>
-                )}
-                {caminhaoData.medidaD && (
-                  <div className="data-row">
-                    <span className="label">Medida D:</span>
-                    <span className="value">{caminhaoData.medidaD} mm</span>
-                  </div>
-                )}
-              </>
+            <div className="resumo-field">
+              <span className="resumo-label">Voltagem</span>
+              <span className="resumo-value">{caminhaoData.voltagem || '—'}</span>
+            </div>
+            {caminhaoData.medidaA && <div className="resumo-field"><span className="resumo-label">Medida A</span><span className="resumo-value">{caminhaoData.medidaA} cm</span></div>}
+            {caminhaoData.medidaB && <div className="resumo-field"><span className="resumo-label">Medida B</span><span className="resumo-value">{caminhaoData.medidaB} cm</span></div>}
+            {caminhaoData.medidaC && <div className="resumo-field"><span className="resumo-label">Medida C</span><span className="resumo-value">{caminhaoData.medidaC} cm</span></div>}
+            {caminhaoData.medidaD && <div className="resumo-field"><span className="resumo-label">Medida D</span><span className="resumo-value">{caminhaoData.medidaD} cm</span></div>}
+            {caminhaoData.patolamento && (
+              <div className="resumo-field">
+                <span className="resumo-label">Patolamento</span>
+                <span className="resumo-value resumo-value-bold">{caminhaoData.patolamento}</span>
+              </div>
+            )}
+            {caminhaoData.comprimentoChassi && (
+              <div className="resumo-field">
+                <span className="resumo-label">Comprimento do Chassi</span>
+                <span className="resumo-value">{caminhaoData.comprimentoChassi} m</span>
+              </div>
+            )}
+            {caminhaoData.observacoes && (
+              <div className="resumo-field resumo-field-wide">
+                <span className="resumo-label">Observações</span>
+                <span className="resumo-value">{caminhaoData.observacoes}</span>
+              </div>
             )}
           </div>
         </div>
       )}
 
+      {/* Política de Pagamento */}
       <div className="resumo-section">
-        <h3>Política de Pagamento</h3>
-        <div className="resumo-data">
-          <div className="data-row">
-            <span className="label">Tipo de Pagamento:</span>
-            <span className="value">
-              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda - Guindastes GSI'}
-              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ - Guindastes GSE'}
-              {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno - Revenda'}
-              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento - CNPJ'}
-              {!pagamentoData.tipoPagamento && 'Não informado'}
+        <div className="section-header"><h3>Política de Pagamento</h3></div>
+        <div className="resumo-grid">
+          <div className="resumo-field">
+            <span className="resumo-label">Tipo de Pagamento</span>
+            <span className="resumo-value">
+              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda — GSI'}
+              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ — GSE'}
+              {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno'}
+              {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento CNPJ'}
+              {!pagamentoData.tipoPagamento && '—'}
             </span>
           </div>
-          <div className="data-row">
-            <span className="label">Prazo de Pagamento:</span>
-            <span className="value">
+          <div className="resumo-field">
+            <span className="resumo-label">Prazo</span>
+            <span className="resumo-value">
               {pagamentoData.prazoPagamento === 'a_vista' && 'À Vista'}
-              {pagamentoData.prazoPagamento === '30_dias' && 'Até 30 dias (+3%)'}
-              {pagamentoData.prazoPagamento === '60_dias' && 'Até 60 dias (+1%)'}
-              {pagamentoData.prazoPagamento === '120_dias_interno' && 'Até 120 dias (sem acréscimo)'}
-              {pagamentoData.prazoPagamento === '90_dias_cnpj' && 'Até 90 dias (sem acréscimo)'}
-              {pagamentoData.prazoPagamento === 'mais_120_dias' && 'Após 120 dias (+2% ao mês)'}
-              {pagamentoData.prazoPagamento === 'mais_90_dias' && 'Após 90 dias (+2% ao mês)'}
-              {!pagamentoData.prazoPagamento && 'Não informado'}
+              {pagamentoData.prazoPagamento === '30_dias' && '30 dias (+3%)'}
+              {pagamentoData.prazoPagamento === '60_dias' && '60 dias (+1%)'}
+              {pagamentoData.prazoPagamento === '120_dias_interno' && '120 dias'}
+              {pagamentoData.prazoPagamento === '90_dias_cnpj' && '90 dias'}
+              {pagamentoData.prazoPagamento === 'mais_120_dias' && '+120 dias (+2%/mês)'}
+              {pagamentoData.prazoPagamento === 'mais_90_dias' && '+90 dias (+2%/mês)'}
+              {!pagamentoData.prazoPagamento && '—'}
             </span>
           </div>
           {pagamentoData.desconto > 0 && (
-            <div className="data-row">
-              <span className="label">Desconto:</span>
-              <span className="value">{pagamentoData.desconto}%</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Desconto</span>
+              <span className="resumo-value">{pagamentoData.desconto}%</span>
             </div>
           )}
           {pagamentoData.acrescimo > 0 && (
-            <div className="data-row">
-              <span className="label">Acréscimo:</span>
-              <span className="value">{pagamentoData.acrescimo}%</span>
+            <div className="resumo-field">
+              <span className="resumo-label">Acréscimo</span>
+              <span className="resumo-value">{pagamentoData.acrescimo}%</span>
             </div>
           )}
-
-          {(parseFloat(pagamentoData.extraValor) > 0) && (
-            <div className="data-row">
-              <span className="label">Extra{pagamentoData.extraDescricao ? ` (${pagamentoData.extraDescricao})` : ''}:</span>
-              <span className="value">+ {formatCurrency(parseFloat(pagamentoData.extraValor) || 0)}</span>
+          {parseFloat(pagamentoData.extraValor) > 0 && (
+            <div className="resumo-field">
+              <span className="resumo-label">Extra{pagamentoData.extraDescricao ? ` (${pagamentoData.extraDescricao})` : ''}</span>
+              <span className="resumo-value">+ {formatCurrency(parseFloat(pagamentoData.extraValor) || 0)}</span>
             </div>
           )}
-          {(parseFloat(pagamentoData.valorConversor) > 0) && (
-            <div className="data-row">
-              <span className="label">Conversor de Voltagem (CR + 12V):</span>
-              <span className="value">+ {formatCurrency(parseFloat(pagamentoData.valorConversor) || 0)}</span>
+          {parseFloat(pagamentoData.valorConversor) > 0 && (
+            <div className="resumo-field">
+              <span className="resumo-label">Conversor de Voltagem</span>
+              <span className="resumo-value">+ {formatCurrency(parseFloat(pagamentoData.valorConversor) || 0)}</span>
             </div>
           )}
-          <div className="data-row">
-            <span className="label">Valor Final:</span>
-            <span className="value" style={{ fontWeight: 'bold', color: '#007bff' }}>
-              {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}
-            </span>
+          {pagamentoData.tipoCliente === 'cliente' && pagamentoData.localInstalacao && (
+            <div className="resumo-field">
+              <span className="resumo-label">Local de Instalação</span>
+              <span className="resumo-value">{pagamentoData.localInstalacao}</span>
+            </div>
+          )}
+          {pagamentoData.tipoCliente === 'cliente' && pagamentoData.tipoInstalacao && (
+            <div className="resumo-field">
+              <span className="resumo-label">Tipo de Instalação</span>
+              <span className="resumo-value">
+                {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
+                {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
+              </span>
+            </div>
+          )}
+          {pagamentoData.participacaoRevenda && (
+            <div className="resumo-field">
+              <span className="resumo-label">Participação de Revenda</span>
+              <span className="resumo-value">{pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}</span>
+            </div>
+          )}
+          {pagamentoData.participacaoRevenda === 'sim' && pagamentoData.revendaTemIE && (
+            <div className="resumo-field">
+              <span className="resumo-label">Revenda possui IE</span>
+              <span className="resumo-value">{pagamentoData.revendaTemIE === 'sim' ? 'Sim' : 'Não'}</span>
+            </div>
+          )}
+          {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
+            <div className="resumo-field">
+              <span className="resumo-label">Desconto do Vendedor</span>
+              <span className="resumo-value">{pagamentoData.descontoRevendaIE}%</span>
+            </div>
+          )}
+          {/* Valor Final */}
+          <div className="resumo-field resumo-field-wide">
+            <div className="resumo-valor-final">
+              <span className="resumo-valor-label">Valor Total da Proposta</span>
+              <span className="resumo-valor-num">
+                {formatCurrency(pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}
+              </span>
+            </div>
           </div>
-          {/* Mostrar campos adicionais para cliente */}
+          {/* Entrada */}
           {pagamentoData.tipoCliente === 'cliente' && pagamentoData.percentualEntrada > 0 && (
             <>
-              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
-                <span className="label">Entrada Total ({pagamentoData.percentualEntrada}%):</span>
-                <span className="value" style={{ fontWeight: 'bold' }}>
-                  {formatCurrency(pagamentoData.entradaTotal || 0)}
-                </span>
+              <div className="resumo-field">
+                <span className="resumo-label">Entrada ({pagamentoData.percentualEntrada}%)</span>
+                <span className="resumo-value">{formatCurrency(pagamentoData.entradaTotal || 0)}</span>
               </div>
               {pagamentoData.valorSinal > 0 && (
                 <>
-                  <div className="data-row" style={{ fontSize: '0.95em', color: '#28a745' }}>
-                    <span className="label">↳ Sinal (já pago):</span>
-                    <span className="value">- {formatCurrency(pagamentoData.valorSinal)}</span>
+                  <div className="resumo-field">
+                    <span className="resumo-label">Sinal pago</span>
+                    <span className="resumo-value">— {formatCurrency(pagamentoData.valorSinal)}</span>
                   </div>
-                  <div className="data-row" style={{ fontSize: '0.95em' }}>
-                    <span className="label">↳ Falta pagar de entrada:</span>
-                    <span className="value" style={{ fontWeight: 'bold' }}>
-                      {formatCurrency(pagamentoData.faltaEntrada || 0)}
-                    </span>
+                  <div className="resumo-field">
+                    <span className="resumo-label">Falta pagar (entrada)</span>
+                    <span className="resumo-value">{formatCurrency(pagamentoData.faltaEntrada || 0)}</span>
                   </div>
-                  
-                  {/* Exibir forma de pagamento da entrada se preenchida */}
                   {pagamentoData.formaEntrada && (
-                    <div className="data-row" style={{ fontSize: '0.9em', marginLeft: '10px', marginTop: '5px', fontStyle: 'italic', color: '#555' }}>
-                      <span className="label">Forma de pagamento:</span>
-                      <span className="value">{pagamentoData.formaEntrada}</span>
+                    <div className="resumo-field">
+                      <span className="resumo-label">Forma de pagamento da entrada</span>
+                      <span className="resumo-value">{pagamentoData.formaEntrada}</span>
                     </div>
                   )}
                 </>
               )}
-              <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '2px solid #007bff' }}>
-                <span className="label" style={{ fontWeight: 'bold', fontSize: '1.1em' }}>Saldo a Pagar (após entrada):</span>
-                <span className="value" style={{ fontWeight: 'bold', color: '#007bff', fontSize: '1.1em' }}>
-                  {formatCurrency(pagamentoData.saldoAPagar || pagamentoData.valorFinal || 0)}
-                </span>
+              <div className="resumo-field">
+                <span className="resumo-label">Saldo a Pagar</span>
+                <span className="resumo-value resumo-value-bold">{formatCurrency(pagamentoData.saldoAPagar || pagamentoData.valorFinal || 0)}</span>
               </div>
-            </>
-          )}
-          {/* Campos Local de Instalação e Tipo de Instalação apenas para cliente */}
-          {pagamentoData.tipoCliente === 'cliente' && (
-            <>
-              <div className="data-row">
-                <span className="label">Local de Instalação:</span>
-                <span className="value">{pagamentoData.localInstalacao || 'Não informado'}</span>
-              </div>
-              <div className="data-row">
-                <span className="label">Tipo de Instalação:</span>
-                <span className="value">
-                  {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
-                  {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
-                  {!pagamentoData.tipoInstalacao && 'Não informado'}
-                </span>
-              </div>
-              
-              {/* Informações sobre Participação de Revenda */}
-              {pagamentoData.participacaoRevenda && (
-                <>
-                  <div className="data-row" style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #dee2e6' }}>
-                    <span className="label">Participação de Revenda:</span>
-                    <span className="value" style={{ fontWeight: 'bold', color: pagamentoData.participacaoRevenda === 'sim' ? '#28a745' : '#dc3545' }}>
-                      {pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}
-                    </span>
-                  </div>
-                  
-                  {pagamentoData.participacaoRevenda === 'sim' && pagamentoData.revendaTemIE && (
-                    <>
-                      <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '10px' }}>
-                        <span className="label">↳ Revenda possui IE:</span>
-                        <span className="value" style={{ color: pagamentoData.revendaTemIE === 'sim' ? '#007bff' : '#ffc107' }}>
-                          {pagamentoData.revendaTemIE === 'sim' ? 'Sim (Com IE)' : 'Não (Sem IE)'}
-                        </span>
-                      </div>
-                      
-                      {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
-                        <div className="data-row" style={{ fontSize: '0.95em', marginLeft: '20px', color: '#28a745' }}>
-                          <span className="label">↳ Desconto do Vendedor:</span>
-                          <span className="value" style={{ fontWeight: 'bold' }}>
-                            {pagamentoData.descontoRevendaIE}%
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </>
-              )}
             </>
           )}
         </div>
       </div>
 
-      <div className="resumo-section">
-        <h3>Ações</h3>
-        {isConcessionariaCompra && (
-          <>
-            {/* Itens acumulados anteriormente */}
-            {carrinhoAcumulativo.length > 0 && (
-              <div style={{
-                marginBottom: '16px',
-                padding: '16px',
-                background: 'linear-gradient(135deg, #e8f5e9, #c8e6c9)',
-                borderRadius: '10px',
-                border: '1px solid #a5d6a7'
-              }}>
-                <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#2e7d32', marginBottom: '10px' }}>
-                  📦 Equipamentos já adicionados ({carrinhoAcumulativo.length})
-                </div>
-                {carrinhoAcumulativo.map((pedido, idx) => (
-                  <div key={pedido.id} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '8px 12px',
-                    background: 'white',
-                    borderRadius: '6px',
-                    marginBottom: idx < carrinhoAcumulativo.length - 1 ? '6px' : '0',
-                    fontSize: '0.9rem'
-                  }}>
-                    <div>
-                      <strong>#{idx + 1}</strong> — {pedido.carrinho.map(i => i.nome).join(', ')}
-                      <span style={{ color: '#666', marginLeft: '8px' }}>
-                        ({formatCurrency(pedido.carrinho.reduce((s, i) => s + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0))})
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}
-                      style={{
-                        background: '#ef5350',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        padding: '4px 10px',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: 'bold'
-                      }}
-                      title="Remover do carrinho"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                <div style={{ marginTop: '10px', padding: '8px 12px', background: 'rgba(46,125,50,0.1)', borderRadius: '6px', fontWeight: 'bold', fontSize: '0.9rem', color: '#2e7d32', textAlign: 'right' }}>
-                  + Pedido atual ({carrinho.map(i => i.nome).join(', ')})
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '12px' }}>
-              <button
-                onClick={() => {
-                  if (window.confirm('Deseja adicionar este pedido ao carrinho e continuar escolhendo mais equipamentos?')) {
-                    onAdicionarAoCarrinho();
-                    onLimparPedidoAtual();
-                  }
-                }}
-                style={{
-                  background: 'linear-gradient(135deg, #28a745, #20c997)',
-                  color: 'white',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '8px',
-                  fontSize: '1rem',
-                  fontWeight: 'bold',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseOver={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(40, 167, 69, 0.3)';
-                }}
-                onMouseOut={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                ➕ Adicionar Mais Equipamentos
-              </button>
+      {/* Ações */}
+      <div className="resumo-acoes">
+        {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
+          <div className="resumo-acumulativo">
+            <div className="resumo-acumulativo-header">
+              Equipamentos já adicionados ({carrinhoAcumulativo.length})
             </div>
-          </>
+            {carrinhoAcumulativo.map((pedido, idx) => (
+              <div key={pedido.id} className="resumo-acumulativo-item">
+                <span>
+                  <strong>#{idx + 1}</strong> — {pedido.carrinho.map(i => i.nome).join(', ')}
+                  <span className="resumo-acum-preco"> ({formatCurrency(pedido.carrinho.reduce((s, i) => s + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0))})</span>
+                </span>
+                <button className="btn-remover-acum" onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}>✕</button>
+              </div>
+            ))}
+            <div className="resumo-acumulativo-atual">
+              + Pedido atual ({carrinho.map(i => i.nome).join(', ')})
+            </div>
+          </div>
         )}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-          <LazyPDFGenerator 
-            pedidoData={pedidoData} 
+        <div className="resumo-acoes-buttons">
+          {isConcessionariaCompra && (
+            <button
+              className="btn-adicionar-mais"
+              onClick={() => {
+                if (window.confirm('Deseja adicionar este pedido ao carrinho e continuar escolhendo mais equipamentos?')) {
+                  onAdicionarAoCarrinho();
+                  onLimparPedidoAtual();
+                }
+              }}
+            >
+              + Adicionar Mais Equipamentos
+            </button>
+          )}
+          <LazyPDFGenerator
+            pedidoData={pedidoData}
             onGenerate={(fileName) => {
               if (isConcessionariaCompra && onLimparCarrinhoAcumulativo) {
                 onLimparCarrinhoAcumulativo();
@@ -3299,9 +3281,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             }}
           />
           {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
-            <div style={{ fontSize: '0.85rem', color: '#666', display: 'flex', alignItems: 'center' }}>
-              O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)
-            </div>
+            <span className="resumo-pdf-note">O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)</span>
           )}
         </div>
       </div>
@@ -3319,57 +3299,12 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
 
   return (
     <div className="vehicle-form-container">
-      {/* Banner informativo sobre Proposta Rápida */}
-      <div style={{
-        background: 'linear-gradient(135deg, #fff9e6, #fff3cd)',
-        border: '2px solid #ffc107',
-        borderRadius: '12px',
-        padding: '16px',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '12px'
-      }}>
-        <span style={{ fontSize: '24px' }}>⚡</span>
-        <div>
-          <strong style={{ color: '#856404', display: 'block', marginBottom: '4px' }}>
-            Precisa de uma proposta rápida?
-          </strong>
-          <p style={{ margin: 0, color: '#856404', fontSize: '14px' }}>
-            Clique em "Gerar Proposta Rápida" para criar um orçamento preliminar.
-            Os dados do veículo serão marcados como "PREENCHER" e você poderá completá-los depois.
-          </p>
-        </div>
-      </div>
-
-      <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={errors} />
-
-      <div className="form-actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', gap: '12px' }}>
-        <button className="btn-back-secondary" onClick={onPrev}>
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
-          </svg>
-          Voltar
-        </button>
-
+      {/* Aviso Proposta Rápida */}
+      <div className="proposta-rapida-hint">
+        <span>Não tem os dados do veículo agora?</span>
         <button
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            padding: '12px 24px',
-            background: 'linear-gradient(135deg, #ffc107, #ffca28)',
-            color: '#856404',
-            border: '2px solid #ffc107',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: 'bold',
-            fontSize: '14px',
-            transition: 'all 0.3s ease',
-            boxShadow: '0 4px 12px rgba(255, 193, 7, 0.3)'
-          }}
+          className="btn-proposta-rapida"
           onClick={() => {
-            console.log('⚡ Gerando Proposta Rápida...');
             setCaminhaoData({
               tipo: 'PREENCHER',
               marca: 'PREENCHER',
@@ -3377,27 +3312,25 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
               ano: '',
               voltagem: 'PREENCHER',
               comprimentoChassi: 'PREENCHER',
-              observacoes: '⚠️ PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
+              observacoes: 'PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
             });
-            if (onPropostaRapida) {
-              onPropostaRapida();
-            } else {
-              onNext();
-            }
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.transform = 'translateY(-2px)';
-            e.currentTarget.style.boxShadow = '0 6px 16px rgba(255, 193, 7, 0.4)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.transform = 'translateY(0)';
-            e.currentTarget.style.boxShadow = '0 4px 12px rgba(255, 193, 7, 0.3)';
+            if (onPropostaRapida) { onPropostaRapida(); } else { onNext(); }
           }}
         >
-          <span>⚡</span>
-          <span>Gerar Proposta Rápida</span>
+          Gerar proposta rápida
         </button>
+        <span className="proposta-rapida-hint-note">(campos marcados como "A PREENCHER")</span>
+      </div>
 
+      <CaminhaoForm formData={caminhaoData} setFormData={setCaminhaoData} errors={errors} carrinho={carrinho} />
+
+      <div className="form-actions">
+        <button className="btn-back-secondary" onClick={onPrev}>
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+          </svg>
+          Voltar
+        </button>
         <button className="btn-continue" onClick={onNext} disabled={!podeContinuar}>
           <span>Continuar</span>
           <svg viewBox="0 0 24 24" fill="currentColor">

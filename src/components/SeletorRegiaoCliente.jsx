@@ -34,76 +34,30 @@ export default function SeletorRegiaoCliente({
   }, [regioesDisponiveis, regiaoSelecionada]);
 
   return (
-    <div className="seletor-regiao-cliente">
-      <div className="seletor-card">
-        <div className="seletor-header">
-          <div className="seletor-icon">📍</div>
-          <div className="seletor-title">
-            <h3>{title}</h3>
-            <p>{subtitle}</p>
-          </div>
-        </div>
-
-        <div className="seletor-content">
-          {regioes.length === 0 ? (
-            <div style={{
-              background: '#fee',
-              border: '2px solid #f88',
-              borderRadius: '8px',
-              padding: '16px',
-              color: '#c33',
-              textAlign: 'center'
-            }}>
-              <strong>⚠️ Nenhuma região de operação configurada</strong>
-              <p>Contate o administrador para configurar as regiões de atuação.</p>
-            </div>
-          ) : (
-            <div className="form-group">
-              <label htmlFor="regiao-select">
-                {questionLabel}
-                <span className="required">*</span>
-              </label>
-              <select
-                id="regiao-select"
-                value={regiaoSelecionada || ''}
-                onChange={(e) => {
-                  console.log('🔄 [SeletorRegiaoCliente] Região selecionada:', e.target.value);
-                  onRegiaoChange(e.target.value);
-                }}
-                className={`regiao-select ${regiaoSelecionada ? 'selected' : ''}`}
-              >
-                <option value="">-- Selecione uma região --</option>
-                {regioes.map((regiao) => (
-                  <option key={regiao} value={regiao}>
-                    {regiao}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {regiaoSelecionada && (
-            <div className="regiao-info">
-              <div className="info-badge">
-                <span className="badge-icon">✅</span>
-                <span className="badge-text">
-                  Região selecionada: <strong>{regiaoSelecionada}</strong>
-                </span>
-              </div>
-              <p className="info-hint">
-                ℹ️ Todos os preços de guindastes serão baseados nesta região
-              </p>
-            </div>
-          )}
-
-          <div className="regiao-warning">
-            <div className="warning-icon">⚠️</div>
-            <div className="warning-content">
-              <strong>Importante:</strong> A região selecionada define a tabela de preços para toda a proposta. 
-              Você pode alterar depois se necessário.
-            </div>
-          </div>
-        </div>
+    <div className="seletor-regiao-inline">
+      <div className="seletor-inline-row">
+        <span className="seletor-inline-label">📍 {questionLabel}<span className="required"> *</span></span>
+        {regioes.length === 0 ? (
+          <span className="seletor-inline-error">⚠️ Nenhuma região configurada — contate o administrador.</span>
+        ) : (
+          <select
+            id="regiao-select"
+            value={regiaoSelecionada || ''}
+            onChange={(e) => {
+              console.log('🔄 [SeletorRegiaoCliente] Região selecionada:', e.target.value);
+              onRegiaoChange(e.target.value);
+            }}
+            className={`seletor-inline-select ${regiaoSelecionada ? 'selected' : ''}`}
+          >
+            <option value="">-- Selecione --</option>
+            {regioes.map((regiao) => (
+              <option key={regiao} value={regiao}>{regiao}</option>
+            ))}
+          </select>
+        )}
+        {regiaoSelecionada && (
+          <span className="seletor-inline-badge">✔ {regiaoSelecionada}</span>
+        )}
       </div>
     </div>
   );

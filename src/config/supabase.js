@@ -2001,11 +2001,12 @@ class DatabaseService {
    * Listar propostas com filtros
    */
   async getPropostas(filters = {}) {
+    const limitValue = filters.limit ?? 100;
     let query = supabase
       .from('propostas')
       .select('*')
       .order('data', { ascending: false })
-      .limit(100);
+      .limit(limitValue);
 
     if (filters.vendedor_id) {
       if (Array.isArray(filters.vendedor_id)) {
