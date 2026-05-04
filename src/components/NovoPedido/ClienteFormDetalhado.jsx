@@ -316,6 +316,23 @@ const ClienteFormDetalhado = ({ formData, setFormData, errors = {} }) => {
           {errors.endereco && <span className="error-message">{errors.endereco}</span>}
         </div>
         
+        {/* Segmento do Cliente - campo para BI */}
+        <div className="form-group">
+          <label>Segmento de Atuação *</label>
+          <select
+            value={formData.segmento_cliente || ''}
+            onChange={(e) => handleChange('segmento_cliente', e.target.value)}
+            className={errors.segmento_cliente ? 'error' : ''}
+          >
+            <option value="">Selecione o segmento...</option>
+            <option value="AGRO">🌾 AGRO (Agronegócio / Produtor Rural)</option>
+            <option value="Construção Civil">🏗️ Construção Civil</option>
+            <option value="Serviços">🔧 Serviços (Transportadora / Locadora / Prestador)</option>
+            <option value="Outros">📦 Outros</option>
+          </select>
+          {errors.segmento_cliente && <span className="error-message">{errors.segmento_cliente}</span>}
+        </div>
+
         {/* Observações */}
         <div className="form-group">
           <label>Observações</label>

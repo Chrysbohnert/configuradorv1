@@ -25,12 +25,9 @@ const Concessionarias = lazy(() => import('./pages/Concessionarias'));
 const PlanosPagamento = lazy(() => import('./pages/PlanosPagamento'));
 const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
 const NovoPedido = lazy(() => import('./pages/NovoPedido'));
-const Historico = lazy(() => import('./pages/Historico'));
 const Support = lazy(() => import('./pages/Support'));
-const AlterarSenha = lazy(() => import('./pages/AlterarSenha'));
 const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
 const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
-const ProntaEntrega = lazy(() => import('./pages/ProntaEntrega'));
 const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
 const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'));
 const CotacaoDolar = lazy(() => import('./pages/CotacaoDolar'));
@@ -69,11 +66,6 @@ function App() {
             <Route path="/propostas" element={
               <LazyRoute loadingMessage="Carregando Propostas...">
                 <HistoricoPropostas />
-              </LazyRoute>
-            } />
-            <Route path="/pronta-entrega" element={
-              <LazyRoute loadingMessage="Carregando Pronta Entrega...">
-                <ProntaEntrega />
               </LazyRoute>
             } />
             <Route path="/graficos-carga" element={

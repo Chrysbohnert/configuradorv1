@@ -38,6 +38,7 @@ export const logout = () => {
   localStorage.removeItem('user');
   localStorage.removeItem('authToken');
   localStorage.removeItem('carrinho');
+  localStorage.removeItem('rememberMe');
   window.location.href = '/';
 };
 
@@ -48,7 +49,6 @@ export const validateSession = () => {
     return false;
   }
   
-  // Verificar se o token não expirou (24 horas)
   const authToken = localStorage.getItem('authToken');
   if (authToken) {
     const tokenParts = authToken.split('_');
@@ -56,7 +56,10 @@ export const validateSession = () => {
       const tokenTime = parseInt(tokenParts[1]);
       const currentTime = Date.now();
       const tokenAge = currentTime - tokenTime;
-      const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      const maxAge = rememberMe
+        ? 7 * 24 * 60 * 60 * 1000  // 7 dias se "lembrar de mim"
+        : 24 * 60 * 60 * 1000;      // 24 horas padrão
       
       if (tokenAge > maxAge) {
         logout();

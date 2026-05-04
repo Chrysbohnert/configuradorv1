@@ -28,13 +28,15 @@ export const AuthProvider = ({ children }) => {
         const authToken = localStorage.getItem('authToken');
         
         if (userData && authToken) {
-          // Validar se o token não expirou (24 horas)
           const tokenParts = authToken.split('_');
           if (tokenParts.length === 3) {
             const tokenTime = parseInt(tokenParts[1]);
             const currentTime = Date.now();
             const tokenAge = currentTime - tokenTime;
-            const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+            const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            const maxAge = rememberMe
+              ? 7 * 24 * 60 * 60 * 1000  // 7 dias se "lembrar de mim"
+              : 24 * 60 * 60 * 1000;      // 24 horas padrão
             
             if (tokenAge <= maxAge) {
               setUser(JSON.parse(userData));
@@ -42,7 +44,11 @@ export const AuthProvider = ({ children }) => {
               // Token expirado, limpar
               localStorage.removeItem('user');
               localStorage.removeItem('authToken');
+              localStorage.removeItem('rememberMe');
             }
+          } else {
+            // Token Supabase JWT (formato diferente) — aceitar se user existe
+            setUser(JSON.parse(userData));
           }
         }
       } catch (err) {
@@ -125,10 +131,10 @@ export const AuthProvider = ({ children }) => {
       // Login via Supabase Auth bem-sucedido
       console.log('✅ Login via Supabase Auth bem-sucedido!');
       
-      // Buscar dados completos do usuário no banco
+      // Buscar dados completos do usuário no banco (sem senha)
       const { data: users, error: dbError } = await supabase
         .from('users')
-        .select('*')
+        .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
         .ilike('email', email)
         .single();
 
@@ -136,7 +142,7 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Usuário não encontrado no banco de dados');
       }
 
-      const { senha: _, ...userWithoutPassword } = users;
+      const userWithoutPassword = users;
       
       // Salvar no localStorage
       localStorage.setItem('user', JSON.stringify(userWithoutPassword));
@@ -173,6 +179,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('authToken');
       localStorage.removeItem('carrinho');
       localStorage.removeItem('supabaseSession');
+      localStorage.removeItem('rememberMe');
       
       // Limpar estado
       setUser(null);
@@ -182,12 +189,12 @@ export const AuthProvider = ({ children }) => {
 
   // Verificar se é admin
   const isAdmin = useCallback(() => {
-    return user?.tipo === 'admin';
+    return user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
   }, [user]);
 
   // Verificar se é vendedor
   const isVendedor = useCallback(() => {
-    return user?.tipo === 'vendedor';
+    return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior';
   }, [user]);
 
   // Verificar se está autenticado

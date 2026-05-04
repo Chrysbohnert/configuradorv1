@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
@@ -347,6 +347,57 @@ const DashboardAdmin = () => {
       .slice(0, 5);
   }, [propostasFiltradas, visaoConversao]);
 
+  const topProdutos = useMemo(() => {
+    const map = new Map();
+    propostasFiltradas.forEach((p) => {
+      const items = p.dados_serializados?.carrinho || [];
+      items.forEach((item) => {
+        const nome = item.nome || item.produto || 'Sem nome';
+        const preco = (parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1);
+        const c = map.get(nome) || { count: 0, value: 0 };
+        map.set(nome, { count: c.count + 1, value: c.value + preco });
+      });
+    });
+    return Array.from(map.entries())
+      .map(([nome, d]) => ({ nome, ...d }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  }, [propostasFiltradas]);
+
+  const porEstado = useMemo(() => {
+    const map = new Map();
+    propostasFiltradas.forEach((p) => {
+      const raw = p.cliente_uf || p.dados_serializados?.clienteData?.uf || '';
+      const uf = raw.toUpperCase().slice(0, 2) || 'N/D';
+      const c = map.get(uf) || { count: 0, value: 0 };
+      map.set(uf, { count: c.count + 1, value: c.value + (p.valor_total || 0) });
+    });
+    return Array.from(map.entries())
+      .map(([uf, d]) => ({ uf, ...d }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 7);
+  }, [propostasFiltradas]);
+
+  const exportCSV = useCallback(() => {
+    const header = 'Número;Data;Vendedor;Cliente;Valor (R$);Resultado\n';
+    const rows = propostasFiltradas.map((p) => [
+      p.numero_proposta || p.id || '',
+      (p.created_at || p.data || '').slice(0, 10),
+      p.vendedor_nome || '',
+      p.cliente_nome || '',
+      String(p.valor_total ?? 0).replace('.', ','),
+      p.resultado_venda || 'em aberto',
+    ].join(';'));
+    const csv = '\uFEFF' + header + rows.join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `propostas_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [propostasFiltradas]);
+
   const spotlightVendedores = useMemo(() => {
     return rankingVendedores.slice(0, 3).map((item, index) => ({
       ...item,
@@ -539,7 +590,7 @@ const DashboardAdmin = () => {
       label: 'Ticket Médio',
       value: formatCurrency(kpis.ticketMedio),
       trend: kpis.varResultado,
-      icon: '💳',
+      icon: '',
       tone: 'cyan',
       helper: 'valor médio por proposta',
       sparkData: serieReceita.map((item) => item.value),
@@ -548,7 +599,7 @@ const DashboardAdmin = () => {
       label: 'Valor Total (R$)',
       value: formatCurrency(kpis.resultado),
       trend: kpis.varResultado,
-      icon: '💰',
+      icon: '',
       tone: 'emerald',
       helper: 'volume do período',
       sparkData: serieReceita.map((item) => item.value),
@@ -557,7 +608,7 @@ const DashboardAdmin = () => {
       label: 'Propostas Perdidas',
       value: kpis.perdidas,
       trend: kpis.totalPropostas > 0 ? Math.round((kpis.perdidas / kpis.totalPropostas) * 100) : 0,
-      icon: '❌',
+      icon: '',
       tone: 'red',
       helper: 'perdas comerciais',
       sparkData: seriePropostas.map((item) => item.value),
@@ -567,7 +618,7 @@ const DashboardAdmin = () => {
       label: 'Receita Efetivada',
       value: formatCurrency(kpis.efetivadasValor),
       trend: kpis.resultado > 0 ? Math.round((kpis.efetivadasValor / kpis.resultado) * 100) : 0,
-      icon: '🏦',
+      icon: '',
       tone: 'violet',
       helper: 'somente vendas ganhas',
       sparkData: serieReceita.map((item) => item.value),
@@ -634,6 +685,10 @@ const DashboardAdmin = () => {
                     </select>
                   </div>
                 </div>
+
+                <button type="button" className="filter-export-btn" onClick={exportCSV} title={`Exportar ${propostasFiltradas.length} propostas como CSV`}>
+                  ↓ Exportar CSV
+                </button>
 
                 <div className="quick-summary">
                   <div className="quick-summary-item">
@@ -726,7 +781,7 @@ const DashboardAdmin = () => {
           {kpiCards.map((card, index) => (
             <div key={card.label} className={`card kpi-card tone-${card.tone} delay-${index + 1}`}>
               <div className="kpi-top-row">
-                <div className={`kpi-icon kpi-icon-${card.tone}`}>{card.icon}</div>
+                <div className={`kpi-icon kpi-icon-{card.tone}`}>{card.icon}</div>
                 <div className="kpi-meta">
                   <span className="kpi-label">{card.label}</span>
                   <span className="kpi-value">{card.value}</span>
@@ -860,6 +915,61 @@ const DashboardAdmin = () => {
               )}
             </div>
             <SimpleBarChart data={serieReceita} color="var(--chart-purple)" />
+          </div>
+        </section>
+
+        <section className="admin-breakdown-grid">
+          <div className="card">
+            <div className="card-header-inline">
+              <div>
+                <h3 className="section-title">Top Produtos</h3>
+                <p className="section-subtitle">Itens mais cotados no período — por valor</p>
+              </div>
+            </div>
+            <div className="breakdown-list">
+              {topProdutos.length > 0 ? (
+                topProdutos.map((p, i) => (
+                  <div className="breakdown-item breakdown-item--wide" key={p.nome}>
+                    <div className="breakdown-label" title={p.nome}>
+                      <span style={{ color: '#94a3b8', marginRight: 6, fontSize: 11 }}>#{i + 1}</span>{p.nome}
+                    </div>
+                    <div className="breakdown-bar-container">
+                      <div className="breakdown-bar gse" style={{ width: `${(p.value / (topProdutos[0]?.value || 1)) * 100}%` }} />
+                    </div>
+                    <div className="breakdown-value">{formatCurrency(p.value)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-ranking">Sem dados de produto no período.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header-inline">
+              <div>
+                <h3 className="section-title">Propostas por Estado (UF)</h3>
+                <p className="section-subtitle">Concentração geográfica do volume do período</p>
+              </div>
+            </div>
+            <div className="breakdown-list">
+              {porEstado.length > 0 ? (
+                porEstado.map((e) => (
+                  <div className="breakdown-item" key={e.uf}>
+                    <div className="breakdown-label">
+                      <strong>{e.uf}</strong>
+                      <span style={{ color: '#94a3b8', fontSize: 11, marginLeft: 4 }}>({e.count})</span>
+                    </div>
+                    <div className="breakdown-bar-container">
+                      <div className="breakdown-bar region" style={{ width: `${(e.value / (porEstado[0]?.value || 1)) * 100}%` }} />
+                    </div>
+                    <div className="breakdown-value">{formatCurrency(e.value)}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-ranking">Preencha UF nos dados do cliente para ver esta análise.</div>
+              )}
+            </div>
           </div>
         </section>
 
@@ -999,6 +1109,7 @@ const DashboardAdmin = () => {
                 <small>propostas encerradas sem venda</small>
               </div>
             </div>
+            <DonutChart data={statusData.list} centerLabel="Total" centerValue={statusData.total} />
           </div>
 
           <div className="card">

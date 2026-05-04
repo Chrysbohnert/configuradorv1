@@ -90,7 +90,7 @@ const EstoqueConcessionaria = () => {
             
             <div className="estoque-stats">
               <div className="stat-card">
-                <div className="stat-icon">📊</div>
+                <div className="stat-icon"></div>
                 <div className="stat-info">
                   <span className="stat-label">Total em Estoque</span>
                   <span className="stat-value">{totalEmEstoque}</span>
@@ -98,7 +98,7 @@ const EstoqueConcessionaria = () => {
               </div>
               
               <div className="stat-card">
-                <div className="stat-icon">🏷️</div>
+                <div className="stat-icon"></div>
                 <div className="stat-info">
                   <span className="stat-label">Modelos Disponíveis</span>
                   <span className="stat-value">{modelosComEstoque}</span>
@@ -141,7 +141,7 @@ const EstoqueConcessionaria = () => {
             </div>
           ) : estoque.length === 0 ? (
             <div className="empty-state">
-              <div className="empty-icon">📦</div>
+              <div className="empty-icon"></div>
               <h3>Estoque Vazio</h3>
               <p>Você ainda não possui guindastes em estoque.</p>
               <button 

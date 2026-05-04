@@ -257,7 +257,6 @@
 
 .btn-editar:hover {
   background: #0052a3;
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(0, 102, 204, 0.3);
 }
 
@@ -268,7 +267,6 @@
 
 .btn-salvar:hover:not(:disabled) {
   background: #218838;
-  transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
 }
 

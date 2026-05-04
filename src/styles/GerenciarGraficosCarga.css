@@ -103,7 +103,7 @@
 .empty-icon svg {
   width: 36px;
   height: 36px;
-  color: #94a3b8;
+  color: #000000;
 }
 
 .empty-state h3 {
@@ -116,7 +116,7 @@
 .empty-state p {
   font-size: 0.9rem;
   margin: 0;
-  color: #94a3b8;
+  color: #000000;
 }
 
 /* =====================================================
@@ -191,7 +191,7 @@
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #475569;
+  color: #000000;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   text-decoration: none;
@@ -224,14 +224,14 @@
 
 .meta-item .label {
   font-weight: 500;
-  color: #94a3b8;
+  color: #000000;
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .meta-item .value {
-  color: #475569;
+  color: #000000;
   font-size: 0.82rem;
   font-weight: 600;
 }

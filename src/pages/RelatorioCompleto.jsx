@@ -414,169 +414,187 @@ const RelatorioCompleto = () => {
 
   return (
     <>
-      <UnifiedHeader 
+      <UnifiedHeader
         showBackButton={false}
         showSupportButton={true}
-          showUserInfo={true}
-          user={user}
-          title="Relatório"
-          subtitle="Resumo simples por período e vendedor"
-        />
-        <div className="dashboard-container">
-          <div className="dashboard-content">
-            <div className="dashboard-header">
-              <div className="welcome-section">
-                <h1>Relatório</h1>
-                <p>Resumo simples por período e vendedor</p>
-              </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                <div>
-                  <label style={{ fontSize: 12, color: '#6b7280' }}>Vendedor</label>
-                  <select value={filtroVendedor} onChange={(e)=>setFiltroVendedor(e.target.value)} className="filter-select" style={{ minWidth: 220 }}>
-                    <option value="">Todos</option>
-                    {vendedores.map(v => (
-                      <option key={v.id} value={v.id}>{v.nome}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: '#6b7280' }}>Mês</label>
-                  <input type="month" value={filtroMes} onChange={(e)=>setFiltroMes(e.target.value)} className="filter-select" />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: '#6b7280' }}>Buscar</label>
-                  <input
-                    type="text"
-                    value={busca}
-                    onChange={(e) => setBusca(e.target.value)}
-                    className="filter-select"
-                    placeholder="Cliente, vendedor ou nº"
-                    style={{ minWidth: 220 }}
-                  />
-                </div>
-                <button className="add-btn" onClick={handleExportarPDF} disabled={pedidosFiltrados.length === 0}>Exportar PDF</button>
-                <button className="add-btn" onClick={handleExportarCSV} disabled={pedidosFiltrados.length === 0}>Exportar CSV</button>
-              </div>
-            </div>
+        showUserInfo={true}
+        user={user}
+        title="Relatório"
+        subtitle="Resumo simples por período e vendedor"
+      />
+      <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
-            {/* Cards de Resumo */}
-            <div className="stats-grid">
-              <div className="stat-card">
-                <div className="stat-info">
-                  <div className="stat-value">{resumo.totalPedidos}</div>
-                  <div className="stat-label">Propostas (todas)</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-info">
-                  <div className="stat-value">{resumo.pedidosFinalizados}</div>
-                  <div className="stat-label">Finalizados</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-info">
-                  <div className="stat-value">{formatCurrency(resumo.valorTotal)}</div>
-                  <div className="stat-label">Valor Finalizados</div>
-                </div>
-              </div>
-              <div className="stat-card">
-                <div className="stat-info">
-                  <div className="stat-value">{formatCurrency(resumo.ticketMedio)}</div>
-                  <div className="stat-label">Ticket Médio</div>
-                </div>
-              </div>
-            </div>
+        {/* Header */}
+        <div style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 6px 0', color: '#111' }}>
+            Relatório Admin
+          </h1>
+          <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
+            Resumo de propostas por período e vendedor
+          </p>
+        </div>
 
-            {/* Tabela simples de pedidos */}
-            <div style={{ background: '#fff', borderRadius: 12, padding: 16, boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <h3 style={{ margin: 0 }}>Propostas ({pedidosFiltrados.length})</h3>
-                    </div>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead>
-                    <tr style={{ background: '#f9fafb', color: '#374151' }}>
-                      {/* Número do pedido ocultado por solicitação */}
-                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}></th>
-                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Data</th>
-                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Vendedor</th>
-                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Cliente</th>
-                      <th style={{ textAlign: 'left', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Status</th>
-                      <th style={{ textAlign: 'right', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Valor</th>
-                      <th style={{ textAlign: 'center', padding: '10px 8px', borderBottom: '1px solid #eee' }}>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pedidosFiltrados.map((p) => (
-                      <tr key={p.id}>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}></td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{new Date(p.created_at).toLocaleDateString('pt-BR')}</td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>
-                          {p.vendedor_nome || vendedoresMap.get(String(p.vendedor_id)) || p.vendedor?.nome || '-'}
-                        </td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6' }}>{p.cliente_nome || p.cliente?.nome || '-'}</td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', color: corStatus('finalizado') }}>{textoStatus('finalizado')}</td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'right' }}>{formatCurrency(p.valor_total || 0)}</td>
-                        <td style={{ padding: '8px 8px', borderBottom: '1px solid #f3f4f6', textAlign: 'center' }}>
-                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                            <button
-                              onClick={() => handleGerarPDF(p.id)}
-                              style={{
-                                padding: '4px 10px',
-                                background: '#1a7a4a',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: 'pointer'
-                              }}
-                              title="Visualizar e gerar proposta comercial em PDF"
-                            >
-                              📄 PDF
-                            </button>
-                            <button
-                              onClick={() => handleExcluir(p.id, p.numero_proposta)}
-                              disabled={excluindo === p.id}
-                              style={{
-                                padding: '4px 10px',
-                                background: excluindo === p.id ? '#6c757d' : '#dc3545',
-                                color: 'white',
-                                border: 'none',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: '600',
-                                cursor: excluindo === p.id ? 'not-allowed' : 'pointer'
-                              }}
-                              title="Excluir proposta permanentemente"
-                            >
-                              {excluindo === p.id ? '...' : '🗑️'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                    {pedidosFiltrados.length === 0 && (
-                      <tr>
-                        <td colSpan="7" style={{ padding: 16, textAlign: 'center', color: '#6b7280' }}>Sem dados para os filtros selecionados</td>
-                      </tr>
-                    )}
-                  </tbody>
-                  {pedidosFiltrados.length > 0 && (
-                    <tfoot>
-                      <tr>
-                        <td colSpan="5" style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>Total (finalizados):</td>
-                        <td style={{ padding: '10px 8px', textAlign: 'right', fontWeight: 600 }}>{formatCurrency(resumo.valorTotal)}</td>
-                        <td></td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-                </div>
-            </div>
-
+        {/* Filtros + Export */}
+        <div style={{
+          background: 'white',
+          padding: '14px 20px',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          marginBottom: '14px',
+          display: 'flex',
+          gap: '12px',
+          alignItems: 'flex-end',
+          flexWrap: 'wrap'
+        }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#555' }}>Vendedor</label>
+            <select
+              value={filtroVendedor}
+              onChange={(e) => setFiltroVendedor(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', minWidth: 170, cursor: 'pointer', background: '#fff' }}
+            >
+              <option value="">Todos</option>
+              {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#555' }}>Mês</label>
+            <input
+              type="month"
+              value={filtroMes}
+              onChange={(e) => setFiltroMes(e.target.value)}
+              style={{ padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#555' }}>Buscar</label>
+            <input
+              type="text"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              placeholder="Cliente, vendedor ou nº"
+              style={{ padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', minWidth: 200 }}
+            />
+          </div>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+            <button
+              onClick={loadRelatorio}
+              disabled={isLoading}
+              style={{ padding: '7px 12px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
+            >↺</button>
+            <button
+              onClick={handleExportarPDF}
+              disabled={pedidosFiltrados.length === 0}
+              style={{ padding: '7px 16px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: pedidosFiltrados.length === 0 ? 'not-allowed' : 'pointer', opacity: pedidosFiltrados.length === 0 ? 0.5 : 1 }}
+            >Exportar PDF</button>
+            <button
+              onClick={handleExportarCSV}
+              disabled={pedidosFiltrados.length === 0}
+              style={{ padding: '7px 16px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: pedidosFiltrados.length === 0 ? 'not-allowed' : 'pointer', opacity: pedidosFiltrados.length === 0 ? 0.5 : 1 }}
+            >Exportar CSV</button>
           </div>
         </div>
+
+        {/* Cards de Resumo */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '14px' }}>
+          {[
+            { label: 'Total Propostas', value: resumo.totalPedidos },
+            { label: 'Finalizadas', value: resumo.pedidosFinalizados },
+            { label: 'Valor Total', value: formatCurrency(resumo.valorTotal) },
+            { label: 'Ticket Médio', value: formatCurrency(resumo.ticketMedio) },
+          ].map((card) => (
+            <div key={card.label} style={{ background: 'white', borderRadius: '10px', padding: '13px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: '#111827' }}>{card.value}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabela */}
+        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+          <div style={{ padding: '13px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
+              Propostas <span style={{ color: '#9ca3af', fontWeight: 500 }}>({pedidosFiltrados.length})</span>
+            </span>
+            {isLoading && <span style={{ fontSize: '12px', color: '#9ca3af' }}>Carregando...</span>}
+          </div>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Data</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Vendedor</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Cliente</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Valor</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidosFiltrados.map((p) => (
+                  <tr
+                    key={p.id}
+                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.12s' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+                  >
+                    <td style={{ padding: '11px 16px', fontSize: '13px', color: '#000', whiteSpace: 'nowrap' }}>
+                      {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                    </td>
+                    <td style={{ padding: '11px 16px', fontSize: '13px', color: '#000' }}>
+                      {p.vendedor_nome || vendedoresMap.get(String(p.vendedor_id)) || p.vendedor?.nome || '-'}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#000' }}>{p.cliente_nome || p.cliente?.nome || '-'}</div>
+                      {p.cliente_documento && <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>{p.cliente_documento}</div>}
+                    </td>
+                    <td style={{ padding: '11px 16px' }}>
+                      <span style={{ padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '700', background: '#d4edda', color: '#155724' }}>
+                        Finalizado
+                      </span>
+                    </td>
+                    <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: '700', color: '#0f172a', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                      {formatCurrency(p.valor_total || 0)}
+                    </td>
+                    <td style={{ padding: '11px 16px', textAlign: 'center' }}>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                        <button
+                          onClick={() => handleGerarPDF(p.id)}
+                          style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          title="Visualizar proposta em PDF"
+                        >PDF</button>
+                        <button
+                          onClick={() => handleExcluir(p.id, p.numero_proposta)}
+                          disabled={excluindo === p.id}
+                          style={{ padding: '5px 10px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: excluindo === p.id ? 'not-allowed' : 'pointer', opacity: excluindo === p.id ? 0.5 : 1 }}
+                          title="Excluir proposta permanentemente"
+                        >{excluindo === p.id ? '...' : '🗑️'}</button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {pedidosFiltrados.length === 0 && (
+                  <tr>
+                    <td colSpan="6" style={{ padding: '32px 16px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>
+                      Sem dados para os filtros selecionados
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+              {pedidosFiltrados.length > 0 && (
+                <tfoot>
+                  <tr style={{ background: '#f8fafc', borderTop: '2px solid #e2e8f0' }}>
+                    <td colSpan="4" style={{ padding: '10px 16px', textAlign: 'right', fontSize: '13px', fontWeight: '700', color: '#374151' }}>Total:</td>
+                    <td style={{ padding: '10px 16px', textAlign: 'right', fontSize: '13px', fontWeight: '700', color: '#111' }}>{formatCurrency(resumo.valorTotal)}</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              )}
+            </table>
+          </div>
+        </div>
+
+      </div>
     </>
   );
 };

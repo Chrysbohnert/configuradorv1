@@ -74,7 +74,7 @@
 
 .tab.active {
   background: linear-gradient(135deg, #000000 0%, #000000 100%);
-  color: white;
+  color: rgb(8, 8, 8);
 }
 
 .tab svg {
@@ -117,7 +117,7 @@
   align-items: center;
   gap: 8px;
   background: linear-gradient(135deg, #000000 0%, #000000 100%);
-  color: white;
+  color: rgb(0, 0, 0);
   border: none;
   padding: 12px 20px;
   border-radius: 8px;
@@ -305,7 +305,7 @@
   align-items: center;
   justify-content: center;
   font-size: 48px;
-  color: #d1d5db;
+  color: #b5b5b5;
   border: none;
 }
 
@@ -338,7 +338,7 @@
 
 .guindaste-info p {
   font-size: 12px;
-  color: #6b7280;
+  color: #000000;
   font-weight: 600;
   background: #f8f9fa;
   padding: 5px 12px;
@@ -527,7 +527,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .opcional-icon svg {
@@ -813,7 +813,7 @@
 }
 
 .page-info {
-  color: #6b7280;
+  color: #000000;
   font-weight: 600;
 }
 
@@ -1564,9 +1564,9 @@ textarea:focus {
 }
 
 .chip {
-  border: 2px solid #e5e7eb;
+  border: 2px solid #000000;
   background: #ffffff;
-  color: #6b7280;
+  color: #000000;
   padding: 8px 16px;
   border-radius: 9999px;
   font-size: 13px;
@@ -1585,7 +1585,7 @@ textarea:focus {
 
 .chip.active {
   background: linear-gradient(135deg, #000000 0%, #1f2937 100%);
-  color: white;
+  color: rgb(0, 0, 0);
   border-color: #000000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
   transform: translateY(-2px);
@@ -1688,7 +1688,7 @@ textarea:focus {
 
 .capacity-count {
   background: linear-gradient(135deg, #000000 0%, #374151 100%);
-  color: #ffffff;
+  color: #bebebe;
   border: none;
   padding: 4px 12px;
   border-radius: 9999px;
@@ -1735,7 +1735,7 @@ textarea:focus {
   animation: toast-slide-in 200ms ease-out;
 }
 
-.toast.success { background: #10b981; }
+.toast.success { background: #56ffc7; }
 .toast.error { background: #ef4444; }
 
 .toast-icon {
@@ -1810,8 +1810,8 @@ textarea:focus {
 .badge {
   display: inline-block;
   padding: 2px 8px;
-  background: #0ea5e9;
-  color: #ffffff;
+  background: #d7d5d5;
+  color: #000000;
   font-size: 11px;
   font-weight: 700;
   border-radius: 4px;
@@ -1828,10 +1828,10 @@ textarea:focus {
   top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   z-index: 10000;
-  padding: 40px 20px;
+  padding: 32px 20px;
   overflow-y: auto;
 }
 
@@ -1840,6 +1840,7 @@ textarea:focus {
   border-radius: 8px;
   max-width: 1000px;
   width: 100%;
+  max-height: calc(100vh - 64px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
@@ -1863,7 +1864,7 @@ textarea:focus {
 .modern-header h2 {
   font-size: 20px;
   font-weight: 700;
-  color: #64748b;
+  color: #000000;
   margin: 0;
 }
 
@@ -1875,9 +1876,9 @@ textarea:focus {
 .btn-modern-cancel {
   padding: 8px 24px;
   border-radius: 6px;
-  border: 1px solid #10b981;
+  border: 1px solid #000000;
   background: transparent;
-  color: #10b981;
+  color: #bababa;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
@@ -1892,7 +1893,7 @@ textarea:focus {
   padding: 8px 24px;
   border-radius: 6px;
   border: none;
-  background: #10b981;
+  background: #a2a2a2;
   color: #ffffff;
   font-weight: 600;
   font-size: 14px;
@@ -1911,6 +1912,8 @@ textarea:focus {
 
 .modern-body {
   padding: 24px 32px;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .modern-nome-full {
@@ -1998,7 +2001,7 @@ textarea:focus {
 
 .modern-form-group label {
   font-size: 12px;
-  color: #64748b;
+  color: #000000;
   font-weight: 500;
   display: flex;
   align-items: center;
@@ -2018,8 +2021,8 @@ textarea:focus {
 
 .modern-input:focus, .modern-textarea:focus {
   outline: none;
-  border-color: #10b981;
-  box-shadow: 0 0 0 1px #10b981;
+  border-color: #000000;
+  box-shadow: 0 0 0 1px #a3a3a3;
 }
 
 .modern-input:disabled {
@@ -2049,8 +2052,8 @@ textarea:focus {
   padding: 12px 0;
   font-size: 14px;
   font-weight: 700;
-  color: #10b981;
-  border-bottom: 3px solid #10b981;
+  color: #000000;
+  border-bottom: 3px solid #000000;
   margin-bottom: -1px;
 }
 
@@ -2071,7 +2074,7 @@ textarea:focus {
   border: 1px dashed #cbd5e1;
   border-radius: 6px;
   font-size: 13px;
-  color: #64748b;
+  color: #000000;
   cursor: pointer;
 }
 
@@ -2133,7 +2136,488 @@ textarea:focus {
   }
   .modern-modal {
     margin: 0;
-    min-height: 100vh;
+    max-height: 100vh;
     border-radius: 0;
+  }
+}
+
+/* ========================================================================== */
+/* NOVO LAYOUT 2 PAINÉIS - Gerenciar Guindastes Redesign */
+/* ========================================================================== */
+
+/* Barra de filtro superior */
+.gg-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0 18px 0;
+  flex-wrap: wrap;
+}
+
+.gg-search-wrap {
+  position: relative;
+  flex: 0 0 220px;
+}
+
+.gg-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 15px;
+  height: 15px;
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.gg-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 32px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 13px;
+  background: #fafafa;
+  color: #1f2937;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.gg-search-input:focus {
+  outline: none;
+  border-color: #111827;
+  box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.08);
+  background: #fff;
+}
+
+.gg-capacity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.gg-chip {
+  padding: 6px 14px;
+  border: 1.5px solid #000000;
+  border-radius: 9999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #000000;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  letter-spacing: 0.2px;
+}
+
+.gg-chip:hover {
+  border-color: #111827;
+  color: #111827;
+}
+
+.gg-chip.active {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+.gg-total-count {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+/* Workspace: 2 colunas */
+.gg-workspace {
+  display: flex;
+  gap: 0;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  overflow: hidden;
+  min-height: 420px;
+  background: #fff;
+}
+
+/* Painel esquerdo: lista de modelos */
+.gg-models-panel {
+  flex: 0 0 260px;
+  border-right: 1.5px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  background: #fafafa;
+}
+
+.gg-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f3f4f6;
+}
+
+.gg-panel-header span {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #000000;
+}
+
+.gg-badge {
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.gg-models-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.gg-no-models {
+  padding: 24px 16px;
+  text-align: center;
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+.gg-model-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s ease;
+  margin-bottom: 2px;
+}
+
+.gg-model-item:hover {
+  background: #f0f0f0;
+}
+
+.gg-model-item.active {
+  background: #111827;
+}
+
+.gg-model-item.active .gg-model-name,
+.gg-model-item.active .gg-model-cap {
+  color: #fff;
+}
+
+.gg-model-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gg-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 4px;
+}
+
+.gg-model-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gg-model-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gg-model-cap {
+  font-size: 11px;
+  color: #000000;
+  font-weight: 500;
+}
+
+.gg-model-arrow {
+  width: 14px;
+  height: 14px;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+/* Painel direito: configurações */
+.gg-configs-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: #fff;
+}
+
+.gg-configs-head {
+  padding: 16px 20px 14px 20px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fff;
+}
+
+.gg-configs-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.02em;
+}
+
+.gg-configs-sub {
+  font-size: 12px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.gg-configs-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Linha de configuração */
+.gg-config-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1.5px solid #f1f3f5;
+  border-radius: 10px;
+  background: #fafafa;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.gg-config-row:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  background: #fff;
+}
+
+.gg-config-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+}
+
+.gg-config-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.gg-config-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gg-config-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.gg-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.gg-tag-code {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #d1fae5;
+}
+
+.gg-tag-model {
+  background: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.gg-tag-ext {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.gg-tag-price-set {
+  background: #f0fdf4;
+  color: #16a34a;
+  border: 1px solid #bbf7d0;
+}
+
+.gg-tag-price-unset {
+  background: #fef9ec;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+/* Ações da configuração */
+.gg-config-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.gg-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.gg-action-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+.gg-btn-edit   { --blob-color: #0f172a; color: #0f172a; }
+.gg-btn-prices { --blob-color: #475569; color: #475569; }
+.gg-btn-delete { --blob-color: #dc2626; color: #dc2626; }
+.gg-btn-price  { --blob-color: #0f172a; color: #0f172a; }
+
+/* Estado vazio: nenhum modelo selecionado */
+.gg-empty-selection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  gap: 12px;
+  color: #9ca3af;
+}
+
+.gg-empty-icon {
+  font-size: 40px;
+  opacity: 0.5;
+}
+
+.gg-empty-selection h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000000;
+  margin: 0;
+}
+
+.gg-empty-selection p {
+  font-size: 13px;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0;
+  max-width: 260px;
+  line-height: 1.5;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .gg-workspace {
+    flex-direction: column;
+  }
+
+  .gg-models-panel {
+    flex: 0 0 auto;
+    border-right: none;
+    border-bottom: 1.5px solid #e5e7eb;
+    max-height: 220px;
+  }
+
+  .gg-models-list {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .gg-model-item {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 8px;
+    text-align: center;
+    min-width: 80px;
+    max-width: 90px;
+    margin-bottom: 0;
+  }
+
+  .gg-model-meta {
+    align-items: center;
+  }
+
+  .gg-model-name {
+    font-size: 11px;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .gg-model-cap { display: none; }
+  .gg-model-arrow { display: none; }
+
+  .gg-total-count { display: none; }
+
+  .gg-search-wrap { flex: 1; min-width: 140px; }
+
+  .gg-config-row {
+    flex-wrap: wrap;
+  }
+
+  .gg-config-actions {
+    width: 100%;
+    justify-content: flex-end;
+    padding-top: 6px;
+    border-top: 1px solid #f1f3f5;
   }
 }

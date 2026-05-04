@@ -17,8 +17,9 @@ export default defineConfig({
   build: {
     // Otimizações de build
     target: 'es2015',
-    minify: 'terser',
+    minify: 'esbuild',
     sourcemap: false,
+    chunkSizeWarningLimit: 1000,
     
     // Configurações de rollup
     rollupOptions: {
@@ -62,21 +63,21 @@ export default defineConfig({
       },
     },
     
-    // Configurações de terser
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
+    // Configurações de esbuild minification
+    esbuildOptions: {
+      drop: ['console', 'debugger'],
     },
   },
   
   // Configurações de servidor de desenvolvimento
   server: {
     port: 5173,
-    strictPort: true,
+    strictPort: false,
     host: true,
-    open: true,
+    open: false,
+    hmr: {
+      overlay: true,
+    },
   },
   
   // Configurações de preview

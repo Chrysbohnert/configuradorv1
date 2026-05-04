@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
 import { db, supabase } from '../config/supabase';
 import { verifyPassword } from '../utils/passwordHash';
 import { showError } from '../utils/errorHandler';
@@ -19,6 +18,8 @@ const Login = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState('');
   const [resetSuccess, setResetSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
 
   const validarConcessionariaAtiva = async (user) => {
     if (!user) return true;
@@ -87,8 +88,7 @@ const Login = () => {
       });
 
       if (authError) {
-        console.error('Erro no Supabase Auth:', authError);
-        console.log('🔄 Tentando fallback para banco local...');
+        console.log('ℹ️ Auth Supabase não encontrou usuário, usando fallback local...');
         
         // Debug detalhado do login
         const debugResult = await debugLogin(email, senha);
@@ -109,6 +109,7 @@ const Login = () => {
 
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
           localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+          localStorage.setItem('rememberMe', String(rememberMe));
           
           if (debugResult.user.tipo === 'admin' || debugResult.user.tipo === 'admin_concessionaria') {
             // Registrar tentativa bem-sucedida
@@ -153,12 +154,15 @@ const Login = () => {
         localStorage.setItem('supabaseSession', 'active');
 
         // Buscar dados completos do usuário no banco
-        const users = await db.getUsers();
-        const user = users.find(u => u.email === email);
+        const { data: user, error: userError } = await supabase
+          .from('users')
+          .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
+          .ilike('email', email)
+          .single();
 
-        if (user) {
+        if (!userError && user) {
           // Salvar dados do usuário (sem senha)
-          const { senha: _, ...userWithoutPassword } = user;
+          const userWithoutPassword = user;
 
           const concessionariaOk = await validarConcessionariaAtiva(userWithoutPassword);
           if (!concessionariaOk) {
@@ -174,6 +178,7 @@ const Login = () => {
           }
 
           localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+          localStorage.setItem('rememberMe', String(rememberMe));
 
           if (user.tipo === 'admin' || user.tipo === 'admin_concessionaria') {
             // Registrar tentativa bem-sucedida
@@ -189,6 +194,7 @@ const Login = () => {
         } else {
           setError('Usuário não encontrado no banco de dados');
         }
+
       }
     } catch (error) {
       const errorInfo = showError(error, 'Login');
@@ -240,144 +246,208 @@ const Login = () => {
     }
   };
 
+  const bgImage = encodeURI('/páginas do pdf/CAPA-1.jpg');
+
   return (
     <div className="login-page">
-      <UnifiedHeader 
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={false}
-        title="STARK Orçamento"
-        subtitle="Sistema Profissional de Orçamentos"
-      />
-      
-      <div className="login-container">
+      {/* Painel Esquerdo - Imagem */}
+      <div
+        className="login-left"
+        style={{ backgroundImage: `url("${bgImage}")` }}
+      >
+        <div className="login-left-overlay" />
+      </div>
+
+      {/* Painel Direito - Formulário */}
+      <div className="login-right">
         <div className="login-card">
-          <div className="login-form">
-            <div className="form-header">
-              <h2>Bem-vindo de volta!</h2>
-              <p>Faça login para acessar o sistema</p>
-            </div>
+          {/* Logo da marca */}
+          <div className="login-brand">
+            <span className="brand-stark">STARK</span>
+            <span className="brand-guindastes">CONFIGURADOR</span>
+          </div>
 
-            {error && (
-              <div className="error-message">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                </svg>
-                {error}
-              </div>
-            )}
-
-            {!showForgotPassword ? (
-            <form onSubmit={handleSubmit}>
-              <div className="form-group">
-                <label htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  placeholder="Digite seu email"
-                  required
-                />
+          {!showForgotPassword ? (
+            <>
+              <div className="form-header">
+                <h2>Acesse sua conta</h2>
+                <p>Entre com suas credenciais abaixo.</p>
               </div>
 
-              <div className="form-group">
-                <label htmlFor="senha">Senha</label>
-                <input
-                  id="senha"
-                  type="password"
-                  value={formData.senha}
-                  onChange={(e) => handleInputChange('senha', e.target.value)}
-                  placeholder="Digite sua senha"
-                  required
-                />
+              {error && (
+                <div className="error-message">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit}>
+                <div className="form-group">
+                  <label htmlFor="email">E-mail</label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </span>
+                    <input
+                      id="email"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => handleInputChange('email', e.target.value)}
+                      placeholder="voce@empresa.com"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <div className="label-row">
+                    <label htmlFor="senha">Senha</label>
+                    <button
+                      type="button"
+                      className="forgot-link"
+                      onClick={() => { setShowForgotPassword(true); setError(''); }}
+                    >
+                      Esqueceu a senha?
+                    </button>
+                  </div>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                      </svg>
+                    </span>
+                    <input
+                      id="senha"
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.senha}
+                      onChange={(e) => handleInputChange('senha', e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <button
+                      type="button"
+                      className="eye-btn"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+                          <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+                          <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+                          <line x1="2" y1="2" x2="22" y2="22" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="remember-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                    />
+                    <span>Manter-me conectado</span>
+                  </label>
+                </div>
+
+                <button type="submit" className="login-button" disabled={isLoading}>
+                  {isLoading ? (
+                    <><div className="loading-spinner" />Entrando...</>
+                  ) : 'Entrar'}
+                </button>
+              </form>
+
+              <div className="signup-row">
+                Não tem cadastro?{' '}
+                <a href="mailto:contato@starkguindastes.com.br">Solicitar acesso</a>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="form-header">
+                <h2>Recuperar senha</h2>
+                <p>Digite seu email para receber o link de recuperação.</p>
               </div>
 
-              <button 
-                type="submit" 
-                className="login-button"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    Entrando...
-                  </>
-                ) : (
-                  'Entrar'
-                )}
-              </button>
-            </form>
-            ) : (
-            <form onSubmit={handleForgotPassword}>
-              <div className="form-group">
-                <label htmlFor="reset-email">Email</label>
-                <input
-                  id="reset-email"
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="Digite seu email cadastrado"
-                  required
-                />
-                <span className="form-help">Enviaremos um link para redefinir sua senha</span>
-              </div>
+              {error && (
+                <div className="error-message">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  {error}
+                </div>
+              )}
 
-              <button 
-                type="submit" 
-                className="login-button"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    Enviando...
-                  </>
-                ) : (
-                  'Enviar Link de Recuperação'
-                )}
-              </button>
+              {resetSuccess && (
+                <div className="success-message">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                    <polyline points="22 4 12 14.01 9 11.01" />
+                  </svg>
+                  Email enviado! Verifique sua caixa de entrada.
+                </div>
+              )}
 
-              <div className="form-footer">
-                <button 
+              <form onSubmit={handleForgotPassword}>
+                <div className="form-group">
+                  <label htmlFor="reset-email">E-mail</label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="16" x="2" y="4" rx="2" />
+                        <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+                      </svg>
+                    </span>
+                    <input
+                      id="reset-email"
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      placeholder="voce@empresa.com"
+                      required
+                    />
+                  </div>
+                  <span className="form-help">Enviaremos um link para redefinir sua senha</span>
+                </div>
+
+                <button type="submit" className="login-button" disabled={isLoading}>
+                  {isLoading ? (
+                    <><div className="loading-spinner" />Enviando...</>
+                  ) : 'Enviar Link de Recuperação'}
+                </button>
+
+                <button
                   type="button"
                   className="back-btn"
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setError('');
-                    setResetSuccess(false);
-                  }}
+                  onClick={() => { setShowForgotPassword(false); setError(''); setResetSuccess(false); }}
                 >
-                  Voltar para Login
+                  ← Voltar para Login
                 </button>
-              </div>
-            </form>
-            )}
+              </form>
+            </>
+          )}
+        </div>
 
-            {resetSuccess && (
-              <div className="success-message">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-                </svg>
-                Email enviado! Verifique sua caixa de entrada.
-              </div>
-            )}
-
-            {!showForgotPassword && (
-              <div className="form-footer">
-                <button 
-                  type="button"
-                  className="forgot-password-btn"
-                  onClick={() => {
-                    setShowForgotPassword(true);
-                    setError('');
-                  }}
-                >
-                  Esqueci minha senha
-                </button>
-              </div>
-            )}
-          </div>
+        <div className="login-footer">
+          © 2026 Stark Guindastes. Todos os direitos reservados.
         </div>
       </div>
     </div>
