@@ -625,6 +625,23 @@
   backdrop-filter: blur(4px);
 }
 
+/* Keep modal centered inside main content area (excluding sidebar) */
+.modal-overlay-content-area {
+  left: 280px;
+}
+
+@media (max-width: 1024px) {
+  .modal-overlay-content-area {
+    left: 270px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modal-overlay-content-area {
+    left: 0;
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
