@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
-import '../styles/Concessionarias.css';
 
 const Concessionarias = () => {
   const navigate = useNavigate();

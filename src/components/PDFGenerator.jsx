@@ -557,62 +557,17 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
     ? t(lang, 'proposalTitlePurchase')
     : t(lang, 'proposalTitleCommercial');
   
-  // DEBUG: Ver TODOS os dados que chegam
-  console.log('🔍🔍🔍 [renderCapa] pedidoData COMPLETO:', pedidoData);
-  console.log('🔍🔍🔍 [renderCapa] pedidoData.carrinho:', pedidoData.carrinho);
-  console.log('🔍🔍🔍 [renderCapa] pedidoData.guindastes:', pedidoData.guindastes);
-  
   // Pegar dados do equipamento para exibir na capa (mesma lógica do renderEquipamento)
   const guindastesCarrinho = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
   const itemCarrinho = guindastesCarrinho[0] || {};
   
-  console.log('🔍 [renderCapa] itemCarrinho extraído:', itemCarrinho);
-  console.log('🔍 [renderCapa] Lista completa de guindastes no banco:', pedidoData.guindastes);
-  
-  // Log detalhado de cada guindaste no banco
-  if (pedidoData.guindastes && pedidoData.guindastes.length > 0) {
-    pedidoData.guindastes.forEach((g, idx) => {
-      console.log(`🔍 [renderCapa] Guindaste ${idx} no banco:`, {
-        id: g.id,
-        nome: g.nome,
-        modelo: g.modelo,
-        finame: g.finame,
-        ncm: g.ncm
-      });
-    });
-  } else {
-    console.log('⚠️ [renderCapa] pedidoData.guindastes está vazio ou undefined!');
-  }
   
   // Buscar dados completos do guindaste no banco
-  const banco = (pedidoData.guindastes || []).find(g => {
-    console.log('🔍 [renderCapa] Comparando:', {
-      'g.id': g?.id,
-      'itemCarrinho.id': itemCarrinho?.id,
-      'match id': g?.id && itemCarrinho?.id && g.id === itemCarrinho.id,
-      'g.nome': g?.nome,
-      'itemCarrinho.nome': itemCarrinho?.nome,
-      'match nome': g?.nome && itemCarrinho?.nome && g.nome === itemCarrinho.nome,
-      'g.modelo': g?.modelo,
-      'itemCarrinho.modelo': itemCarrinho?.modelo,
-      'match modelo': g?.modelo && itemCarrinho?.modelo && g.modelo === itemCarrinho.modelo
-    });
-    
-    return (g?.id && itemCarrinho?.id && g.id === itemCarrinho.id) ||
-           (g?.nome && itemCarrinho?.nome && g.nome === itemCarrinho.nome) ||
-           (g?.modelo && itemCarrinho?.modelo && g.modelo === itemCarrinho.modelo);
-  });
-  
-  console.log('🔍 [renderCapa] Banco encontrado?', banco ? '✅ SIM' : '❌ NÃO');
-  if (banco) {
-    console.log('🔍 [renderCapa] Dados do banco:', {
-      id: banco.id,
-      nome: banco.nome,
-      modelo: banco.modelo,
-      finame: banco.finame,
-      ncm: banco.ncm
-    });
-  }
+  const banco = (pedidoData.guindastes || []).find(g =>
+    (g?.id && itemCarrinho?.id && g.id === itemCarrinho.id) ||
+    (g?.nome && itemCarrinho?.nome && g.nome === itemCarrinho.nome) ||
+    (g?.modelo && itemCarrinho?.modelo && g.modelo === itemCarrinho.modelo)
+  );
   
   // Criar objeto enriquecido com fallbacks
   const g = {
@@ -626,20 +581,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   const prototipoLabel = (g?.prototipo_label || '').trim();
   const prototipoObs = (g?.prototipo_observacoes_pdf || '').trim();
   
-  console.log('🔍 [renderCapa] Dados FINAIS do equipamento:', {
-    nome: g.nome,
-    modelo: g.modelo,
-    finame: g.finame,
-    ncm: g.ncm,
-    codigo_produto: g.codigo_produto
-  });
-  
   const opcionaisSelecionados = (pedidoData.carrinho || [])
     .filter(i => i.tipo === 'opcional')
     .map(i => i.nome);
   const codigo = g.codigo_produto || g.codigo_referencia || generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || '-';
   
-  console.log('🔍 [renderCapa] Código gerado:', codigo);
 
   const enderecoCliente = (() => {
     const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
@@ -842,40 +788,16 @@ const renderCliente = (pedidoData, { inline = false } = {}) => {
 // EQUIPAMENTO / PRODUTO
 const renderEquipamento = (pedidoData, { inline = false } = {}) => {
   const lang = getLang(pedidoData);
-  console.log(' [renderEquipamento] Dados recebidos:', {
-    carrinho: pedidoData.carrinho,
-    guindastes: pedidoData.guindastes
-  });
-
   const guindastes = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
   const opcionais = (pedidoData.carrinho || []).filter(i => i.tipo === 'opcional');
 
   const enrich = (item) => {
-    console.log(' [enrich] Processando item:', {
-      id: item.id,
-      nome: item.nome,
-      modelo: item.modelo,
-      finame: item.finame,
-      ncm: item.ncm
-    });
-
     // Buscar dados completos do guindaste
     const banco = (pedidoData.guindastes || []).find(g => 
       (g?.id && item?.id && g.id === item.id) ||
       (g?.nome && item?.nome && g.nome === item.nome) ||
       (g?.modelo && item?.modelo && g.modelo === item.modelo)
     );
-
-    if (banco) {
-      console.log(' [enrich] Dados encontrados no banco:', {
-        id: banco.id,
-        nome: banco.nome,
-        finame: banco.finame,
-        ncm: banco.ncm
-      });
-    } else {
-      console.log(' [enrich] Nenhum dado adicional encontrado no banco para o item:', item.id || item.nome);
-    }
 
     // Criar objeto enriquecido com fallbacks
     const enriched = {
@@ -886,25 +808,10 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       ncm: banco?.ncm || item?.ncm || t(lang, 'notProvided')
     };
 
-    console.log(' [enrich] Dados finais do item:', {
-      id: enriched.id,
-      nome: enriched.nome,
-      finame: enriched.finame,
-      ncm: enriched.ncm
-    });
-
     return enriched;
   };
 
   const gList = guindastes.map(enrich);
-  console.log('📋 [renderEquipamento] Lista de guindastes processada:', gList);
-  
-  // Log detalhado dos dados que estão chegando
-  console.log('🔍 [renderEquipamento] Dados completos do primeiro guindaste:', gList[0]);
-  console.log('🔍 [renderEquipamento] Dados completos do pedidoData:', {
-    carrinho: pedidoData.carrinho[0],
-    guindastes: pedidoData.guindastes[0]
-  });
 
   const el = createContainer('pdf-equipamento', { inline });
   let html = `
@@ -2073,7 +1980,6 @@ const getGraficoUrls = async (pedidoData) => {
         urls.push(url);
       }
     }
-    console.log(`📊 [getGraficoUrls] ${urls.length} gráfico(s) encontrado(s)`);
     return urls;
   } catch (e) {
     console.error('Erro ao buscar gráficos de carga:', e);
@@ -2243,7 +2149,6 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
               const grafDoc = await PDFDocument.load(grafBytes);
               const copied = await mainDoc.copyPages(grafDoc, grafDoc.getPageIndices());
               copied.forEach(p => mainDoc.addPage(p));
-              console.log('✅ Gráfico anexado:', url);
             } catch (e) {
               console.error('⚠️ Erro ao incluir gráfico individual:', e);
             }

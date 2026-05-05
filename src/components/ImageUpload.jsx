@@ -49,7 +49,6 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
 
       const base64Data = await base64Promise;
       
-      console.log('✅ Imagem convertida para base64');
       setPreview(base64Data);
       onImageUpload(base64Data); // Passa a imagem em base64 para o componente pai
 
@@ -77,7 +76,6 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         throw new Error('Não foi possível obter a URL pública da imagem.');
       }
 
-      console.log('✅ Imagem enviada para Supabase Storage:', publicUrlData.publicUrl);
       setPreview(publicUrlData.publicUrl);
       onImageUpload(publicUrlData.publicUrl); // Passa a URL pública para o componente pai
       */

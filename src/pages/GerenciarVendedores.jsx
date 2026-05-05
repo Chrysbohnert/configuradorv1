@@ -377,7 +377,7 @@ const GerenciarVendedores = () => {
               </div>
 
               <div className="hero-kpi-card">
-                <span className="hero-kpi-label">Faturamento</span>
+                <span className="hero-kpi-label">Propostas geradas</span>
                 <strong>{formatCurrency(resumo.faturamentoTotal)}</strong>
                 <small>volume total da equipe</small>
               </div>
@@ -473,7 +473,7 @@ const GerenciarVendedores = () => {
                           <div className="performance-number">
                             {formatCurrency(vendedor.valorTotal || 0)}
                           </div>
-                          <div className="performance-label">Faturamento</div>
+                          <div className="performance-label">faturamento</div>
                         </div>
 
                       </div>

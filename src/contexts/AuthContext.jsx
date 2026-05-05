@@ -88,13 +88,11 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (authError) {
-        console.log('🔄 Tentando fallback para banco local...');
         
         // Debug detalhado do login
         const debugResult = await debugLogin(email, senha);
         
         if (debugResult.user && debugResult.isValidPassword) {
-          console.log('✅ Login via fallback bem-sucedido!');
           
           // Login direto no banco (fallback) - senha verificada com hash
           const { senha: _, ...userWithoutPassword } = debugResult.user;
@@ -129,7 +127,6 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Login via Supabase Auth bem-sucedido
-      console.log('✅ Login via Supabase Auth bem-sucedido!');
       
       // Buscar dados completos do usuário no banco (sem senha)
       const { data: users, error: dbError } = await supabase

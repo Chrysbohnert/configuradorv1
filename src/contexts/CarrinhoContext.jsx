@@ -95,11 +95,6 @@ export const CarrinhoProvider = ({ children }) => {
       const regiaoParaNormalizar = regiaoClienteSelecionada || user.regiao;
       const regiaoVendedor = normalizarRegiao(regiaoParaNormalizar, temIE);
 
-      console.log('🔄 [CarrinhoContext] Recalculando preços...');
-      console.log('   Região selecionada do cliente:', regiaoClienteSelecionada);
-      console.log('   Região do vendedor:', user.regiao);
-      console.log('   Cliente tem IE:', temIE);
-      console.log('   Região normalizada:', regiaoVendedor);
 
       const carrinhoAtualizado = [];
       let precisaAtualizar = false;
@@ -110,7 +105,6 @@ export const CarrinhoProvider = ({ children }) => {
             const novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
 
             if (novoPreco !== item.preco) {
-              console.log(`   💰 Preço atualizado: ${item.nome} - R$ ${item.preco} → R$ ${novoPreco}`);
               precisaAtualizar = true;
             }
 
@@ -129,10 +123,8 @@ export const CarrinhoProvider = ({ children }) => {
 
       // Só atualiza se realmente houver mudança nos preços
       if (precisaAtualizar) {
-        console.log('✅ [CarrinhoContext] Preços atualizados com sucesso');
         setCarrinho(carrinhoAtualizado);
       } else {
-        console.log('ℹ️ [CarrinhoContext] Nenhuma mudança de preço detectada');
       }
     } catch (error) {
       console.error('❌ [CarrinhoContext] Erro ao recalcular preços:', error);
