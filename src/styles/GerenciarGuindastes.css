@@ -1825,7 +1825,7 @@ textarea:focus {
 
 .modern-modal-overlay {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 280px; right: 0; bottom: 0;
   background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
@@ -1833,6 +1833,18 @@ textarea:focus {
   z-index: 10000;
   padding: 32px 20px;
   overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .modern-modal-overlay {
+    left: 270px;
+  }
+}
+
+@media (max-width: 768px) {
+  .modern-modal-overlay {
+    left: 0;
+  }
 }
 
 .modern-modal {

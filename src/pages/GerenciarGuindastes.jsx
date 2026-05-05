@@ -46,7 +46,10 @@ const GerenciarGuindastes = () => {
     is_prototipo: false,
     prototipo_label: '',
     prototipo_observacoes_pdf: '',
-    is_comercio_exterior: false
+    is_comercio_exterior: false,
+    valor_instalacao_cliente: '',
+    valor_instalacao_incluso: '',
+    bloquear_desconto: false
   });
 
   const [vendedoresDisponiveis, setVendedoresDisponiveis] = useState([]);
@@ -234,7 +237,6 @@ const GerenciarGuindastes = () => {
       return;
     }
 
-    console.log('🔧 [handleEdit] Item recebido:', item);
 
     try {
       const guindasteData = await db.getGuindasteById(item.id);
@@ -245,7 +247,6 @@ const GerenciarGuindastes = () => {
         return;
       }
 
-      console.log('✅ Dados completos encontrados:', guindasteData);
 
       setEditingGuindaste(guindasteData);
       const newFormData = {
@@ -266,9 +267,11 @@ const GerenciarGuindastes = () => {
         is_prototipo: !!guindasteData.is_prototipo,
         prototipo_label: guindasteData.prototipo_label || '',
         prototipo_observacoes_pdf: guindasteData.prototipo_observacoes_pdf || '',
-        is_comercio_exterior: !!guindasteData.is_comercio_exterior
+        is_comercio_exterior: !!guindasteData.is_comercio_exterior,
+        valor_instalacao_cliente: guindasteData.valor_instalacao_cliente ?? '',
+        valor_instalacao_incluso: guindasteData.valor_instalacao_incluso ?? '',
+        bloquear_desconto: !!guindasteData.bloquear_desconto
       };
-      console.log('📝 [handleEdit] FormData sendo definido:', newFormData);
       setFormData(newFormData);
 
       setShowModal(true);
@@ -290,7 +293,6 @@ const GerenciarGuindastes = () => {
   };
 
   const handleCloseModal = () => {
-    console.log('🚪 [handleCloseModal] Fechando modal e resetando formData');
     setShowModal(false);
     setEditingGuindaste(null);
     setFormData({
@@ -311,7 +313,10 @@ const GerenciarGuindastes = () => {
       is_prototipo: false,
       prototipo_label: '',
       prototipo_observacoes_pdf: '',
-      is_comercio_exterior: false
+      is_comercio_exterior: false,
+      valor_instalacao_cliente: '',
+      valor_instalacao_incluso: '',
+      bloquear_desconto: false
     });
     document.body.classList.remove('modal-open');
   };
@@ -340,7 +345,10 @@ const GerenciarGuindastes = () => {
       is_prototipo: false,
       prototipo_label: '',
       prototipo_observacoes_pdf: '',
-      is_comercio_exterior: false
+      is_comercio_exterior: false,
+      valor_instalacao_cliente: '',
+      valor_instalacao_incluso: '',
+      bloquear_desconto: false
     });
     setShowModal(true);
     document.body.classList.add('modal-open');
@@ -420,7 +428,6 @@ const GerenciarGuindastes = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('🚀 [handleSubmit] Iniciando submit do formulário');
     setIsLoading(true);
 
     try {
@@ -465,22 +472,18 @@ const GerenciarGuindastes = () => {
         is_prototipo: !!formData.is_prototipo,
         prototipo_label: (formData.prototipo_label || '').trim() || null,
         prototipo_observacoes_pdf: (formData.prototipo_observacoes_pdf || '').trim() || null,
-        is_comercio_exterior: !!formData.is_comercio_exterior
+        is_comercio_exterior: !!formData.is_comercio_exterior,
+        valor_instalacao_cliente: formData.valor_instalacao_cliente !== '' ? parseFloat(formData.valor_instalacao_cliente) || null : null,
+        valor_instalacao_incluso: formData.valor_instalacao_incluso !== '' ? parseFloat(formData.valor_instalacao_incluso) || null : null,
+        bloquear_desconto: !!formData.bloquear_desconto
       };
 
-      console.log('📋 [handleSubmit] Dados do formulário:', formData);
-      console.log('📋 [handleSubmit] Dados preparados para envio:', guindasteData);
-      console.log('📋 [handleSubmit] Campo configuração:', guindasteData.configuração);
-      console.log('📦 [handleSubmit] Quantidade disponível:', guindasteData.quantidade_disponivel);
 
       if (editingGuindaste) {
-        console.log('🔧 [handleSubmit] Atualizando guindaste ID:', editingGuindaste.id);
         await db.updateGuindaste(editingGuindaste.id, guindasteData);
         setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
-        console.log('🔧 [handleSubmit] Criando novo guindaste');
         const result = await db.createGuindaste(guindasteData);
-        console.log('✅ [handleSubmit] Novo guindaste criado:', result);
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
@@ -1063,6 +1066,46 @@ const GerenciarGuindastes = () => {
                     className="modern-input"
                     disabled={!formData.is_prototipo}
                   />
+                </div>
+
+                <div className="modern-divider"></div>
+
+                <div className="modern-grid-3">
+                  <div className="modern-form-group">
+                    <label>Instalação — Cliente paga direto (R$)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.valor_instalacao_cliente}
+                      onChange={e => handleInputChange('valor_instalacao_cliente', e.target.value)}
+                      placeholder="Deixe vazio para usar padrão"
+                      className="modern-input"
+                    />
+                  </div>
+                  <div className="modern-form-group">
+                    <label>Instalação — Incluso no pedido (R$)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData.valor_instalacao_incluso}
+                      onChange={e => handleInputChange('valor_instalacao_incluso', e.target.value)}
+                      placeholder="Deixe vazio para usar padrão"
+                      className="modern-input"
+                    />
+                  </div>
+                  <div className="modern-form-group">
+                    <label>Bloquear descontos?</label>
+                    <select
+                      value={formData.bloquear_desconto ? 'sim' : 'nao'}
+                      onChange={e => handleInputChange('bloquear_desconto', e.target.value === 'sim')}
+                      className="modern-input"
+                    >
+                      <option value="nao">Não</option>
+                      <option value="sim">Sim (sem desconto)</option>
+                    </select>
+                  </div>
                 </div>
                 
               </div>

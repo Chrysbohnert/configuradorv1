@@ -101,6 +101,22 @@ export default function PaymentPolicy({
     return t.includes('GSI');
   }), [itens]);
 
+  const instalacaoClienteValor = useMemo(() => {
+    if (guindasteDoPedido?.valor_instalacao_cliente != null) return Number(guindasteDoPedido.valor_instalacao_cliente);
+    return temGSI ? 5500 : temGSE ? 6500 : 0;
+  }, [guindasteDoPedido, temGSI, temGSE]);
+
+  const instalacaoInclusoValor = useMemo(() => {
+    if (guindasteDoPedido?.valor_instalacao_incluso != null) return Number(guindasteDoPedido.valor_instalacao_incluso);
+    return temGSI ? 6350 : temGSE ? 7500 : 0;
+  }, [guindasteDoPedido, temGSI, temGSE]);
+
+  const bloquearDesconto = useMemo(() => !!guindasteDoPedido?.bloquear_desconto, [guindasteDoPedido]);
+
+  useEffect(() => {
+    if (bloquearDesconto) setDescontoVendedor(0);
+  }, [bloquearDesconto]);
+
   // Calcular valor do conversor de voltagem (Caminhão 12V = +R$ 450)
   const valorConversor = useMemo(() => {
     // Caminhão 12V exige conversor de voltagem
@@ -169,7 +185,6 @@ export default function PaymentPolicy({
   useEffect(() => {
     if (!initialPaymentData || hasRestoredRef.current || modoConcessionaria) return;
 
-    console.log('📝 [PaymentPolicy] Restaurando dados salvos (modo edição):', initialPaymentData);
     isRestoringRef.current = true;
     hasRestoredRef.current = true;
 
@@ -206,7 +221,6 @@ export default function PaymentPolicy({
     // Liberar reset effects após restauração
     setTimeout(() => {
       isRestoringRef.current = false;
-      console.log('✅ [PaymentPolicy] Restauração concluída - navegação livre entre etapas');
     }, 300);
   }, [initialPaymentData, modoConcessionaria]);
 
@@ -298,7 +312,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
   useEffect(() => {
     if (!solicitacaoId) return;
 
-    console.log('🔔 [PaymentPolicy] Iniciando listener para solicitação:', solicitacaoId);
 
     const channel = supabase
       .channel(`solicitacao-${solicitacaoId}`)
@@ -308,13 +321,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         table: 'solicitacoes_desconto',
         filter: `id=eq.${solicitacaoId}`
       }, async (payload) => {
-        console.log('🔔 [PaymentPolicy] Atualização recebida:', payload);
 
         if (payload.new.status === 'aprovado') {
           const descontoAprovado = payload.new.desconto_aprovado;
           const aprovadorNome = payload.new.aprovador_nome;
 
-          console.log(`✅ [PaymentPolicy] Desconto aprovado: ${descontoAprovado}% (não exibido ao vendedor)`);
 
           try {
             const extraValorNum = parseFloat(extraValor) || 0;
@@ -338,7 +349,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
             const r = calcularPagamento({
               precoBase: precoBase,
-              plan: planoSelecionado,
+              plan: planoEfetivo,
               dataEmissaoNF: new Date(),
             });
 
@@ -350,9 +361,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             const valorFrete = valorFreteCalculado;
 
             // Calcula instalação
-            const valorInstalacao = instalacao === 'incluso'
-              ? (temGSI ? 6350 : temGSE ? 7500 : 0)
-              : 0;
+            const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
             const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
@@ -378,12 +387,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             const numParcelas = r.parcelas?.length || 1;
             const valorParcela = saldoAPagarCalc / numParcelas;
             
-            console.log('🔢 [PaymentPolicy - APROVAÇÃO] CÁLCULO DE PARCELAS:');
-            console.log('   Valor Final:', valorFinal);
-            console.log('   Entrada Total:', entradaTotalCalc);
-            console.log('   Saldo a Pagar:', saldoAPagarCalc);
-            console.log('   Número de Parcelas:', numParcelas);
-            console.log('   Valor por Parcela:', valorParcela);
             
             let somaAcumulada = 0;
             const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
@@ -392,14 +395,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
                 ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
                 : Math.round(valorParcela * 100) / 100;
               somaAcumulada += valor;
-              console.log(`   Parcela ${idx + 1}:`, valor);
               return {
                 ...parcela,
                 valor
               };
             }) || [];
             
-            console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
             const novoResultado = {
               ...r,
@@ -473,7 +474,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           const aprovadorNome = payload.new.aprovador_nome;
           const observacao = payload.new.observacao_gestor;
 
-          console.log(`❌ [PaymentPolicy] Solicitação negada por ${aprovadorNome}`);
 
           // Fecha modal e limpa estados
           setModalSolicitacaoOpen(false);
@@ -491,7 +491,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // Cleanup: remove listener quando componente desmonta ou solicitacaoId muda
     return () => {
-      console.log('🔕 [PaymentPolicy] Removendo listener');
       supabase.removeChannel(channel);
     };
   }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI, dadosFreteAtual, valorFreteCalculado]);
@@ -504,9 +503,17 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       : (tipoCliente === 'revenda' ? 'revenda' : 'cliente');
   const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
 
+  const planoEfetivo = useMemo(() => {
+    if (!planoSelecionado) return null;
+    if (!bloquearDesconto) return planoSelecionado;
+    return { ...planoSelecionado, discount_percent: 0 };
+  }, [planoSelecionado, bloquearDesconto]);
+
+  const descontoVendedorEfetivo = bloquearDesconto ? 0 : descontoVendedor;
+
   const entradaOpcoes = null;
   const permiteFinanciamento = true;
-  const permiteSolicitarDescontoExtra = true;
+  const permiteSolicitarDescontoExtra = !bloquearDesconto;
   const descontosBotoes = null;
   const planosLiberados = null;
 
@@ -605,7 +612,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       p => p.description === initialPaymentData.prazoPagamento
     );
     if (planoSalvo) {
-      console.log('📝 [PaymentPolicy] Plano restaurado:', planoSalvo.description);
       setPlanoSelecionado(planoSalvo);
     }
   }, [initialPaymentData, todosPlanos, planosFiltrados, planoSelecionado]);
@@ -675,7 +681,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
       const extraValorNum = parseFloat(extraValor) || 0;
-      const descontoExtraValor = precoBase * (descontoVendedor / 100);
+      const descontoExtraValor = precoBase * (descontoVendedorEfetivo / 100);
       const valorAposExtra = precoBase - descontoExtraValor;
 
       // Frete pode ser incluso no pedido (CIF) mesmo em financiamento.
@@ -683,9 +689,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       const valorFrete = valorFreteCalculado;
 
       // Instalação pode ser inclusa na proposta (opcional) também para revenda
-      const valorInstalacao = instalacao === 'incluso'
-        ? (temGSI ? 6350 : temGSE ? 7500 : 0)
-        : 0;
+      const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
       const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
       const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
@@ -722,7 +726,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         total: valorFinalFinanciamento,
         valorFinal: valorFinalFinanciamento, // Adicionar para compatibilidade com PDF
         // Campos em percentual para o PDF
-        desconto: descontoVendedor,
+        desconto: descontoVendedorEfetivo,
         descontoPrazo: 0,
         acrescimo: 0,
         // Campos de entrada (zerados para financiamento)
@@ -742,15 +746,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         valorFinalUSD,
       };
 
-      console.log('💾 [PaymentPolicy] pagamentoData calculado (financiamento):', {
-        tipoFrete,
-        tipoEntrega,
-        localInstalacao,
-        valorFreteCalculado,
-        valorFrete: r.valorFrete,
-        valorFinal: r.valorFinal,
-        total: r.total,
-      });
       setResultado(r);
       onPaymentComputed?.(r);
       return;
@@ -763,21 +758,19 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       const extraValorNum = parseFloat(extraValor) || 0;
       const r = calcularPagamento({
         precoBase: precoBaseAjustado,
-        plan: planoSelecionado,
+        plan: planoEfetivo,
         dataEmissaoNF: new Date(),
       });
 
       // aplica desconto do vendedor (sobre o PREÇO AJUSTADO POR REGIÃO)
-      const descontoExtraValor = precoBaseAjustado * (descontoVendedor / 100);
+      const descontoExtraValor = precoBaseAjustado * (descontoVendedorEfetivo / 100);
       const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
       // frete: somente se frete incluso + selecionado tipo de entrega e local
       const valorFrete = valorFreteCalculado;
 
       // instalação: apenas para CLIENTE, revenda não tem instalação
-      const valorInstalacao = instalacao === 'incluso'
-        ? (temGSI ? 6350 : temGSE ? 7500 : 0)
-        : 0;
+      const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
       const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
 
@@ -803,12 +796,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       const numParcelas = r.parcelas?.length || 1;
       const valorParcela = saldoAPagarCalc / numParcelas;
       
-      console.log('🔢 [PaymentPolicy] CÁLCULO DE PARCELAS:');
-      console.log('   Valor Final:', valorFinal);
-      console.log('   Entrada Total:', entradaTotalCalc);
-      console.log('   Saldo a Pagar:', saldoAPagarCalc);
-      console.log('   Número de Parcelas:', numParcelas);
-      console.log('   Valor por Parcela:', valorParcela);
       
       let somaAcumulada = 0;
       const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
@@ -817,14 +804,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
           : Math.round(valorParcela * 100) / 100;
         somaAcumulada += valor;
-        console.log(`   Parcela ${idx + 1}:`, valor);
         return {
           ...parcela,
           valor
         };
       }) || [];
       
-      console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
       const descontoQuantidadeValor = (Number(precoBase) || 0) - (Number(precoBaseAjustado) || 0);
 
@@ -847,8 +832,8 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         financiamentoBancario: 'nao', // Não é financiamento bancário
         
         // Campos de desconto e acréscimo em PERCENTUAL (para o PDF)
-        desconto: descontoVendedor, // % do desconto do vendedor
-        descontoPrazo: (planoSelecionado?.discount_percent || 0) * 100, // % do desconto do plano/prazo
+        desconto: descontoVendedorEfetivo, // % do desconto do vendedor
+        descontoPrazo: (planoEfetivo?.discount_percent || 0) * 100, // % do desconto do plano/prazo
         acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100, // % do acréscimo do plano
         
         // Campos de entrada (para o PDF)
@@ -887,16 +872,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         prazoPagamento: planoSelecionado?.description || '',
       };
 
-      console.log('💾 [PaymentPolicy] pagamentoData calculado:', {
-        tipoFrete,
-        tipoEntrega,
-        localInstalacao,
-        valorFreteCalculado,
-        valorFrete: resultadoFinal.valorFrete,
-        valorFinal: resultadoFinal.valorFinal,
-        total: resultadoFinal.total,
-      });
-
       setResultado(resultadoFinal);
       onPaymentComputed?.(resultadoFinal);
     } catch (err) {
@@ -928,18 +903,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     onPaymentComputed,
   ]);
 
-  // =============== AJUDA VISUAL (debug) ==========================
-  useEffect(() => {
-    if (!debug) return;
-    console.log('[ETAPA]', etapa, {
-      tipoCliente, participacaoRevenda, tipoIE,
-      instalacao, tipoFrete, localInstalacao, tipoEntrega,
-      percentualEntrada, valorSinal, formaEntrada,
-      planoSelecionado, descontoVendedor,
-      temGSE, temGSI,
-    });
-  }, [debug, etapa, tipoCliente, participacaoRevenda, tipoIE, instalacao, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, valorSinal, formaEntrada, planoSelecionado, descontoVendedor, temGSE, temGSI]);
-
   // =============== UTILS DE NAVEGAÇÃO ============================
   const podeIrEtapa2 = !!tipoCliente && (tipoCliente === 'revenda' ? true : true);
   const podeIrEtapa3 = tipoCliente === 'revenda' ? true : !!participacaoRevenda && (!!tipoIE || travaIEProdutor);
@@ -970,16 +933,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
         : 'Equipamento não identificado';
 
-      console.log('📝 [PaymentPolicy] Criando solicitação de desconto:', {
-        vendedorId: user.id,
-        vendedorNome: user.nome,
-        equipamentoDescricao,
-        valorBase: precoBase,
-        descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
-        descontoDesejado,
-        justificativa
-      });
-
       // Criar solicitação no banco
       const solicitacao = await db.criarSolicitacaoDesconto({
         vendedorId: user.id,
@@ -992,7 +945,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         justificativa
       });
 
-      console.log('✅ [PaymentPolicy] Solicitação criada:', solicitacao);
 
       // Guardar ID da solicitação para o listener
       setSolicitacaoId(solicitacao.id);
@@ -1018,12 +970,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     if (!solicitacaoId) return;
 
     try {
-      console.log('🔄 [PaymentPolicy] Verificando status da solicitação:', solicitacaoId);
       
       const solicitacao = await db.getSolicitacaoPorId(solicitacaoId);
       
       if (solicitacao.status === 'aprovado') {
-        console.log('✅ [PaymentPolicy] Desconto aprovado:', solicitacao.desconto_aprovado, '% (não exibido ao vendedor)');
 
         const extraValorNum = parseFloat(extraValor) || 0;
         
@@ -1039,7 +989,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
         const r = calcularPagamento({
           precoBase: precoBaseAjustado,
-          plan: planoSelecionado,
+          plan: planoEfetivo,
           dataEmissaoNF: new Date(),
         });
 
@@ -1055,9 +1005,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           : 0;
 
         // Calcula instalação
-        const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso'
-          ? (temGSI ? 6350 : temGSE ? 7500 : 0)
-          : 0;
+        const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
         const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
 
@@ -1078,12 +1026,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         const numParcelas = r.parcelas?.length || 1;
         const valorParcela = saldoAPagarCalc / numParcelas;
         
-        console.log('🔢 [PaymentPolicy - VERIFICAÇÃO] CÁLCULO DE PARCELAS:');
-        console.log('   Valor Final:', valorFinal);
-        console.log('   Entrada Total:', entradaTotalCalc);
-        console.log('   Saldo a Pagar:', saldoAPagarCalc);
-        console.log('   Número de Parcelas:', numParcelas);
-        console.log('   Valor por Parcela:', valorParcela);
         
         let somaAcumulada = 0;
         const parcelasCorrigidas = r.parcelas?.map((parcela, idx) => {
@@ -1092,14 +1034,12 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             ? Math.round((saldoAPagarCalc - somaAcumulada) * 100) / 100
             : Math.round(valorParcela * 100) / 100;
           somaAcumulada += valor;
-          console.log(`   Parcela ${idx + 1}:`, valor);
           return {
             ...parcela,
             valor
           };
         }) || [];
         
-        console.log('   Total das Parcelas:', parcelasCorrigidas.reduce((acc, p) => acc + p.valor, 0));
 
         const descontoQuantidadeValor = (Number(precoBase) || 0) - (Number(precoBaseAjustado) || 0);
 
@@ -1165,7 +1105,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         alert(`✅ Desconto aprovado por ${solicitacao.aprovador_nome}!\n\nValor atualizado com sucesso. Você pode continuar preenchendo a proposta.`);
         
       } else if (solicitacao.status === 'negado') {
-        console.log('❌ [PaymentPolicy] Solicitação negada');
         setAguardandoAprovacao(false);
         setModalSolicitacaoOpen(false);
         setSolicitacaoId(null);
@@ -1212,11 +1151,11 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
     // Adicionar instalação (quando incluso na proposta)
     if (instalacao === 'incluso') {
-      valor += (temGSI ? 6350 : temGSE ? 7500 : 0);
+      valor += instalacaoInclusoValor;
     }
 
     return valor;
-  }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, temGSE, temGSI, tipoCliente]);
+  }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, instalacaoInclusoValor, bloquearDesconto, tipoCliente]);
 
   const moedaResumo = useMemo(() => {
     if (!isComercioExterior) return 'BRL';
@@ -1272,7 +1211,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
     // Aplicar desconto automático de 2% se houver mais de 1 guindaste no carrinho
     const quantidadeGuindastes = carrinho.filter(item => item.tipo === 'guindaste').length;
     if (quantidadeGuindastes > 1) {
-      console.log(`🎁 [PaymentPolicy] Aplicando desconto automático de 2% (${quantidadeGuindastes} guindastes no carrinho)`);
       setDescontoVendedor(2);
     } else {
       setDescontoVendedor(Number(descontoConcessionaria) || 0);
@@ -1299,7 +1237,6 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
       prazoPagamento: '', // Será preenchido quando selecionar plano
     };
     
-    console.log('🔄 [PaymentPolicy] Enviando dados iniciais do modo concessionária:', dadosIniciais);
     onPaymentComputed?.(dadosIniciais);
   }, [modoConcessionaria, onPaymentComputed, tipoFrete]);
 
@@ -1384,14 +1321,14 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             <span className="pp-radio-indicator">{instalacao === 'cliente' ? '●' : '○'}</span>
             <span className="pp-radio-text">
               <strong>Cliente paga direto</strong>
-              <small>Ref. {formatCurrency(temGSI ? 5500 : temGSE ? 6500 : 0)} — fora do pedido</small>
+              <small>Ref. {formatCurrency(instalacaoClienteValor)} — fora do pedido</small>
             </span>
           </label>
           <label className={`pp-radio-row ${instalacao === 'incluso' ? 'pp-radio-active' : ''}`} onClick={() => setInstalacao('incluso')}>
             <span className="pp-radio-indicator">{instalacao === 'incluso' ? '●' : '○'}</span>
             <span className="pp-radio-text">
               <strong>Incluso no pedido</strong>
-              <small>+ {formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)} no total</small>
+              <small>+ {formatCurrency(instalacaoInclusoValor)} no total</small>
             </span>
           </label>
         </div>
@@ -1629,60 +1566,68 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
             <div className="form-group">
               <label>Desconto do Vendedor</label>
 
-              {temGSI && tipoCliente === 'revenda' && (
-              <div>
-                <div className="pp-section-label" style={{ margin: '6px 0 4px' }}>Padrão (1 unidade)</div>
-                <div className="pp-desconto-btns">
-                  {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(v => (
-                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
-                  ))}
+              {bloquearDesconto ? (
+                <div className="pp-info-note" style={{ marginTop: '6px', color: '#ef4444', background: '#fff1f2', borderColor: '#fca5a5' }}>
+                  Desconto não disponível para este guindaste.
                 </div>
-                <div className="pp-section-label" style={{ margin: '10px 0 4px' }}>Por quantidade</div>
-                <div className="pp-desconto-btns">
-                  {[{ v: 14, label: '14% — 2 un.' }, { v: 15, label: '15% — 3+ un.' }].map(({ v, label }) => (
-                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{label}</button>
-                  ))}
-                </div>
-                <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Selecione conforme a quantidade de equipamentos</small>
-              </div>
-            )}
+              ) : (
+                <>
+                  {temGSI && tipoCliente === 'revenda' && (
+                    <div>
+                      <div className="pp-section-label" style={{ margin: '6px 0 4px' }}>Padrão (1 unidade)</div>
+                      <div className="pp-desconto-btns">
+                        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(v => (
+                          <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                        ))}
+                      </div>
+                      <div className="pp-section-label" style={{ margin: '10px 0 4px' }}>Por quantidade</div>
+                      <div className="pp-desconto-btns">
+                        {[{ v: 14, label: '14% — 2 un.' }, { v: 15, label: '15% — 3+ un.' }].map(({ v, label }) => (
+                          <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{label}</button>
+                        ))}
+                      </div>
+                      <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Selecione conforme a quantidade de equipamentos</small>
+                    </div>
+                  )}
 
-            {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
-              <div className="pp-desconto-btns">
-                {((descontosBotoes || (temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3]))).map(v => (
-                  <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
-                ))}
-              </div>
-            )}
+                  {(temGSI || temGSE) && tipoCliente === 'cliente' && participacaoRevenda === 'nao' && (
+                    <div className="pp-desconto-btns">
+                      {((descontosBotoes || (temGSI ? [0, 1, 2, 3, 4, 5, 6, 7] : [0, 0.5, 1, 1.5, 2, 2.5, 3]))).map(v => (
+                        <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                      ))}
+                    </div>
+                  )}
 
-            {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && tipoIE === 'produtor' && (
-              <div>
-                <div className="pp-desconto-btns">
-                  {[0, 1, 2, 3, 4, 5].map(v => (
-                    <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
-                  ))}
-                </div>
-                <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Desconto máximo: 5%</small>
-              </div>
-            )}
+                  {temGSI && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && tipoIE === 'produtor' && (
+                    <div>
+                      <div className="pp-desconto-btns">
+                        {[0, 1, 2, 3, 4, 5].map(v => (
+                          <button key={v} type="button" className={`pp-desc-btn ${descontoVendedor === v ? 'pp-desc-active' : ''}`} onClick={() => setDescontoVendedor(v)}>{v}%</button>
+                        ))}
+                      </div>
+                      <small className="form-help help-info" style={{ display: 'block', marginTop: '6px' }}>Desconto máximo: 5%</small>
+                    </div>
+                  )}
 
-            {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && (
-              <div className="pp-info-note" style={{ marginTop: '6px' }}>
-                Não há desconto disponível para GSE com participação de revenda.
-              </div>
-            )}
+                  {temGSE && tipoCliente === 'cliente' && participacaoRevenda === 'sim' && (
+                    <div className="pp-info-note" style={{ marginTop: '6px' }}>
+                      Não há desconto disponível para GSE com participação de revenda.
+                    </div>
+                  )}
 
-            {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
-              <button
-                type="button"
-                className="pp-extra-btn"
-                onClick={() => setModalSolicitacaoOpen(true)}
-                disabled={aguardandoAprovacao}
-                style={{ marginTop: '10px' }}
-              >
-                {aguardandoAprovacao ? 'Aguardando aprovação...' : '+ Solicitar desconto adicional'}
-              </button>
-            )}
+                  {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
+                    <button
+                      type="button"
+                      className="pp-extra-btn"
+                      onClick={() => setModalSolicitacaoOpen(true)}
+                      disabled={aguardandoAprovacao}
+                      style={{ marginTop: '10px' }}
+                    >
+                      {aguardandoAprovacao ? 'Aguardando aprovação...' : '+ Solicitar desconto adicional'}
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           )}
 
@@ -1710,7 +1655,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           {(resultado?.descontoValor || 0) > 0 && <span className="pp-cta-item pp-cta-minus">Prazo -{formatCurrency(resultado.descontoValor)}</span>}
           {(resultado?.acrescimoValor || 0) > 0 && <span className="pp-cta-item pp-cta-plus">Acréscimo +{formatCurrency(resultado.acrescimoValor)}</span>}
           {valorFreteCalculado > 0 && <span className="pp-cta-item pp-cta-plus">Frete +{formatCurrency(valorFreteCalculado)}</span>}
-          {instalacao === 'incluso' && <span className="pp-cta-item pp-cta-plus">Instalação +{formatCurrency(temGSI ? 6350 : temGSE ? 7500 : 0)}</span>}
+          {instalacao === 'incluso' && <span className="pp-cta-item pp-cta-plus">Instalação +{formatCurrency(instalacaoInclusoValor)}</span>}
           {(parseFloat(extraValor) || 0) > 0 && <span className="pp-cta-item pp-cta-plus">{extraDescricao || 'Extra'} +{formatCurrency(parseFloat(extraValor))}</span>}
           {resultado?.parcelas?.length > 0 && percentualEntrada !== 'financiamento' && (
             <span className="pp-cta-item pp-cta-parcelas">
@@ -1724,11 +1669,7 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         className="pp-cta-btn"
         disabled={!resultado || (percentualEntrada !== 'financiamento' && !planoSelecionado)}
         onClick={() => {
-          console.log('🔘 Botão "Continuar" clicado');
-          console.log('📊 Resultado:', resultado);
-          console.log('🎯 onFinish existe?', !!onFinish);
           if (onFinish) {
-            console.log('✅ Chamando onFinish...');
             onFinish(resultado);
           } else {
             console.warn('⚠️ onFinish não está definido!');

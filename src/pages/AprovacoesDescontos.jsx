@@ -27,7 +27,6 @@ export default function AprovacoesDescontos() {
       navigate('/dashboard-admin');
       return;
     }
-    console.log('🔔 [AprovacoesDescontos] Iniciando listener realtime...');
 
     const channel = supabase
       .channel('solicitacoes-admin')
@@ -36,7 +35,6 @@ export default function AprovacoesDescontos() {
         schema: 'public',
         table: 'solicitacoes_desconto'
       }, (payload) => {
-        console.log('🔔 [AprovacoesDescontos] Mudança detectada:', payload);
         // Atualiza a lista de forma otimizada
         setSolicitacoes(current => {
           const index = current.findIndex(s => s.id === payload.new?.id || payload.old?.id);
@@ -70,7 +68,6 @@ export default function AprovacoesDescontos() {
     carregarSolicitacoes();
 
     return () => {
-      console.log('🔕 [AprovacoesDescontos] Removendo listener');
       supabase.removeChannel(channel);
     };
   }, [user, navigate]);
@@ -78,7 +75,6 @@ export default function AprovacoesDescontos() {
   const carregarSolicitacoes = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [AprovacoesDescontos] Carregando solicitações...');
       
       // Busca apenas solicitações pendentes
       const { data, error } = await supabase
@@ -89,7 +85,6 @@ export default function AprovacoesDescontos() {
       
       if (error) throw error;
       
-      console.log(`✅ [AprovacoesDescontos] ${data?.length || 0} solicitações pendentes carregadas`);
       setSolicitacoes(data || []);
     } catch (error) {
       console.error('❌ [AprovacoesDescontos] Erro ao carregar:', error);
@@ -128,13 +123,6 @@ export default function AprovacoesDescontos() {
       if (!confirmar) return;
 
       setProcessando(solicitacao.id);
-      console.log('✅ [AprovacoesDescontos] Iniciando aprovação:', {
-        solicitacaoId: solicitacao.id,
-        desconto: descontoNumerico,
-        aprovadorId: user?.id,
-        aprovadorNome: user?.nome
-      });
-
       // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
         console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
@@ -204,13 +192,6 @@ export default function AprovacoesDescontos() {
       if (!confirmar) return;
 
       setProcessando(solicitacao.id);
-      console.log('❌ [AprovacoesDescontos] Negando solicitação:', {
-        solicitacaoId: solicitacao.id,
-        aprovadorId: user?.id,
-        aprovadorNome: user?.nome,
-        motivo
-      });
-
       // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
         console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);

@@ -9,8 +9,7 @@ import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
-import { maskCPF, maskCNPJ, maskPhone, maskCEP } from '../utils/masks';
-import { CODIGOS_MODELOS, DESCRICOES_OPCIONAIS } from '../config/codigosGuindaste';
+import { maskCPF, maskCNPJ } from '../utils/masks';
 import { createLogger } from '../utils/productionLogger';
 import { createDealInSalesIfNotExists } from '../utils/bitrixClient';
 import ResumoPedidoExterno from '../components/NovoPedido/ResumoPedido';
@@ -84,7 +83,6 @@ const NovoPedido = () => {
   // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
   React.useEffect(() => {
     if (!propostaId && !location.state?.fromDetalhes) {
-      console.log('🧹 [NovoPedido] Limpando todos os dados (novo pedido)');
       setCarrinho([]);
       setClienteData({});
       setCaminhaoData({});
@@ -108,7 +106,6 @@ const NovoPedido = () => {
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
     if (location.state?.regiaoClienteSelecionada) {
-      console.log('📍 [NovoPedido] Restaurando região de location.state:', location.state.regiaoClienteSelecionada);
       setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
       // Limpar o state para evitar loops
       window.history.replaceState({}, document.title);
@@ -119,7 +116,6 @@ const NovoPedido = () => {
   React.useEffect(() => {
     if (location.state?.step && isModoConcessionaria) {
       const targetStep = location.state.step;
-      console.log('📍 [NovoPedido] Restaurando step de location.state:', targetStep);
       setCurrentStep(targetStep);
       setMaxStepReached(Math.max(maxStepReached, targetStep));
     }
@@ -207,7 +203,6 @@ const NovoPedido = () => {
       }
 
       try {
-        console.log('📝 Carregando proposta para edição:', propostaId);
         const proposta = await db.getPropostaById(propostaId);
         
         if (!proposta) {
@@ -216,7 +211,6 @@ const NovoPedido = () => {
           return;
         }
 
-        console.log('✅ Proposta carregada:', proposta);
         setPropostaOriginal(proposta);
         setIsEdicao(true);
 
@@ -248,12 +242,6 @@ const NovoPedido = () => {
         setCurrentStep(5);
         setMaxStepReached(5);
 
-        console.log('✅ Dados carregados com sucesso para edição');
-        console.log('📊 Carrinho:', dados.carrinho?.length || 0, 'itens');
-        console.log('👤 Cliente:', dados.clienteData?.nome || 'N/A');
-        console.log('🚛 Caminhão:', dados.caminhaoData?.marca || 'N/A', dados.caminhaoData?.modelo || 'N/A');
-        console.log('💰 Pagamento:', dados.pagamentoData?.tipoPagamento || 'N/A');
-        console.log('🎯 Step definido para: 5 (Finalizar)');
       } catch (error) {
         console.error('❌ Erro ao carregar proposta:', error);
         alert('Erro ao carregar proposta para edição');
@@ -339,38 +327,13 @@ const NovoPedido = () => {
     // ✅ NOVO: Não recalcular se região não foi selecionada
     const isExteriorRegioAtual = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
     if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && !isExteriorRegioAtual && regioes.length === 0)) {
-      console.log(' [recalcularPrecosCarrinho] Condições não atendidas:', {
-        carrinhoLength: carrinho.length,
-        regioesOperacao: regioes.length,
-        regiaoSelecionada: regiaoClienteSelecionada || '(vazia)'
-      });
       return;
     }
 
-    console.log('[recalcularPrecosCarrinho] INICIANDO recálculo...');
-    console.log('[recalcularPrecosCarrinho] Carrinho antes:', carrinho.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     const temIE = determinarClienteTemIE();
     // ✅ NOVO: Usar regiaoClienteSelecionada
     const regiaoVendedor = normalizarRegiao(regiaoClienteSelecionada, temIE);
-
-    console.log(` [recalcularPrecosCarrinho] Contexto - Cliente tem IE: ${temIE}, Região selecionada: ${regiaoClienteSelecionada}`);
-    console.log(` [recalcularPrecosCarrinho] Regiões de operação disponíveis: ${regioes.join(', ')}`);
-    console.log(` [recalcularPrecosCarrinho] Região normalizada para busca: ${regiaoVendedor}`);
-
-    // ← NOVO: Testar preços de todas as regiões para comparação (se região selecionada é RS)
-    if (regiaoClienteSelecionada?.toLowerCase().includes('rs') || regiaoClienteSelecionada === 'rio grande do sul') {
-      console.log('🔍 [recalcularPrecosCarrinho] Verificando preços em diferentes regiões RS:');
-      for (const item of carrinho.filter(i => i.tipo === 'guindaste').slice(0, 1)) {
-        try {
-          const precoComIE = await db.getPrecoPorRegiao(item.id, 'rs-com-ie');
-          const precoSemIE = await db.getPrecoPorRegiao(item.id, 'rs-sem-ie');
-          console.log(`  ${item.nome}: rs-com-ie = R$ ${precoComIE}, rs-sem-ie = R$ ${precoSemIE}`);
-        } catch (error) {
-          console.error(`  Erro ao verificar preços para ${item.nome}:`, error);
-        }
-      }
-    }
 
     const carrinhoAtualizado = [];
 
@@ -379,20 +342,11 @@ const NovoPedido = () => {
         try {
           let novoPreco = 0;
           if (isModoConcessionaria) {
-            console.log(` [recalcularPrecosCarrinho] (COMPRA CONCESSIONÁRIA) Buscando preço por região para ${item.nome} (ID: ${item.id})`);
             novoPreco = await db.getPrecoCompraPorRegiao(item.id, regiaoVendedor);
           } else {
-            console.log(` [recalcularPrecosCarrinho] Buscando preço para ${item.nome} (ID: ${item.id}) na região ${regiaoVendedor}`);
             novoPreco = await db.getPrecoPorRegiao(item.id, regiaoVendedor);
           }
 
-          console.log(` [recalcularPrecosCarrinho] ${item.nome}: R$ ${item.preco} → R$ ${novoPreco} (${isConcessionariaUser ? 'concessionaria' : regiaoVendedor})`);
-
-          if (novoPreco !== item.preco) {
-            console.log(` [recalcularPrecosCarrinho] PREÇO MUDOU para ${item.nome}!`);
-          } else {
-            console.log(` [recalcularPrecosCarrinho] PREÇO MANTIDO para ${item.nome}`);
-          }
 
           const isExteriorRecalc = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
           carrinhoAtualizado.push({
@@ -408,7 +362,6 @@ const NovoPedido = () => {
       }
     }
 
-    console.log(' [recalcularPrecosCarrinho] Carrinho depois:', carrinhoAtualizado.map(i => ({ id: i.id, nome: i.nome, preco: i.preco })));
 
     // Verificar se houve mudança real nos preços antes de atualizar
     const houveAlteracao = carrinhoAtualizado.some((itemNovo, index) => {
@@ -417,25 +370,15 @@ const NovoPedido = () => {
     });
 
     if (houveAlteracao) {
-      console.log(' [recalcularPrecosCarrinho] Carrinho atualizado e salvo');
       setCarrinho(carrinhoAtualizado);
       localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
-    } else {
-      console.log(' [recalcularPrecosCarrinho] Nenhuma alteração de preço, carrinho mantido');
     }
   };
 
   // Recalcular preços quando contexto de pagamento mudar OU quando região selecionada mudar
   useEffect(() => {
-    console.log('📌 [useEffect recalcularPrecosCarrinho] Disparado! Carrinho:', carrinho.length, 'Região:', regiaoClienteSelecionada);
     if (carrinho.length > 0 && regiaoClienteSelecionada) {
-      console.log('[useEffect recalcularPrecosCarrinho] Condições atendidas, chamando recalcularPrecosCarrinho');
       recalcularPrecosCarrinho();
-    } else {
-      console.log(' [useEffect recalcularPrecosCarrinho] Condições NÃO atendidas:', {
-        carrinhoLength: carrinho.length,
-        regiaoClienteSelecionada: regiaoClienteSelecionada || '(vazia)'
-      });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagamentoData?.tipoPagamento || '', pagamentoData?.participacaoRevenda || '', pagamentoData?.revendaTemIE || '', clienteTemIE, regiaoClienteSelecionada]);
@@ -491,8 +434,6 @@ const NovoPedido = () => {
         if (chunk.length < pageSize) break;
       }
 
-      console.log(' [NovoPedido] Guindastes carregados (paginação):', all.length);
-      console.log(' [NovoPedido] Primeiros 3 guindastes:', all.slice(0, 3));
 
       let idsVisiveis = null;
       try {
@@ -555,7 +496,6 @@ const NovoPedido = () => {
         //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação)
         const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
         if (jaNoCarrinho) {
-          console.log(' [processarGuindasteSelecionado] Guindaste já está no carrinho, ignorando duplicação');
           // Limpar o state e retornar
           navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
           return;
@@ -575,15 +515,12 @@ const NovoPedido = () => {
           try {
             const temIE = determinarClienteTemIE();
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
-            console.log(` [adicionarGuindaste] (COMPRA CONCESSIONÁRIA) Buscando preço para região: ${regiaoClienteSelecionada} → ${regiaoParaBusca}`);
             precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
-            console.log(` [adicionarGuindaste] Preço compra concessionária encontrado: R$ ${precoGuindaste}`);
           } catch (error) {
             console.error(' [adicionarGuindaste] Erro ao buscar preço de compra do guindaste:', error);
             precoGuindaste = guindaste.preco || 0;
           }
         } else {
-          console.log('⚠️ [adicionarGuindaste] Nenhuma região selecionada, usando preço padrão');
         }
 
         // Adicionar ao carrinho com TODOS os detalhes (incluindo descricao, nao_incluido, finame e ncm)
@@ -602,16 +539,12 @@ const NovoPedido = () => {
           prototipo_label: guindaste.prototipo_label || null,
           prototipo_observacoes_pdf: guindaste.prototipo_observacoes_pdf || null,
           prototipo_payment_set_id: guindaste.prototipo_payment_set_id || null,
+          valor_instalacao_cliente: guindaste.valor_instalacao_cliente ?? null,
+          valor_instalacao_incluso: guindaste.valor_instalacao_incluso ?? null,
+          bloquear_desconto: !!guindaste.bloquear_desconto,
           preco: precoGuindaste,
           tipo: 'guindaste'
         };
-
-        console.log(' [adicionarGuindaste] Produto adicionado ao carrinho:', {
-          id: produto.id,
-          nome: produto.nome,
-          finame: produto.finame,
-          ncm: produto.ncm
-        });
 
         adicionarAoCarrinho(produto, 'guindaste');
 
@@ -637,7 +570,6 @@ const NovoPedido = () => {
     if (isEdicao) return;
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
-      console.log('🔄 Voltou para Step 1, resetando dados de pagamento');
       setPagamentoData({
         tipoPagamento: '',
         prazoPagamento: '',
@@ -681,8 +613,6 @@ const NovoPedido = () => {
   };
 
   const getModelosPorCapacidade = (capacidade) => {
-    console.log(' [getModelosPorCapacidade] Buscando modelos para capacidade:', capacidade);
-    console.log(' [getModelosPorCapacidade] Total de guindastes:', guindastes?.length || 0);
     
     const modelos = new Map();
     
@@ -692,7 +622,6 @@ const NovoPedido = () => {
       
       const match = modeloBase.match(/(\d+\.?\d*)/);
       if (match && match[1] === capacidade) {
-        console.log(' [getModelosPorCapacidade] Encontrado modelo:', modeloBase, 'para guindaste:', guindaste.id);
         // Agrupar por modelo base (GSI 6.5, GSE 8.0C, etc.) - coluna "Modelo" da tabela
         if (!modelos.has(modeloBase)) {
           modelos.set(modeloBase, guindaste);
@@ -701,7 +630,6 @@ const NovoPedido = () => {
     });
     
     const resultado = Array.from(modelos.values());
-    console.log(' [getModelosPorCapacidade] Modelos encontrados:', resultado.length);
     return resultado;
   };
 
@@ -720,14 +648,6 @@ const NovoPedido = () => {
   const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
   const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
   
-  console.log(' [NovoPedido] Estado atual:', {
-    selectedCapacidade,
-    selectedModelo,
-    totalGuindastes: guindastes?.length || 0,
-    modelosDisponiveis: modelosDisponiveis?.length || 0,
-    guindastesDisponiveis: guindastesDisponiveis?.length || 0
-  });
-
   const getPrecoParaConfigurador = useCallback(async (guindasteId) => {
     try {
       if (isModoConcessionaria) {
@@ -917,7 +837,6 @@ const NovoPedido = () => {
       // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
       const removedItem = prev[index];
       if (removedItem && removedItem.tipo === 'guindaste') {
-        console.log(' Equipamento removido do carrinho:', removedItem.id);
       }
 
       return newCart;
@@ -927,7 +846,6 @@ const NovoPedido = () => {
   const limparCarrinho = () => {
     setCarrinho([]);
     localStorage.removeItem('carrinho');
-    console.log(' Carrinho limpo completamente');
   };
 
 
@@ -957,7 +875,6 @@ const NovoPedido = () => {
     setCarrinhoAcumulativo(novoCarrinhoAcumulativo);
     localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinhoAcumulativo));
     
-    console.log(' [NovoPedido] Pedido adicionado ao carrinho acumulativo:', novoPedido);
     return novoPedido;
   };
 
@@ -979,20 +896,17 @@ const NovoPedido = () => {
     setMaxStepReached(1);
     localStorage.removeItem('carrinho');
     localStorage.removeItem('novoPedido_pagamentoData');
-    console.log(' [NovoPedido] Pedido atual limpo para novo pedido');
   };
 
   const limparCarrinhoAcumulativo = () => {
     setCarrinhoAcumulativo([]);
     localStorage.removeItem('carrinhoAcumulativo');
-    console.log(' [NovoPedido] Carrinho acumulativo limpo');
   };
 
   const removerDoCarrinhoAcumulativo = (pedidoId) => {
     const novoCarrinho = carrinhoAcumulativo.filter(p => p.id !== pedidoId);
     setCarrinhoAcumulativo(novoCarrinho);
     localStorage.setItem('carrinhoAcumulativo', JSON.stringify(novoCarrinho));
-    console.log(' [NovoPedido] Pedido removido do carrinho acumulativo:', pedidoId);
   };
 
   const getTotalCarrinhoAcumulativo = () => {
@@ -1235,7 +1149,6 @@ const NovoPedido = () => {
                 onPrev={handlePrevious}
                 errors={validationErrors}
                 onPropostaRapida={() => {
-                  console.log(' Proposta Rápida - avançando sem validação');
                   const totalSteps = steps.length;
                   if (currentStep < totalSteps) {
                     setCurrentStep(currentStep + 1);
@@ -1279,7 +1192,6 @@ const NovoPedido = () => {
   const validateStep = (step) => {
     const errors = {};
     
-    console.log('🔎 validateStep chamado para step:', step);
     
     if (isModoConcessionaria) {
       if (step === 1) {
@@ -1299,50 +1211,34 @@ const NovoPedido = () => {
         }
         break;
       case 2:
-        console.log('🔎 Validando case 2...');
-        console.log('  tipoPagamento:', pagamentoData.tipoPagamento, '| vazio?', !pagamentoData.tipoPagamento);
         if (!pagamentoData.tipoPagamento) {
-          console.log('  ❌ Erro: tipoPagamento vazio');
           errors.tipoPagamento = 'Selecione o tipo de pagamento';
         }
         
         // Prazo de pagamento NÃO é obrigatório se houver financiamento bancário
-        console.log('  prazoPagamento:', pagamentoData.prazoPagamento, '| financiamento:', pagamentoData.financiamentoBancario);
         if (!pagamentoData.prazoPagamento && pagamentoData.financiamentoBancario !== 'sim') {
-          console.log('  ❌ Erro: prazoPagamento vazio (sem financiamento)');
           errors.prazoPagamento = 'Selecione o prazo de pagamento';
         }
         
         // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
-        console.log('  É cliente?', pagamentoData.tipoPagamento === 'cliente');
         if (pagamentoData.tipoPagamento === 'cliente') {
-          console.log('  localInstalacao:', pagamentoData.localInstalacao, '| vazio?', !pagamentoData.localInstalacao);
           if (!pagamentoData.localInstalacao) {
-            console.log('  ❌ Erro: localInstalacao vazio');
             errors.localInstalacao = 'Informe o local de instalação';
           }
-          console.log('  tipoInstalacao:', pagamentoData.tipoInstalacao, '| vazio?', !pagamentoData.tipoInstalacao);
           if (!pagamentoData.tipoInstalacao) {
-            console.log('  ❌ Erro: tipoInstalacao vazio');
             errors.tipoInstalacao = 'Selecione o tipo de instalação';
           }
           // Participação de revenda é obrigatória para cliente
-          console.log('  participacaoRevenda:', pagamentoData.participacaoRevenda, '| vazio?', !pagamentoData.participacaoRevenda);
           if (!pagamentoData.participacaoRevenda) {
-            console.log('  ❌ Erro: participacaoRevenda vazio');
             errors.participacaoRevenda = 'Selecione se há participação de revenda';
           }
           // Se respondeu participação, IE/Tipo é obrigatório
-          console.log('  revendaTemIE:', pagamentoData.revendaTemIE, '| vazio?', !pagamentoData.revendaTemIE);
           if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
-            console.log('  ❌ Erro: revendaTemIE vazio');
             errors.revendaTemIE = 'Selecione o tipo de cliente/revenda';
           }
         }
         
-        console.log('  tipoFrete:', pagamentoData.tipoFrete, '| vazio?', !pagamentoData.tipoFrete);
         if (!pagamentoData.tipoFrete) {
-          console.log('  ❌ Erro: tipoFrete vazio');
           errors.tipoFrete = 'Selecione o tipo de frete';
         }
         break;
@@ -1369,8 +1265,6 @@ const NovoPedido = () => {
         break;
     }
     
-    console.log('🔎 Total de erros encontrados:', Object.keys(errors).length);
-    console.log('🔎 Erros:', errors);
     
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
@@ -1439,32 +1333,16 @@ const NovoPedido = () => {
   };
 
   const handleNext = () => {
-    console.log('🚀🚀🚀 VERSÃO NOVA DO CÓDIGO - handleNext chamado 🚀🚀🚀');
-    console.log('📍 currentStep:', currentStep);
-    console.log('📊 pagamentoData:', JSON.stringify(pagamentoData, null, 2));
     
     // Adicionar log detalhado ANTES da validação
     if (currentStep === 2) {
-      console.log('🔍 Validando Step 2:');
-      console.log('  - tipoPagamento:', pagamentoData.tipoPagamento);
-      console.log('  - prazoPagamento:', pagamentoData.prazoPagamento);
-      console.log('  - financiamentoBancario:', pagamentoData.financiamentoBancario);
-      console.log('  - localInstalacao:', pagamentoData.localInstalacao);
-      console.log('  - tipoInstalacao:', pagamentoData.tipoInstalacao);
-      console.log('  - participacaoRevenda:', pagamentoData.participacaoRevenda);
-      console.log('  - revendaTemIE:', pagamentoData.revendaTemIE);
-      console.log('  - tipoFrete:', pagamentoData.tipoFrete);
     }
     
     const isValid = validateStep(currentStep);
-    console.log('✅ Validação passou?', isValid);
-    console.log('❌ Erros de validação (estado antigo):', JSON.stringify(validationErrors, null, 2));
-    console.log('⚠️ ATENÇÃO: Os erros reais foram logados dentro do validateStep acima ☝️');
     
     const totalSteps = steps.length;
     if (isValid && currentStep < totalSteps) {
       const nextStep = currentStep + 1;
-      console.log('➡️ Avançando para step:', nextStep);
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
       setValidationErrors({}); // Limpar erros ao avançar
@@ -1527,20 +1405,16 @@ const NovoPedido = () => {
               <button
                 key="debug-prices"
                 onClick={async () => {
-                  console.log('🔍 === DEBUG COMPLETO DE PREÇOS ===');
-                  console.log('👤 Usuário:', user?.nome, 'Região:', user?.regiao);
 
                   // Verificar preços de todas as regiões para os primeiros equipamentos
                   const regioesParaTestar = ['rs-com-ie', 'rs-sem-ie', 'sul-sudeste'];
                   const equipamentosParaTestar = guindastes.slice(0, 3);
 
                   for (const equipamento of equipamentosParaTestar) {
-                    console.log(`\n🏗️ ${equipamento.subgrupo} (ID: ${equipamento.id}):`);
 
                     for (const regiao of regioesParaTestar) {
                       try {
                         const preco = await db.getPrecoPorRegiao(equipamento.id, regiao);
-                        console.log(`  ${regiao}: R$ ${preco}`);
                       } catch (error) {
                         console.error(`  ❌ Erro em ${regiao}:`, error.message);
                       }
@@ -1550,10 +1424,6 @@ const NovoPedido = () => {
                   // Testar lógica atual
                   const temIE = determinarClienteTemIE();
                   const regiaoAtual = normalizarRegiao(regiaoClienteSelecionada || 'sul-sudeste', temIE);
-                  console.log(`\n🎯 Lógica atual:`);
-                  console.log(`  Cliente tem IE: ${temIE}`);
-                  console.log(`  Região selecionada: ${regiaoAtual}`);
-                  console.log(`  Carrinho atual:`, carrinho.map(i => ({ nome: i.nome, preco: i.preco })));
                 }}
                 style={{
                   background: '#28a745',
@@ -1572,9 +1442,6 @@ const NovoPedido = () => {
               <button
                 key="test-context"
                 onClick={() => {
-                  console.log('🧪 === TESTE DE CONTEXTO ===');
-                  console.log('📊 Estado atual do pagamentoData:', pagamentoData);
-                  console.log('🎯 Testando determinarClienteTemIE():', determinarClienteTemIE());
 
                   // Simular mudança de contexto
                   setPagamentoData({
@@ -1583,7 +1450,6 @@ const NovoPedido = () => {
                     participacaoRevenda: 'sim',
                     revendaTemIE: 'nao'
                   });
-                  console.log('✅ Simulado contexto: cliente + CNPJ/CPF');
                 }}
                 style={{
                   background: '#ffc107',
@@ -2589,19 +2455,6 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
 
 // Componente Resumo do Pedido
 const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user, guindastes, isEdicao, propostaOriginal, propostaId, isConcessionariaCompra = false, concessionariaInfo = null, regiaoCompraSelecionada = '', carrinhoAcumulativo = [], onAdicionarAoCarrinho, onLimparPedidoAtual, onLimparCarrinhoAcumulativo, onRemoverDoCarrinhoAcumulativo }) => {
-  // Log para depuração dos dados do equipamento
-  useEffect(() => {
-    if (carrinho && carrinho.length > 0) {
-      console.log('📦 Dados do equipamento no ResumoPedido:', {
-        modelo: carrinho[0]?.modelo,
-        finame: carrinho[0]?.finame,
-        ncm: carrinho[0]?.ncm,
-        codigo_referencia: carrinho[0]?.codigo_referencia,
-        configuracao: carrinho[0]?.configuracao,
-        tem_contr: carrinho[0]?.tem_contr
-      });
-    }
-  }, [carrinho]);
   const [pedidoSalvoId, setPedidoSalvoId] = React.useState(null);
 
   const filterCaminhaoDataForDB = (data) => ({
@@ -2687,23 +2540,15 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   };
 
   const salvarRelatorio = async () => {
-    console.log('🆕 [VERSÃO CORRIGIDA] salvarRelatorio iniciado - 10/11/2025 21:54');
     try {
       // Verificação defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
       const modoEdicao = modoEdicaoCalc;
       const proposta = propostaOriginal || null;
       const propostaIdToUpdate = propostaIdCalc;
       
-      console.log(`🔄 Iniciando ${modoEdicao ? 'atualização' : 'salvamento'} do relatório...`);
-      console.log('📋 Dados do cliente:', clienteData);
-      console.log('🚛 Dados do caminhão:', caminhaoData);
-      console.log('💳 Dados de pagamento:', pagamentoData);
-      console.log('🛒 Carrinho:', carrinho);
-      console.log('👤 Usuário:', user);
       
       // Se for edição, fazer UPDATE direto
       if (modoEdicao && propostaIdToUpdate) {
-        console.log('✏️ Modo EDIÇÃO - Atualizando proposta existente:', propostaIdToUpdate);
         
         // Buscar o ID do guindaste principal no carrinho
         const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
@@ -2730,15 +2575,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           cliente_documento: documentoClienteDB
         };
         
-        console.log('📋 Dados para atualização:', dadosAtualizados);
         const propostaAtualizada = await db.updateProposta(propostaIdToUpdate, dadosAtualizados);
-        console.log('✅ Proposta atualizada com sucesso:', propostaAtualizada);
         
         return propostaAtualizada;
       }
       
       // Modo criação normal
-      console.log('➕ Modo CRIAÇÃO - Criando nova proposta');
 
       if (isConcessionariaCompra) {
         const timestamp = Date.now().toString();
@@ -2801,7 +2643,6 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       }
       
       // 1. Criar cliente
-      console.log('1️⃣ Criando cliente...');
       
       // Montar endereço completo a partir dos campos separados
       const enderecoCompleto = (() => {
@@ -2824,12 +2665,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         observacoes: clienteData.observacoes || null
       };
       
-      console.log('📋 Dados do cliente para salvar:', clienteDataToSave);
       const cliente = await db.createCliente(clienteDataToSave);
-      console.log('✅ Cliente criado:', cliente);
       
       // 2. Criar caminhão
-      console.log('2️⃣ Criando caminhão...');
       
       // Detectar se é proposta preliminar
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
@@ -2840,7 +2678,6 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       if (isPropostaPreliminar) {
         // Para proposta preliminar: não salvar no banco, apenas usar dados em memória
-        console.log('⚠️ Proposta Preliminar - Caminhão não será salvo no banco');
         caminhao = {
           id: null,
           ...caminhaoData,
@@ -2859,19 +2696,15 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           cliente_id: cliente.id
         };
         
-        console.log('📋 Dados do caminhão para salvar:', caminhaoDataToSave);
         
         caminhao = await db.createCaminhao(caminhaoDataToSave);
-        console.log('✅ Caminhão criado:', caminhao);
       }
       
       // 3. Gerar número do pedido (máx. 10 caracteres para caber em VARCHAR(10))
       const timestamp = Date.now().toString();
       const numeroPedido = `PED${timestamp.slice(-7)}`; // Ex: PED1234567
-      console.log('3️⃣ Número do pedido gerado:', numeroPedido);
       
       // 4. Criar pedido
-      console.log('4️⃣ Criando pedido...');
       
             
             
@@ -2919,21 +2752,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           concessionaria_id: user?.concessionaria_id || null
         }
       };
-      console.log('📋 Dados do pedido para salvar:', pedidoDataToSave);
       
       const pedido = await db.createpropostas(pedidoDataToSave);
-      console.log('✅ Pedido criado:', pedido);
             
       // 5. Itens do pedido já estão salvos em dados_serializados
       // Não é necessário criar registros separados em propostas_itens
-      console.log('5️⃣ Itens do pedido salvos em dados_serializados:', carrinho.length, 'itens');
       
-      console.log('🎉 Relatório salvo com sucesso:', {
-        pedidoId: pedido.id,
-        numeroPedido,
-        cliente: cliente.nome,
-        vendedor: user.nome
-      });
       return pedido;
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error);

@@ -17,14 +17,8 @@ export default function SeletorRegiaoCliente({
 
   // ✅ NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
   useEffect(() => {
-    console.log('📍 [SeletorRegiaoCliente] Inicializando regiões:', {
-      regioesDisponiveis,
-      regiaoSelecionada
-    });
-
     if (regioesDisponiveis && regioesDisponiveis.length > 0) {
       // Usar APENAS as regiões de operação definidas pelo admin
-      console.log('✅ [SeletorRegiaoCliente] Usando regiões de operação:', regioesDisponiveis);
       setRegioes(regioesDisponiveis);
     } else {
       // Se não tem regiões de operação, mostrar mensagem de erro
@@ -44,7 +38,6 @@ export default function SeletorRegiaoCliente({
             id="regiao-select"
             value={regiaoSelecionada || ''}
             onChange={(e) => {
-              console.log('🔄 [SeletorRegiaoCliente] Região selecionada:', e.target.value);
               onRegiaoChange(e.target.value);
             }}
             className={`seletor-inline-select ${regiaoSelecionada ? 'selected' : ''}`}

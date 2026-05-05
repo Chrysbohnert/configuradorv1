@@ -25,9 +25,9 @@ export const LOG_CATEGORIES = {
 // Configuração do logger
 const LOG_CONFIG = {
   level: import.meta.env.DEV ? LOG_LEVELS.DEBUG : LOG_LEVELS.INFO,
-  enableConsole: true,
+  enableConsole: import.meta.env.DEV,
   enableStorage: true,
-  enableAnalytics: true,
+  enableAnalytics: !import.meta.env.DEV,
   maxLogs: 1000,
   storageKey: 'app_logs'
 };

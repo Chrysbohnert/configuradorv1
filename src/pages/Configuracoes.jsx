@@ -235,7 +235,6 @@ const Configuracoes = () => {
             const bucketExists = buckets?.some(bucket => bucket.name === 'perfis');
             
             if (!bucketExists) {
-              console.log('⚠️ Bucket perfis não existe, criando...');
               const { error: createError } = await supabase.storage.createBucket('perfis', {
                 public: true,
                 allowedMimeTypes: ['image/*'],
@@ -263,13 +262,10 @@ const Configuracoes = () => {
 
               if (urlData?.publicUrl) {
                 fotoUrl = urlData.publicUrl;
-                console.log('✅ Foto enviada para Supabase Storage');
               }
             } else {
-              console.log('⚠️ Upload no Storage falhou, usando base64');
             }
           } catch (storageError) {
-            console.log('⚠️ Erro no Storage, usando base64:', storageError);
           }
         } catch (error) {
           console.error('Erro ao processar foto:', error);

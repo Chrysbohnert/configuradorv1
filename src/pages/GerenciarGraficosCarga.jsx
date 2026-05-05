@@ -69,14 +69,11 @@ const GerenciarGraficosCarga = () => {
             });
 
             if (signInError) {
-              console.log('❌ Erro ao sincronizar com Supabase:', signInError);
             } else {
-              console.log('✅ Sincronização com Supabase realizada');
             }
           }
         }
       } catch (error) {
-        console.log('⚠️ Erro ao sincronizar com Supabase:', error);
       }
 
       let arquivoUrl = '';

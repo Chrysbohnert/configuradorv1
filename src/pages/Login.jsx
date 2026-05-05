@@ -88,13 +88,11 @@ const Login = () => {
       });
 
       if (authError) {
-        console.log('ℹ️ Auth Supabase não encontrou usuário, usando fallback local...');
         
         // Debug detalhado do login
         const debugResult = await debugLogin(email, senha);
         
         if (debugResult.user && debugResult.isValidPassword) {
-          console.log('✅ Login via fallback bem-sucedido!');
           
           // Login direto no banco (fallback) - senha verificada com hash
           const { senha: _, ...userWithoutPassword } = debugResult.user;
@@ -123,7 +121,6 @@ const Login = () => {
             navigate('/dashboard');
           }
         } else {
-          console.log('❌ Fallback falhou:', debugResult);
           
           // Registrar tentativa falhada
           const clientIP = getClientIP();
@@ -143,7 +140,6 @@ const Login = () => {
         }
       } else {
         // Login no Supabase Auth bem-sucedido
-        console.log('✅ Login no Supabase Auth realizado');
 
         // Criar/Padronizar token local com expiração (alinha com validateSession)
         const loginTime = Date.now();

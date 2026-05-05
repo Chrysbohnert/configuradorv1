@@ -41,12 +41,10 @@ export function buildGraficoKey(raw) {
 export function resolveGraficoUrl(indexMap, key) {
   if (!indexMap || !key) return undefined;
   
-  console.log(`🔍 Resolvendo URL para chave: "${key}"`);
   
   // Tentativa 1: Match exato
   let url = indexMap.get(key);
   if (url) {
-    console.log(`   ✅ Match exato encontrado`);
     return url;
   }
 
@@ -55,7 +53,6 @@ export function resolveGraficoUrl(indexMap, key) {
   if (keySemSufixo !== key) {
     url = indexMap.get(keySemSufixo);
     if (url) {
-      console.log(`   ✅ Match sem sufixo encontrado: "${keySemSufixo}"`);
       return url;
     }
   }
@@ -67,7 +64,6 @@ export function resolveGraficoUrl(indexMap, key) {
     const numero = match[2]; // ex: 10.8
     const letra = match[3] ? match[3].toLowerCase() : null; // c ou t
     
-    console.log(`   📝 Parseado: tipo=${tipo}, numero=${numero}, letra=${letra}`);
     
     // Tentativa 3a: Buscar com letra específica (C=Canivete, T=Trave)
     if (letra) {
@@ -76,11 +72,9 @@ export function resolveGraficoUrl(indexMap, key) {
         // Verificar se contém o tipo, número e a característica (canivete/trave)
         if (idxLower.includes(tipo) && idxLower.includes(numero)) {
           if (letra === 'c' && idxKey.includes('canivete')) {
-            console.log(`   ✅ Match com Canivete: "${idxKey}"`);
             return idxUrl;
           }
           if (letra === 't' && idxKey.includes('trave')) {
-            console.log(`   ✅ Match com Trave: "${idxKey}"`);
             return idxUrl;
           }
         }
@@ -90,7 +84,6 @@ export function resolveGraficoUrl(indexMap, key) {
       const keyComLetra = `${tipo} ${numero}${letra}`;
       url = indexMap.get(keyComLetra);
       if (url) {
-        console.log(`   ✅ Match com letra: "${keyComLetra}"`);
         return url;
       }
     }
@@ -99,7 +92,6 @@ export function resolveGraficoUrl(indexMap, key) {
     const baseKey = `${tipo} ${numero}`;
     url = indexMap.get(baseKey);
     if (url) {
-      console.log(`   ✅ Match base encontrado: "${baseKey}"`);
       return url;
     }
     
@@ -107,7 +99,6 @@ export function resolveGraficoUrl(indexMap, key) {
     for (const [idxKey, idxUrl] of indexMap.entries()) {
       const idxLower = idxKey.toLowerCase();
       if (idxLower.includes(tipo) && idxLower.includes(numero)) {
-        console.log(`   ✅ Match parcial encontrado: "${idxKey}"`);
         url = idxUrl;
         // Não retorna ainda, continua procurando uma correspondência melhor
       }
@@ -119,12 +110,10 @@ export function resolveGraficoUrl(indexMap, key) {
   // Tentativa 4: Busca parcial - qualquer chave que contenha a chave de busca
   for (const [idxKey, idxUrl] of indexMap.entries()) {
     if (idxKey.includes(key) || key.includes(idxKey)) {
-      console.log(`   ⚠️ Match parcial (última tentativa): "${idxKey}"`);
       return idxUrl;
     }
   }
   
-  console.log(`   ❌ Nenhum match encontrado`);
   return undefined;
 }
 
