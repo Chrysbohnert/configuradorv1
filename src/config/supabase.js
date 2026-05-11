@@ -24,7 +24,7 @@ class DatabaseService {
     if (!chave) throw new Error('chave é obrigatória');
     const { data, error } = await supabase
       .from('configuracoes_globais')
-      .select('*')
+      .select('chave, valor_numero, valor_texto')
       .eq('chave', chave)
       .maybeSingle();
 
@@ -42,7 +42,7 @@ class DatabaseService {
     const { data, error } = await supabase
       .from('configuracoes_globais')
       .upsert(payload)
-      .select('*')
+      .select('chave, valor_numero')
       .single();
 
     if (error) throw error;
@@ -95,7 +95,7 @@ class DatabaseService {
 
     let query = supabase
       .from('prototype_payment_plan_sets')
-      .select('*')
+      .select('id, guindaste_id, status, created_at')
       .eq('guindaste_id', guindaste_id)
       .order('created_at', { ascending: false });
 
@@ -418,7 +418,7 @@ class DatabaseService {
 
     let query = supabase
       .from('payment_plan_sets')
-      .select('*')
+      .select('id, scope, status, concessionaria_id, created_at')
       .eq('scope', scope)
       .order('created_at', { ascending: false });
 
@@ -756,16 +756,16 @@ class DatabaseService {
   // Versão para dashboard (apenas contagem via select de IDs)
   async getGuindastesCountForDashboard() {
     try {
-      const { data, error } = await supabase
+      const { count, error } = await supabase
         .from('guindastes')
-        .select('id');
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
         console.error('❌ [getGuindastesCountForDashboard] Erro:', error);
         return 0;
       }
 
-      return data?.length || 0;
+      return count ?? 0;
     } catch (err) {
       console.error('❌ [getGuindastesCountForDashboard] Exceção:', err);
       return 0;

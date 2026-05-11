@@ -447,9 +447,9 @@ export default function PlanosPagamento() {
           audience
         });
         publishedActive = (published || []).filter(p => !!p.active);
-        source = publishedActive.length > 0 ? publishedActive : getPaymentPlans(audience);
+        source = publishedActive.length > 0 ? publishedActive : (scope === 'concessionaria' ? [] : getPaymentPlans(audience));
       } catch {
-        source = getPaymentPlans(audience);
+        source = scope === 'concessionaria' ? [] : getPaymentPlans(audience);
       }
 
       const filtered = (source || [])
@@ -457,15 +457,7 @@ export default function PlanosPagamento() {
         .filter(p => (p.entry_percent_required ?? null) === targetEntry)
         .map(toUiItem);
 
-      if (filtered.length === 0 && publishedActive.length > 0) {
-        const filteredFallback = (getPaymentPlans(audience) || [])
-          .filter(p => !!p.active)
-          .filter(p => (p.entry_percent_required ?? null) === targetEntry)
-          .map(toUiItem);
-        setItems(filteredFallback);
-      } else {
-        setItems(filtered);
-      }
+      setItems(filtered);
     } catch (e) {
       console.error('Erro ao carregar planos publicados:', e);
       setStatusInfo({ type: 'error', message: 'Erro ao carregar planos publicados.' });
@@ -528,13 +520,10 @@ export default function PlanosPagamento() {
           publishedRevenda = [];
         }
 
-        const fallbackCliente = getPaymentPlans('cliente');
-        const fallbackRevenda = getPaymentPlans('revenda');
-
         const toCopy = (
           [...(publishedCliente || []), ...(publishedRevenda || [])].filter(p => p.active).length > 0
             ? [...(publishedCliente || []), ...(publishedRevenda || [])]
-            : [...(fallbackCliente || []), ...(fallbackRevenda || [])]
+            : scope === 'stark' ? [...getPaymentPlans('cliente'), ...getPaymentPlans('revenda')] : []
         ).filter(p => p.active);
 
         for (const p of toCopy) {

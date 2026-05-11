@@ -84,6 +84,7 @@ const NovoPedido = () => {
   React.useEffect(() => {
     if (!propostaId && !location.state?.fromDetalhes) {
       setCarrinho([]);
+      setCarrinhoAcumulativo([]);
       setClienteData({});
       setCaminhaoData({});
       setPagamentoData({
@@ -100,6 +101,7 @@ const NovoPedido = () => {
       setMaxStepReached(1);
       localStorage.removeItem('carrinho');
       localStorage.removeItem('novoPedido_pagamentoData');
+      localStorage.removeItem('carrinhoAcumulativo');
     }
   }, [propostaId, location.state?.fromDetalhes]);
 
@@ -400,11 +402,11 @@ const NovoPedido = () => {
 
       if (tipo === 'guindaste') {
         if (isModoConcessionaria) {
-          // No modo concessionária: 1 guindaste por pedido (substitui o atual)
-          const carrinhoSemGuindastes = prev.filter(i => i.tipo !== 'guindaste');
-          newCart = [...carrinhoSemGuindastes, { ...itemComTipo, quantidade: 1 }];
+          // No modo concessionária: múltiplos guindastes permitidos
+          const cartItemId = `${itemComTipo.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+          newCart = [...prev, { ...itemComTipo, cartItemId, quantidade: 1 }];
         } else {
-          // Para guindastes, remove qualquer guindaste existente e adiciona o novo
+          // Para guindastes normais, remove qualquer guindaste existente e adiciona o novo
           const carrinhoSemGuindastes = prev.filter(item => item.tipo !== 'guindaste');
           newCart = [...carrinhoSemGuindastes, itemComTipo];
         }
@@ -493,12 +495,14 @@ const NovoPedido = () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         
-        //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação)
-        const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
-        if (jaNoCarrinho) {
-          // Limpar o state e retornar
-          navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
-          return;
+        //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
+        // Em modo concessionária, múltiplos guindastes são permitidos
+        if (!isModoConcessionaria) {
+          const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
+          if (jaNoCarrinho) {
+            navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
+            return;
+          }
         }
         
         setGuindastesSelecionados([guindaste]);
@@ -561,7 +565,7 @@ const NovoPedido = () => {
     if (user) {
       processarGuindasteSelecionado();
     }
-  }, [location.state, navigate, user, carrinho]);
+  }, [location.state, navigate, user]);
 
 
   // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
@@ -958,35 +962,55 @@ const NovoPedido = () => {
             {/* Mostrar carrinho e botão de continuar para modo concessionária */}
             {isModoConcessionaria && carrinho.length > 0 && (
               <div style={{ marginTop: '20px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: '12px',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
-                    background: 'rgba(102, 126, 234, 0.12)',
-                    border: '1px solid rgba(102, 126, 234, 0.35)'
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <div style={{ fontWeight: 800, color: '#1f2937' }}>
-                      Carrinho: {carrinho.reduce((sum, i) => sum + (parseInt(i.quantidade, 10) || 1), 0)} item(ns)
-                    </div>
-                    <div style={{ fontSize: '0.95rem', color: '#000000' }}>
-                      {carrinho
-                        .filter(i => i.tipo === 'guindaste')
-                        .map(i => `${i.nome}${i.modelo ? ` (${i.modelo})` : ''}`)
-                        .join(' | ')}
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: 800, color: '#111827' }}>
-                    {formatCurrency(getTotalCarrinho())}
-                  </div>
+                <div style={{ fontWeight: 800, fontSize: '0.8125rem', color: '#1f2937', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  🛒 Equipamentos no carrinho
                 </div>
-
-                <div style={{ marginTop: '14px', display: 'flex' }}>
+                {carrinho.map((item, idx) => item.tipo === 'guindaste' ? (
+                  <div
+                    key={item.cartItemId || idx}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      background: '#f8fafc',
+                      border: '1px solid #e5e7eb',
+                      marginBottom: '6px'
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.875rem', color: '#0f172a', lineHeight: 1.3 }}>{item.nome}</div>
+                      {item.modelo && <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>{item.modelo}</div>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                      <span style={{ fontWeight: 800, color: '#111827', fontSize: '0.9375rem' }}>{formatCurrency(parseFloat(item.preco) || 0)}</span>
+                      <button
+                        onClick={() => removerItemPorIndex(idx)}
+                        style={{
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '6px',
+                          padding: '4px 8px',
+                          cursor: 'pointer',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          lineHeight: 1
+                        }}
+                        title="Remover item"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ) : null)}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: '10px', background: 'rgba(102, 126, 234, 0.12)', border: '1px solid rgba(102, 126, 234, 0.35)', marginTop: '4px', marginBottom: '14px' }}>
+                  <span style={{ fontWeight: 800, color: '#1f2937', fontSize: '0.875rem' }}>Total ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)</span>
+                  <span style={{ fontWeight: 800, color: '#111827' }}>{formatCurrency(getTotalCarrinho())}</span>
+                </div>
+                <div style={{ display: 'flex' }}>
                   <button
                     onClick={handleNext}
                     style={{
@@ -1011,7 +1035,7 @@ const NovoPedido = () => {
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
                     }}
                   >
-                    ✅ Continuar para Pagamento
+                    ✅ Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
                   </button>
                 </div>
               </div>
@@ -2810,7 +2834,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     vendedorTelefone: user?.telefone || '',
     guindastes: guindastesCompletos,
     isConcessionariaCompra,
-    regiaoCompraSelecionada: regiaoCompraSelecionada || ''
+    regiaoCompraSelecionada: regiaoCompraSelecionada || '',
+    concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
+    concessionariaDadosBancarios: concessionariaInfo?.dados_bancarios || '',
+    concessionariaNome: concessionariaInfo?.nome || '',
   };
 
   return (
