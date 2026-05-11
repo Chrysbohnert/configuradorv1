@@ -249,8 +249,7 @@ export default function PaymentPolicy({
     // Carrega uma lista genérica; teu projeto pode filtrar por região/vendedor
     async function load() {
       try {
-        const user = JSON.parse(localStorage.getItem('user'));
-const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
+        const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         setPontosInstalacao(Array.isArray(data) ? data : []);
       } catch (e) {
         console.error('Erro ao carregar pontos de instalação:', e);
@@ -519,6 +518,9 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
 
   useEffect(() => {
     let cancelled = false;
+    // Hoist scope outside try so catch block can reference it
+    // modoConcessionaria = compra da concessionária para a Stark → planos do escopo Stark
+    const scope = modoConcessionaria ? 'stark' : (isConcessionariaUser ? 'concessionaria' : 'stark');
 
     const loadPublishedPlans = async () => {
       try {
@@ -537,12 +539,10 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           }
         }
 
-        // modoConcessionaria = compra da concessionária para a Stark → planos definidos no escopo Stark
-        const scope = modoConcessionaria ? 'stark' : (isConcessionariaUser ? 'concessionaria' : 'stark');
         const concessionaria_id = user?.concessionaria_id || null;
 
         if (scope === 'concessionaria' && !concessionaria_id) {
-          if (!cancelled) setTodosPlanos(getPaymentPlans(audience));
+          if (!cancelled) setTodosPlanos([]);
           return;
         }
 
@@ -557,18 +557,18 @@ const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
           if (publishedActive.length > 0) {
             setTodosPlanos(publishedActive);
           } else {
-            setTodosPlanos(getPaymentPlans(audience));
+            setTodosPlanos(scope === 'concessionaria' ? [] : getPaymentPlans(audience));
           }
         }
       } catch (e) {
         console.warn('⚠️ [PaymentPolicy] Falha ao carregar planos publicados, usando fallback JSON:', e);
-        if (!cancelled) setTodosPlanos(getPaymentPlans(audience));
+        if (!cancelled) setTodosPlanos(scope === 'concessionaria' ? [] : getPaymentPlans(audience));
       }
     };
 
     loadPublishedPlans();
     return () => { cancelled = true; };
-  }, [audience, isConcessionariaUser, user?.concessionaria_id, prototipoContext.isPrototipo, prototipoContext.id]);
+  }, [audience, isConcessionariaUser, modoConcessionaria, user?.concessionaria_id, prototipoContext.isPrototipo, prototipoContext.id]);
 
   useEffect(() => {
     if (!prototipoContext.isPrototipo) return;

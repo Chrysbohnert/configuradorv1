@@ -11,6 +11,8 @@ const ResumoPedido = ({
   user,
   guindastes = [],
   isConcessionariaCompra = false,
+  concessionariaInfo: concessionariaInfoProp = null,
+  regiaoCompraSelecionada = '',
   carrinhoAcumulativo = [],
   onAdicionarAoCarrinho,
   onLimparPedidoAtual,
@@ -18,7 +20,7 @@ const ResumoPedido = ({
   onRemoverDoCarrinhoAcumulativo
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
-  const [concessionariaInfo, setConcessionariaInfo] = useState(null);
+  const [concessionariaInfo, setConcessionariaInfo] = useState(concessionariaInfoProp);
 
   const handlePDFGenerated = async (fileName) => {
     try {
@@ -177,6 +179,10 @@ const ResumoPedido = ({
     });
 
   useEffect(() => {
+    if (concessionariaInfoProp) {
+      setConcessionariaInfo(concessionariaInfoProp);
+      return;
+    }
     const carregarConcessionaria = async () => {
       if (!user?.concessionaria_id) return;
       try {
@@ -187,7 +193,7 @@ const ResumoPedido = ({
       }
     };
     carregarConcessionaria();
-  }, [user?.concessionaria_id]);
+  }, [user?.concessionaria_id, concessionariaInfoProp]);
 
   const pedidoData = {
     carrinho,
@@ -195,10 +201,12 @@ const ResumoPedido = ({
     caminhaoData,
     pagamentoData,
     vendedor: user?.nome || 'Não informado',
+    vendedorTelefone: user?.telefone || '',
     isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
     concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
     concessionariaDadosBancarios: concessionariaInfo?.dados_bancarios || '',
     concessionariaNome: concessionariaInfo?.nome || '',
+    regiaoCompraSelecionada: regiaoCompraSelecionada || '',
     guindastes: guindastesCompletos
   };
 

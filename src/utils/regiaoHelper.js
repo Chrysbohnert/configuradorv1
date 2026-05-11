@@ -28,6 +28,10 @@ export const normalizarRegiao = (regiao, temIE = true) => {
   if (regiaoLower === 'rs sem inscrição estadual' || regiaoLower === 'rs sem inscricao estadual') {
     return 'rs-sem-ie';
   }
+
+  // Passthrough: chaves já normalizadas (salvas no banco como regiao_preco)
+  if (regiaoLower === 'rs-com-ie') return 'rs-com-ie';
+  if (regiaoLower === 'rs-sem-ie') return 'rs-sem-ie';
   
   // Norte e Nordeste são agrupados
   if (regiaoLower === 'norte' || regiaoLower === 'nordeste' || regiaoLower === 'norte-nordeste') {
