@@ -10,6 +10,9 @@ const ResumoPedido = ({
   pagamentoData,
   user,
   guindastes = [],
+  isEdicao = false,
+  propostaOriginal = null,
+  propostaId = null,
   isConcessionariaCompra = false,
   concessionariaInfo: concessionariaInfoProp = null,
   regiaoCompraSelecionada = '',
@@ -20,25 +23,37 @@ const ResumoPedido = ({
   onRemoverDoCarrinhoAcumulativo
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
+
+  const modoEdicaoCalc = !!propostaId || isEdicao;
+  const propostaIdCalc = propostaOriginal?.id || propostaId || null;
+
+  useEffect(() => {
+    if (modoEdicaoCalc && propostaIdCalc) {
+      setPedidoSalvoId(propostaIdCalc);
+    }
+  }, [modoEdicaoCalc, propostaIdCalc]);
   const [concessionariaInfo, setConcessionariaInfo] = useState(concessionariaInfoProp);
 
   const handlePDFGenerated = async (fileName) => {
     try {
-      const camposClienteOK = Boolean(
-        clienteData?.nome &&
-        clienteData?.telefone &&
-        clienteData?.email &&
-        clienteData?.documento &&
-        clienteData?.inscricao_estadual &&
-        clienteData?.endereco
-      );
+      const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' ||
+        caminhaoData?.marca === 'PREENCHER' ||
+        caminhaoData?.modelo === 'PREENCHER';
 
-      const camposCaminhaoOK = Boolean(
-        caminhaoData?.tipo &&
-        caminhaoData?.marca &&
-        caminhaoData?.modelo &&
-        caminhaoData?.voltagem
-      );
+      if (modoEdicaoCalc && propostaIdCalc) {
+        const propostaAtualizada = await salvarRelatorio();
+        setPedidoSalvoId(propostaAtualizada?.id || propostaIdCalc);
+        alert(`PDF gerado com sucesso: ${fileName}\nProposta atualizada com sucesso!`);
+        return;
+      }
+
+      const camposClienteOK = clienteData?.modoInternacional
+        ? Boolean(clienteData?.nome && clienteData?.telefone)
+        : Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
+
+      const camposCaminhaoOK = isPropostaPreliminar
+        ? Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo)
+        : Boolean(caminhaoData?.tipo && caminhaoData?.marca && caminhaoData?.modelo && caminhaoData?.voltagem);
 
       const usuarioOK = Boolean(user?.id);
 
@@ -47,7 +62,8 @@ const ResumoPedido = ({
           const pedido = await salvarRelatorio();
           setPedidoSalvoId(pedido?.id || null);
         }
-        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!`);
+        const tipoMsg = isPropostaPreliminar ? ' (Proposta Preliminar)' : '';
+        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!${tipoMsg}`);
       } else {
         alert(
           `PDF gerado com sucesso: ${fileName}\n` +
@@ -62,8 +78,51 @@ const ResumoPedido = ({
     }
   };
 
+  const filterCaminhaoDataForDB = (data) => ({
+    tipo: data.tipo,
+    marca: data.marca,
+    modelo: data.modelo,
+    ano: data.ano || null,
+    voltagem: data.voltagem,
+    observacoes: data.observacoes || null,
+    comprimento_chassi: data.comprimentoChassi || null,
+    patolamento: data.patolamento || null
+  });
+
   const salvarRelatorio = async () => {
     try {
+      const modoEdicao = modoEdicaoCalc;
+      const propostaIdToUpdate = propostaIdCalc;
+
+      if (modoEdicao && propostaIdToUpdate) {
+        const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
+        const guindasteId = guindasteNoCarrinho?.id || null;
+        const documentoClienteDB = (String(clienteData.documento || '').replace(/\D/g, '').slice(0, 10)) || null;
+
+        const dadosAtualizados = {
+          data: new Date().toISOString(),
+          valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
+          concessionaria_id: user?.concessionaria_id || null,
+          dados_serializados: {
+            carrinho,
+            clienteData,
+            caminhaoData,
+            pagamentoData,
+            guindasteId,
+            concessionaria_id: user?.concessionaria_id || null
+          },
+          cliente_nome: clienteData.nome || propostaOriginal?.cliente_nome || null,
+          cliente_documento: documentoClienteDB
+        };
+
+        const propostaAtualizada = await db.updateProposta(propostaIdToUpdate, dadosAtualizados);
+        return propostaAtualizada;
+      }
+
+      const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' ||
+        caminhaoData?.marca === 'PREENCHER' ||
+        caminhaoData?.modelo === 'PREENCHER';
+
       const enderecoCompleto = (() => {
         const c = clienteData;
         const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
@@ -88,76 +147,64 @@ const ResumoPedido = ({
 
       const cliente = await db.createCliente(clienteDataToSave);
 
-      const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
-      const camposFaltando = camposObrigatorios.filter((campo) => !caminhaoData[campo]);
-
-      if (camposFaltando.length > 0) {
-        throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+      let caminhao = null;
+      if (isPropostaPreliminar) {
+        caminhao = { id: null, ...caminhaoData, cliente_id: cliente.id };
+      } else {
+        const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
+        const camposFaltando = camposObrigatorios.filter((campo) => !caminhaoData[campo]);
+        if (camposFaltando.length > 0) {
+          throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+        }
+        const caminhaoDataToSave = { ...filterCaminhaoDataForDB(caminhaoData), cliente_id: cliente.id };
+        caminhao = await db.createCaminhao(caminhaoDataToSave);
       }
-
-      const filterCaminhaoDataForDB = (data) => ({
-        tipo: data.tipo,
-        marca: data.marca,
-        modelo: data.modelo,
-        ano: data.ano || null,
-        voltagem: data.voltagem,
-        observacoes: data.observacoes || null,
-        comprimento_chassi: data.comprimentoChassi || null,
-        patolamento: data.patolamento || null
-      });
-
-      const caminhaoDataToSave = {
-        ...filterCaminhaoDataForDB(caminhaoData),
-        cliente_id: cliente.id
-      };
-
-      const caminhao = await db.createCaminhao(caminhaoDataToSave);
 
       const timestamp = Date.now().toString();
       const numeroPedido = `PED${timestamp.slice(-7)}`;
 
+      const clienteDocumentoDB = (String(cliente.documento || '').replace(/\D/g, '').slice(0, 10)) || null;
+
+      const canalVenda = (user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria')
+        ? 'Concessionária Nacional'
+        : 'Vendedor Interno';
+      const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+        ? 'GSI'
+        : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+        ? 'GSE'
+        : 'Outros';
+      const produtoPrincipal = (carrinho.find(i =>
+        i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
+        i.nome?.includes('GSI') || i.nome?.includes('GSE')
+      ) || carrinho[0])?.nome || null;
+
       const pedidoDataToSave = {
-        numero_pedido: numeroPedido,
-        cliente_id: cliente.id,
+        numero_proposta: numeroPedido,
+        data: new Date().toISOString(),
         vendedor_id: user.id,
-        caminhao_id: caminhao.id,
+        vendedor_nome: user.nome || 'Não informado',
+        cliente_nome: cliente.nome || 'Não informado',
+        cliente_documento: clienteDocumentoDB,
+        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
+        tipo: 'proposta',
         status: 'finalizado',
-        valor_total:
-          pagamentoData.valorFinal ||
-          carrinho.reduce((total, item) => total + (item.preco || 0), 0),
-        observacoes: [
-          `Proposta gerada em ${new Date().toLocaleString('pt-BR')}.`,
-          `Local de instalação: ${pagamentoData.localInstalacao}.`,
-          `Tipo de instalação: ${
-            pagamentoData.tipoInstalacao === 'cliente' ? 'Por conta do cliente' : 'Por conta da fábrica'
-          }.`
-        ].join(' ')
+        concessionaria_id: user?.concessionaria_id || null,
+        canal_venda: canalVenda,
+        segmento_cliente: clienteData?.segmento_cliente || null,
+        cliente_uf: clienteData?.uf || null,
+        cliente_cidade: clienteData?.cidade || null,
+        produto_principal: produtoPrincipal,
+        linha_produto: linhaCarrinho,
+        dados_serializados: {
+          carrinho,
+          clienteData: cliente,
+          caminhaoData: caminhao,
+          pagamentoData,
+          concessionaria_id: user?.concessionaria_id || null
+        }
       };
 
-      const pedido = await db.createPedido(pedidoDataToSave);
-
-      for (const item of carrinho) {
-        let codigo_produto = null;
-
-        if (item.tipo === 'equipamento') {
-          const opcionaisSelecionados = carrinho
-            .filter((i) => i.tipo === 'opcional')
-            .map((i) => i.nome);
-          codigo_produto = generateCodigoProduto(item.nome, opcionaisSelecionados);
-        }
-
-        const itemDataToSave = {
-          pedido_id: pedido.id,
-          tipo: item.tipo,
-          item_id: item.id,
-          quantidade: 1,
-          preco_unitario: item.preco,
-          codigo_produto
-        };
-
-        await db.createPedidoItem(itemDataToSave);
-      }
-
+      const pedido = await db.createpropostas(pedidoDataToSave);
       return pedido;
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error);
