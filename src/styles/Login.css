@@ -450,6 +450,52 @@
 }
 
 /* =====================
+   AVISO DE MANUTENÇÃO
+   ===================== */
+
+.manutencao-banner {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  background: rgba(251, 191, 36, 0.07);
+  border: 1px solid rgba(251, 191, 36, 0.30);
+  border-left: 3px solid #fbbf24;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+}
+
+.manutencao-icon {
+  width: 20px;
+  height: 20px;
+  color: #fbbf24;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.manutencao-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.manutencao-principal {
+  font-size: 13px;
+  color: #fde68a;
+  margin: 0;
+  line-height: 1.55;
+  font-weight: 500;
+}
+
+.manutencao-secundario {
+  font-size: 11px;
+  color: #a16207;
+  margin: 0;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+
+/* =====================
    AJUDA DE FORM
    ===================== */
 

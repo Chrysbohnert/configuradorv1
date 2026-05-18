@@ -7,6 +7,11 @@ import { debugLogin } from '../utils/debug/authDebug';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import '../styles/Login.css';
 
+// ============================================================
+// MODO MANUTENÇÃO — altere para false para reativar o sistema
+// ============================================================
+const SISTEMA_EM_MANUTENCAO = true;
+
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -263,6 +268,20 @@ const Login = () => {
             <span className="brand-guindastes">CONFIGURADOR</span>
           </div>
 
+          {SISTEMA_EM_MANUTENCAO && (
+            <div className="manutencao-banner">
+              <svg className="manutencao-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+              </svg>
+              <div className="manutencao-content">
+                <p className="manutencao-principal">Comunicado importante: o configurador está temporariamente indisponível devido a uma instabilidade técnica nos serviços. A previsão é que o acesso seja normalizado amanhã. Agradecemos a compreensão.</p>
+                <p className="manutencao-secundario">Este aviso é temporário e será removido assim que o sistema estiver normalizado.</p>
+              </div>
+            </div>
+          )}
+
           {!showForgotPassword ? (
             <>
               <div className="form-header">
@@ -362,7 +381,7 @@ const Login = () => {
                   </label>
                 </div>
 
-                <button type="submit" className="login-button" disabled={isLoading}>
+                <button type="submit" className="login-button" disabled={isLoading || SISTEMA_EM_MANUTENCAO}>
                   {isLoading ? (
                     <><div className="loading-spinner" />Entrando...</>
                   ) : 'Entrar'}
