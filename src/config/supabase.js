@@ -746,7 +746,10 @@ class DatabaseService {
   async getGuindastes() {
     const { data, error } = await supabase
       .from('guindastes')
-      .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, imagem_url, descricao, nao_incluido, finame, ncm, codigo_referencia, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_observacoes_pdf, created_at, updated_at')
+      // ⚡ imagem_url, descricao, nao_incluido excluídos para reduzir egress
+      // imagem_url: carregada sob demanda via getGuindasteImagem() (cache 30min)
+      // descricao/nao_incluido: carregadas via getGuindasteCompleto() quando necessário
+      .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, finame, ncm, codigo_referencia, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_observacoes_pdf, is_comercio_exterior, prototipo_payment_set_id, created_at, updated_at')
       .order('subgrupo');
     
     if (error) throw error;
@@ -1101,9 +1104,11 @@ class DatabaseService {
 
       
       // Primeiro, verificar se o registro existe
+      // ⚡ Otimizado: buscar apenas campos de cleanData (excl. imagem_url/imagens_adicionais
+      // que são pesados e não confiáveis para comparação por referência)
       const { data: existingRecord, error: checkError } = await supabase
         .from('guindastes')
-        .select('*') // Buscar TODOS os campos
+        .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, descricao, nao_incluido, codigo_referencia, finame, ncm, is_prototipo, prototipo_label, prototipo_observacoes_pdf, prototipo_payment_set_id, is_comercio_exterior, quantidade_disponivel, valor_instalacao_cliente, valor_instalacao_incluso, bloquear_desconto')
         .eq('id', numericId)
         .single();
       
@@ -1145,25 +1150,9 @@ class DatabaseService {
         throw updateError;
       }
       
-      // Depois fazer SELECT para verificar se foi atualizado
-      const { data: updatedData, error: selectError } = await supabase
-        .from('guindastes')
-        .select('*')
-        .eq('id', numericId)
-        .single();
-        
-      
-      if (selectError) {
-        console.error('❌ [updateGuindaste] Erro na verificação:', selectError);
-        throw selectError;
-      }
-      
-      const data = [updatedData]; // Simular array para compatibilidade
-      
-      
-      // Limpar cache após atualização
+      // ⚡ Limpar cache e retornar dados mesclados sem SELECT adicional (economiza egress)
       this.clearGuindastesCache();
-      return updatedData;
+      return { ...existingRecord, ...cleanData, id: numericId };
     } catch (error) {
       console.error('❌ [updateGuindaste] Erro:', error);
       throw error;
@@ -1940,9 +1929,16 @@ class DatabaseService {
    */
   async getPropostas(filters = {}) {
     const limitValue = filters.limit ?? 100;
+    // ⚡ OTIMIZAÇÃO DE EGRESS: excluir dados_serializados (JSON pesado ~50-200KB/linha)
+    // dados_serializados só é necessário ao abrir/editar uma proposta específica.
+    // Use filters.includeDadosSerializados = true somente quando precisar dos dados completos.
+    const selectCols = filters.includeDadosSerializados
+      ? '*'
+      : 'id, numero_proposta, data, vendedor_id, vendedor_nome, cliente_nome, cliente_documento, valor_total, tipo, status, concessionaria_id, canal_venda, segmento_cliente, cliente_uf, cliente_cidade, produto_principal, linha_produto, resultado_venda, motivo_perda, data_resultado_venda, created_at, updated_at';
+
     let query = supabase
       .from('propostas')
-      .select('*')
+      .select(selectCols)
       .order('data', { ascending: false })
       .limit(limitValue);
 

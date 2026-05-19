@@ -46,12 +46,13 @@ const DashboardAdmin = () => {
           .filter((u) => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
           .map((u) => u.id);
 
+        // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
         const pedidosResp = await (isAdminConcessionaria
-          ? db.getPropostas({ vendedor_id: idsVendedores }).catch((err) => {
+          ? db.getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
               console.error('❌ Erro ao carregar propostas:', err);
               return [];
             })
-          : db.getPropostas().catch((err) => {
+          : db.getPropostas({ includeDadosSerializados: true }).catch((err) => {
               console.error('❌ Erro ao carregar propostas:', err);
               return [];
             }));

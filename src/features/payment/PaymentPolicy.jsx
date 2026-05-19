@@ -307,6 +307,18 @@ export default function PaymentPolicy({
   // O NovoPedido.jsx já faz o recálculo em recalcularPrecosCarrinho quando a região muda
   // Não precisamos buscar preço aqui novamente!
 
+  // ⚡ Ref atualizado a cada render — garante valores frescos no callback Realtime
+  // sem recriar o canal WebSocket a cada mudança de estado
+  const _rtVals = useRef({});
+  _rtVals.current = {
+    extraValor, planoSelecionado, precoBase, planoEfetivo,
+    valorFreteCalculado, instalacao, instalacaoInclusoValor,
+    isComercioExterior, cotacaoUSD, valorSinal,
+    percentualEntrada, percentualEntradaNumCalc, extraDescricao,
+    formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
+    tipoFrete, localInstalacao, tipoEntrega,
+  };
+
   // =============== LISTENER REALTIME PARA APROVAÇÃO DE DESCONTO ==
   useEffect(() => {
     if (!solicitacaoId) return;
@@ -325,6 +337,15 @@ export default function PaymentPolicy({
           const descontoAprovado = payload.new.desconto_aprovado;
           const aprovadorNome = payload.new.aprovador_nome;
 
+          // Lê valores frescos do ref (evita closure stale)
+          const {
+            extraValor, planoSelecionado, precoBase, planoEfetivo,
+            valorFreteCalculado, instalacao, instalacaoInclusoValor,
+            isComercioExterior, cotacaoUSD, valorSinal,
+            percentualEntrada, percentualEntradaNumCalc, extraDescricao,
+            formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
+            tipoFrete, localInstalacao, tipoEntrega,
+          } = _rtVals.current;
 
           try {
             const extraValorNum = parseFloat(extraValor) || 0;
@@ -488,11 +509,13 @@ export default function PaymentPolicy({
       })
       .subscribe();
 
-    // Cleanup: remove listener quando componente desmonta ou solicitacaoId muda
+      // Cleanup: remove listener quando componente desmonta ou solicitacaoId muda
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [solicitacaoId, precoBase, tipoCliente, participacaoRevenda, tipoFrete, localInstalacao, tipoEntrega, percentualEntrada, planoSelecionado, extraDescricao, extraValor, formaEntrada, instalacao, temGSE, temGSI, dadosFreteAtual, valorFreteCalculado]);
+  // ⚡ Apenas solicitacaoId como dependência — valores mutáveis são lidos via ref
+  // Isso evita recriar o canal WebSocket a cada mudança de estado durante o preenchimento
+  }, [solicitacaoId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // =============== PLANOS DISPONÍVEIS ============================
   const audience = isComercioExterior

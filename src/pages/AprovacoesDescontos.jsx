@@ -79,7 +79,7 @@ export default function AprovacoesDescontos() {
       // Busca apenas solicitações pendentes
       const { data, error } = await supabase
         .from('solicitacoes_desconto')
-        .select('*')
+        .select('id, vendedor_nome, vendedor_id, equipamento, valor_base, desconto_atual, justificativa, status, created_at')
         .eq('status', 'pendente')
         .order('created_at', { ascending: false });
       

@@ -30,55 +30,44 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         return;
       }
 
-      // Gerar um nome de arquivo único
-      const fileExtension = file.name.split('.').pop();
-      const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-      const fileName = `${uniqueId}.${fileExtension}`;
-      const filePath = `guindastes/${fileName}`; // Pasta 'guindastes' dentro do bucket
-
-      // Converter imagem para base64 como alternativa ao Storage
+      // Preview local imediato (base64 apenas para exibição enquanto o upload roda)
       const reader = new FileReader();
-      
-      const base64Promise = new Promise((resolve, reject) => {
+      const base64Preview = await new Promise((resolve, reject) => {
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(file);
       });
+      setPreview(base64Preview);
 
-      const base64Data = await base64Promise;
-      
-      setPreview(base64Data);
-      onImageUpload(base64Data); // Passa a imagem em base64 para o componente pai
+      // Upload para Supabase Storage
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+      const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2);
+      const fileName = `guindaste_${uniqueId}.${fileExtension}`;
 
-      return; // Sair da função após conversão bem-sucedida
-
-      // Código do Supabase Storage (mantido como backup)
-      /*
       const { error: uploadError } = await supabase.storage
-        .from('guindastes') // Nome do seu bucket no Supabase Storage
-        .upload(filePath, file, {
+        .from('guindastes')
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false, // Não sobrescrever se o arquivo já existir
+          upsert: true,
         });
 
       if (uploadError) {
         throw uploadError;
       }
 
-      // Obter a URL pública da imagem
+      // Obter URL pública e repassar ao componente pai (valor salvo no banco)
       const { data: publicUrlData } = supabase.storage
         .from('guindastes')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
-      if (!publicUrlData || !publicUrlData.publicUrl) {
+      if (!publicUrlData?.publicUrl) {
         throw new Error('Não foi possível obter a URL pública da imagem.');
       }
 
       setPreview(publicUrlData.publicUrl);
-      onImageUpload(publicUrlData.publicUrl); // Passa a URL pública para o componente pai
-      */
+      onImageUpload(publicUrlData.publicUrl);
 
     } catch (error) {
       console.error('❌ Erro no upload:', error);

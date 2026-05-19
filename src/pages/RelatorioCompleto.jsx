@@ -37,9 +37,13 @@ const RelatorioCompleto = () => {
   };
 
   const extractEquipamentos = (proposta) => {
+    // ⚡ Usar produto_principal (já salvo separadamente) como fonte primária
+    // dados_serializados não é mais carregado em queries de listagem para economizar egress
+    if (proposta?.produto_principal) return proposta.produto_principal;
+
     const dados = proposta?.dados_serializados || {};
     const carrinho = Array.isArray(dados?.carrinho) ? dados.carrinho : [];
-    if (carrinho.length === 0) return '';
+    if (carrinho.length === 0) return proposta?.linha_produto || '';
 
     const nomes = carrinho
       .map((it) => {

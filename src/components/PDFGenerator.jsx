@@ -426,8 +426,12 @@ const createContainer = (id = 'pdf-section', { inline = false } = {}) => {
   return el;
 };
 
+// ⚡ Cache de módulo para imagens estáticas — evita recarregar a cada PDF gerado
+const _pdfImageCache = new Map();
+
 // Renderiza cabeçalho/rodapé como canvas e retorna dataURL (reuso)
 const renderImageToDataURL = async (src) => {
+  if (_pdfImageCache.has(src)) return _pdfImageCache.get(src);
   const cont = document.createElement('div');
   cont.style.position = 'absolute';
   cont.style.left = '-99999px';
@@ -438,7 +442,9 @@ const renderImageToDataURL = async (src) => {
   document.body.appendChild(cont);
   const canvas = await html2canvas(cont, { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff' });
   document.body.removeChild(cont);
-  return canvas.toDataURL('image/jpeg', 0.92);
+  const dataURL = canvas.toDataURL('image/jpeg', 0.92);
+  _pdfImageCache.set(src, dataURL);
+  return dataURL;
 };
 
 // Desenha uma página no PDF com header/footer + um conteúdo (canvas) centralizado e paginado

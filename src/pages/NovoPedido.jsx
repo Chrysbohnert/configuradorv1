@@ -5,6 +5,7 @@ import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import PaymentPolicy from '../features/payment/PaymentPolicy';
 import GuindasteConfigurador from '../components/NovoPedido/GuindasteConfigurador';
 import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
+import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
@@ -1617,24 +1618,13 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
       {/* Cabeçalho com Imagem e Informações Principais */}
       <div className="card-header">
         <div className="guindaste-image-container">
-          <div className="guindaste-image">
-            {guindaste.imagem_url ? (
-              <img
-                src={guindaste.imagem_url}
-                alt={guindaste.subgrupo}
-                className="guindaste-thumbnail"
-                onError={(e) => {
-                  e.target.style.display = 'none';
-                  e.target.nextSibling.style.display = 'flex';
-                }}
-              />
-            ) : null}
-            <div className="guindaste-icon" style={{ display: guindaste.imagem_url ? 'none' : 'flex' }}>
-              <svg viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-          </div>
+          {/* ⚡ Lazy loading sob demanda com cache de 30min — sem download em massa de base64 */}
+          <LazyGuindasteImage
+            guindasteId={guindaste.id}
+            subgrupo={guindaste.subgrupo}
+            alt={guindaste.subgrupo}
+            className="guindaste-thumbnail"
+          />
           {configuracoes.length > 0 && (
             <div className="config-badges">
               {configuracoes.slice(0, 3).map((config, idx) => (
