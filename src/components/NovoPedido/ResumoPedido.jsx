@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import PDFGenerator from '../PDFGenerator';
 import { db } from '../../config/supabase';
+import { updateProposta, createpropostas } from '../../api/propostas';
 
 const ResumoPedido = ({
   carrinho,
@@ -115,7 +116,7 @@ const ResumoPedido = ({
           cliente_documento: documentoClienteDB
         };
 
-        const propostaAtualizada = await db.updateProposta(propostaIdToUpdate, dadosAtualizados);
+        const propostaAtualizada = await updateProposta(propostaIdToUpdate, dadosAtualizados);
         return propostaAtualizada;
       }
 
@@ -204,7 +205,7 @@ const ResumoPedido = ({
         }
       };
 
-      const pedido = await db.createpropostas(pedidoDataToSave);
+      const pedido = await createpropostas(pedidoDataToSave);
       return pedido;
     } catch (error) {
       console.error('❌ Erro ao salvar relatório:', error);

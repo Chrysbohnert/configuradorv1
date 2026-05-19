@@ -1,0 +1,25 @@
+id,pedido_id,numero_proposta,vendedor_id,vendedor_nome,vendedor_email,equipamento_descricao,valor_base,desconto_atual,justificativa,desconto_aprovado,observacao_gestor,status,aprovador_id,aprovador_nome,created_at,updated_at,respondido_at,desconto_desejado
+090bae8f-afd5-46f4-b45f-83820f04da24,,,7,Hugo Heineck,Hugo@starkorcamento.com,GSE 6.5T,73113.81,0.00,,8.00,,aprovado,2,Chrystian,2026-04-01 11:34:30.477375+00,2026-04-01 11:35:19.764946+00,2026-04-01 11:35:20.27+00,10
+185c6053-2462-4a42-9ebe-411228433c55,,,75,LUIZ OLIVEIRA,jose@starkconfigurador.com,GSE 10.8C,96256.75,3.00,"Cliente Marcelo já possui proposta concorrente com equipamento tipo canivete 10 toneladas, sendo R$ 20.000,00 de entrada e saldo em 10 parcelas.
+
+Para não perder a negociação e manter competitividade no fechamento, solicitamos condição especial para equiparar ou melhorar a proposta apresentada, garantindo conversão da venda.
+
+Cliente com real interesse de compra imediata, dependendo apenas de alinhamento comercial.",,Nenhum motivo informado,negado,48,Rodrigo Coordenador-Comercial,2026-03-18 13:36:16.047384+00,2026-03-23 19:31:05.355398+00,2026-03-23 19:31:04.456+00,
+1e6d8533-e223-4bdf-b020-f0910b821a34,,,74,Rodrigo Vendedor,ballejo@starkorcamento.com,GSI 6.5,78028.00,0.00,,8.00,,aprovado,48,Rodrigo Coordenador-Comercial,2026-04-07 17:01:13.840286+00,2026-04-07 17:02:13.099132+00,2026-04-07 17:02:12.76+00,10
+283537b7-4587-46bf-b634-390acef0e289,,,94,Jeverson Santos Vieceli,jeverson@starkconfigurador.com,GSI 10.8,119295.44,0.00,,12.82,,aprovado,48,Rodrigo Coordenador-Comercial,2026-04-30 19:11:21.401164+00,2026-04-30 19:12:29.000716+00,2026-04-30 19:12:28.824+00,12.82
+42b7d764-acd8-4d0d-a463-12721a8f64da,,,94,Jeverson Santos Vieceli,jeverson@starkconfigurador.com,GSI 10.8,119295.44,0.00,,12.82,Desconto referente a Tabela de Queima estoque,aprovado,48,Rodrigo Coordenador-Comercial,2026-04-30 16:26:42.815261+00,2026-04-30 17:12:29.765701+00,2026-04-30 17:12:29.36+00,12.821
+68b5b199-3585-4852-812c-c5f50dd63074,,,24,Evandro Tavares,evandro@starkorcamento.com,GSI 10.8C,130716.08,12.00,"VALOR TOTAL 103.000,00.",21.20,,aprovado,48,Rodrigo Coordenador-Comercial,2026-03-23 16:08:32.366761+00,2026-03-24 12:13:21.431308+00,2026-03-24 12:13:20.551+00,
+6fa475b0-5863-4ae5-ab50-50f0be9456d8,,,74,Rodrigo Vendedor,ballejo@starkorcamento.com,GSI 10.8,119295.44,7.00,,12.82,,aprovado,48,Rodrigo Coordenador-Comercial,2026-04-30 19:14:17.891124+00,2026-04-30 19:14:58.778082+00,2026-04-30 19:14:58.978+00,12.82
+7f77af72-200a-44c2-86b4-7bfd8722d0f3,,,25,ALCEU BORGES PADILHA,alceu@starkorcamento.com,GSI 10.8C,123588.66,7.00,"Cliente  fecha com R$115.000,00",10.00,aprovado mediante pix,aprovado,2,Chrystian,2025-11-18 18:42:41.814009+00,2025-11-18 18:43:33.082116+00,2025-11-18 18:43:33.077+00,
+82b21274-b3fe-419a-bf1a-a8a0da88f365,,,50,"André ",andre@starkconfigurador.com,GSI 10.8C,123588.66,7.00,"ABERTURA DE ÁREA .
+
+VALOR PASSADO AO CLIENTE 109.403,00 
+MODELO GSI10.8 COM CONTROLE REMOTO
+INSTALAÇÃO E FRETE INCLUSO
+",,Nenhum motivo informado,negado,2,Chrystian,2026-01-07 19:12:26.140085+00,2026-01-11 13:25:51.838555+00,2026-01-11 13:25:51.727+00,
+b7ac5395-6729-44b2-b970-e9d090802f95,,,25,ALCEU BORGES PADILHA,alceu@starkorcamento.com,GSI 10.8C,123588.66,2.00,,10.80,,aprovado,2,Chrystian,2025-11-18 18:46:40.799141+00,2025-11-18 18:46:59.95655+00,2025-11-18 18:47:00.213+00,
+c08ab583-a3c2-4072-b267-96d9445e4176,,,50,"André ",andre@starkconfigurador.com,GSE 15.8T,136429.36,3.00,"CLIENTE TEM O DA CONCORRENCIA POR 140.000,00 MONTADO  E FRETE INCLUSO",,Nenhum motivo informado,negado,2,Chrystian,2026-04-22 22:05:20.342473+00,2026-04-28 10:49:45.519305+00,2026-04-28 10:49:45.814+00,8
+ca609a61-dcde-41d6-bebb-482cf4bdbfcc,,,7,Hugo Heineck,Hugo@starkorcamento.com,GSE 6.5T,73113.81,1.00,,10.00,,aprovado,2,Chrystian,2026-04-01 00:28:51.004416+00,2026-04-01 00:29:47.858852+00,2026-04-01 00:29:48.504+00,10
+d51a79d9-33f5-4fdb-8c95-e3d13a3b3d59,,,50,"André ",andre@starkconfigurador.com,GSI 10.8C,123588.66,7.00,Cliente seria referencia na região dando outras oportunidades de negócio,10.00,Para fechar negocio,aprovado,48,Rodrigo Coordenador-Comercial,2025-12-15 17:46:16.077888+00,2025-12-15 18:56:37.795741+00,2025-12-15 18:56:36.529+00,
+f1c26a87-1667-4598-acf7-334daf494993,,,7,Hugo Heineck,Hugo@starkorcamento.com,STANDARD,100389.77,12.00,preço,,Nenhum motivo informado,negado,48,Rodrigo Coordenador-Comercial,2026-03-16 11:37:05.692473+00,2026-03-23 19:31:34.13956+00,2026-03-23 19:31:33.298+00,
+fb2df4ba-f188-420c-b904-e3ead5eb5c2f,,,29,ANDERSON,anderson@starkconfigurador.com,GSE 10.8C,117132.21,0.00,,7.10,"Pedido teste ",aprovado,48,Rodrigo Coordenador-Comercial,2026-04-06 18:06:01.248138+00,2026-04-06 18:10:21.645679+00,2026-04-06 18:10:20.958+00,7.1

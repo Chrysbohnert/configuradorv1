@@ -1,0 +1,6 @@
+id,nome,cnpj,endereco,telefone,email,ativo,created_at,regiao_preco,desconto_base,desconto_compra
+01df4059-60e5-4acd-80a9-504e28b09247,SOLDERA MAQUINAS,43595114000134,Rua Coronel Niederauer 1565 sala 05,55999998382,soldera@starkorcamento.com,true,2026-04-13 17:49:33.008316+00,rs-com-ie,,
+577f38a3-4cca-4bd5-891b-2040ac11d5df,RODOAGRO,19.483.190/0001-73,"R CARLOS GOMES, VILA RODRIGUES, PASSO FUNDO RS",(54) 9619-9756,RODO.AGRO2026@GMAIL.COM,true,2026-05-11 14:08:49.07411+00,rs-com-ie,,
+a010243a-6a7e-454d-a68e-742f2a6ee926,TAVARES REPRESENTAÇÕES,012312321321,Avenida Borges de Medeiros - Centro - Santa Rosa/RS - CEP: 98780-001,55981721286,tavares@starkconfigurador.com,true,2026-03-30 23:28:24.309086+00,sul-sudeste,,
+daa2faa6-61a4-437c-8084-bcf5084ca8bb,Soldera maquinas,012,Rua centro,55,soldera@starkconfigurador.com,true,2026-04-13 18:14:02.873897+00,rs-sem-ie,,
+fccd7634-852f-419e-8982-3532abd20423,MZK MAQUINAS,52577912000124,PEROBAL PR,44 9860-8608,dirley@volansbr.com.br,true,2026-01-21 14:08:45.087404+00,sul-sudeste,,

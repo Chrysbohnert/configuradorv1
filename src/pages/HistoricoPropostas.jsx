@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../config/supabase';
+import { getPropostas, deletePropostaPermanente, updateResultadoVendaProposta } from '../api/propostas';
 import { formatCurrency } from '../utils/formatters';
 import { getCurrentUser } from '../utils/auth';
 
@@ -75,7 +76,7 @@ const HistoricoPropostas = () => {
 
     setSalvandoResultado(true);
     try {
-      await db.updateResultadoVendaProposta(propostaSelecionada.id, {
+      await updateResultadoVendaProposta(propostaSelecionada.id, {
         resultado_venda: resultadoSelecionado || null,
         motivo_perda: motivoPerda || null,
       });
@@ -100,7 +101,7 @@ const HistoricoPropostas = () => {
         filters.vendedor_id = user.id;
       }
 
-      const data = await db.getPropostas(filters);
+      const data = await getPropostas(filters);
       setPropostas(data);
     } catch (error) {
       console.error('Erro ao carregar propostas:', error);
@@ -116,7 +117,7 @@ const HistoricoPropostas = () => {
     }
 
     try {
-      await db.deletePropostaPermanente(id);
+      await deletePropostaPermanente(id);
       alert('Proposta excluída com sucesso!');
       carregarPropostas();
     } catch (error) {

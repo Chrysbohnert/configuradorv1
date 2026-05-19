@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { db } from '../config/supabase';
+import { getGuindastes } from '../api/guindastes';
 
 export function useGuindastes(user) {
   const [guindastes, setGuindastes] = useState([]);
@@ -21,7 +21,7 @@ export function useGuindastes(user) {
 
     try {
       setIsLoading(true);
-      const data = await db.getGuindastes();
+      const data = await getGuindastes();
       setGuindastes(data || []);
     } catch (error) {
       console.error('Erro ao carregar guindastes:', error);

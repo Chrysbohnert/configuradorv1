@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, supabase } from '../config/supabase';
-import { verifyPassword } from '../utils/passwordHash';
 import { showError } from '../utils/errorHandler';
-import { debugLogin } from '../utils/debug/authDebug';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import '../styles/Login.css';
 
@@ -32,18 +29,20 @@ const Login = () => {
       return false;
     }
 
-    try {
-      const c = await db.getConcessionariaById(user.concessionaria_id);
-      if (c?.ativo === false) {
-        setError('Concessionária inativa. Contate o administrador Stark.');
-        return false;
-      }
-      return true;
-    } catch (e) {
-      console.error('Erro ao validar concessionária:', e);
-      setError('Erro ao validar concessionária. Tente novamente.');
-      return false;
-    }
+    // TODO: endpoint GET /api/concessionarias/:id ainda não implementado
+    // Quando disponível, descomentar o bloco abaixo:
+    // try {
+    //   const res = await fetch(`https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${user.concessionaria_id}`);
+    //   const data = await res.json();
+    //   if (data?.data?.ativo === false) {
+    //     setError('Concessionária inativa. Contate o administrador Stark.');
+    //     return false;
+    //   }
+    // } catch (e) {
+    //   console.error('Erro ao validar concessionária:', e);
+    // }
+
+    return true;
   };
 
   const handleInputChange = (field, value) => {
@@ -57,189 +56,71 @@ const Login = () => {
     setError('');
 
     try {
-      const rawEmail = formData.email;
-      const senha = formData.senha;
-      const email = (rawEmail || '').trim().toLowerCase();
-      
-      // Validação simples
+      const email = (formData.email || '').trim().toLowerCase();
+      const { senha } = formData;
+
       if (!email || !senha) {
         setError('Por favor, preencha todos os campos');
         setIsLoading(false);
         return;
       }
 
-      // Verificar rate limiting
       const clientIP = getClientIP();
       const rateLimitCheck = checkLoginLimit(clientIP, email);
-      
+
       if (!rateLimitCheck.allowed) {
-        const resetTime = new Date(rateLimitCheck.resetTime);
         const timeRemaining = Math.ceil((rateLimitCheck.resetTime - Date.now()) / 60000);
-        
         setError(`Muitas tentativas de login. Tente novamente em ${timeRemaining} minutos.`);
         setIsLoading(false);
         return;
       }
 
-      // Primeiro, fazer login no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: senha
+      const response = await fetch('https://api-pedidos.starkindustrial.ind.br/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
       });
 
-      if (authError) {
-        
-        // Debug detalhado do login
-        const debugResult = await debugLogin(email, senha);
-        
-        if (debugResult.user && debugResult.isValidPassword) {
-          
-          // Login direto no banco (fallback) - senha verificada com hash
-          const { senha: _, ...userWithoutPassword } = debugResult.user;
+      const data = await response.json();
 
-          const concessionariaOk = await validarConcessionariaAtiva(userWithoutPassword);
-          if (!concessionariaOk) {
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, false);
-            setIsLoading(false);
-            return;
-          }
-
-          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          localStorage.setItem('rememberMe', String(rememberMe));
-          
-          if (debugResult.user.tipo === 'admin' || debugResult.user.tipo === 'admin_concessionaria') {
-            // Registrar tentativa bem-sucedida
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, true);
-            navigate('/dashboard-admin');
-          } else {
-            // Registrar tentativa bem-sucedida
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, true);
-            navigate('/dashboard');
-          }
-        } else {
-          
-          // Registrar tentativa falhada
-          const clientIP = getClientIP();
-          recordLoginAttempt(clientIP, email, false);
-          
-          if (!debugResult.user) {
-            setError('Email não encontrado no sistema');
-          } else if (!debugResult.isValidPassword) {
-            if (!debugResult.isHashed) {
-              setError('Senha em formato antigo. Execute a migração de senhas.');
-            } else {
-              setError('Senha incorreta');
-            }
-          } else {
-            setError('Erro interno. Tente novamente.');
-          }
-        }
-      } else {
-        // Login no Supabase Auth bem-sucedido
-
-        // Criar/Padronizar token local com expiração (alinha com validateSession)
-        const loginTime = Date.now();
-        const rand = Math.random().toString(36).substr(2, 9);
-        localStorage.setItem('authToken', `auth_${loginTime}_${rand}`);
-
-        // Marcar indicador de sessão Supabase
-        localStorage.setItem('supabaseSession', 'active');
-
-        // Buscar dados completos do usuário no banco
-        const { data: user, error: userError } = await supabase
-          .from('users')
-          .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
-          .ilike('email', email)
-          .single();
-
-        if (!userError && user) {
-          // Salvar dados do usuário (sem senha)
-          const userWithoutPassword = user;
-
-          const concessionariaOk = await validarConcessionariaAtiva(userWithoutPassword);
-          if (!concessionariaOk) {
-            try {
-              await supabase.auth.signOut();
-            } catch (e) {
-              console.error('Erro ao signOut:', e);
-            }
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, false);
-            setIsLoading(false);
-            return;
-          }
-
-          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          localStorage.setItem('rememberMe', String(rememberMe));
-
-          if (user.tipo === 'admin' || user.tipo === 'admin_concessionaria') {
-            // Registrar tentativa bem-sucedida
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, true);
-            navigate('/dashboard-admin');
-          } else {
-            // Registrar tentativa bem-sucedida
-            const clientIP = getClientIP();
-            recordLoginAttempt(clientIP, email, true);
-            navigate('/dashboard');
-          }
-        } else {
-          setError('Usuário não encontrado no banco de dados');
-        }
-
+      if (!response.ok || !data.success) {
+        recordLoginAttempt(clientIP, email, false);
+        setError(data.error || 'Credenciais inválidas');
+        return;
       }
-    } catch (error) {
-      const errorInfo = showError(error, 'Login');
-      setError(errorInfo.message);
-      
-      // Registrar tentativa falhada
-      const clientIP = getClientIP();
-      recordLoginAttempt(clientIP, formData.email, false);
+
+      const { user, token } = data.data;
+
+      const concessionariaOk = await validarConcessionariaAtiva(user);
+      if (!concessionariaOk) {
+        recordLoginAttempt(clientIP, email, false);
+        return;
+      }
+
+      localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('rememberMe', String(rememberMe));
+
+      recordLoginAttempt(clientIP, email, true);
+
+      const tipo = user.tipo || user.role || '';
+      if (tipo === 'admin' || tipo === 'admin_concessionaria') {
+        navigate('/dashboard-admin');
+      } else {
+        navigate('/dashboard');
+      }
+    } catch (err) {
+      const errorInfo = showError(err, 'Login');
+      setError(errorInfo.message || 'Erro de conexão. Tente novamente.');
+      recordLoginAttempt(getClientIP(), formData.email, false);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleForgotPassword = async (e) => {
+  const handleForgotPassword = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError('');
-    setResetSuccess(false);
-
-    try {
-      if (!resetEmail) {
-        setError('Por favor, digite seu email');
-        setIsLoading(false);
-        return;
-      }
-
-      // Enviar email de recuperação via Supabase Auth
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(resetEmail, {
-        redirectTo: `${window.location.origin}/redefinir-senha`,
-      });
-
-      if (resetError) {
-        console.error('Erro ao enviar email:', resetError);
-        setError('Erro ao enviar email. Verifique se o email está correto.');
-      } else {
-        setResetSuccess(true);
-        setResetEmail('');
-        // Voltar para tela de login após 3 segundos
-        setTimeout(() => {
-          setShowForgotPassword(false);
-          setResetSuccess(false);
-        }, 3000);
-      }
-    } catch (error) {
-      console.error('Erro:', error);
-      setError('Erro ao processar solicitação. Tente novamente.');
-    } finally {
-      setIsLoading(false);
-    }
+    setError('Recuperação de senha ainda não disponível. Contate o administrador.');
   };
 
   const bgImage = encodeURI('/páginas do pdf/CAPA-1.jpg');

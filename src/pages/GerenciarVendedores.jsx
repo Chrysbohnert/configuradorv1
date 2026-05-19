@@ -3,6 +3,7 @@ import { formatCurrency } from '../utils/formatters';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getPropostas } from '../api/propostas';
 import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
 import '../styles/GerenciarVendedores.css';
 
@@ -50,7 +51,7 @@ const GerenciarVendedores = () => {
         isAdminConcessionaria
           ? db.getUsers({ concessionaria_id: concessionariaId })
           : db.getUsers(),
-        db.getPropostas(),
+        getPropostas(),
       ]);
 
       const vendedoresOnly = vendedoresData.filter((v) => {

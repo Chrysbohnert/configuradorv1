@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import LazyPDFGenerator from '../components/LazyPDFGenerator';
 import { db } from '../config/supabase';
+import { getPropostaById } from '../api/propostas';
 
 const VisualizarProposta = () => {
   const { id } = useParams();
@@ -15,7 +16,7 @@ const VisualizarProposta = () => {
         setLoading(true);
         setError('');
 
-        const proposta = await db.getPropostaById(id);
+        const proposta = await getPropostaById(id);
         if (!proposta) {
           setError('Proposta não encontrada.');
           return;

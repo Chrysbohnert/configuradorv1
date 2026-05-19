@@ -6,6 +6,7 @@ import ImageUpload from '../components/ImageUpload';
 import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
 import { db } from '../config/supabase';
+import { getGuindastesLite, getGuindasteById, createGuindaste, updateGuindaste, deleteGuindaste } from '../api/guindastes';
 import { formatCurrency } from '../utils/formatters';
 import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
 import '../styles/GerenciarGuindastes.css';
@@ -96,7 +97,7 @@ const GerenciarGuindastes = () => {
     try {
       setIsLoading(true);
 
-      const res = await db.getGuindastesLite(pageToLoad, pageSize, forceRefresh);
+      const res = await getGuindastesLite(pageToLoad, pageSize, forceRefresh);
       const data = res?.data || [];
       const count = typeof res?.count === 'number' ? res.count : data.length;
 
@@ -239,7 +240,7 @@ const GerenciarGuindastes = () => {
 
 
     try {
-      const guindasteData = await db.getGuindasteById(item.id);
+      const guindasteData = await getGuindasteById(item.id);
 
       if (!guindasteData) {
         console.error('❌ Guindaste não encontrado:', item.id);
@@ -412,7 +413,7 @@ const GerenciarGuindastes = () => {
     if (!guindasteToDelete) return;
     try {
       setIsLoading(true);
-      await db.deleteGuindaste(guindasteToDelete);
+      await deleteGuindaste(guindasteToDelete);
       setToast({ visible: true, message: 'Guindaste excluído com sucesso!', type: 'success' });
       setShowDeleteModal(false);
       setGuindasteToDelete(null);
@@ -480,10 +481,10 @@ const GerenciarGuindastes = () => {
 
 
       if (editingGuindaste) {
-        await db.updateGuindaste(editingGuindaste.id, guindasteData);
+        await updateGuindaste(editingGuindaste.id, guindasteData);
         setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
-        const result = await db.createGuindaste(guindasteData);
+        const result = await createGuindaste(guindasteData);
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 

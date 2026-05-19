@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getPropostas } from '../api/propostas';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/DashboardVendedor.css';
 import '../styles/Dashboard.css';
@@ -30,7 +31,7 @@ const DashboardVendedor = () => {
     const loadDashboardData = async () => {
       setIsLoading(true);
       try {
-        const propostasResp = await db.getPropostas({ vendedor_id: user?.id });
+        const propostasResp = await getPropostas({ vendedor_id: user?.id });
         setPropostas(Array.isArray(propostasResp) ? propostasResp : []);
       } catch (error) {
         console.error('Erro ao carregar dados do dashboard:', error);

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getGuindastesLite, getGuindasteById } from '../api/guindastes';
 import { getPaymentPlans } from '../services/paymentPlans';
 import '../styles/PlanosPagamento.css';
 
@@ -104,7 +105,7 @@ export default function PlanosPagamento() {
         const maxPages = 10;
         const all = [];
         for (let page = 1; page <= maxPages; page++) {
-          const res = await db.getGuindastesLite(page, pageSize, true);
+          const res = await getGuindastesLite(page, pageSize, true);
           const chunk = res?.data || [];
           all.push(...chunk);
           if (chunk.length < pageSize) break;
@@ -175,7 +176,7 @@ export default function PlanosPagamento() {
 
     try {
       setIsLoading(true);
-      const g = await db.getGuindasteById(parseInt(val, 10));
+      const g = await getGuindasteById(parseInt(val, 10));
       setProtoInfo(g || null);
 
       const sets = await db.getPrototypePaymentPlanSets({ guindaste_id: parseInt(val, 10) });
@@ -358,7 +359,7 @@ export default function PlanosPagamento() {
       setProtoPublishedSetId(published?.id || null);
       setProtoIsEditing(false);
       setStatusInfo({ type: 'success', message: 'Planos do protótipo publicados.' });
-      const refreshed = await db.getGuindasteById(parseInt(protoSelectedId, 10));
+      const refreshed = await getGuindasteById(parseInt(protoSelectedId, 10));
       setProtoInfo(refreshed || null);
     } catch (e) {
       console.error('Erro ao publicar planos do protótipo:', e);

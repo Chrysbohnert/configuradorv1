@@ -8,6 +8,8 @@ import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
 import LazyGuindasteImage from '../components/LazyGuindasteImage';
 
 import { db } from '../config/supabase';
+import { getGuindastesLite } from '../api/guindastes';
+import { getPropostaById, updateProposta, createpropostas } from '../api/propostas';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
 import { maskCPF, maskCNPJ } from '../utils/masks';
@@ -206,7 +208,7 @@ const NovoPedido = () => {
       }
 
       try {
-        const proposta = await db.getPropostaById(propostaId);
+        const proposta = await getPropostaById(propostaId);
         
         if (!proposta) {
           alert('Proposta não encontrada!');
@@ -431,7 +433,7 @@ const NovoPedido = () => {
       const all = [];
 
       for (let page = 1; page <= maxPages; page++) {
-        const result = await db.getGuindastesLite(page, pageSize, true);
+        const result = await getGuindastesLite(page, pageSize, true);
         const chunk = result?.data || [];
         all.push(...chunk);
         if (chunk.length < pageSize) break;
@@ -2589,7 +2591,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           cliente_documento: documentoClienteDB
         };
         
-        const propostaAtualizada = await db.updateProposta(propostaIdToUpdate, dadosAtualizados);
+        const propostaAtualizada = await updateProposta(propostaIdToUpdate, dadosAtualizados);
         
         return propostaAtualizada;
       }
@@ -2652,7 +2654,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           }
         };
 
-        const pedido = await db.createpropostas(pedidoDataToSave);
+        const pedido = await createpropostas(pedidoDataToSave);
         return pedido;
       }
       
@@ -2679,7 +2681,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         observacoes: clienteData.observacoes || null
       };
       
-      const cliente = await db.createCliente(clienteDataToSave);
+      const cliente = await createCliente(clienteDataToSave);
       
       // 2. Criar caminhão
       
@@ -2711,7 +2713,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         };
         
         
-        caminhao = await db.createCaminhao(caminhaoDataToSave);
+        caminhao = await createCaminhao(caminhaoDataToSave);
       }
       
       // 3. Gerar número do pedido (máx. 10 caracteres para caber em VARCHAR(10))
@@ -2767,7 +2769,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         }
       };
       
-      const pedido = await db.createpropostas(pedidoDataToSave);
+      const pedido = await createpropostas(pedidoDataToSave);
             
       // 5. Itens do pedido já estão salvos em dados_serializados
       // Não é necessário criar registros separados em propostas_itens

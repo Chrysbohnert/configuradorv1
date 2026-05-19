@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getGuindastesCountForDashboard } from '../api/guindastes';
+import { getPropostas } from '../api/propostas';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/DashboardAdmin.css';
 import '../styles/Dashboard.css';
@@ -36,7 +38,7 @@ const DashboardAdmin = () => {
             console.error('❌ Erro ao carregar usuários:', err);
             return [];
           }),
-          db.getGuindastesCountForDashboard().catch((err) => {
+          getGuindastesCountForDashboard().catch((err) => {
             console.error('❌ Erro ao carregar contagem de guindastes:', err);
             return 0;
           }),
@@ -48,11 +50,11 @@ const DashboardAdmin = () => {
 
         // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
         const pedidosResp = await (isAdminConcessionaria
-          ? db.getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
+          ? getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
               console.error('❌ Erro ao carregar propostas:', err);
               return [];
             })
-          : db.getPropostas({ includeDadosSerializados: true }).catch((err) => {
+          : getPropostas({ includeDadosSerializados: true }).catch((err) => {
               console.error('❌ Erro ao carregar propostas:', err);
               return [];
             }));

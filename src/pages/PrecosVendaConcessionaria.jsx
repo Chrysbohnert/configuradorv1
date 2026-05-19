@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getGuindastesLite } from '../api/guindastes';
 import { formatCurrency } from '../utils/formatters';
 import '../styles/PrecosVendaConcessionaria.css';
 
@@ -40,7 +41,7 @@ const PrecosVendaConcessionaria = () => {
       setConcessionaria(conc);
 
       // Carregar guindastes
-      const result = await db.getGuindastesLite(1, 1000, true);
+      const result = await getGuindastesLite(1, 1000, true);
       const todosGuindastes = result?.data || [];
       setGuindastes(todosGuindastes);
 

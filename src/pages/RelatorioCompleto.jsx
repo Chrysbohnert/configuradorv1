@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db } from '../config/supabase';
+import { getPropostas, deletePropostaPermanente } from '../api/propostas';
 import { formatCurrency } from '../utils/formatters';
 import jsPDF from 'jspdf';
 import '../styles/Dashboard.css';
@@ -65,7 +66,7 @@ const RelatorioCompleto = () => {
     }
     setExcluindo(id);
     try {
-      await db.deletePropostaPermanente(id);
+      await deletePropostaPermanente(id);
       setTodosPedidos(prev => prev.filter(p => p.id !== id));
     } catch (error) {
       console.error('Erro ao excluir proposta:', error);
@@ -93,8 +94,8 @@ const RelatorioCompleto = () => {
         .map(u => u.id);
 
       const propostas = await (isAdminConcessionaria
-        ? db.getPropostas({ vendedor_id: idsVendedores })
-        : db.getPropostas());
+        ? getPropostas({ vendedor_id: idsVendedores })
+        : getPropostas());
 
       const vendedoresData = (users || []).filter(u => u.tipo === 'vendedor' || u.tipo === 'vendedor_concessionaria');
       setVendedores(vendedoresData);
