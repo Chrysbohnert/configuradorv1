@@ -1,9 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase, db } from '../config/supabase';
-import { verifyPassword } from '../utils/passwordHash';
-import { debugLogin } from '../utils/debug/authDebug';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
+
+const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/users';
+
+function _clearStorage() {
+  localStorage.removeItem('user');
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('carrinho');
+  localStorage.removeItem('rememberMe');
+}
 
 const AuthContext = createContext(null);
 
@@ -20,39 +25,40 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Carregar usuário do localStorage na inicialização
+  // Restaurar sessão: valida token via GET /api/users/me
   useEffect(() => {
-    const loadUser = () => {
+    const loadUser = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const userData = localStorage.getItem('user');
-        const authToken = localStorage.getItem('authToken');
-        
-        if (userData && authToken) {
-          const tokenParts = authToken.split('_');
-          if (tokenParts.length === 3) {
-            const tokenTime = parseInt(tokenParts[1]);
-            const currentTime = Date.now();
-            const tokenAge = currentTime - tokenTime;
-            const rememberMe = localStorage.getItem('rememberMe') === 'true';
-            const maxAge = rememberMe
-              ? 7 * 24 * 60 * 60 * 1000  // 7 dias se "lembrar de mim"
-              : 24 * 60 * 60 * 1000;      // 24 horas padrão
-            
-            if (tokenAge <= maxAge) {
-              setUser(JSON.parse(userData));
-            } else {
-              // Token expirado, limpar
-              localStorage.removeItem('user');
-              localStorage.removeItem('authToken');
-              localStorage.removeItem('rememberMe');
-            }
+        const res = await fetch(`${BASE_URL}/me`, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data) {
+            setUser(json.data);
+            localStorage.setItem('user', JSON.stringify(json.data));
           } else {
-            // Token Supabase JWT (formato diferente) — aceitar se user existe
-            setUser(JSON.parse(userData));
+            _clearStorage();
           }
+        } else {
+          _clearStorage();
         }
       } catch (err) {
-        console.error('Erro ao carregar usuário:', err);
+        console.error('Erro ao restaurar sessão:', err);
+        const cached = localStorage.getItem('user');
+        if (cached) {
+          try { setUser(JSON.parse(cached)); } catch (_) { _clearStorage(); }
+        }
       } finally {
         setLoading(false);
       }
@@ -61,98 +67,45 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  // Função de login
+  // Login via REST — POST /api/users/login
   const login = useCallback(async (email, senha) => {
     setLoading(true);
     setError(null);
 
     try {
-      // Validação simples
       if (!email || !senha) {
         throw new Error('Por favor, preencha todos os campos');
       }
 
-      // Verificar rate limiting
       const clientIP = getClientIP();
       const rateLimitCheck = checkLoginLimit(clientIP, email);
-      
       if (!rateLimitCheck.allowed) {
         const timeRemaining = Math.ceil((rateLimitCheck.resetTime - Date.now()) / 60000);
         throw new Error(`Muitas tentativas de login. Tente novamente em ${timeRemaining} minutos.`);
       }
 
-      // Primeiro, tentar login no Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: senha
+      const res = await fetch(`${BASE_URL}/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, senha }),
       });
 
-      if (authError) {
-        
-        // Debug detalhado do login
-        const debugResult = await debugLogin(email, senha);
-        
-        if (debugResult.user && debugResult.isValidPassword) {
-          
-          // Login direto no banco (fallback) - senha verificada com hash
-          const { senha: _, ...userWithoutPassword } = debugResult.user;
-          
-          // Salvar no localStorage
-          localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-          localStorage.setItem('authToken', `auth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
-          
-          // Atualizar estado
-          setUser(userWithoutPassword);
-          
-          // Registrar tentativa bem-sucedida
-          recordLoginAttempt(clientIP, email, true);
-          
-          return { success: true, user: userWithoutPassword };
-        } else {
-          // Registrar tentativa falhada
-          recordLoginAttempt(clientIP, email, false);
-          
-          if (!debugResult.user) {
-            throw new Error('Email não encontrado no sistema');
-          } else if (!debugResult.isValidPassword) {
-            if (!debugResult.isHashed) {
-              throw new Error('Senha em formato antigo. Execute a migração de senhas.');
-            } else {
-              throw new Error('Senha incorreta');
-            }
-          } else {
-            throw new Error('Erro ao fazer login');
-          }
-        }
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        recordLoginAttempt(clientIP, email, false);
+        throw new Error(json.error || 'Email ou senha inválidos');
       }
 
-      // Login via Supabase Auth bem-sucedido
-      
-      // Buscar dados completos do usuário no banco (sem senha)
-      const { data: users, error: dbError } = await supabase
-        .from('users')
-        .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
-        .ilike('email', email)
-        .single();
+      const { token, user: userData } = json.data;
 
-      if (dbError || !users) {
-        throw new Error('Usuário não encontrado no banco de dados');
-      }
+      localStorage.setItem('authToken', token);
+      localStorage.setItem('user', JSON.stringify(userData));
 
-      const userWithoutPassword = users;
-      
-      // Salvar no localStorage
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-      localStorage.setItem('authToken', authData.session.access_token);
-      localStorage.setItem('supabaseSession', 'active');
-      
-      // Atualizar estado
-      setUser(userWithoutPassword);
-      
-      // Registrar tentativa bem-sucedida
+      setUser(userData);
       recordLoginAttempt(clientIP, email, true);
-      
-      return { success: true, user: userWithoutPassword };
+
+      return { success: true, user: userData };
 
     } catch (err) {
       console.error('Erro no login:', err);
@@ -163,25 +116,11 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Função de logout
-  const logout = useCallback(async () => {
-    try {
-      // Fazer logout no Supabase
-      await supabase.auth.signOut();
-    } catch (err) {
-      console.error('Erro ao fazer logout no Supabase:', err);
-    } finally {
-      // Limpar localStorage
-      localStorage.removeItem('user');
-      localStorage.removeItem('authToken');
-      localStorage.removeItem('carrinho');
-      localStorage.removeItem('supabaseSession');
-      localStorage.removeItem('rememberMe');
-      
-      // Limpar estado
-      setUser(null);
-      setError(null);
-    }
+  // Logout: limpa localStorage e reseta estado (sem chamada de rede)
+  const logout = useCallback(() => {
+    _clearStorage();
+    setUser(null);
+    setError(null);
   }, []);
 
   // Verificar se é admin

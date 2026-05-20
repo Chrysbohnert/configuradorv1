@@ -68,9 +68,31 @@ async function updatePassword(id, senhaHash) {
   return rowCount > 0;
 }
 
+async function updateProfile(id, fields) {
+  const allowed = ['nome', 'email', 'telefone', 'cpf', 'foto_perfil'];
+  const sets = [];
+  const params = [];
+
+  allowed.forEach((col) => {
+    if (fields[col] !== undefined) {
+      params.push(fields[col]);
+      sets.push(`${col} = $${params.length}`);
+    }
+  });
+
+  if (sets.length === 0) throw new Error('Nenhum campo para atualizar');
+
+  params.push(id);
+  const { rows } = await query(
+    `UPDATE app_users SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${COLS_PUBLIC}`,
+    params
+  );
+  return rows[0] || null;
+}
+
 async function remove(id) {
   const { rowCount } = await query(`DELETE FROM app_users WHERE id = $1`, [id]);
   return rowCount > 0;
 }
 
-module.exports = { findAll, findById, findByEmail, create, update, updatePassword, remove };
+module.exports = { findAll, findById, findByEmail, create, update, updatePassword, updateProfile, remove };

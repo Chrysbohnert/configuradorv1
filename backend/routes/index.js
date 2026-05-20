@@ -8,20 +8,24 @@
 
 const { Router } = require('express');
 
-const healthRouter       = require('./health');
-const usersRouter        = require('./users');
-const authRouter         = require('./auth');
-const guindastesRouter   = require('./guindastes');
-const propostasRouter    = require('./propostas');
-const paymentPlansRouter = require('./payment_plans');
+const healthRouter          = require('./health');
+const usersRouter           = require('./users');
+const authRouter            = require('./auth');
+const guindastesRouter      = require('./guindastes');
+const propostasRouter       = require('./propostas');
+const paymentPlansRouter    = require('./payment_plans');
+const configuracoesRouter   = require('./configuracoes');
+const fretesRouter          = require('./fretes');
 
 const router = Router();
 
-router.use('/health',        healthRouter);
-router.use('/users',         usersRouter);
-router.use('/auth',          authRouter);
-router.use('/guindastes',    guindastesRouter);
-router.use('/propostas',     propostasRouter);
-router.use('/payment-plans', paymentPlansRouter);
+router.use('/health',          healthRouter);
+router.use('/users',           usersRouter);
+router.use('/auth',            authRouter);
+router.use('/guindastes',      guindastesRouter);
+router.use('/propostas',       propostasRouter);
+router.use('/payment-plans',   paymentPlansRouter);
+router.use('/configuracoes',   configuracoesRouter);
+router.use('/fretes',          fretesRouter);
 
 module.exports = router;

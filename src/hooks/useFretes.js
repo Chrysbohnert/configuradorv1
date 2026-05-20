@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { db } from '../config/supabase';
+import { getFretes as getFretesList } from '../api/fretes';
 
 /**
  * Hook customizado para gerenciar dados de frete
@@ -16,7 +16,7 @@ export const useFretes = (localInstalacao) => {
     const carregarFretes = async () => {
       try {
         setLoading(true);
-        const dadosFretes = await db.getFretes();
+        const dadosFretes = await getFretesList();
         setFretes(dadosFretes);
         setError(null);
       } catch (err) {

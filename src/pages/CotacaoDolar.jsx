@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
-import { db } from '../config/supabase';
+import { getCotacaoUSD, setCotacaoUSD, getConfiguracaoGlobal } from '../api/configuracoes';
 import '../styles/Dashboard.css';
 
 const CotacaoDolar = () => {
@@ -13,10 +13,10 @@ const CotacaoDolar = () => {
   const carregar = async () => {
     try {
       setIsLoading(true);
-      const v = await db.getCotacaoUSD();
+      const v = await getCotacaoUSD();
       setCotacao(String(v));
 
-      const cfg = await db.getConfiguracaoGlobal('usd_brl');
+      const cfg = await getConfiguracaoGlobal('usd_brl');
       setUltimaAtualizacao(cfg?.updated_at || null);
     } catch (error) {
       console.error('Erro ao carregar cotação USD:', error);
@@ -34,7 +34,7 @@ const CotacaoDolar = () => {
   const salvar = async () => {
     try {
       setIsLoading(true);
-      await db.setCotacaoUSD(cotacao);
+      await setCotacaoUSD(cotacao);
       await carregar();
       alert('Cotação salva com sucesso!');
     } catch (error) {

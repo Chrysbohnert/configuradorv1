@@ -103,4 +103,35 @@ const getMe = asyncHandler(async (req, res) => {
   return res_.ok(res, user);
 });
 
-module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, login, getMe };
+const updateMe = asyncHandler(async (req, res) => {
+  const { nome, email, telefone, cpf, foto_perfil } = req.body;
+  const updated = await svc.updateProfile(req.user.id, { nome, email, telefone, cpf, foto_perfil });
+  if (!updated) return res_.notFound(res, 'Usuário não encontrado');
+  return res_.ok(res, updated);
+});
+
+const changePassword = asyncHandler(async (req, res) => {
+  const { senhaAtual, novaSenha } = req.body;
+
+  if (!senhaAtual || !novaSenha) {
+    return res_.badRequest(res, 'senhaAtual e novaSenha são obrigatórios');
+  }
+  if (novaSenha.length < 6) {
+    return res_.badRequest(res, 'Nova senha deve ter pelo menos 6 caracteres');
+  }
+
+  const fullUser = await svc.findByEmail(
+    (await svc.findById(req.user.id))?.email || ''
+  );
+  if (!fullUser) return res_.notFound(res, 'Usuário não encontrado');
+
+  if (!verificarSenha(senhaAtual, fullUser.senha)) {
+    return res.status(401).json({ success: false, error: 'Senha atual incorreta' });
+  }
+
+  const novaHash = sha256Hex(novaSenha);
+  await svc.updatePassword(req.user.id, novaHash);
+  return res_.ok(res, { message: 'Senha alterada com sucesso' });
+});
+
+module.exports = { getUsers, getUserById, createUser, updateUser, deleteUser, login, getMe, updateMe, changePassword };

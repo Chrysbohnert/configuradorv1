@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../components/UnifiedHeader';
 import { db, supabase } from '../config/supabase';
+import { updateMe, changePassword as changeUserPassword } from '../api/users';
 import '../styles/Configuracoes.css';
 
 const Configuracoes = () => {
@@ -274,8 +275,8 @@ const Configuracoes = () => {
         }
       }
 
-      // Atualizar no banco
-      await db.updateUser(user.id, {
+      // Atualizar no banco via REST
+      await updateMe({
         nome: profileData.nome.trim(),
         email: profileData.email.trim(),
         telefone: profileData.telefone.trim() || null,
@@ -337,16 +338,10 @@ const Configuracoes = () => {
         return;
       }
 
-      // Verificar senha atual (implementar verificação real aqui)
-      // Por enquanto, apenas atualiza
-
-      // Hash da nova senha
-      const { hashPassword } = await import('../utils/passwordHash');
-      const senhaHash = hashPassword(passwordData.novaSenha);
-
-      // Atualizar no banco
-      await db.updateUser(user.id, {
-        senha: senhaHash
+      // Alterar senha via REST (verificação da senha atual feita no backend)
+      await changeUserPassword({
+        senhaAtual: passwordData.senhaAtual,
+        novaSenha: passwordData.novaSenha
       });
 
       setMessage({ type: 'success', text: 'Senha alterada com sucesso!' });

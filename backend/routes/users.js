@@ -6,6 +6,8 @@ const router = Router();
 
 router.post('/login', ctrl.login);
 router.get('/me', requireAuth, ctrl.getMe);
+router.put('/me', requireAuth, ctrl.updateMe);
+router.put('/me/password', requireAuth, ctrl.changePassword);
 
 router.get('/', requireAuth, requireAdmin, ctrl.getUsers);
 router.get('/:id', requireAuth, ctrl.getUserById);
