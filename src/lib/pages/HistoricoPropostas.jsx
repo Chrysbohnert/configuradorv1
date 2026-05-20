@@ -252,7 +252,7 @@ const HistoricoPropostas = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>â³</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
         <p style={{ color: '#666' }}>Carregando histórico...</p>
       </div>
     );
@@ -483,7 +483,7 @@ const HistoricoPropostas = () => {
                     }}
                     title="Excluir proposta permanentemente"
                   >
-                    âŒ
+                    🗑️
                   </button>
 
                   {proposta.status === 'excluido' && (
@@ -578,7 +578,7 @@ const HistoricoPropostas = () => {
                               style={{ padding: '5px 10px', background: '#d3d3d3', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
                               title="Excluir proposta"
                             >
-                              âŒ
+                              🗑️
                             </button>
                           </>
                         )}
@@ -710,7 +710,7 @@ const HistoricoPropostas = () => {
                       textAlign: 'left'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>â³ Sem resultado</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>⏳ Sem resultado</div>
                     <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
                   </button>
 
@@ -742,7 +742,7 @@ const HistoricoPropostas = () => {
                       textAlign: 'left'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>âŒ Perdida</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>❌ Perdida</div>
                     <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
                   </button>
                 </div>

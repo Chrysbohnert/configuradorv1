@@ -96,7 +96,7 @@ const PrecosVendaConcessionaria = () => {
     const precoCompra = precosCompra[guindasteId] || 0;
     if (novoPreco < precoCompra) {
       const confirmar = window.confirm(
-        `⚠ï¸ ATENÇÃO: O preço de venda (R$ ${formatCurrency(novoPreco)}) é MENOR que o preço de compra (R$ ${formatCurrency(precoCompra)}).\n\nVocê terá PREJUÃZO nesta venda!\n\nDeseja continuar mesmo assim?`
+        `⚠️ ATENÇÃO: O preço de venda (R$ ${formatCurrency(novoPreco)}) é MENOR que o preço de compra (R$ ${formatCurrency(precoCompra)}).\n\nVocê terá PREJUÍZO nesta venda!\n\nDeseja continuar mesmo assim?`
       );
       if (!confirmar) return;
     }
@@ -184,7 +184,7 @@ const PrecosVendaConcessionaria = () => {
               <li><strong>Preço de Venda:</strong> Quanto seus vendedores irão vender aos clientes finais</li>
               <li><strong>Markup:</strong> Sua margem de lucro calculada automaticamente</li>
             </ol>
-            <p className="aviso">⚠ï¸ Defina preços maiores que o preço de compra para ter lucro!</p>
+            <p className="aviso">⚠️ Defina preços maiores que o preço de compra para ter lucro!</p>
           </div>
 
           {isLoading ? (

@@ -2,7 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import BlobButton from '../../components/BlobButton';
-import { db } from '../../config/supabase';
+import { getGraficosCarga } from '../../api/graficosCarga';
 import '../../styles/GraficosCarga.css';
 
 const GraficosCarga = () => {
@@ -12,6 +12,7 @@ const GraficosCarga = () => {
   const [graficos, setGraficos] = useState([]);
   const [filteredGraficos, setFilteredGraficos] = useState([]);
   const [filter, setFilter] = useState('');
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -28,12 +29,16 @@ const GraficosCarga = () => {
   const loadGraficos = async () => {
     try {
       setIsLoading(true);
-      const graficosData = await db.getGraficosCarga();
+      setLoadError(null);
+      const graficosData = await getGraficosCarga();
       setGraficos(graficosData);
       setFilteredGraficos(graficosData);
     } catch (error) {
       console.error('Erro ao carregar gráficos:', error);
-      alert('Erro ao carregar gráficos.');
+      const message = error?.message || 'Não foi possível carregar os gráficos de carga. Tente novamente em instantes.';
+      setLoadError(message);
+      setGraficos([]);
+      setFilteredGraficos([]);
     } finally {
       setIsLoading(false);
     }
@@ -118,7 +123,20 @@ const GraficosCarga = () => {
           </div>
 
           <div className="graficos-list">
-            {isLoading && graficos.length === 0 ? (
+            {loadError ? (
+              <div className="empty-state">
+                <div className="empty-icon">
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                  </svg>
+                </div>
+                <h3>Não foi possível carregar</h3>
+                <p>{loadError}</p>
+                <button type="button" className="gc-retry-btn" onClick={loadGraficos}>
+                  Tentar novamente
+                </button>
+              </div>
+            ) : isLoading && graficos.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">
                   <svg viewBox="0 0 24 24" fill="currentColor">

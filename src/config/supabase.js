@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { normalizarRegiao } from '../utils/regiaoHelper';
 
 // Configuração do Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -1658,22 +1659,51 @@ if (!vendedor) {
 
   // Buscar preço específico de um guindaste por região
   async getPrecoPorRegiao(guindasteId, regiao) {
-    const { data, error } = await supabase
-      .from('precos_guindaste_regiao')
-      .select('preco')
-      .eq('guindaste_id', guindasteId)
-      .eq('regiao', regiao)
-      .limit(1);
-    
-    if (error) {
-      console.error('Erro ao buscar preço por região:', error);
-      return 0;
+    if (guindasteId == null || guindasteId === '' || !regiao) return 0;
+
+    const regiaoNorm = normalizarRegiao(regiao);
+    const idsToTry = [...new Set(
+      [guindasteId, String(guindasteId), Number(guindasteId)]
+        .filter((v) => v !== '' && v != null && !Number.isNaN(v))
+    )];
+
+    for (const id of idsToTry) {
+      const { data, error } = await supabase
+        .from('precos_guindaste_regiao')
+        .select('preco')
+        .eq('guindaste_id', id)
+        .eq('regiao', regiaoNorm)
+        .limit(1);
+
+      if (error) {
+        console.error('Erro ao buscar preço por região:', { guindasteId: id, regiao: regiaoNorm, error });
+        continue;
+      }
+      if (data?.length && data[0]?.preco != null) {
+        return Number(data[0].preco) || 0;
+      }
     }
-    
-    // Se não encontrar preço ou array vazio, retornar 0
-    if (!data || data.length === 0) return 0;
-    
-    return data[0]?.preco || 0;
+
+    // Fallback: lista de preços do guindaste e casamento flexível de região
+    for (const id of idsToTry) {
+      const { data, error } = await supabase
+        .from('precos_guindaste_regiao')
+        .select('preco, regiao')
+        .eq('guindaste_id', id);
+
+      if (error || !data?.length) continue;
+
+      const row = data.find((p) => {
+        const r = (p.regiao || '').toLowerCase().trim();
+        return r === regiaoNorm
+          || normalizarRegiao(p.regiao) === regiaoNorm
+          || r === (regiao || '').toLowerCase().trim();
+      });
+
+      if (row?.preco != null) return Number(row.preco) || 0;
+    }
+
+    return 0;
   }
 
   // ===== GRÁFICOS DE CARGA =====

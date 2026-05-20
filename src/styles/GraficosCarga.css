@@ -162,6 +162,22 @@
   color: #94a3b8;
 }
 
+.gc-retry-btn {
+  margin-top: 16px;
+  padding: 10px 20px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gc-retry-btn:hover {
+  background: #1e293b;
+}
+
 .grafico-item {
   background: #ffffff;
   border: 1px solid #e2e8f0;

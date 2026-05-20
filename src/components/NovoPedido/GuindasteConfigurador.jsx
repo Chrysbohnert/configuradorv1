@@ -1,6 +1,8 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { DESCRICOES_OPCIONAIS } from '../../config/codigosGuindaste';
 import { formatCurrency } from '../../utils/formatters';
+import { normalizarRegiao } from '../../utils/regiaoHelper';
+import LazyGuindasteImage from '../LazyGuindasteImage';
 import '../../styles/GuindasteConfigurador.css';
 
 const SERIE_LABELS = { GSI: 'GUINDASTE INTERNO', GSE: 'GUINDASTE EXTERNO' };
@@ -25,6 +27,17 @@ function variantLabel(optStr) {
   return optStr.split('/').map(p => DESCRICOES_OPCIONAIS[p.trim()] || p.trim()).join(' + ');
 }
 
+function isValidImageUrl(url) {
+  return typeof url === 'string' && url.trim() !== '' &&
+    url !== 'null' && url !== 'undefined' && url.length > 10;
+}
+
+function parsePreco(preco) {
+  if (preco == null || preco === '') return null;
+  const valor = typeof preco === 'number' ? preco : parseFloat(preco);
+  return Number.isFinite(valor) ? valor : null;
+}
+
 function buildGroups(guindastes) {
   const map = new Map();
   (guindastes || []).forEach(g => {
@@ -33,11 +46,9 @@ function buildGroups(guindastes) {
     const serie = base.split(' ')[0];
     if (serie !== 'GSI' && serie !== 'GSE') return;
     const optStr = extractOpts(g.subgrupo);
-    if (!map.has(base)) map.set(base, { model: base, serie, variants: [], minPrice: Infinity });
+    if (!map.has(base)) map.set(base, { model: base, serie, variants: [] });
     const grp = map.get(base);
     grp.variants.push({ ...g, _optStr: optStr });
-    const p = parseFloat(g.preco) || 0;
-    if (p > 0 && p < grp.minPrice) grp.minPrice = p;
   });
   return [...map.values()].sort((a, b) => {
     const na = parseFloat(a.model.replace(/[^0-9.]/g, '')) || 0;
@@ -46,16 +57,34 @@ function buildGroups(guindastes) {
   });
 }
 
-export default function GuindasteConfigurador({ guindastes = [], onGuindasteSelect, isLoading = false, getPreco, getImagem }) {
+export default function GuindasteConfigurador({
+  guindastes = [],
+  onGuindasteSelect,
+  isLoading = false,
+  getPreco,
+  getImagem,
+  precoContextKey = '',
+}) {
   const [activeSerie, setActiveSerie] = useState('GSI');
   const [selectedGroup, setSelectedGroup] = useState(null);
-  const [selectedOptStr, setSelectedOptStr] = useState(null);
-  const [precoAtual, setPrecoAtual] = useState(null);
+  const [selectedGuindaste, setSelectedGuindaste] = useState(null);
+  const [precoExibido, setPrecoExibido] = useState(null);
   const [loadingPreco, setLoadingPreco] = useState(false);
-  const [imagemUrl, setImagemUrl] = useState(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const getPrecoRef = useRef(getPreco);
+  const getImagemRef = useRef(getImagem);
+  const precoContextKeyRef = useRef(precoContextKey);
+  getPrecoRef.current = getPreco;
+  getImagemRef.current = getImagem;
+  precoContextKeyRef.current = precoContextKey;
 
   const allGroups = useMemo(() => buildGroups(guindastes), [guindastes]);
-  const currentGroups = useMemo(() => allGroups.filter(g => g.serie === activeSerie), [allGroups, activeSerie]);
+  const currentGroups = useMemo(
+    () => allGroups.filter(g => g.serie === activeSerie),
+    [allGroups, activeSerie]
+  );
 
   const sortedVariants = useMemo(() => {
     if (!selectedGroup) return [];
@@ -66,46 +95,171 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
     });
   }, [selectedGroup]);
 
-  const selectedGuindaste = useMemo(
-    () => sortedVariants.find(v => v._optStr === selectedOptStr) ?? null,
-    [sortedVariants, selectedOptStr]
-  );
+  const activeVariantIdRef = useRef(null);
+  activeVariantIdRef.current = selectedGuindaste?.id ?? null;
 
   useEffect(() => {
-    if (!selectedGuindaste || !getPreco) {
-      setPrecoAtual(null);
+    if (!selectedGroup?.model) return;
+    const refreshed = allGroups.find(
+      g => g.model === selectedGroup.model && g.serie === selectedGroup.serie
+    );
+    if (refreshed && refreshed !== selectedGroup) {
+      setSelectedGroup(refreshed);
+    }
+  }, [allGroups, selectedGroup]);
+
+  useEffect(() => {
+    const variantId = selectedGuindaste?.id;
+    if (variantId == null || variantId === '') {
+      setPrecoExibido(null);
+      setLoadingPreco(false);
       return;
     }
+
+    const variant =
+      sortedVariants.find((v) => String(v.id) === String(variantId)) || selectedGuindaste;
+    if (!variant?.id) return;
+
+    const fetchPreco = getPrecoRef.current;
+    if (!fetchPreco) return;
+
+    const guindasteId = variant.id;
+    const regiaoLabel = precoContextKeyRef.current;
+    const regiaoNorm = normalizarRegiao(regiaoLabel);
     let cancelled = false;
-    setLoadingPreco(true);
-    getPreco(selectedGuindaste.id)
-      .then(preco => { if (!cancelled) { setPrecoAtual(preco || 0); setLoadingPreco(false); } })
-      .catch(() => { if (!cancelled) { setPrecoAtual(0); setLoadingPreco(false); } });
+
+    const carregarPreco = async () => {
+      setLoadingPreco(true);
+      setPrecoExibido(null);
+
+      try {
+        const preco = await fetchPreco(guindasteId);
+        if (cancelled || String(activeVariantIdRef.current) !== String(guindasteId)) return;
+
+        const valor = parsePreco(preco);
+
+        if (valor == null || valor <= 0) {
+          console.warn('[GuindasteConfigurador] Preço zerado ou indisponível', {
+            guindasteId,
+            codigo: variant.codigo_referencia,
+            subgrupo: variant.subgrupo,
+            regiao: regiaoLabel || '(não informada)',
+            regiaoNormalizada: regiaoNorm,
+            retorno: preco,
+          });
+          setPrecoExibido(0);
+          setSelectedGuindaste((prev) =>
+            prev && String(prev.id) === String(guindasteId)
+              ? { ...prev, ...variant, preco: 0 }
+              : prev
+          );
+        } else {
+          setPrecoExibido(valor);
+          setSelectedGuindaste((prev) =>
+            prev && String(prev.id) === String(guindasteId)
+              ? { ...prev, ...variant, preco: valor }
+              : prev
+          );
+        }
+      } catch (err) {
+        if (cancelled || String(activeVariantIdRef.current) !== String(guindasteId)) return;
+        console.warn('[GuindasteConfigurador] Erro ao buscar preço', {
+          guindasteId,
+          codigo: variant.codigo_referencia,
+          regiao: regiaoLabel || '(não informada)',
+          regiaoNormalizada: regiaoNorm,
+          erro: err?.message || err,
+        });
+        setPrecoExibido(null);
+      } finally {
+        if (!cancelled && String(activeVariantIdRef.current) === String(guindasteId)) {
+          setLoadingPreco(false);
+        }
+      }
+    };
+
+    carregarPreco();
     return () => { cancelled = true; };
-  }, [selectedGuindaste, getPreco]);
+  }, [selectedGuindaste?.id, precoContextKey, sortedVariants]);
 
   useEffect(() => {
-    if (!selectedGroup) { setImagemUrl(null); return; }
-    const rep = selectedGroup.variants.find(v => !v._optStr) || selectedGroup.variants[0];
-    if (rep?.imagem_url) { setImagemUrl(rep.imagem_url); return; }
-    if (!getImagem || !rep) { setImagemUrl(null); return; }
+    const variant = selectedGuindaste;
+    if (!variant?.id) {
+      setPreviewImageUrl(null);
+      setLoadingPreview(false);
+      return;
+    }
+
+    const variantId = variant.id;
+
+    if (isValidImageUrl(variant.imagem_url)) {
+      setPreviewImageUrl(variant.imagem_url);
+      setLoadingPreview(false);
+      return;
+    }
+
+    const fetchImagem = getImagemRef.current;
+    if (!fetchImagem) {
+      setPreviewImageUrl(null);
+      setLoadingPreview(false);
+      return;
+    }
+
     let cancelled = false;
-    getImagem(rep.id).then(url => { if (!cancelled) setImagemUrl(url || null); }).catch(() => {});
+    setLoadingPreview(true);
+    setPreviewImageUrl(null);
+
+    fetchImagem(variantId)
+      .then(url => {
+        if (cancelled || String(activeVariantIdRef.current) !== String(variantId)) return;
+        setPreviewImageUrl(isValidImageUrl(url) ? url : null);
+        setLoadingPreview(false);
+      })
+      .catch(() => {
+        if (cancelled || String(activeVariantIdRef.current) !== String(variantId)) return;
+        setPreviewImageUrl(null);
+        setLoadingPreview(false);
+      });
+
     return () => { cancelled = true; };
-  }, [selectedGroup, getImagem]);
+  }, [selectedGuindaste?.id]);
+
+  const resetSelecaoVariante = () => {
+    setSelectedGuindaste(null);
+    setPrecoExibido(null);
+    setLoadingPreco(false);
+    setPreviewImageUrl(null);
+    setLoadingPreview(false);
+  };
 
   const handleGroupSelect = (group) => {
     setSelectedGroup(group);
-    setSelectedOptStr(null);
-    setPrecoAtual(null);
+    resetSelecaoVariante();
   };
 
   const handleSerie = (serie) => {
     setActiveSerie(serie);
     setSelectedGroup(null);
-    setSelectedOptStr(null);
-    setPrecoAtual(null);
-    setImagemUrl(null);
+    resetSelecaoVariante();
+  };
+
+  const handleVariantSelect = (variant) => {
+    if (!variant?.id) return;
+    setSelectedGuindaste({ ...variant, preco: undefined });
+    setPrecoExibido(null);
+    setLoadingPreco(true);
+    setPreviewImageUrl(null);
+    setLoadingPreview(true);
+  };
+
+  const handleConfirmar = () => {
+    if (!selectedGuindaste?.id || loadingPreco) return;
+    const precoFinal = precoExibido ?? selectedGuindaste.preco;
+    if (precoFinal == null || precoFinal <= 0) return;
+    onGuindasteSelect({
+      ...selectedGuindaste,
+      preco: precoFinal,
+    });
   };
 
   if (isLoading) {
@@ -115,7 +269,6 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
   return (
     <div className="gc-layout">
 
-      {/* ─── LEFT PANEL ─── */}
       <div className="gc-left">
         <div className="gc-tabs">
           {['GSI', 'GSE'].map(s => (
@@ -138,17 +291,10 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
               <button key={grp.model} type="button"
                 className={`gc-card ${isActive ? 'selected' : ''}`}
                 onClick={() => handleGroupSelect(grp)}>
-                {rep?.imagem_url && (
-                  <img src={rep.imagem_url} alt={grp.model} className="gc-card-img"
-                    onError={e => { e.currentTarget.style.display = 'none'; }} />
-                )}
                 <div className="gc-card-body">
                   <div className="gc-card-model">{grp.model}</div>
                   {rep?.peso_kg && <div className="gc-card-spec">Lanças: {rep.peso_kg}</div>}
                   <div className="gc-card-count">{grp.variants.length} configuração(ões)</div>
-                  {grp.minPrice < Infinity && (
-                    <div className="gc-card-price">A partir de {formatCurrency(grp.minPrice)}</div>
-                  )}
                 </div>
                 {isActive && <div className="gc-card-check" aria-hidden="true">✓</div>}
               </button>
@@ -159,19 +305,31 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
           )}
         </div>
 
-        {imagemUrl && (
-          <div className="gc-panel-img-wrap" style={{ marginTop: '16px' }}>
-            <img
-              src={imagemUrl}
-              alt={selectedGroup?.model || ''}
-              className="gc-panel-img"
-              onError={e => { e.currentTarget.style.display = 'none'; }}
-            />
+        {selectedGuindaste && (
+          <div className="gc-panel-img-wrap">
+            {loadingPreview && !previewImageUrl && (
+              <div className="gc-panel-img-loading">Carregando imagem...</div>
+            )}
+            {previewImageUrl ? (
+              <img
+                src={previewImageUrl}
+                alt={selectedGroup?.model || selectedGuindaste.subgrupo}
+                className="gc-panel-img"
+                onError={e => { e.currentTarget.style.display = 'none'; }}
+              />
+            ) : !loadingPreview && (
+              <LazyGuindasteImage
+                key={String(selectedGuindaste.id)}
+                guindasteId={selectedGuindaste.id}
+                subgrupo={selectedGuindaste.subgrupo}
+                alt={selectedGroup?.model || selectedGuindaste.subgrupo}
+                className="gc-panel-img"
+              />
+            )}
           </div>
         )}
       </div>
 
-      {/* ─── RIGHT PANEL ─── */}
       <div className="gc-right">
         {!selectedGroup ? (
           <div className="gc-empty">
@@ -190,11 +348,11 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
 
             <div className="gc-variants">
               {sortedVariants.map(v => {
-                const isActive = selectedOptStr === v._optStr;
+                const isActive = selectedGuindaste && String(selectedGuindaste.id) === String(v.id);
                 return (
                   <button key={v.id} type="button"
                     className={`gc-variant ${isActive ? 'active' : ''}`}
-                    onClick={() => setSelectedOptStr(v._optStr)}>
+                    onClick={() => handleVariantSelect(v)}>
                     <div className="gc-variant-info">
                       <div className="gc-variant-name">{variantLabel(v._optStr)}</div>
                       <div className="gc-variant-code">Código: {v.codigo_referencia || '—'}</div>
@@ -209,7 +367,13 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
               <div className="gc-price-box">
                 <div className="gc-price-label">Valor do equipamento</div>
                 <div className="gc-price-value">
-                  {loadingPreco ? 'Carregando...' : formatCurrency(precoAtual ?? 0)}
+                  {loadingPreco
+                    ? 'Carregando preço...'
+                    : precoExibido != null && precoExibido > 0
+                      ? formatCurrency(precoExibido)
+                      : precoExibido === 0
+                        ? 'Preço indisponível para esta região'
+                        : '—'}
                 </div>
                 <div className="gc-price-code">{selectedGuindaste.codigo_referencia}</div>
               </div>
@@ -221,8 +385,8 @@ export default function GuindasteConfigurador({ guindastes = [], onGuindasteSele
 
             <button type="button"
               className="gc-confirm"
-              disabled={!selectedGuindaste}
-              onClick={() => selectedGuindaste && onGuindasteSelect(selectedGuindaste)}>
+              disabled={!selectedGuindaste || loadingPreco || !(precoExibido > 0)}
+              onClick={handleConfirmar}>
               {selectedGuindaste ? '✓ Confirmar Configuração' : 'Selecione uma configuração acima'}
             </button>
           </div>

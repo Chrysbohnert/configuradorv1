@@ -87,7 +87,7 @@ export default function AprovacoesDescontos() {
       
       setSolicitacoes(data || []);
     } catch (error) {
-      console.error('âŒ [AprovacoesDescontos] Erro ao carregar:', error);
+      console.error('❌ [AprovacoesDescontos] Erro ao carregar:', error);
       alert('Erro ao carregar solicitações. Tente atualizar a página.');
     } finally {
       setLoading(false);
@@ -99,7 +99,7 @@ export default function AprovacoesDescontos() {
       const desconto = descontoSelecionado[solicitacao.id];
       
       if (!desconto) {
-        alert('⚠ï¸ Selecione o percentual de desconto antes de aprovar!');
+        alert('⚠️ Selecione o percentual de desconto antes de aprovar!');
         return;
       }
 
@@ -107,7 +107,7 @@ export default function AprovacoesDescontos() {
       const descontoNumerico = parseFloat(desconto);
       
       if (isNaN(descontoNumerico) || descontoNumerico < 0) {
-        alert('⚠ï¸ O desconto deve ser um número maior ou igual a 0%!');
+        alert('⚠️ O desconto deve ser um número maior ou igual a 0%!');
         return;
       }
 
@@ -125,7 +125,7 @@ export default function AprovacoesDescontos() {
       setProcessando(solicitacao.id);
       // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
-        console.error('âŒ [AprovacoesDescontos] Usuário não é administrador:', user);
+        console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
       }
 
@@ -159,7 +159,7 @@ export default function AprovacoesDescontos() {
       }));
 
     } catch (error) {
-      console.error('âŒ [AprovacoesDescontos] Erro ao aprovar:', error);
+      console.error('❌ [AprovacoesDescontos] Erro ao aprovar:', error);
       
       // Mensagem de erro mais amigável
       let mensagemErro = 'Erro ao aprovar desconto. Tente novamente.';
@@ -173,7 +173,7 @@ export default function AprovacoesDescontos() {
         mensagemErro = error.message;
       }
       
-      alert(`âŒ ${mensagemErro}`);
+      alert(`❌ ${mensagemErro}`);
     } finally {
       setProcessando(null);
     }
@@ -194,7 +194,7 @@ export default function AprovacoesDescontos() {
       setProcessando(solicitacao.id);
       // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
-        console.error('âŒ [AprovacoesDescontos] Usuário não é administrador:', user);
+        console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem negar descontos.');
       }
 
@@ -205,7 +205,7 @@ export default function AprovacoesDescontos() {
         motivo
       );
 
-      const mensagemSucesso = `âŒ Solicitação de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
+      const mensagemSucesso = `❌ Solicitação de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
         `Motivo: ${motivo}`;
       
       alert(mensagemSucesso);
@@ -225,7 +225,7 @@ export default function AprovacoesDescontos() {
       }));
 
     } catch (error) {
-      console.error('âŒ [AprovacoesDescontos] Erro ao negar:', error);
+      console.error('❌ [AprovacoesDescontos] Erro ao negar:', error);
       
       // Mensagem de erro mais amigável
       let mensagemErro = 'Erro ao negar solicitação. Tente novamente.';
@@ -239,7 +239,7 @@ export default function AprovacoesDescontos() {
         mensagemErro = error.message;
       }
       
-      alert(`âŒ ${mensagemErro}`);
+      alert(`❌ ${mensagemErro}`);
     } finally {
       setProcessando(null);
     }
@@ -456,14 +456,14 @@ export default function AprovacoesDescontos() {
                       onClick={() => handleNegar(solicitacao)}
                       disabled={processando === solicitacao.id}
                     >
-                      {processando === solicitacao.id ? 'â³' : 'âŒ'} Negar
+                      {processando === solicitacao.id ? '⏳' : '❌'} Negar
                     </button>
                     <button
                       className="btn btn-success"
                       onClick={() => handleAprovar(solicitacao)}
                       disabled={processando === solicitacao.id || !descontoSelecionado[solicitacao.id]}
                     >
-                      {processando === solicitacao.id ? 'â³ Processando...' : '✅ Aprovar'}
+                      {processando === solicitacao.id ? '⏳ Processando...' : '✅ Aprovar'}
                     </button>
                   </div>
                 </div>

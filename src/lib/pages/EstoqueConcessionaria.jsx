@@ -205,7 +205,7 @@ const EstoqueConcessionaria = () => {
 
           {/* Informações adicionais */}
           <div className="estoque-info-box">
-            <h3>ℹï¸ Como funciona o estoque?</h3>
+            <h3>ℹ️ Como funciona o estoque?</h3>
             <ul>
               <li><strong>Comprar Guindastes:</strong> Faça pedidos de compra à Stark para adicionar guindastes ao seu estoque.</li>
               <li><strong>Vendas:</strong> Quando seus vendedores fazem uma venda, o estoque é descontado automaticamente.</li>

@@ -18,7 +18,7 @@ const DetalhesGuindaste = () => {
     if (userData) {
       setUser(JSON.parse(userData));
     } else {
-      console.error('âŒ Nenhum usuário encontrado, redirecionando para login');
+      console.error('❌ Nenhum usuário encontrado, redirecionando para login');
       navigate('/');
     }
   }, [navigate]);
@@ -26,7 +26,7 @@ const DetalhesGuindaste = () => {
   // Verificar se tem dados do guindaste
   useEffect(() => {
     if (!guindaste) {
-      console.warn('⚠ï¸ Nenhum guindaste selecionado, redirecionando...');
+      console.warn('⚠️ Nenhum guindaste selecionado, redirecionando...');
       navigate(location.state?.returnTo || '/novo-pedido', { replace: true });
     }
   }, [guindaste, navigate, location.state?.returnTo]);
@@ -107,7 +107,7 @@ const DetalhesGuindaste = () => {
         {guindaste.nao_incluido && (
           <div className="nao-incluido-section">
             <div className="nao-incluido-content">
-              <span className="nao-incluido-icon">⚠ï¸</span>
+              <span className="nao-incluido-icon">⚠️</span>
               <p><strong>Não está incluído:</strong> {guindaste.nao_incluido}</p>
             </div>
           </div>
@@ -160,7 +160,7 @@ const DetalhesGuindaste = () => {
               <p>{guindaste.descricao}</p>
             ) : (
               <p className="sem-descricao">
-                <span>ðŸ“</span>
+                <span>📝</span>
                 Nenhuma descrição técnica cadastrada para este equipamento.
               </p>
             )}

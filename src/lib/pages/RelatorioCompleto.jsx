@@ -573,7 +573,7 @@ const RelatorioCompleto = () => {
                           disabled={excluindo === p.id}
                           style={{ padding: '5px 10px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: excluindo === p.id ? 'not-allowed' : 'pointer', opacity: excluindo === p.id ? 0.5 : 1 }}
                           title="Excluir proposta permanentemente"
-                        >{excluindo === p.id ? '...' : '🗑ï¸'}</button>
+                        >{excluindo === p.id ? '...' : '🗑️'}</button>
                       </div>
                     </td>
                   </tr>

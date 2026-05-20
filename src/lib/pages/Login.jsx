@@ -317,7 +317,7 @@ const Login = () => {
                   className="back-btn"
                   onClick={() => { setShowForgotPassword(false); setError(''); setResetSuccess(false); }}
                 >
-                  â† Voltar para Login
+                  ← Voltar para Login
                 </button>
               </form>
             </>

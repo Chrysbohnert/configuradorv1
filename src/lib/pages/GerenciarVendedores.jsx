@@ -732,7 +732,7 @@ const GerenciarVendedores = () => {
                         <option value="Sul-Sudeste">Sul-Sudeste (PR, SC, SP, RJ, MG, ES - exceto RS)</option>
                         <option value="RS com Inscrição Estadual">RS com Inscrição Estadual (🚜 Produtor Rural)</option>
                         <option value="RS sem Inscrição Estadual">RS sem Inscrição Estadual (📄 CNPJ/CPF)</option>
-                        <option value="Comércio Exterior">Comércio Exterior (ðŸŒ Exportação / USD)</option>
+                        <option value="Comércio Exterior">Comércio Exterior (🌐 Exportação / USD)</option>
                       </select>
                       <small className="form-help">
                         Selecione o grupo de região principal. Ele será o padrão do vendedor.
@@ -750,7 +750,7 @@ const GerenciarVendedores = () => {
                           { id: 'sul-sudeste', label: 'Sul-Sudeste', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
                           { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', desc: '🚜 Produtor Rural (com IE)' },
                           { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', desc: '📄 CNPJ/CPF (sem IE)' },
-                          { id: 'comercio-exterior', label: 'Comércio Exterior', desc: 'ðŸŒ Exportação / Preços USD' },
+                          { id: 'comercio-exterior', label: 'Comércio Exterior', desc: '🌐 Exportação / Preços USD' },
                         ].map((regiao) => {
                           const active = formData.regioes_operacao?.includes(regiao.label);
 
@@ -809,7 +809,7 @@ const GerenciarVendedores = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                       >
-                        {showPassword ? 'ðŸ‘ï¸' : 'ðŸ‘ï¸â€🗨ï¸'}
+                        {showPassword ? '👁️' : '👁️‍🗨️'}
                       </button>
                     </div>
                     <small className="form-help">

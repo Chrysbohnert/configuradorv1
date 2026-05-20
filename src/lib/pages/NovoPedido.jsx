@@ -280,7 +280,7 @@ const NovoPedido = () => {
         setMaxStepReached(5);
 
       } catch (error) {
-        console.error('âŒ Erro ao carregar proposta:', error);
+        console.error('❌ Erro ao carregar proposta:', error);
         alert('Erro ao carregar proposta para edição');
         navigate('/propostas');
       }
@@ -356,7 +356,7 @@ const NovoPedido = () => {
     return true;
   };
 
-  // â† NOVO: Função para recalcular preços quando o contexto muda
+  // ← NOVO: Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
     // ✅ Só executa se houver itens e região selecionada
     // user.regiao é o fallback para vendedores sem regioes_operacao
@@ -434,9 +434,7 @@ const NovoPedido = () => {
   const [selectedCapacidade, setSelectedCapacidade] = useState(null);
   const [selectedModelo, setSelectedModelo] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
-  const [guindastesVisiveisParaVendedor, setGuindastesVisiveisParaVendedor] = useState(null);
-
-  // â† MOVIDO: Definir funções antes dos useEffects
+  // ← MOVIDO: Definir funções antes dos useEffects
   // Funções do Carrinho
   const adicionarAoCarrinho = (item, tipo) => {
     const itemComTipo = { ...item, tipo };
@@ -472,39 +470,27 @@ const NovoPedido = () => {
       const maxPages = 10;
       const all = [];
 
+      const loadTimerId = Date.now();
+      const loadTimerLabel = `getGuindastesLite-${loadTimerId}`;
+      console.time(loadTimerLabel);
       for (let page = 1; page <= maxPages; page++) {
+        const pageTimerLabel = `${loadTimerLabel}-p${page}`;
+        console.time(pageTimerLabel);
         const result = await getGuindastesLite(page, pageSize, true);
+        console.timeEnd(pageTimerLabel);
         const chunk = result?.data || [];
         all.push(...chunk);
         if (chunk.length < pageSize) break;
       }
+      console.timeEnd(loadTimerLabel);
 
-
-      let idsVisiveis = null;
-      try {
-        if (!isAdminStark && user?.id) {
-          idsVisiveis = await db.getGuindasteIdsVisiveisParaUser(user.id);
-        }
-      } catch (e) {
-        console.warn(' [NovoPedido] Falha ao carregar visibilidade de protótipos:', e);
-      }
-
-      const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
-      setGuindastesVisiveisParaVendedor(idsSet);
-
-      
       const isVendedorCE = normalizarArray(user?.regioes_operacao).some(r => {
         const rLower = (r || '').toLowerCase().trim();
         return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
       });
 
       const filtrados = (all || []).filter(g => {
-        // Filtro de protótipos
-        if (g?.is_prototipo) {
-          if (!isAdminStark) {
-            if (!idsSet || !idsSet.has(g.id)) return false;
-          }
-        }
+        if (g?.is_prototipo && !isAdminStark) return false;
 
         // Filtro de Comércio Exterior: só vendedores CE ou admin stark
         if (g?.is_comercio_exterior) {
@@ -522,7 +508,7 @@ const NovoPedido = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAdminStark, user?.id]);
+  }, [isAdminStark, user]);
 
   useEffect(() => {
     if (!user) {
@@ -538,7 +524,7 @@ const NovoPedido = () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         
-        //  VERIFICAR SE JÃ ESTÃ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
+        //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
         // Em modo concessionária, múltiplos guindastes são permitidos
         if (!isModoConcessionaria) {
           const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
@@ -892,7 +878,7 @@ const NovoPedido = () => {
       const newCart = prev.filter((_, i) => i !== index);
       localStorage.setItem('carrinho', JSON.stringify(newCart));
 
-      // â† NOVO: Se removeu o equipamento atual, limpar rastreamento
+      // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
       const removedItem = prev[index];
       if (removedItem && removedItem.tipo === 'guindaste') {
       }
@@ -1017,6 +1003,11 @@ const NovoPedido = () => {
               isLoading={isLoading}
               getPreco={getPrecoParaConfigurador}
               getImagem={getImagemParaConfigurador}
+              precoContextKey={
+                isModoConcessionaria
+                  ? (regiaoClienteSelecionada || concessionariaInfo?.regiao_preco || '')
+                  : (regiaoClienteSelecionada || user?.regiao || '')
+              }
             />
 
             {/* Mostrar carrinho e botão de continuar para modo concessionária */}
@@ -1431,7 +1422,7 @@ const NovoPedido = () => {
       setMaxStepReached(Math.max(maxStepReached, nextStep));
       setValidationErrors({}); // Limpar erros ao avançar
     } else {
-      console.warn('⚠ï¸ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
+      console.warn('⚠️ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
       console.warn('📋 Campos obrigatórios faltando:', Object.keys(validationErrors));
     }
   };
@@ -1500,7 +1491,7 @@ const NovoPedido = () => {
                       try {
                         const preco = await db.getPrecoPorRegiao(equipamento.id, regiao);
                       } catch (error) {
-                        console.error(`  âŒ Erro em ${regiao}:`, error.message);
+                        console.error(`  ❌ Erro em ${regiao}:`, error.message);
                       }
                     }
                   }
@@ -1521,7 +1512,7 @@ const NovoPedido = () => {
                 }}
                 title="Debug completo de preços"
               >
-                ðŸ” DEBUG PREÇOS
+                🔍 DEBUG PREÇOS
               </button>
               <button
                 key="test-context"
@@ -1566,7 +1557,7 @@ const NovoPedido = () => {
           alignItems: 'center',
           gap: '12px'
         }}>
-          <span style={{ fontSize: '24px' }}>âœï¸</span>
+          <span style={{ fontSize: '24px' }}>✏️</span>
           <div>
             <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
               Modo Edição Ativo
@@ -1751,7 +1742,7 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
           )}
         </div>
 
-        {/* Ãrea de Ações */}
+        {/* Área de Ações */}
         <div className="card-footer">
           <button className={`btn-select ${isSelected ? 'selected' : ''}`}>
             {isSelected ? (
@@ -2833,7 +2824,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       return pedido;
     } catch (error) {
-      console.error('âŒ Erro ao salvar relatório:', error);
+      console.error('❌ Erro ao salvar relatório:', error);
       console.error('📋 Detalhes do erro:', {
         message: error.message,
         code: error.code,
@@ -2841,7 +2832,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         hint: error.hint,
         stack: error.stack
       });
-      console.error('ðŸ” Erro completo:', JSON.stringify(error, null, 2));
+      console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
       throw error;
     }
   };

@@ -35,11 +35,11 @@ const DashboardAdmin = () => {
 
         const [usersResp, guindastesCountResp] = await Promise.all([
           usersPromise.catch((err) => {
-            console.error('âŒ Erro ao carregar usuários:', err);
+            console.error('❌ Erro ao carregar usuários:', err);
             return [];
           }),
           getGuindastesCountForDashboard().catch((err) => {
-            console.error('âŒ Erro ao carregar contagem de guindastes:', err);
+            console.error('❌ Erro ao carregar contagem de guindastes:', err);
             return 0;
           }),
         ]);
@@ -51,11 +51,11 @@ const DashboardAdmin = () => {
         // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
         const pedidosResp = await (isAdminConcessionaria
           ? getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
-              console.error('âŒ Erro ao carregar propostas:', err);
+              console.error('❌ Erro ao carregar propostas:', err);
               return [];
             })
           : getPropostas({ includeDadosSerializados: true }).catch((err) => {
-              console.error('âŒ Erro ao carregar propostas:', err);
+              console.error('❌ Erro ao carregar propostas:', err);
               return [];
             }));
 
@@ -63,7 +63,7 @@ const DashboardAdmin = () => {
         setPedidos(pedidosResp || []);
         setGuindastesCount(guindastesCountResp || 0);
       } catch (error) {
-        console.error('âŒ Erro geral ao carregar dashboard:', error);
+        console.error('❌ Erro geral ao carregar dashboard:', error);
         setUsers([]);
         setPedidos([]);
       } finally {

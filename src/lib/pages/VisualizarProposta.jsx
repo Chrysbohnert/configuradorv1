@@ -52,7 +52,7 @@ const VisualizarProposta = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>â³</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
         <p style={{ color: '#666' }}>Carregando proposta...</p>
       </div>
     );
@@ -61,7 +61,7 @@ const VisualizarProposta = () => {
   if (error) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠ï¸</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
         <p style={{ color: '#666' }}>{error}</p>
       </div>
     );

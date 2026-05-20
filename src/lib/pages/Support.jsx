@@ -43,13 +43,13 @@ const Support = () => {
             className={`tab-button ${activeTab === 'help' ? 'active' : ''}`}
             onClick={() => setActiveTab('help')}
           >
-            â“ Ajuda
+            ❓ Ajuda
           </button>
           <button 
             className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
             onClick={() => setActiveTab('about')}
           >
-            ℹï¸ Sobre
+            ℹ️ Sobre
           </button>
         </div>
 

@@ -16,6 +16,7 @@ const propostasRouter       = require('./propostas');
 const paymentPlansRouter    = require('./payment_plans');
 const configuracoesRouter   = require('./configuracoes');
 const fretesRouter          = require('./fretes');
+const graficosCargaRouter   = require('./graficos_carga');
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/propostas',       propostasRouter);
 router.use('/payment-plans',   paymentPlansRouter);
 router.use('/configuracoes',   configuracoesRouter);
 router.use('/fretes',          fretesRouter);
+router.use('/graficos-carga',  graficosCargaRouter);
 
 module.exports = router;

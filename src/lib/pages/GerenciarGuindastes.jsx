@@ -243,7 +243,7 @@ const GerenciarGuindastes = () => {
       const guindasteData = await getGuindasteById(item.id);
 
       if (!guindasteData) {
-        console.error('âŒ Guindaste não encontrado:', item.id);
+        console.error('❌ Guindaste não encontrado:', item.id);
         alert('Erro: Guindaste não encontrado');
         return;
       }
@@ -278,7 +278,7 @@ const GerenciarGuindastes = () => {
       setShowModal(true);
       document.body.classList.add('modal-open');
     } catch (error) {
-      console.error('âŒ Erro ao buscar dados completos do guindaste:', error);
+      console.error('❌ Erro ao buscar dados completos do guindaste:', error);
       alert('Erro ao carregar dados do guindaste');
     }
   };
@@ -381,13 +381,13 @@ const GerenciarGuindastes = () => {
   const salvarPrecoConcessionaria = async () => {
     const novoPreco = parseFloat(precoConcessionariaInput);
     if (!novoPreco || novoPreco <= 0) {
-      alert('⚠ï¸ Preço inválido. Digite um valor maior que zero.');
+      alert('⚠️ Preço inválido. Digite um valor maior que zero.');
       return;
     }
     const precoCompra = precoStarkReferencia || 0;
     if (novoPreco < precoCompra) {
       const markup = precoCompra > 0 ? (((novoPreco - precoCompra) / precoCompra) * 100).toFixed(1) : 0;
-      const confirmar = window.confirm(`⚠ï¸ ATENÇÃO: O preço de venda (${formatCurrency(novoPreco)}) é MENOR que o preço de compra (${formatCurrency(precoCompra)}).\n\nMarkup: ${markup}%\n\nVocê terá PREJUÃZO nesta venda!\n\nDeseja continuar mesmo assim?`);
+      const confirmar = window.confirm(`⚠️ ATENÇÃO: O preço de venda (${formatCurrency(novoPreco)}) é MENOR que o preço de compra (${formatCurrency(precoCompra)}).\n\nMarkup: ${markup}%\n\nVocê terá PREJUÍZO nesta venda!\n\nDeseja continuar mesmo assim?`);
       if (!confirmar) return;
     }
     try {
@@ -403,7 +403,7 @@ const GerenciarGuindastes = () => {
       closePrecoConcessionaria();
     } catch (error) {
       console.error('Erro ao salvar preço:', error);
-      setToast({ visible: true, message: 'âŒ Erro ao salvar preço. Tente novamente.', type: 'error' });
+      setToast({ visible: true, message: '❌ Erro ao salvar preço. Tente novamente.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -492,7 +492,7 @@ const GerenciarGuindastes = () => {
       loadData(page, true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      console.error('âŒ Erro ao salvar guindaste:', error);
+      console.error('❌ Erro ao salvar guindaste:', error);
       if (error.code === '23505') {
         if (error.message.includes('codigo_referencia')) {
           alert('Erro: Já existe um guindaste com este Código de Referência. Use um código único.');
@@ -772,7 +772,7 @@ const GerenciarGuindastes = () => {
                         </>
                       ) : (
                         <div className="gg-empty-selection">
-                          <div className="gg-empty-icon">ðŸ—ï¸</div>
+                          <div className="gg-empty-icon">🏗️</div>
                           <h3>Selecione um modelo</h3>
                           <p>Escolha um modelo na lista ao lado para ver suas configurações e ações disponíveis</p>
                         </div>
@@ -832,7 +832,7 @@ const GerenciarGuindastes = () => {
                 <div className="modern-right-col">
                   <div className="modern-grid-3">
                     <div className="modern-form-group">
-                      <label>Código <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹï¸</span></label>
+                      <label>Código <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
                       <input
                         type="text"
                         value={formData.codigo_referencia}
@@ -890,7 +890,7 @@ const GerenciarGuindastes = () => {
                       />
                     </div>
                     <div className="modern-form-group">
-                      <label>Qtde. Disponível <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>ℹï¸</span></label>
+                      <label>Qtde. Disponível <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
                       <input
                         type="number"
                         min="0"
@@ -952,7 +952,7 @@ const GerenciarGuindastes = () => {
                   
                   <div className="modern-grid-3">
                     <div className="modern-form-group">
-                      <label>Lanças (Config. Kg) <span title="Ex: 3h1m" style={{cursor:'help', color:'#3b82f6'}}>ℹï¸</span></label>
+                      <label>Lanças (Config. Kg) <span title="Ex: 3h1m" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
                       <input
                         type="text"
                         value={formData.peso_kg}
@@ -1186,7 +1186,7 @@ const GerenciarGuindastes = () => {
         <div className="modal-overlay">
           <div className="modal-content delete-modal">
             <div className="modal-header">
-              <h2>⚠ï¸ Confirmar Exclusão</h2>
+              <h2>⚠️ Confirmar Exclusão</h2>
               <BlobButton onClick={() => setShowDeleteModal(false)} className="close-btn">×</BlobButton>
             </div>
             <div className="modal-body">
@@ -1210,7 +1210,7 @@ const GerenciarGuindastes = () => {
         <div className={`toast ${toast.type}`}>
           <div className="toast-content">
             <span className="toast-icon">
-              {toast.type === 'success' ? '✅' : 'âŒ'}
+              {toast.type === 'success' ? '✅' : '❌'}
             </span>
             <span className="toast-message">{toast.message}</span>
           </div>
