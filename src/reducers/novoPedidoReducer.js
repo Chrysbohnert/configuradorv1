@@ -67,15 +67,8 @@ export const initialState = {
   caminhaoData: {},
   
   // Carrinho
-  carrinho: (() => {
-    try {
-      const savedCart = localStorage.getItem('carrinho');
-      return savedCart ? JSON.parse(savedCart) : [];
-    } catch (error) {
-      console.error('Erro ao carregar carrinho do localStorage:', error);
-      return [];
-    }
-  })(),
+  // ✅ Inicia vazio para evitar carregar itens antigos do localStorage indevidamente
+  carrinho: [],
   
   // Dados de pagamento
   pagamentoData: {

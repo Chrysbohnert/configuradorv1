@@ -27,10 +27,10 @@ export const isAdmin = () => {
   return user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
 };
 
-// Verificar se o usuário é vendedor
+// Verificar se o usuário é vendedor (inclui admin_concessionaria para acesso ao Novo Pedido)
 export const isVendedor = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior';
+  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior' || user?.tipo === 'admin_concessionaria';
 };
 
 // Fazer logout

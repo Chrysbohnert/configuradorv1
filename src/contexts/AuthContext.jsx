@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
+import { normalizarArray, normalizarObjeto } from '../utils/normalizadores';
 
 const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/users';
 
@@ -8,6 +9,15 @@ function _clearStorage() {
   localStorage.removeItem('authToken');
   localStorage.removeItem('carrinho');
   localStorage.removeItem('rememberMe');
+}
+
+function _normalizarUser(user) {
+  if (!user) return user;
+  return {
+    ...user,
+    regioes_operacao: normalizarArray(user.regioes_operacao),
+    // outros campos jsonb do banco podem ser adicionados aqui
+  };
 }
 
 const AuthContext = createContext(null);
@@ -45,8 +55,9 @@ export const AuthProvider = ({ children }) => {
         if (res.ok) {
           const json = await res.json();
           if (json.success && json.data) {
-            setUser(json.data);
-            localStorage.setItem('user', JSON.stringify(json.data));
+            const normalized = _normalizarUser(json.data);
+            setUser(normalized);
+            localStorage.setItem('user', JSON.stringify(normalized));
           } else {
             _clearStorage();
           }
@@ -57,7 +68,10 @@ export const AuthProvider = ({ children }) => {
         console.error('Erro ao restaurar sessão:', err);
         const cached = localStorage.getItem('user');
         if (cached) {
-          try { setUser(JSON.parse(cached)); } catch (_) { _clearStorage(); }
+          try {
+            const parsed = JSON.parse(cached);
+            setUser(_normalizarUser(parsed));
+          } catch (_) { _clearStorage(); }
         }
       } finally {
         setLoading(false);
@@ -98,14 +112,15 @@ export const AuthProvider = ({ children }) => {
       }
 
       const { token, user: userData } = json.data;
+      const normalized = _normalizarUser(userData);
 
       localStorage.setItem('authToken', token);
-      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('user', JSON.stringify(normalized));
 
-      setUser(userData);
+      setUser(normalized);
       recordLoginAttempt(clientIP, email, true);
 
-      return { success: true, user: userData };
+      return { success: true, user: normalized };
 
     } catch (err) {
       console.error('Erro no login:', err);

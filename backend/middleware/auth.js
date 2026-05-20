@@ -20,7 +20,7 @@ function requireAuth(req, res, next) {
 
 function requireAdmin(req, res, next) {
   if (!req.user) return res.status(401).json({ success: false, error: 'Não autenticado' });
-  if (req.user.role !== 'admin') {
+  if (req.user.tipo !== 'admin') {
     return res.status(403).json({ success: false, error: 'Acesso negado: apenas administradores' });
   }
   next();
@@ -29,7 +29,7 @@ function requireAdmin(req, res, next) {
 function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.user) return res.status(401).json({ success: false, error: 'Não autenticado' });
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user.tipo)) {
       return res.status(403).json({ success: false, error: `Acesso negado. Perfil necessário: ${roles.join(' ou ')}` });
     }
     next();

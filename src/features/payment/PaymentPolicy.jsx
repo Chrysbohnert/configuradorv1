@@ -895,10 +895,23 @@ export default function PaymentPolicy({
         prazoPagamento: planoSelecionado?.description || '',
       };
 
+      // Log diagnóstico do fluxo Nova Proposta
+      console.log('[NOVA PROPOSTA] PaymentPolicy → resultado calculado', {
+        tipoUsuario: user?.tipo,
+        regioes_operacao: user?.regioes_operacao,
+        regiaoSelecionada: regiaoClienteSelecionada,
+        origemPreco: modoConcessionaria ? 'getPrecoCompraPorRegiao' : 'getPrecoPorRegiao',
+        precoBase: resultadoFinal.precoBase,
+        precoFinal: resultadoFinal.valorFinal,
+        tipoCliente: resultadoFinal.tipoCliente,
+        desconto: resultadoFinal.desconto,
+        modoConcessionaria,
+      });
+
       setResultado(resultadoFinal);
       onPaymentComputed?.(resultadoFinal);
     } catch (err) {
-      console.error(err);
+      console.error('[NOVA PROPOSTA] PaymentPolicy erro no cálculo:', err);
       setResultado(null);
       onPaymentComputed?.(null);
     }

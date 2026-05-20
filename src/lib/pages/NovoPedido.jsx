@@ -11,6 +11,7 @@ import { db } from '../../config/supabase';
 import { getGuindastesLite } from '../../api/guindastes';
 import { getPropostaById, updateProposta, createpropostas } from '../../api/propostas';
 import { normalizarRegiao } from '../../utils/regiaoHelper';
+import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import { maskCPF, maskCNPJ } from '../../utils/masks';
 import { createLogger } from '../../utils/productionLogger';
@@ -44,21 +45,41 @@ const NovoPedido = () => {
   const [isEdicao, setIsEdicao] = useState(false); // Modo ediÃ§Ã£o
   const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   const [carrinho, setCarrinho] = useState(() => {
-    const savedCart = localStorage.getItem('carrinho');
-    return savedCart ? JSON.parse(savedCart) : [];
+    // ✅ Só carrega do localStorage em modo edição ou vindo de detalhes
+    if (propostaId || location.state?.fromDetalhes) {
+      const savedCart = localStorage.getItem('carrinho');
+      try { return savedCart ? JSON.parse(savedCart) : []; } catch { return []; }
+    }
+    return [];
   });
-  
+
   // Estados para carrinho acumulativo
   const [carrinhoAcumulativo, setCarrinhoAcumulativo] = useState(() => {
-    const saved = localStorage.getItem('carrinhoAcumulativo');
-    return saved ? JSON.parse(saved) : [];
+    if (propostaId || location.state?.fromDetalhes) {
+      const saved = localStorage.getItem('carrinhoAcumulativo');
+      try { return saved ? JSON.parse(saved) : []; } catch { return []; }
+    }
+    return [];
   });
   const [pedidoAtual, setPedidoAtual] = useState(null);
   const [clienteData, setClienteData] = useState({});
   const [caminhaoData, setCaminhaoData] = useState({});
   const [pagamentoData, setPagamentoData] = useState(() => {
-    const saved = localStorage.getItem('novoPedido_pagamentoData');
-    return saved ? JSON.parse(saved) : {
+    if (propostaId || location.state?.fromDetalhes) {
+      const saved = localStorage.getItem('novoPedido_pagamentoData');
+      try {
+        return saved ? JSON.parse(saved) : {
+          tipoPagamento: '',
+          prazoPagamento: '',
+          desconto: 0,
+          acrescimo: 0,
+          valorFinal: 0,
+          localInstalacao: '',
+          tipoInstalacao: ''
+        };
+      } catch { /* cai no default abaixo */ }
+    }
+    return {
       tipoPagamento: '',
       prazoPagamento: '',
       desconto: 0,
@@ -156,23 +177,34 @@ const NovoPedido = () => {
     }
   }, [location.pathname, isAdminStark, navigate]);
 
-  // Auto-set region for vendedor_exterior without regioes_operacao
+  // ✅ Auto-set regiaoClienteSelecionada para Nova Proposta (fluxo vendedor comercial)
+  // Prioridade: regioes_operacao[0] > user.regiao > 'Comércio Exterior' (exterior)
   useEffect(() => {
-    if (!user) return;
+    if (!user || isModoConcessionaria) return;
+
+    const regioes = normalizarArray(user?.regioes_operacao);
     const isExteriorType = user.tipo === 'vendedor_exterior';
     const isExteriorRegiao = normalizarRegiao(user.regiao) === 'comercio-exterior';
-    const regioes = user.regioes_operacao || [];
-    if ((isExteriorType || isExteriorRegiao) && regioes.length === 0) {
-      setRegiaoClienteSelecionada('ComÃ©rcio Exterior');
+
+    if (regioes.length > 0) {
+      // Vendedor com múltiplas regiões de operação: pré-seleciona a primeira
+      if (!regiaoClienteSelecionada) setRegiaoClienteSelecionada(regioes[0]);
+    } else if ((isExteriorType || isExteriorRegiao)) {
+      // Vendedor exterior sem regioes_operacao
+      setRegiaoClienteSelecionada('Comércio Exterior');
+    } else if (user.regiao && !regiaoClienteSelecionada) {
+      // ✅ Vendedor com apenas user.regiao (sem regioes_operacao): usa a região principal
+      setRegiaoClienteSelecionada(user.regiao);
     }
-  }, [user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, isModoConcessionaria]);
 
   useEffect(() => {
     if (!user) return;
     const isExteriorUser =
       user.tipo === 'vendedor_exterior' ||
       normalizarRegiao(user.regiao) === 'comercio-exterior' ||
-      (user.regioes_operacao || []).some(r => normalizarRegiao(r) === 'comercio-exterior');
+      normalizarArray(user?.regioes_operacao).some(r => normalizarRegiao(r) === 'comercio-exterior');
 
     if (!isExteriorUser) {
       setCotacaoUSD(null);
@@ -326,15 +358,23 @@ const NovoPedido = () => {
 
   // â† NOVO: FunÃ§Ã£o para recalcular preÃ§os quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
-    // âœ… NOVO: Usar APENAS regioes_operacao 
-    const regioes = user?.regioes_operacao || [];
-    
-    // âœ… NOVO: NÃ£o recalcular se regiÃ£o nÃ£o foi selecionada
-    const isExteriorRegioAtual = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
-    if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && !isExteriorRegioAtual && regioes.length === 0)) {
+    // ✅ Só executa se houver itens e região selecionada
+    // user.regiao é o fallback para vendedores sem regioes_operacao
+    if (carrinho.length === 0 || !regiaoClienteSelecionada) {
       return;
     }
 
+    // Log diagnóstico do fluxo Nova Proposta
+    const regioes = normalizarArray(user?.regioes_operacao);
+    console.log('[NOVA PROPOSTA] recalcularPrecosCarrinho', {
+      tipoUsuario: user?.tipo,
+      regioes_operacao: regioes,
+      regiaoSelecionada: regiaoClienteSelecionada,
+      origemRegiao: regioes.length > 0 ? 'regioes_operacao' : 'user.regiao',
+      isConcessionaria: isConcessionariaUser,
+      isModoConcessionaria,
+      carrinhoItems: carrinho.length,
+    });
 
     const temIE = determinarClienteTemIE();
     // âœ… NOVO: Usar regiaoClienteSelecionada
@@ -453,7 +493,7 @@ const NovoPedido = () => {
       setGuindastesVisiveisParaVendedor(idsSet);
 
       
-      const isVendedorCE = (user?.regioes_operacao || []).some(r => {
+      const isVendedorCE = normalizarArray(user?.regioes_operacao).some(r => {
         const rLower = (r || '').toLowerCase().trim();
         return rLower.includes('comÃ©rcio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
       });
@@ -722,6 +762,17 @@ const NovoPedido = () => {
           regiaoInicial = normalizarRegiao(regiaoClienteSelecionada || user?.regiao || '');
         }
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
+        // Log diagnóstico Nova Proposta
+        console.log('[NOVA PROPOSTA] handleSelecionarGuindaste', {
+          tipoUsuario: user?.tipo,
+          regioes_operacao: normalizarArray(user?.regioes_operacao),
+          regiaoSelecionada: regiaoClienteSelecionada,
+          origemRegiao: normalizarArray(user?.regioes_operacao).length > 0 ? 'regioes_operacao' : 'user.regiao',
+          regiaoNormalizada: regiaoInicial,
+          origemPreco: 'getPrecoPorRegiao',
+          precoFinal: precoGuindaste,
+          guindaste: guindaste.subgrupo || guindaste.id,
+        });
         logger.log(`PreÃ§o inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
           alert(
@@ -940,14 +991,20 @@ const NovoPedido = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
                   <span>RegiÃ£o de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
                 </div>
-              ) : (
+              ) : normalizarArray(user?.regioes_operacao).length > 0 ? (
+                // ✅ Só mostra seletor quando vendedor tem múltiplas regiões de operação
                 <SeletorRegiaoCliente
                   regiaoSelecionada={regiaoClienteSelecionada}
                   onRegiaoChange={setRegiaoClienteSelecionada}
-                  regioesDisponiveis={user?.regioes_operacao || []}
-                  questionLabel="RegiÃ£o do cliente"
+                  regioesDisponiveis={normalizarArray(user?.regioes_operacao)}
+                  questionLabel="Região do cliente"
                 />
-              )}
+              ) : regiaoClienteSelecionada ? (
+                // ✅ Vendedor com apenas user.regiao: exibe região fixa sem seletor
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#166534' }}>
+                  <span>📍 Região: <strong>{regiaoClienteSelecionada}</strong></span>
+                </div>
+              ) : null}
             </>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '12px 0 10px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useAuth } from './AuthContext';
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
+import { normalizarArray } from '../utils/normalizadores';
 
 const CarrinhoContext = createContext(null);
 
@@ -83,7 +84,8 @@ export const CarrinhoProvider = ({ children }) => {
 
   // Recalcular preços do carrinho baseado na região e contexto
   const recalcularPrecos = useCallback(async (currentStep = 1, pagamentoData = {}, regiaoClienteSelecionada = '') => {
-    if (carrinho.length === 0 || !user?.regiao || isRecalculating) {
+    const regioes = normalizarArray(user?.regioes_operacao);
+    if (carrinho.length === 0 || (!user?.regiao && regioes.length === 0) || isRecalculating) {
       return;
     }
 
@@ -92,7 +94,7 @@ export const CarrinhoProvider = ({ children }) => {
     try {
       const temIE = determinarClienteTemIE(currentStep, pagamentoData);
       // Usar região selecionada do cliente se disponível, senão usar região do vendedor
-      const regiaoParaNormalizar = regiaoClienteSelecionada || user.regiao;
+      const regiaoParaNormalizar = regiaoClienteSelecionada || user.regiao || regioes[0] || '';
       const regiaoVendedor = normalizarRegiao(regiaoParaNormalizar, temIE);
 
 

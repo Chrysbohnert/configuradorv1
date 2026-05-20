@@ -5,6 +5,7 @@
  */
 
 const { query } = require('../db/pool');
+const { normalizarUsuario } = require('../utils/normalizadores');
 
 const COLS_PUBLIC = `id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao`;
 
@@ -12,7 +13,7 @@ async function findAll() {
   const { rows } = await query(
     `SELECT ${COLS_PUBLIC} FROM app_users ORDER BY nome ASC`
   );
-  return rows;
+  return rows.map(normalizarUsuario);
 }
 
 async function findById(id) {
@@ -20,7 +21,7 @@ async function findById(id) {
     `SELECT ${COLS_PUBLIC} FROM app_users WHERE id = $1`,
     [id]
   );
-  return rows[0] || null;
+  return normalizarUsuario(rows[0]) || null;
 }
 
 async function findByEmail(email) {
@@ -30,7 +31,7 @@ async function findByEmail(email) {
      WHERE LOWER(email) = $1`,
     [email.toLowerCase().trim()]
   );
-  return rows[0] || null;
+  return normalizarUsuario(rows[0]) || null;
 }
 
 async function create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao }) {
@@ -40,7 +41,7 @@ async function create({ nome, email, senhaHash, tipo, regiao, concessionaria_id,
      RETURNING ${COLS_PUBLIC}`,
     [nome, email.toLowerCase().trim(), senhaHash, tipo || 'vendedor', regiao || null, concessionaria_id || null, regioes_operacao || null]
   );
-  return rows[0];
+  return normalizarUsuario(rows[0]);
 }
 
 async function update(id, fields) {
@@ -57,7 +58,7 @@ async function update(id, fields) {
      RETURNING ${COLS_PUBLIC}`,
     [nome, email, tipo, regiao, concessionaria_id, regioes_operacao, id]
   );
-  return rows[0] || null;
+  return normalizarUsuario(rows[0]) || null;
 }
 
 async function updatePassword(id, senhaHash) {
@@ -87,7 +88,7 @@ async function updateProfile(id, fields) {
     `UPDATE app_users SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING ${COLS_PUBLIC}`,
     params
   );
-  return rows[0] || null;
+  return normalizarUsuario(rows[0]) || null;
 }
 
 async function remove(id) {
