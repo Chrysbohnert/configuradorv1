@@ -8,16 +8,16 @@ if (import.meta.env.DEV) {
   console.log('🔧 [DEBUG] Funções de debug carregadas');
   
   // Importar dinamicamente os módulos de debug
-  import('./supabaseDebug.js').then(module => {
+  //import('./supabaseDebug.js').then(module => {
     // Expor funções no window para uso no console
-    window.debugSupabase = module.debugSupabase;
-    console.log('✅ [DEBUG] Supabase debug disponível: window.debugSupabase');
-  });
+    //window.debugSupabase = module.debugSupabase;
+   // console.log('✅ [DEBUG] Supabase debug disponível: window.debugSupabase');
+ // });
   
-  import('./authDebug.js').then(module => {
-    window.debugAuth = module.debugAuth;
-    console.log('✅ [DEBUG] Auth debug disponível: window.debugAuth');
-  });
+  //import('./authDebug.js').then(module => {
+    //window.debugAuth = module.debugAuth;
+    //console.log('✅ [DEBUG] Auth debug disponível: window.debugAuth');
+  //});
   
   import('./storageDebug.js').then(module => {
     window.debugStorage = module.debugStorage;
