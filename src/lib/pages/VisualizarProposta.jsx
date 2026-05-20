@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import LazyPDFGenerator from '../components/LazyPDFGenerator';
-import { db } from '../config/supabase';
-import { getPropostaById } from '../api/propostas';
+import LazyPDFGenerator from '../../components/LazyPDFGenerator';
+import { db } from '../../config/supabase';
+import { getPropostaById } from '../../api/propostas';
 
 const VisualizarProposta = () => {
   const { id } = useParams();
@@ -18,7 +18,7 @@ const VisualizarProposta = () => {
 
         const proposta = await getPropostaById(id);
         if (!proposta) {
-          setError('Proposta não encontrada.');
+          setError('Proposta nÃ£o encontrada.');
           return;
         }
 
@@ -34,7 +34,7 @@ const VisualizarProposta = () => {
           numeroProposta: proposta.numero_proposta,
         });
       } catch (err) {
-        console.error('Erro ao carregar proposta para visualização:', err);
+        console.error('Erro ao carregar proposta para visualizaÃ§Ã£o:', err);
         setError('Erro ao carregar a proposta.');
       } finally {
         setLoading(false);
@@ -44,7 +44,7 @@ const VisualizarProposta = () => {
     if (id) {
       carregarProposta();
     } else {
-      setError('ID da proposta não informado.');
+      setError('ID da proposta nÃ£o informado.');
       setLoading(false);
     }
   }, [id]);
@@ -52,7 +52,7 @@ const VisualizarProposta = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>â³</div>
         <p style={{ color: '#666' }}>Carregando proposta...</p>
       </div>
     );
@@ -61,7 +61,7 @@ const VisualizarProposta = () => {
   if (error) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>âš ï¸</div>
         <p style={{ color: '#666' }}>{error}</p>
       </div>
     );
@@ -77,7 +77,7 @@ const VisualizarProposta = () => {
         Proposta Comercial
       </h1>
       <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px', textAlign: 'center' }}>
-        Visualização da proposta #{pedidoData.numeroProposta}
+        VisualizaÃ§Ã£o da proposta #{pedidoData.numeroProposta}
       </p>
 
       <div style={{ marginBottom: '24px' }}>
@@ -91,3 +91,7 @@ const VisualizarProposta = () => {
 };
 
 export default VisualizarProposta;
+
+
+
+

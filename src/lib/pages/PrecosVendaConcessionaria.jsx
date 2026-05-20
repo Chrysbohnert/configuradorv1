@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import { db } from '../config/supabase';
-import { getGuindastesLite } from '../api/guindastes';
-import { formatCurrency } from '../utils/formatters';
-import '../styles/PrecosVendaConcessionaria.css';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import { db } from '../../config/supabase';
+import { getGuindastesLite } from '../../api/guindastes';
+import { formatCurrency } from '../../utils/formatters';
+import '../../styles/PrecosVendaConcessionaria.css';
 
 const PrecosVendaConcessionaria = () => {
   const navigate = useNavigate();
@@ -36,7 +36,7 @@ const PrecosVendaConcessionaria = () => {
     try {
       setIsLoading(true);
 
-      // Carregar dados da concessionária
+      // Carregar dados da concessionÃ¡ria
       const conc = await db.getConcessionariaById(user.concessionaria_id);
       setConcessionaria(conc);
 
@@ -45,7 +45,7 @@ const PrecosVendaConcessionaria = () => {
       const todosGuindastes = result?.data || [];
       setGuindastes(todosGuindastes);
 
-      // Carregar preços de venda já definidos
+      // Carregar preÃ§os de venda jÃ¡ definidos
       const precosVenda = await db.getConcessionariaPrecos(user.concessionaria_id);
       const precosMap = {};
       precosVenda.forEach(p => {
@@ -53,7 +53,7 @@ const PrecosVendaConcessionaria = () => {
       });
       setPrecos(precosMap);
 
-      // Carregar preços de compra por região
+      // Carregar preÃ§os de compra por regiÃ£o
       const regiao = conc?.regiao_preco || '';
       const precosCompraMap = {};
       
@@ -67,7 +67,7 @@ const PrecosVendaConcessionaria = () => {
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados. Verifique a conexão.');
+      alert('Erro ao carregar dados. Verifique a conexÃ£o.');
     } finally {
       setIsLoading(false);
     }
@@ -89,14 +89,14 @@ const PrecosVendaConcessionaria = () => {
     const novoPreco = precos[guindasteId];
     
     if (!novoPreco || novoPreco <= 0) {
-      alert('Preço inválido. Digite um valor maior que zero.');
+      alert('PreÃ§o invÃ¡lido. Digite um valor maior que zero.');
       return;
     }
 
     const precoCompra = precosCompra[guindasteId] || 0;
     if (novoPreco < precoCompra) {
       const confirmar = window.confirm(
-        `⚠️ ATENÇÃO: O preço de venda (R$ ${formatCurrency(novoPreco)}) é MENOR que o preço de compra (R$ ${formatCurrency(precoCompra)}).\n\nVocê terá PREJUÍZO nesta venda!\n\nDeseja continuar mesmo assim?`
+        `âš ï¸ ATENÃ‡ÃƒO: O preÃ§o de venda (R$ ${formatCurrency(novoPreco)}) Ã© MENOR que o preÃ§o de compra (R$ ${formatCurrency(precoCompra)}).\n\nVocÃª terÃ¡ PREJUÃZO nesta venda!\n\nDeseja continuar mesmo assim?`
       );
       if (!confirmar) return;
     }
@@ -117,10 +117,10 @@ const PrecosVendaConcessionaria = () => {
         return novo;
       });
 
-      alert('✅ Preço salvo com sucesso!');
+      alert('âœ… PreÃ§o salvo com sucesso!');
     } catch (error) {
-      console.error('Erro ao salvar preço:', error);
-      alert('Erro ao salvar preço. Tente novamente.');
+      console.error('Erro ao salvar preÃ§o:', error);
+      alert('Erro ao salvar preÃ§o. Tente novamente.');
     } finally {
       setSalvando(prev => {
         const novo = { ...prev };
@@ -158,8 +158,8 @@ const PrecosVendaConcessionaria = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="Preços de Venda"
-        subtitle="Defina os preços que seus vendedores irão vender aos clientes"
+        title="PreÃ§os de Venda"
+        subtitle="Defina os preÃ§os que seus vendedores irÃ£o vender aos clientes"
       />
 
       <div className="precos-venda-container">
@@ -167,41 +167,41 @@ const PrecosVendaConcessionaria = () => {
           {concessionaria && (
             <div className="precos-venda-info">
               <div className="info-item">
-                <span className="info-label">Concessionária:</span>
+                <span className="info-label">ConcessionÃ¡ria:</span>
                 <span className="info-value">{concessionaria.nome}</span>
               </div>
               <div className="info-item">
-                <span className="info-label">Região de Compra:</span>
+                <span className="info-label">RegiÃ£o de Compra:</span>
                 <span className="info-value">{concessionaria.regiao_preco}</span>
               </div>
             </div>
           )}
 
           <div className="precos-venda-instrucoes">
-            <h3>💡 Como funciona:</h3>
+            <h3>ðŸ’¡ Como funciona:</h3>
             <ol>
-              <li><strong>Preço de Compra:</strong> Quanto você pagou pelo guindaste (definido pelo Admin Stark)</li>
-              <li><strong>Preço de Venda:</strong> Quanto seus vendedores irão vender aos clientes finais</li>
+              <li><strong>PreÃ§o de Compra:</strong> Quanto vocÃª pagou pelo guindaste (definido pelo Admin Stark)</li>
+              <li><strong>PreÃ§o de Venda:</strong> Quanto seus vendedores irÃ£o vender aos clientes finais</li>
               <li><strong>Markup:</strong> Sua margem de lucro calculada automaticamente</li>
             </ol>
-            <p className="aviso">⚠️ Defina preços maiores que o preço de compra para ter lucro!</p>
+            <p className="aviso">âš ï¸ Defina preÃ§os maiores que o preÃ§o de compra para ter lucro!</p>
           </div>
 
           {isLoading ? (
             <div className="precos-venda-loading">Carregando guindastes...</div>
           ) : guindastesFiltrados.length === 0 ? (
             <div className="precos-venda-empty">
-              <p>Nenhum guindaste disponível para sua região.</p>
-              <p>Entre em contato com o Admin Stark para configurar os preços de compra.</p>
+              <p>Nenhum guindaste disponÃ­vel para sua regiÃ£o.</p>
+              <p>Entre em contato com o Admin Stark para configurar os preÃ§os de compra.</p>
             </div>
           ) : (
             <div className="precos-venda-table">
               <div className="precos-venda-row precos-venda-row--header">
                 <div>Guindaste</div>
-                <div>Preço de Compra</div>
-                <div>Preço de Venda</div>
+                <div>PreÃ§o de Compra</div>
+                <div>PreÃ§o de Venda</div>
                 <div>Markup</div>
-                <div>Ações</div>
+                <div>AÃ§Ãµes</div>
               </div>
 
               {guindastesFiltrados.map((g) => {
@@ -237,7 +237,7 @@ const PrecosVendaConcessionaria = () => {
                         />
                       ) : (
                         <span className={`valor-venda ${!temPrecoDefinido ? 'valor-venda--vazio' : ''}`}>
-                          {temPrecoDefinido ? formatCurrency(precoVenda) : 'Não definido'}
+                          {temPrecoDefinido ? formatCurrency(precoVenda) : 'NÃ£o definido'}
                         </span>
                       )}
                     </div>
@@ -258,14 +258,14 @@ const PrecosVendaConcessionaria = () => {
                             onClick={() => handleSalvarPreco(g.id)}
                             disabled={isSalvando}
                           >
-                            {isSalvando ? 'Salvando...' : '✓ Salvar'}
+                            {isSalvando ? 'Salvando...' : 'âœ“ Salvar'}
                           </button>
                           <button
                             className="btn-cancelar"
                             onClick={() => handleCancelarEdicao(g.id)}
                             disabled={isSalvando}
                           >
-                            ✕ Cancelar
+                            âœ• Cancelar
                           </button>
                         </>
                       ) : (
@@ -273,7 +273,7 @@ const PrecosVendaConcessionaria = () => {
                           className="btn-editar"
                           onClick={() => handleEditarPreco(g.id)}
                         >
-                          ✎ {temPrecoDefinido ? 'Editar' : 'Definir'}
+                          âœŽ {temPrecoDefinido ? 'Editar' : 'Definir'}
                         </button>
                       )}
                     </div>
@@ -289,3 +289,7 @@ const PrecosVendaConcessionaria = () => {
 };
 
 export default PrecosVendaConcessionaria;
+
+
+
+

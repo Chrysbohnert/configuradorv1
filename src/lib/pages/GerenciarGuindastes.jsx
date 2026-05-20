@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import BlobButton from '../components/BlobButton';
-import ImageUpload from '../components/ImageUpload';
-import LazyGuindasteImage from '../components/LazyGuindasteImage';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import BlobButton from '../../components/BlobButton';
+import ImageUpload from '../../components/ImageUpload';
+import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 
-import { db } from '../config/supabase';
-import { getGuindastesLite, getGuindasteById, createGuindaste, updateGuindaste, deleteGuindaste } from '../api/guindastes';
-import { formatCurrency } from '../utils/formatters';
-import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
-import '../styles/GerenciarGuindastes.css';
-import PrecosPorRegiaoModal from '../components/PrecosPorRegiaoModal';
+import { db } from '../../config/supabase';
+import { getGuindastesLite, getGuindasteById, createGuindaste, updateGuindaste, deleteGuindaste } from '../../api/guindastes';
+import { formatCurrency } from '../../utils/formatters';
+import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
+import '../../styles/GerenciarGuindastes.css';
+import PrecosPorRegiaoModal from '../../components/PrecosPorRegiaoModal';
 
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
-  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
+  const { user } = useOutletContext(); // Pega o usuÃ¡rio do AdminLayout
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
@@ -34,7 +34,7 @@ const GerenciarGuindastes = () => {
     modelo: '',
     grupo: '',
     peso_kg: '',
-    configuração: '',
+    configuracao: '',
     tem_contr: 'Sim',
     imagem_url: '',
     descricao: '',
@@ -89,7 +89,7 @@ const GerenciarGuindastes = () => {
 
   useEffect(() => {
     if (user) {
-      loadData(1, false); // Usar cache quando possível para melhor performance
+      loadData(1, false); // Usar cache quando possÃ­vel para melhor performance
     }
   }, [user]);
 
@@ -221,7 +221,7 @@ const GerenciarGuindastes = () => {
         }, {});
         setPrecosConcessionariaMap(map);
       } catch (e) {
-        console.error('Erro ao carregar contexto da concessionária:', e);
+        console.error('Erro ao carregar contexto da concessionÃ¡ria:', e);
       }
     };
 
@@ -234,7 +234,7 @@ const GerenciarGuindastes = () => {
 
   const handleEdit = async (item) => {
     if (isAdminConcessionaria) {
-      alert('Admin de concessionária não pode editar guindastes.');
+      alert('Admin de concessionÃ¡ria nÃ£o pode editar guindastes.');
       return;
     }
 
@@ -243,8 +243,8 @@ const GerenciarGuindastes = () => {
       const guindasteData = await getGuindasteById(item.id);
 
       if (!guindasteData) {
-        console.error('❌ Guindaste não encontrado:', item.id);
-        alert('Erro: Guindaste não encontrado');
+        console.error('âŒ Guindaste nÃ£o encontrado:', item.id);
+        alert('Erro: Guindaste nÃ£o encontrado');
         return;
       }
 
@@ -255,7 +255,7 @@ const GerenciarGuindastes = () => {
         modelo: guindasteData.modelo || '',
         grupo: guindasteData.grupo || '',
         peso_kg: guindasteData.peso_kg || '',
-        configuração: guindasteData.configuração || '',
+        configuracao: guindasteData.configuracao || '',
         tem_contr: guindasteData.tem_contr || 'Sim',
         imagem_url: guindasteData.imagem_url || '',
         descricao: guindasteData.descricao || '',
@@ -278,14 +278,14 @@ const GerenciarGuindastes = () => {
       setShowModal(true);
       document.body.classList.add('modal-open');
     } catch (error) {
-      console.error('❌ Erro ao buscar dados completos do guindaste:', error);
+      console.error('âŒ Erro ao buscar dados completos do guindaste:', error);
       alert('Erro ao carregar dados do guindaste');
     }
   };
 
   const handleDeleteClick = (id) => {
     if (isAdminConcessionaria) {
-      alert('Admin de concessionária não pode excluir guindastes.');
+      alert('Admin de concessionÃ¡ria nÃ£o pode excluir guindastes.');
       return;
     }
     setGuindasteToDelete(id);
@@ -301,7 +301,7 @@ const GerenciarGuindastes = () => {
       modelo: '',
       grupo: '',
       peso_kg: '',
-      configuração: '',
+      configuracao: '',
       tem_contr: 'Sim',
       imagem_url: '',
       descricao: '',
@@ -333,7 +333,7 @@ const GerenciarGuindastes = () => {
       modelo: '',
       grupo: '',
       peso_kg: '',
-      configuração: '',
+      configuracao: '',
       tem_contr: 'Sim',
       imagem_url: '',
       descricao: '',
@@ -365,8 +365,8 @@ const GerenciarGuindastes = () => {
       setShowPrecoConcessionariaModal(true);
       document.body.classList.add('modal-open');
     } catch (error) {
-      console.error('Erro ao abrir modal de preço:', error);
-      alert('Erro ao carregar dados do preço. Tente novamente.');
+      console.error('Erro ao abrir modal de preÃ§o:', error);
+      alert('Erro ao carregar dados do preÃ§o. Tente novamente.');
     }
   };
 
@@ -381,13 +381,13 @@ const GerenciarGuindastes = () => {
   const salvarPrecoConcessionaria = async () => {
     const novoPreco = parseFloat(precoConcessionariaInput);
     if (!novoPreco || novoPreco <= 0) {
-      alert('⚠️ Preço inválido. Digite um valor maior que zero.');
+      alert('âš ï¸ PreÃ§o invÃ¡lido. Digite um valor maior que zero.');
       return;
     }
     const precoCompra = precoStarkReferencia || 0;
     if (novoPreco < precoCompra) {
       const markup = precoCompra > 0 ? (((novoPreco - precoCompra) / precoCompra) * 100).toFixed(1) : 0;
-      const confirmar = window.confirm(`⚠️ ATENÇÃO: O preço de venda (${formatCurrency(novoPreco)}) é MENOR que o preço de compra (${formatCurrency(precoCompra)}).\n\nMarkup: ${markup}%\n\nVocê terá PREJUÍZO nesta venda!\n\nDeseja continuar mesmo assim?`);
+      const confirmar = window.confirm(`âš ï¸ ATENÃ‡ÃƒO: O preÃ§o de venda (${formatCurrency(novoPreco)}) Ã© MENOR que o preÃ§o de compra (${formatCurrency(precoCompra)}).\n\nMarkup: ${markup}%\n\nVocÃª terÃ¡ PREJUÃZO nesta venda!\n\nDeseja continuar mesmo assim?`);
       if (!confirmar) return;
     }
     try {
@@ -399,11 +399,11 @@ const GerenciarGuindastes = () => {
         updated_by: user.id
       });
       setPrecosConcessionariaMap(prev => ({ ...prev, [guindasteSelecionadoPreco.id]: novoPreco }));
-      setToast({ visible: true, message: '✅ Preço de venda salvo com sucesso!', type: 'success' });
+      setToast({ visible: true, message: 'âœ… PreÃ§o de venda salvo com sucesso!', type: 'success' });
       closePrecoConcessionaria();
     } catch (error) {
-      console.error('Erro ao salvar preço:', error);
-      setToast({ visible: true, message: '❌ Erro ao salvar preço. Tente novamente.', type: 'error' });
+      console.error('Erro ao salvar preÃ§o:', error);
+      setToast({ visible: true, message: 'âŒ Erro ao salvar preÃ§o. Tente novamente.', type: 'error' });
     } finally {
       setIsLoading(false);
     }
@@ -414,7 +414,7 @@ const GerenciarGuindastes = () => {
     try {
       setIsLoading(true);
       await deleteGuindaste(guindasteToDelete);
-      setToast({ visible: true, message: 'Guindaste excluído com sucesso!', type: 'success' });
+      setToast({ visible: true, message: 'Guindaste excluÃ­do com sucesso!', type: 'success' });
       setShowDeleteModal(false);
       setGuindasteToDelete(null);
       loadData(page, true);
@@ -436,14 +436,14 @@ const GerenciarGuindastes = () => {
         { field: 'subgrupo', name: 'Subgrupo' },
         { field: 'modelo', name: 'Modelo' },
         { field: 'grupo', name: 'Grupo' },
-        { field: 'codigo_referencia', name: 'Código de Referência' },
-        { field: 'peso_kg', name: 'Configuração de Lanças' },
-        { field: 'configuração', name: 'Configuração Completa' },
+        { field: 'codigo_referencia', name: 'CÃ³digo de ReferÃªncia' },
+        { field: 'peso_kg', name: 'configuracao de Lanças' },
+        { field: 'configuracao', name: 'configuracao Completa' },
         { field: 'imagem_url', name: 'Imagem Principal' },
-        { field: 'descricao', name: 'Descrição Técnica' },
-        { field: 'nao_incluido', name: 'O que NÃO está incluído' },
-        { field: 'finame', name: 'Código FINAME' },
-        { field: 'ncm', name: 'Código NCM' }
+        { field: 'descricao', name: 'DescriÃ§Ã£o TÃ©cnica' },
+        { field: 'nao_incluido', name: 'O que NÃƒO estÃ¡ incluÃ­do' },
+        { field: 'finame', name: 'CÃ³digo FINAME' },
+        { field: 'ncm', name: 'CÃ³digo NCM' }
       ];
 
       const missingFields = requiredFields
@@ -451,7 +451,7 @@ const GerenciarGuindastes = () => {
         .map(({ name }) => name);
 
       if (missingFields.length > 0) {
-        alert(`Por favor, preencha todos os campos obrigatórios:\n\n• ${missingFields.join('\n• ')}`);
+        alert(`Por favor, preencha todos os campos obrigatÃ³rios:\n\nâ€¢ ${missingFields.join('\nâ€¢ ')}`);
         return;
       }
 
@@ -460,7 +460,7 @@ const GerenciarGuindastes = () => {
         modelo: formData.modelo.trim(),
         grupo: formData.grupo.trim(),
         peso_kg: String(formData.peso_kg).trim(),
-        configuração: formData.configuração.trim(),
+        configuracao: formData.configuracao.trim(),
         tem_contr: formData.tem_contr,
         imagem_url: formData.imagem_url.trim(),
         descricao: formData.descricao.trim(),
@@ -492,12 +492,12 @@ const GerenciarGuindastes = () => {
       loadData(page, true);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (error) {
-      console.error('❌ Erro ao salvar guindaste:', error);
+      console.error('âŒ Erro ao salvar guindaste:', error);
       if (error.code === '23505') {
         if (error.message.includes('codigo_referencia')) {
-          alert('Erro: Já existe um guindaste com este Código de Referência. Use um código único.');
+          alert('Erro: JÃ¡ existe um guindaste com este CÃ³digo de ReferÃªncia. Use um cÃ³digo Ãºnico.');
         } else {
-          alert('Erro: Dados duplicados. Verifique se todos os valores únicos são diferentes.');
+          alert('Erro: Dados duplicados. Verifique se todos os valores Ãºnicos sÃ£o diferentes.');
         }
       } else {
         alert(`Erro ao salvar guindaste: ${error.message}`);
@@ -511,19 +511,19 @@ const GerenciarGuindastes = () => {
   if (!user) return null;
 
   const resolveGuindasteImage = (guindaste) => {
-    // Verificar se tem imagem_url válida
+    // Verificar se tem imagem_url vÃ¡lida
     if (guindaste.imagem_url && typeof guindaste.imagem_url === 'string') {
-      // Se é uma URL HTTP válida, usar diretamente
+      // Se Ã© uma URL HTTP vÃ¡lida, usar diretamente
       if (guindaste.imagem_url.startsWith('http')) {
         return guindaste.imagem_url;
       }
 
-      // Se é base64 válido e completo, usar diretamente
+      // Se Ã© base64 vÃ¡lido e completo, usar diretamente
       if (guindaste.imagem_url.startsWith('data:image/') && guindaste.imagem_url.length > 50) {
         return guindaste.imagem_url;
       }
 
-      // Se parece ser um caminho relativo válido (não contém base64 corrompido)
+      // Se parece ser um caminho relativo vÃ¡lido (nÃ£o contÃ©m base64 corrompido)
       if (!guindaste.imagem_url.includes('base64') && guindaste.imagem_url.length < 200) {
         return guindaste.imagem_url;
       }
@@ -541,14 +541,14 @@ const GerenciarGuindastes = () => {
         showUserInfo={true}
         user={user}
         title="Gerenciar Guindastes"
-        subtitle={isAdminConcessionaria ? 'Defina os preços da sua concessionária' : 'Cadastre e edite os guindastes'}
+        subtitle={isAdminConcessionaria ? 'Defina os preÃ§os da sua concessionÃ¡ria' : 'Cadastre e edite os guindastes'}
       />
       <div className="gerenciar-guindastes-container">
         <div className="gerenciar-guindastes-content">
           <div className="page-header">
             <div className="header-info">
               <h1>Gerenciar Guindastes</h1>
-              <p>Configure guindastes disponíveis</p>
+              <p>Configure guindastes disponÃ­veis</p>
             </div>
           </div>
 
@@ -629,10 +629,10 @@ const GerenciarGuindastes = () => {
                         >{cap} Ton</button>
                       ))}
                     </div>
-                    <span className="gg-total-count">{guindastes.length} guindaste(s) · {getUniqueModelos().length} modelo(s)</span>
+                    <span className="gg-total-count">{guindastes.length} guindaste(s) Â· {getUniqueModelos().length} modelo(s)</span>
                   </div>
 
-                  {/* Workspace 2 painéis */}
+                  {/* Workspace 2 painÃ©is */}
                   <div className="gg-workspace">
                     {/* Painel esquerdo: lista de modelos */}
                     <div className="gg-models-panel">
@@ -660,7 +660,7 @@ const GerenciarGuindastes = () => {
                               </div>
                               <div className="gg-model-meta">
                                 <span className="gg-model-name">{m.key}</span>
-                                <span className="gg-model-cap">{m.capacidade} Ton · {m.count} config.</span>
+                                <span className="gg-model-cap">{m.capacidade} Ton Â· {m.count} config.</span>
                               </div>
                               {selectedModeloGrupo === m.key && (
                                 <svg className="gg-model-arrow" viewBox="0 0 24 24" fill="currentColor">
@@ -673,14 +673,14 @@ const GerenciarGuindastes = () => {
                       </div>
                     </div>
 
-                    {/* Painel direito: configurações do modelo selecionado */}
+                    {/* Painel direito: configuraÃ§Ãµes do modelo selecionado */}
                     <div className="gg-configs-panel">
                       {selectedModeloGrupo ? (
                         <>
                           <div className="gg-configs-head">
                             <div>
                               <h3 className="gg-configs-title">{selectedModeloGrupo}</h3>
-                              <span className="gg-configs-sub">{getGuindastesDoModelo(selectedModeloGrupo).length} configurações disponíveis</span>
+                              <span className="gg-configs-sub">{getGuindastesDoModelo(selectedModeloGrupo).length} configuraÃ§Ãµes disponÃ­veis</span>
                             </div>
                           </div>
                           <div className="gg-configs-list">
@@ -704,11 +704,11 @@ const GerenciarGuindastes = () => {
                                       <span className="gg-tag gg-tag-model">{guindaste.modelo}</span>
                                     )}
                                     {guindaste.is_comercio_exterior && (
-                                      <span className="gg-tag gg-tag-ext">Comércio Exterior</span>
+                                      <span className="gg-tag gg-tag-ext">ComÃ©rcio Exterior</span>
                                     )}
                                     {isAdminConcessionaria && (
                                       <span className={`gg-tag ${precosConcessionariaMap[guindaste.id] ? 'gg-tag-price-set' : 'gg-tag-price-unset'}`}>
-                                        {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'Preço não definido'}
+                                        {precosConcessionariaMap[guindaste.id] ? formatCurrency(precosConcessionariaMap[guindaste.id]) : 'PreÃ§o nÃ£o definido'}
                                       </span>
                                     )}
                                   </div>
@@ -717,14 +717,14 @@ const GerenciarGuindastes = () => {
                                   {isAdminConcessionaria ? (
                                     <BlobButton
                                       className="gg-action-btn gg-btn-price"
-                                      title="Preço da Concessionária"
+                                      title="PreÃ§o da ConcessionÃ¡ria"
                                       onClick={() => openPrecoConcessionaria(guindaste)}
                                     >
                                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <line x1="12" y1="1" x2="12" y2="23" />
                                         <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                       </svg>
-                                      Preço
+                                      PreÃ§o
                                     </BlobButton>
                                   ) : (
                                     <>
@@ -741,14 +741,14 @@ const GerenciarGuindastes = () => {
                                       </BlobButton>
                                       <BlobButton
                                         className="gg-action-btn gg-btn-prices"
-                                        title="Preços por Região"
+                                        title="PreÃ§os por RegiÃ£o"
                                         onClick={() => { setGuindasteIdPrecos(guindaste.id); setShowPrecosModal(true); }}
                                       >
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                           <line x1="12" y1="1" x2="12" y2="23" />
                                           <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
                                         </svg>
-                                        Preços
+                                        PreÃ§os
                                       </BlobButton>
                                       <BlobButton
                                         className="gg-action-btn gg-btn-delete"
@@ -772,9 +772,9 @@ const GerenciarGuindastes = () => {
                         </>
                       ) : (
                         <div className="gg-empty-selection">
-                          <div className="gg-empty-icon">🏗️</div>
+                          <div className="gg-empty-icon">ðŸ—ï¸</div>
                           <h3>Selecione um modelo</h3>
-                          <p>Escolha um modelo na lista ao lado para ver suas configurações e ações disponíveis</p>
+                          <p>Escolha um modelo na lista ao lado para ver suas configuraÃ§Ãµes e aÃ§Ãµes disponÃ­veis</p>
                         </div>
                       )}
                     </div>
@@ -811,7 +811,7 @@ const GerenciarGuindastes = () => {
                   type="text"
                   value={formData.subgrupo}
                   onChange={e => handleInputChange('subgrupo', e.target.value)}
-                  placeholder="Ex: Guindaste Hidráulico"
+                  placeholder="Ex: Guindaste HidrÃ¡ulico"
                   required
                   className="modern-input"
                 />
@@ -832,7 +832,7 @@ const GerenciarGuindastes = () => {
                 <div className="modern-right-col">
                   <div className="modern-grid-3">
                     <div className="modern-form-group">
-                      <label>Código <span title="Código de Referência" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <label>CÃ³digo <span title="CÃ³digo de ReferÃªncia" style={{cursor:'help', color:'#3b82f6'}}>â„¹ï¸</span></label>
                       <input
                         type="text"
                         value={formData.codigo_referencia}
@@ -890,7 +890,7 @@ const GerenciarGuindastes = () => {
                       />
                     </div>
                     <div className="modern-form-group">
-                      <label>Qtde. Disponível <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <label>Qtde. DisponÃ­vel <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>â„¹ï¸</span></label>
                       <input
                         type="number"
                         min="0"
@@ -915,25 +915,25 @@ const GerenciarGuindastes = () => {
 
                   <div className="modern-grid-2">
                     <div className="modern-form-group">
-                      <label>Configuração Completa *</label>
+                      <label>configuracao Completa *</label>
                       <select
-                        value={formData.configuração}
-                        onChange={e => handleInputChange('configuração', e.target.value)}
+                        value={formData.configuracao}
+                        onChange={e => handleInputChange('configuracao', e.target.value)}
                         required
                         className="modern-input"
                       >
-                        <option value="">Selecione uma configuração</option>
-                        <option value="STANDARD - Pedido Padrão">STANDARD - Pedido Padrão</option>
+                        <option value="">Selecione uma configuracao</option>
+                        <option value="STANDARD - Pedido PadrÃ£o">STANDARD - Pedido PadrÃ£o</option>
                         <option value="CR - Controle Remoto">CR - Controle Remoto</option>
-                        <option value="EH - Extensiva Hidráulica">EH - Extensiva Hidráulica</option>
-                        <option value="P - Preparação p/ Perfuratriz">P - Preparação p/ Perfuratriz</option>
-                        <option value="GR - Preparação p/ Garra e Rotator">GR - Preparação p/ Garra e Rotator</option>
-                        <option value="Caminhão 3/4">Caminhão 3/4</option>
-                        <option value="CR/EH - Controle Remoto e Extensiva Hidráulica">CR/EH - CR e Extensiva Hidráulica</option>
-                        <option value="CR/EH/P - Controle Remoto, Extensiva Hidráulica e Preparação p/ Perfuratriz">CR/EH/P - CR, Ext. Hidr. e Prep. Perfuratriz</option>
-                        <option value="EH/P - Extensiva Hidráulica e Preparação p/ Perfuratriz">EH/P - Ext. Hidr. e Prep. Perfuratriz</option>
-                        <option value="CR/GR - Controle Remoto e Preparação p/ Garra e Rotator">CR/GR - CR e Prep. Garra/Rotator</option>
-                        <option value="EH/GR - Extensiva Hidráulica e Preparação p/ Garra e Rotador">EH/GR - Ext. Hidr. e Prep. Garra/Rotador</option>
+                        <option value="EH - Extensiva HidrÃ¡ulica">EH - Extensiva HidrÃ¡ulica</option>
+                        <option value="P - PreparaÃ§Ã£o p/ Perfuratriz">P - PreparaÃ§Ã£o p/ Perfuratriz</option>
+                        <option value="GR - PreparaÃ§Ã£o p/ Garra e Rotator">GR - PreparaÃ§Ã£o p/ Garra e Rotator</option>
+                        <option value="CaminhÃ£o 3/4">CaminhÃ£o 3/4</option>
+                        <option value="CR/EH - Controle Remoto e Extensiva HidrÃ¡ulica">CR/EH - CR e Extensiva HidrÃ¡ulica</option>
+                        <option value="CR/EH/P - Controle Remoto, Extensiva HidrÃ¡ulica e PreparaÃ§Ã£o p/ Perfuratriz">CR/EH/P - CR, Ext. Hidr. e Prep. Perfuratriz</option>
+                        <option value="EH/P - Extensiva HidrÃ¡ulica e PreparaÃ§Ã£o p/ Perfuratriz">EH/P - Ext. Hidr. e Prep. Perfuratriz</option>
+                        <option value="CR/GR - Controle Remoto e PreparaÃ§Ã£o p/ Garra e Rotator">CR/GR - CR e Prep. Garra/Rotator</option>
+                        <option value="EH/GR - Extensiva HidrÃ¡ulica e PreparaÃ§Ã£o p/ Garra e Rotador">EH/GR - Ext. Hidr. e Prep. Garra/Rotador</option>
                       </select>
                     </div>
                     <div className="modern-form-group">
@@ -945,14 +945,14 @@ const GerenciarGuindastes = () => {
                         className="modern-input"
                       >
                         <option value="Sim">Sim</option>
-                        <option value="Não">Não</option>
+                        <option value="NÃ£o">NÃ£o</option>
                       </select>
                     </div>
                   </div>
                   
                   <div className="modern-grid-3">
                     <div className="modern-form-group">
-                      <label>Lanças (Config. Kg) <span title="Ex: 3h1m" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
+                      <label>Lanças (Config. Kg) <span title="Ex: 3h1m" style={{cursor:'help', color:'#3b82f6'}}>â„¹ï¸</span></label>
                       <input
                         type="text"
                         value={formData.peso_kg}
@@ -967,29 +967,29 @@ const GerenciarGuindastes = () => {
                 </div>
               </div>
 
-              {/* TABS E SEÇÕES INFERIORES */}
+              {/* TABS E SEÃ‡Ã•ES INFERIORES */}
               <div className="modern-section-tabs">
-                <div className="modern-tab-item">Características e Detalhes</div>
+                <div className="modern-tab-item">CaracterÃ­sticas e Detalhes</div>
               </div>
 
               <div className="modern-bottom-section">
                 <div className="modern-grid-2" style={{ gridTemplateColumns: '1fr 1fr' }}>
                   <div className="modern-form-group">
-                    <label>Descrição Técnica *</label>
+                    <label>DescriÃ§Ã£o TÃ©cnica *</label>
                     <textarea
                       value={formData.descricao}
                       onChange={e => handleInputChange('descricao', e.target.value)}
-                      placeholder="Descreva as características técnicas do guindaste..."
+                      placeholder="Descreva as caracterÃ­sticas tÃ©cnicas do guindaste..."
                       required
                       className="modern-textarea"
                     />
                   </div>
                   <div className="modern-form-group">
-                    <label>O que NÃO está incluído *</label>
+                    <label>O que NÃƒO estÃ¡ incluÃ­do *</label>
                     <textarea
                       value={formData.nao_incluido}
                       onChange={e => handleInputChange('nao_incluido', e.target.value)}
-                      placeholder="Liste os itens que não estão incluídos no produto..."
+                      placeholder="Liste os itens que nÃ£o estÃ£o incluÃ­dos no produto..."
                       required
                       className="modern-textarea"
                     />
@@ -1012,7 +1012,7 @@ const GerenciarGuindastes = () => {
                       {formData.imagens_adicionais.map((imgUrl, index) => (
                         <div key={index} className="modern-imagem-item">
                           <img src={imgUrl} alt={`Adicional ${index + 1}`} />
-                          <button type="button" onClick={() => removeImagemAdicional(index)} className="modern-remove-img">✕</button>
+                          <button type="button" onClick={() => removeImagemAdicional(index)} className="modern-remove-img">âœ•</button>
                         </div>
                       ))}
                     </div>
@@ -1023,34 +1023,34 @@ const GerenciarGuindastes = () => {
 
                 <div className="modern-grid-3">
                   <div className="modern-form-group">
-                    <label>Equipamento de Comércio Exterior?</label>
+                    <label>Equipamento de ComÃ©rcio Exterior?</label>
                     <select
                       value={formData.is_comercio_exterior ? 'sim' : 'nao'}
                       onChange={e => handleInputChange('is_comercio_exterior', e.target.value === 'sim')}
                       className="modern-input"
                     >
-                      <option value="nao">Não</option>
+                      <option value="nao">NÃ£o</option>
                       <option value="sim">Sim, Exclusivo</option>
                     </select>
                   </div>
                   <div className="modern-form-group">
-                    <label>É protótipo?</label>
+                    <label>Ã‰ protÃ³tipo?</label>
                     <select
                       value={formData.is_prototipo ? 'sim' : 'nao'}
                       onChange={e => handleInputChange('is_prototipo', e.target.value === 'sim')}
                       className="modern-input"
                     >
-                      <option value="nao">Não</option>
+                      <option value="nao">NÃ£o</option>
                       <option value="sim">Sim</option>
                     </select>
                   </div>
                   <div className="modern-form-group">
-                    <label>Label do Protótipo</label>
+                    <label>Label do ProtÃ³tipo</label>
                     <input
                       type="text"
                       value={formData.prototipo_label}
                       onChange={e => handleInputChange('prototipo_label', e.target.value)}
-                      placeholder="Ex: PROTÓTIPO"
+                      placeholder="Ex: PROTÃ“TIPO"
                       className="modern-input"
                       disabled={!formData.is_prototipo}
                     />
@@ -1058,12 +1058,12 @@ const GerenciarGuindastes = () => {
                 </div>
                 
                 <div className="modern-form-group">
-                  <label>Observações do Protótipo no PDF</label>
+                  <label>ObservaÃ§Ãµes do ProtÃ³tipo no PDF</label>
                   <input
                     type="text"
                     value={formData.prototipo_observacoes_pdf}
                     onChange={e => handleInputChange('prototipo_observacoes_pdf', e.target.value)}
-                    placeholder="Ex: Equipamento protótipo, sujeito a disponibilidade..."
+                    placeholder="Ex: Equipamento protÃ³tipo, sujeito a disponibilidade..."
                     className="modern-input"
                     disabled={!formData.is_prototipo}
                   />
@@ -1073,26 +1073,26 @@ const GerenciarGuindastes = () => {
 
                 <div className="modern-grid-3">
                   <div className="modern-form-group">
-                    <label>Instalação — Cliente paga direto (R$)</label>
+                    <label>InstalaÃ§Ã£o â€” Cliente paga direto (R$)</label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formData.valor_instalacao_cliente}
                       onChange={e => handleInputChange('valor_instalacao_cliente', e.target.value)}
-                      placeholder="Deixe vazio para usar padrão"
+                      placeholder="Deixe vazio para usar padrÃ£o"
                       className="modern-input"
                     />
                   </div>
                   <div className="modern-form-group">
-                    <label>Instalação — Incluso no pedido (R$)</label>
+                    <label>InstalaÃ§Ã£o â€” Incluso no pedido (R$)</label>
                     <input
                       type="number"
                       min="0"
                       step="0.01"
                       value={formData.valor_instalacao_incluso}
                       onChange={e => handleInputChange('valor_instalacao_incluso', e.target.value)}
-                      placeholder="Deixe vazio para usar padrão"
+                      placeholder="Deixe vazio para usar padrÃ£o"
                       className="modern-input"
                     />
                   </div>
@@ -1103,7 +1103,7 @@ const GerenciarGuindastes = () => {
                       onChange={e => handleInputChange('bloquear_desconto', e.target.value === 'sim')}
                       className="modern-input"
                     >
-                      <option value="nao">Não</option>
+                      <option value="nao">NÃ£o</option>
                       <option value="sim">Sim (sem desconto)</option>
                     </select>
                   </div>
@@ -1115,7 +1115,7 @@ const GerenciarGuindastes = () => {
         </div>
       )}
 
-      {/* Modal de Preços por Região */}
+      {/* Modal de PreÃ§os por RegiÃ£o */}
       {!isAdminConcessionaria && showPrecosModal && (
         <PrecosPorRegiaoModal
           guindasteId={guindasteIdPrecos}
@@ -1131,7 +1131,7 @@ const GerenciarGuindastes = () => {
         <div className="modal-overlay modal-overlay-content-area">
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>Preço da Concessionária</h2>
+              <h2>PreÃ§o da ConcessionÃ¡ria</h2>
               <BlobButton onClick={closePrecoConcessionaria} className="close-btn">
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
@@ -1147,18 +1147,18 @@ const GerenciarGuindastes = () => {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
                 <div style={{ background: '#f3f4f6', borderRadius: '10px', padding: '12px', border: '1px solid #e5e7eb' }}>
                   <div style={{ fontSize: '12px', color: '#6b7280', fontWeight: 700, marginBottom: '6px' }}>
-                    PREÇO STARK (REFERÊNCIA) — {concessionaria?.uf || ''}
+                    PREÃ‡O STARK (REFERÃŠNCIA) â€” {concessionaria?.uf || ''}
                   </div>
                   <div style={{ fontSize: '18px', fontWeight: 800, color: '#111827' }}>
                     {formatCurrency(precoStarkReferencia || 0)}
                   </div>
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '6px' }}>
-                    Região: {regiaoReferencia}
+                    RegiÃ£o: {regiaoReferencia}
                   </div>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label htmlFor="preco_concessionaria">Preço da Concessionária *</label>
+                  <label htmlFor="preco_concessionaria">PreÃ§o da ConcessionÃ¡ria *</label>
                   <input
                     id="preco_concessionaria"
                     type="number"
@@ -1174,24 +1174,24 @@ const GerenciarGuindastes = () => {
 
               <div className="modal-actions" style={{ marginTop: '18px' }}>
                 <BlobButton type="button" onClick={closePrecoConcessionaria} className="cancel-btn">Cancelar</BlobButton>
-                <BlobButton type="button" onClick={salvarPrecoConcessionaria} className="save-btn">Salvar Preço</BlobButton>
+                <BlobButton type="button" onClick={salvarPrecoConcessionaria} className="save-btn">Salvar PreÃ§o</BlobButton>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Modal de ConfirmaÃ§Ã£o de ExclusÃ£o */}
       {showDeleteModal && (
         <div className="modal-overlay">
           <div className="modal-content delete-modal">
             <div className="modal-header">
-              <h2>⚠️ Confirmar Exclusão</h2>
-              <BlobButton onClick={() => setShowDeleteModal(false)} className="close-btn">×</BlobButton>
+              <h2>âš ï¸ Confirmar ExclusÃ£o</h2>
+              <BlobButton onClick={() => setShowDeleteModal(false)} className="close-btn">Ã—</BlobButton>
             </div>
             <div className="modal-body">
               <p>Tem certeza que deseja excluir este guindaste?</p>
-              <p className="warning-text">Esta ação não pode ser desfeita.</p>
+              <p className="warning-text">Esta aÃ§Ã£o nÃ£o pode ser desfeita.</p>
             </div>
             <div className="modal-footer">
               <BlobButton onClick={() => setShowDeleteModal(false)} className="cancel-btn">
@@ -1210,7 +1210,7 @@ const GerenciarGuindastes = () => {
         <div className={`toast ${toast.type}`}>
           <div className="toast-content">
             <span className="toast-icon">
-              {toast.type === 'success' ? '✅' : '❌'}
+              {toast.type === 'success' ? 'âœ…' : 'âŒ'}
             </span>
             <span className="toast-message">{toast.message}</span>
           </div>
@@ -1222,3 +1222,8 @@ const GerenciarGuindastes = () => {
 };
 
 export default GerenciarGuindastes;
+
+
+
+
+

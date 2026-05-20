@@ -1,31 +1,31 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import LazyPDFGenerator from '../components/LazyPDFGenerator';
-import PaymentPolicy from '../features/payment/PaymentPolicy';
-import GuindasteConfigurador from '../components/NovoPedido/GuindasteConfigurador';
-import SeletorRegiaoCliente from '../components/SeletorRegiaoCliente';
-import LazyGuindasteImage from '../components/LazyGuindasteImage';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import LazyPDFGenerator from '../../components/LazyPDFGenerator';
+import PaymentPolicy from '../../features/payment/PaymentPolicy';
+import GuindasteConfigurador from '../../components/NovoPedido/GuindasteConfigurador';
+import SeletorRegiaoCliente from '../../components/SeletorRegiaoCliente';
+import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 
-import { db } from '../config/supabase';
-import { getGuindastesLite } from '../api/guindastes';
-import { getPropostaById, updateProposta, createpropostas } from '../api/propostas';
-import { normalizarRegiao } from '../utils/regiaoHelper';
-import { formatCurrency, generateCodigoProduto } from '../utils/formatters';
-import { maskCPF, maskCNPJ } from '../utils/masks';
-import { createLogger } from '../utils/productionLogger';
-import { createDealInSalesIfNotExists } from '../utils/bitrixClient';
-import ResumoPedidoExterno from '../components/NovoPedido/ResumoPedido';
-import '../styles/NovoPedido.css';
+import { db } from '../../config/supabase';
+import { getGuindastesLite } from '../../api/guindastes';
+import { getPropostaById, updateProposta, createpropostas } from '../../api/propostas';
+import { normalizarRegiao } from '../../utils/regiaoHelper';
+import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
+import { maskCPF, maskCNPJ } from '../../utils/masks';
+import { createLogger } from '../../utils/productionLogger';
+import { createDealInSalesIfNotExists } from '../../utils/bitrixClient';
+import ResumoPedidoExterno from '../../components/NovoPedido/ResumoPedido';
+import '../../styles/NovoPedido.css';
 
-// ⚡ Logger otimizado
+// âš¡ Logger otimizado
 const logger = createLogger('NovoPedido');
 
 const NovoPedido = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { propostaId } = useParams(); // Captura ID da proposta para edição
-  const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
+  const { propostaId } = useParams(); // Captura ID da proposta para ediÃ§Ã£o
+  const { user } = useOutletContext(); // Pega o usuÃ¡rio do VendedorLayout
   const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const isAdminStark = user?.tipo === 'admin';
@@ -35,13 +35,13 @@ const NovoPedido = () => {
     'Norte-Nordeste',
     'Centro-Oeste',
     'Sul-Sudeste',
-    'RS com Inscrição Estadual',
-    'RS sem Inscrição Estadual',
-    'Comércio Exterior',
+    'RS com InscriÃ§Ã£o Estadual',
+    'RS sem InscriÃ§Ã£o Estadual',
+    'ComÃ©rcio Exterior',
   ]), []);
   const [currentStep, setCurrentStep] = useState(1);
   const [maxStepReached, setMaxStepReached] = useState(1);
-  const [isEdicao, setIsEdicao] = useState(false); // Modo edição
+  const [isEdicao, setIsEdicao] = useState(false); // Modo ediÃ§Ã£o
   const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   const [carrinho, setCarrinho] = useState(() => {
     const savedCart = localStorage.getItem('carrinho');
@@ -69,21 +69,21 @@ const NovoPedido = () => {
     };
   });
   const [clienteTemIE, setClienteTemIE] = useState(true);
-  // ✅ NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
-  // Se admin define 1 região, usa essa. Se define múltiplas, vendedor seleciona qual usar.
+  // âœ… NOVO: Usar APENAS regioes_operacao (definidas pelo admin)
+  // Se admin define 1 regiÃ£o, usa essa. Se define mÃºltiplas, vendedor seleciona qual usar.
   const [regiaoClienteSelecionada, setRegiaoClienteSelecionada] = useState('');
   const [concessionariaInfo, setConcessionariaInfo] = useState(null);
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
-  // Auto-set região para modo concessionária (usa regiao_preco da concessionária cadastrada)
+  // Auto-set regiÃ£o para modo concessionÃ¡ria (usa regiao_preco da concessionÃ¡ria cadastrada)
   React.useEffect(() => {
     if (!isModoConcessionaria || !concessionariaInfo) return;
     const regiao = concessionariaInfo.regiao_preco || '';
     if (regiao) setRegiaoClienteSelecionada(regiao);
   }, [isModoConcessionaria, concessionariaInfo]);
 
-  // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
+  // âœ… Limpar carrinho e dados ao entrar em novo pedido (nÃ£o em modo ediÃ§Ã£o)
   React.useEffect(() => {
     if (!propostaId && !location.state?.fromDetalhes) {
       setCarrinho([]);
@@ -108,7 +108,7 @@ const NovoPedido = () => {
     }
   }, [propostaId, location.state?.fromDetalhes]);
 
-  // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
+  // âœ… NOVO: Restaurar regiÃ£o quando voltar de DetalhesGuindaste
   React.useEffect(() => {
     if (location.state?.regiaoClienteSelecionada) {
       setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
@@ -117,7 +117,7 @@ const NovoPedido = () => {
     }
   }, [location.state?.regiaoClienteSelecionada]);
 
-  // ✅ NOVO: Restaurar step quando voltar de DetalhesGuindaste (admin concessionária)
+  // âœ… NOVO: Restaurar step quando voltar de DetalhesGuindaste (admin concessionÃ¡ria)
   React.useEffect(() => {
     if (location.state?.step && isModoConcessionaria) {
       const targetStep = location.state.step;
@@ -133,7 +133,7 @@ const NovoPedido = () => {
         const c = await db.getConcessionariaById(user.concessionaria_id);
         setConcessionariaInfo(c);
         setClienteData({
-          nome: c?.nome || 'Concessionária',
+          nome: c?.nome || 'ConcessionÃ¡ria',
           telefone: c?.telefone || '',
           email: c?.email || '',
           documento: c?.cnpj || '',
@@ -142,8 +142,8 @@ const NovoPedido = () => {
         const desconto = c?.desconto_compra ?? c?.desconto_base ?? 0;
         setDescontoConcessionaria(Number(desconto) || 0);
       } catch (error) {
-        console.error('Erro ao carregar concessionária:', error);
-        alert('Erro ao carregar dados da concessionária.');
+        console.error('Erro ao carregar concessionÃ¡ria:', error);
+        alert('Erro ao carregar dados da concessionÃ¡ria.');
       }
     };
     carregarConcessionaria();
@@ -163,7 +163,7 @@ const NovoPedido = () => {
     const isExteriorRegiao = normalizarRegiao(user.regiao) === 'comercio-exterior';
     const regioes = user.regioes_operacao || [];
     if ((isExteriorType || isExteriorRegiao) && regioes.length === 0) {
-      setRegiaoClienteSelecionada('Comércio Exterior');
+      setRegiaoClienteSelecionada('ComÃ©rcio Exterior');
     }
   }, [user]);
 
@@ -185,7 +185,7 @@ const NovoPedido = () => {
         const v = await db.getCotacaoUSD();
         if (!cancelled) setCotacaoUSD(Number(v) || null);
       } catch (error) {
-        console.error('Erro ao carregar cotação USD:', error);
+        console.error('Erro ao carregar cotaÃ§Ã£o USD:', error);
         if (!cancelled) setCotacaoUSD(null);
       }
     };
@@ -194,11 +194,11 @@ const NovoPedido = () => {
     return () => { cancelled = true; };
   }, [user]);
 
-  // Carregar proposta para edição (se houver propostaId na URL)
+  // Carregar proposta para ediÃ§Ã£o (se houver propostaId na URL)
   React.useEffect(() => {
     const carregarPropostaParaEdicao = async () => {
       if (!propostaId) {
-        // Modo criação: limpar dados
+        // Modo criaÃ§Ã£o: limpar dados
         setClienteData({});
         setCaminhaoData({});
         localStorage.removeItem('novoPedido_clienteData');
@@ -211,7 +211,7 @@ const NovoPedido = () => {
         const proposta = await getPropostaById(propostaId);
         
         if (!proposta) {
-          alert('Proposta não encontrada!');
+          alert('Proposta nÃ£o encontrada!');
           navigate('/propostas');
           return;
         }
@@ -233,7 +233,7 @@ const NovoPedido = () => {
           setClienteData(dados.clienteData);
         }
 
-        // Carregar dados do caminhão
+        // Carregar dados do caminhÃ£o
         if (dados.caminhaoData) {
           setCaminhaoData(dados.caminhaoData);
         }
@@ -243,13 +243,13 @@ const NovoPedido = () => {
           setPagamentoData(dados.pagamentoData);
         }
 
-        // Definir step para o último (Finalizar) para permitir edição completa
+        // Definir step para o Ãºltimo (Finalizar) para permitir ediÃ§Ã£o completa
         setCurrentStep(5);
         setMaxStepReached(5);
 
       } catch (error) {
-        console.error('❌ Erro ao carregar proposta:', error);
-        alert('Erro ao carregar proposta para edição');
+        console.error('âŒ Erro ao carregar proposta:', error);
+        alert('Erro ao carregar proposta para ediÃ§Ã£o');
         navigate('/propostas');
       }
     };
@@ -259,13 +259,13 @@ const NovoPedido = () => {
 
   // Salvar dados no localStorage sempre que mudarem (exceto clienteData)
 
-  // Removido: não salvar dados do caminhão no localStorage
+  // Removido: nÃ£o salvar dados do caminhÃ£o no localStorage
 
   React.useEffect(() => {
     localStorage.setItem('novoPedido_pagamentoData', JSON.stringify(pagamentoData));
   }, [pagamentoData]);
 
-  // Função para filtrar dados do caminhão para salvamento no banco
+  // FunÃ§Ã£o para filtrar dados do caminhÃ£o para salvamento no banco
   const filterCaminhaoDataForDB = (caminhaoData) => {
     return {
       tipo: caminhaoData.tipo,
@@ -279,7 +279,7 @@ const NovoPedido = () => {
     };
   };
 
-  // Verificar se há dados salvos para cada step
+  // Verificar se hÃ¡ dados salvos para cada step
   const hasStepData = (stepId) => {
     switch (stepId) {
       case 1: // Selecionar Guindaste
@@ -293,7 +293,7 @@ const NovoPedido = () => {
     }
   };
 
-  // Função para limpar todos os dados salvos (útil para novo pedido)
+  // FunÃ§Ã£o para limpar todos os dados salvos (Ãºtil para novo pedido)
   const clearAllSavedData = () => {
     localStorage.removeItem('novoPedido_clienteData');
     localStorage.removeItem('novoPedido_caminhaoData');
@@ -315,21 +315,21 @@ const NovoPedido = () => {
     setMaxStepReached(1);
   };
 
-  // ✅ NOVO: Determinar IE baseado na região selecionada (não em user.regiao)
+  // âœ… NOVO: Determinar IE baseado na regiÃ£o selecionada (nÃ£o em user.regiao)
   const determinarClienteTemIE = () => {
-    // Se a região selecionada é RS, usa clienteTemIE; senão sempre true
+    // Se a regiÃ£o selecionada Ã© RS, usa clienteTemIE; senÃ£o sempre true
     if (currentStep >= 2 && (regiaoClienteSelecionada?.toLowerCase().includes('rs') || regiaoClienteSelecionada === 'rio grande do sul') && pagamentoData.tipoPagamento === 'cliente') {
       return !!clienteTemIE;
     }
     return true;
   };
 
-  // ← NOVO: Função para recalcular preços quando o contexto muda
+  // â† NOVO: FunÃ§Ã£o para recalcular preÃ§os quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
-    // ✅ NOVO: Usar APENAS regioes_operacao 
+    // âœ… NOVO: Usar APENAS regioes_operacao 
     const regioes = user?.regioes_operacao || [];
     
-    // ✅ NOVO: Não recalcular se região não foi selecionada
+    // âœ… NOVO: NÃ£o recalcular se regiÃ£o nÃ£o foi selecionada
     const isExteriorRegioAtual = normalizarRegiao(regiaoClienteSelecionada) === 'comercio-exterior';
     if (carrinho.length === 0 || (!regiaoClienteSelecionada) || (!isConcessionariaUser && !isExteriorRegioAtual && regioes.length === 0)) {
       return;
@@ -337,7 +337,7 @@ const NovoPedido = () => {
 
 
     const temIE = determinarClienteTemIE();
-    // ✅ NOVO: Usar regiaoClienteSelecionada
+    // âœ… NOVO: Usar regiaoClienteSelecionada
     const regiaoVendedor = normalizarRegiao(regiaoClienteSelecionada, temIE);
 
     const carrinhoAtualizado = [];
@@ -359,7 +359,7 @@ const NovoPedido = () => {
             preco: isExteriorRecalc ? (novoPreco || 0) : (novoPreco || item.preco || 0)
           });
         } catch (error) {
-          console.error(` [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
+          console.error(` [recalcularPrecosCarrinho] Erro ao recalcular preÃ§o para ${item.nome}:`, error);
           carrinhoAtualizado.push(item);
         }
       } else {
@@ -368,7 +368,7 @@ const NovoPedido = () => {
     }
 
 
-    // Verificar se houve mudança real nos preços antes de atualizar
+    // Verificar se houve mudanÃ§a real nos preÃ§os antes de atualizar
     const houveAlteracao = carrinhoAtualizado.some((itemNovo, index) => {
       const itemAntigo = carrinho[index];
       return itemAntigo && itemNovo.preco !== itemAntigo.preco;
@@ -380,7 +380,7 @@ const NovoPedido = () => {
     }
   };
 
-  // Recalcular preços quando contexto de pagamento mudar OU quando região selecionada mudar
+  // Recalcular preÃ§os quando contexto de pagamento mudar OU quando regiÃ£o selecionada mudar
   useEffect(() => {
     if (carrinho.length > 0 && regiaoClienteSelecionada) {
       recalcularPrecosCarrinho();
@@ -396,8 +396,8 @@ const NovoPedido = () => {
   const [validationErrors, setValidationErrors] = useState({});
   const [guindastesVisiveisParaVendedor, setGuindastesVisiveisParaVendedor] = useState(null);
 
-  // ← MOVIDO: Definir funções antes dos useEffects
-  // Funções do Carrinho
+  // â† MOVIDO: Definir funÃ§Ãµes antes dos useEffects
+  // FunÃ§Ãµes do Carrinho
   const adicionarAoCarrinho = (item, tipo) => {
     const itemComTipo = { ...item, tipo };
     setCarrinho(prev => {
@@ -405,7 +405,7 @@ const NovoPedido = () => {
 
       if (tipo === 'guindaste') {
         if (isModoConcessionaria) {
-          // No modo concessionária: múltiplos guindastes permitidos
+          // No modo concessionÃ¡ria: mÃºltiplos guindastes permitidos
           const cartItemId = `${itemComTipo.id}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
           newCart = [...prev, { ...itemComTipo, cartItemId, quantidade: 1 }];
         } else {
@@ -423,7 +423,7 @@ const NovoPedido = () => {
     });
   };
 
-  // Função para carregar dados dos guindastes
+  // FunÃ§Ã£o para carregar dados dos guindastes
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -446,7 +446,7 @@ const NovoPedido = () => {
           idsVisiveis = await db.getGuindasteIdsVisiveisParaUser(user.id);
         }
       } catch (e) {
-        console.warn(' [NovoPedido] Falha ao carregar visibilidade de protótipos:', e);
+        console.warn(' [NovoPedido] Falha ao carregar visibilidade de protÃ³tipos:', e);
       }
 
       const idsSet = Array.isArray(idsVisiveis) ? new Set(idsVisiveis) : null;
@@ -455,18 +455,18 @@ const NovoPedido = () => {
       
       const isVendedorCE = (user?.regioes_operacao || []).some(r => {
         const rLower = (r || '').toLowerCase().trim();
-        return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
+        return rLower.includes('comÃ©rcio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
       });
 
       const filtrados = (all || []).filter(g => {
-        // Filtro de protótipos
+        // Filtro de protÃ³tipos
         if (g?.is_prototipo) {
           if (!isAdminStark) {
             if (!idsSet || !idsSet.has(g.id)) return false;
           }
         }
 
-        // Filtro de Comércio Exterior: só vendedores CE ou admin stark
+        // Filtro de ComÃ©rcio Exterior: sÃ³ vendedores CE ou admin stark
         if (g?.is_comercio_exterior) {
           if (!isAdminStark && !isVendedorCE) return false;
         }
@@ -478,7 +478,7 @@ const NovoPedido = () => {
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
-      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+      alert('Erro ao carregar dados. Verifique a conexÃ£o com o banco.');
     } finally {
       setIsLoading(false);
     }
@@ -492,14 +492,14 @@ const NovoPedido = () => {
     loadData();
   }, [user, navigate, loadData]);
 
-  // Verificar se há um guindaste selecionado vindo da tela de detalhes
+  // Verificar se hÃ¡ um guindaste selecionado vindo da tela de detalhes
   useEffect(() => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
         
-        //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
-        // Em modo concessionária, múltiplos guindastes são permitidos
+        //  VERIFICAR SE JÃ ESTÃ NO CARRINHO (evitar duplicaÃ§Ã£o - apenas no fluxo normal)
+        // Em modo concessionÃ¡ria, mÃºltiplos guindastes sÃ£o permitidos
         if (!isModoConcessionaria) {
           const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
           if (jaNoCarrinho) {
@@ -510,13 +510,13 @@ const NovoPedido = () => {
         
         setGuindastesSelecionados([guindaste]);
 
-        // Buscar preço inicial baseado na região selecionada
+        // Buscar preÃ§o inicial baseado na regiÃ£o selecionada
         let precoGuindaste = guindaste.preco || 0;
         if (isModoConcessionaria) {
-          // Se estamos voltando de DetalhesGuindaste, a região já foi restaurada
+          // Se estamos voltando de DetalhesGuindaste, a regiÃ£o jÃ¡ foi restaurada
           const regiaoParaUsar = location.state?.regiaoClienteSelecionada || regiaoClienteSelecionada;
           if (!regiaoParaUsar) {
-            alert('Selecione a Região de Compra antes de escolher o equipamento.');
+            alert('Selecione a RegiÃ£o de Compra antes de escolher o equipamento.');
             return;
           }
           try {
@@ -524,7 +524,7 @@ const NovoPedido = () => {
             const regiaoParaBusca = normalizarRegiao(regiaoClienteSelecionada, temIE);
             precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoParaBusca);
           } catch (error) {
-            console.error(' [adicionarGuindaste] Erro ao buscar preço de compra do guindaste:', error);
+            console.error(' [adicionarGuindaste] Erro ao buscar preÃ§o de compra do guindaste:', error);
             precoGuindaste = guindaste.preco || 0;
           }
         } else {
@@ -560,7 +560,7 @@ const NovoPedido = () => {
           setCurrentStep(location.state.step);
         }
 
-        // Limpar o estado da navegação
+        // Limpar o estado da navegaÃ§Ã£o
         navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
       }
     };
@@ -573,7 +573,7 @@ const NovoPedido = () => {
 
   // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
   useEffect(() => {
-    // Não resetar pagamento no modo edição (dados já carregados)
+    // NÃ£o resetar pagamento no modo ediÃ§Ã£o (dados jÃ¡ carregados)
     if (isEdicao) return;
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
@@ -593,19 +593,19 @@ const NovoPedido = () => {
   const steps = isModoConcessionaria
     ? [
         { id: 1, title: 'Selecionar Guindaste', description: 'Escolha o guindaste ideal' },
-        { id: 2, title: 'Pagamento',  description: 'Condição de compra' },
-        { id: 3, title: 'Estudo Veicular',  description: 'Configuração do veículo' },
+        { id: 2, title: 'Pagamento',  description: 'CondiÃ§Ã£o de compra' },
+        { id: 3, title: 'Estudo Veicular',  description: 'configuracao do veÃ­culo' },
         { id: 4, title: 'Resumo', description: 'Revisar e gerar PDF' }
       ]
     : [
         { id: 1, title: 'Selecionar Guindaste',  description: 'Escolha o guindaste ideal' },
-        { id: 2, title: 'Pagamento', description: 'Política de pagamento' },
-        { id: 3, title: 'Dados do Cliente',  description: 'Informações do cliente' },
-        { id: 4, title: 'Estudo Veicular',  description: 'Configuração do veículo' },
+        { id: 2, title: 'Pagamento', description: 'PolÃ­tica de pagamento' },
+        { id: 3, title: 'Dados do Cliente',  description: 'InformaÃ§Ãµes do cliente' },
+        { id: 4, title: 'Estudo Veicular',  description: 'configuracao do veÃ­culo' },
         { id: 5, title: 'Finalizar',  description: 'Revisar e confirmar' }
       ];
 
-  // Capacidades dinâmicas com base nos guindastes carregados
+  // Capacidades dinÃ¢micas com base nos guindastes carregados
   const getCapacidadesUnicas = () => {
     const set = new Set();
 
@@ -679,7 +679,7 @@ const NovoPedido = () => {
     return db.getGuindasteImagem(guindasteId);
   }, []);
 
-  //  OTIMIZADO: Função para selecionar guindaste com cache
+  //  OTIMIZADO: FunÃ§Ã£o para selecionar guindaste com cache
   const handleSelecionarGuindaste = async (guindaste) => {
     logger.log('Selecionando guindaste:', guindaste.id, guindaste.subgrupo);
     
@@ -687,19 +687,19 @@ const NovoPedido = () => {
     setIsLoading(true);
 
     try {
-      // 1. Buscar detalhes completos do guindaste (com cache automático)
+      // 1. Buscar detalhes completos do guindaste (com cache automÃ¡tico)
       logger.time('Carregamento do guindaste');
       const guindasteCompleto = await db.getGuindasteCompleto(guindaste.id);
       logger.timeEnd('Carregamento do guindaste');
       
-      // 2. Buscar preço inicial
+      // 2. Buscar preÃ§o inicial
       let precoGuindaste = 0;
       let regiaoInicial = 'concessionaria';
       if (isModoConcessionaria) {
         const regiaoParaUsar = regiaoClienteSelecionada ||
           concessionariaInfo?.regiao_preco || '';
         if (!regiaoParaUsar) {
-          alert('Região de compra não definida. Configure a região no cadastro do usuário.');
+          alert('RegiÃ£o de compra nÃ£o definida. Configure a regiÃ£o no cadastro do usuÃ¡rio.');
           setIsLoading(false);
           return;
         }
@@ -707,9 +707,9 @@ const NovoPedido = () => {
 
         regiaoInicial = normalizarRegiao(regiaoParaUsar, true);
         precoGuindaste = await db.getPrecoCompraPorRegiao(guindaste.id, regiaoInicial);
-        logger.log(`Preço inicial (compra concessionária): R$ ${precoGuindaste} (${regiaoInicial})`);
+        logger.log(`PreÃ§o inicial (compra concessionÃ¡ria): R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
-          alert('Este equipamento não possui preço de compra definido para esta região.');
+          alert('Este equipamento nÃ£o possui preÃ§o de compra definido para esta regiÃ£o.');
           setIsLoading(false);
           return;
         }
@@ -722,19 +722,19 @@ const NovoPedido = () => {
           regiaoInicial = normalizarRegiao(regiaoClienteSelecionada || user?.regiao || '');
         }
         precoGuindaste = await db.getPrecoPorRegiao(guindaste.id, regiaoInicial);
-        logger.log(`Preço inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
+        logger.log(`PreÃ§o inicial: R$ ${precoGuindaste} (${regiaoInicial})`);
         if (!precoGuindaste || precoGuindaste === 0) {
           alert(
             isExteriorSel
-              ? 'Este equipamento não possui preço definido para Comércio Exterior.'
-              : 'Este equipamento não possui preço definido para sua região.'
+              ? 'Este equipamento nÃ£o possui preÃ§o definido para ComÃ©rcio Exterior.'
+              : 'Este equipamento nÃ£o possui preÃ§o definido para sua regiÃ£o.'
           );
           setIsLoading(false);
           return;
         }
       }
 
-      // 3. Criar produto com preço correto e detalhes completos
+      // 3. Criar produto com preÃ§o correto e detalhes completos
       const produto = {
         id: guindasteCompleto.id,
         nome: guindasteCompleto.subgrupo,
@@ -754,8 +754,8 @@ const NovoPedido = () => {
         tipo: 'guindaste'
       };
 
-      // 4. NÃO adicionar ao carrinho aqui - apenas navegar para detalhes
-      // O carrinho será atualizado quando voltar de DetalhesGuindaste
+      // 4. NÃƒO adicionar ao carrinho aqui - apenas navegar para detalhes
+      // O carrinho serÃ¡ atualizado quando voltar de DetalhesGuindaste
       logger.log('Navegando para detalhes do guindaste (sem adicionar ao carrinho ainda)');
 
       // 5. Navegar para detalhes com objeto completo
@@ -775,7 +775,7 @@ const NovoPedido = () => {
     }
   };
 
-  // Função para selecionar capacidade
+  // FunÃ§Ã£o para selecionar capacidade
   const handleSelecionarCapacidade = (capacidade) => {
     setSelectedCapacidade(capacidade);
     setSelectedModelo(null);
@@ -788,7 +788,7 @@ const NovoPedido = () => {
       setTimeout(() => card.classList.remove('selection-highlight'), 1000);
     }
     
-    // Scroll automático para a próxima etapa após um pequeno delay
+    // Scroll automÃ¡tico para a prÃ³xima etapa apÃ³s um pequeno delay
     setTimeout(() => {
       const stepElement = document.querySelector('.cascata-step:nth-child(2)');
       if (stepElement) {
@@ -805,7 +805,7 @@ const NovoPedido = () => {
     }, 300);
   };
 
-  // Função para selecionar modelo
+  // FunÃ§Ã£o para selecionar modelo
   const handleSelecionarModelo = (modelo) => {
     setSelectedModelo(modelo);
     setGuindastesSelecionados([]);
@@ -817,7 +817,7 @@ const NovoPedido = () => {
       setTimeout(() => card.classList.remove('selection-highlight'), 1000);
     }
     
-    // Scroll automático para a próxima etapa após um pequeno delay
+    // Scroll automÃ¡tico para a prÃ³xima etapa apÃ³s um pequeno delay
     setTimeout(() => {
       const stepElement = document.querySelector('.cascata-step:nth-child(3)');
       if (stepElement) {
@@ -841,7 +841,7 @@ const NovoPedido = () => {
       const newCart = prev.filter((_, i) => i !== index);
       localStorage.setItem('carrinho', JSON.stringify(newCart));
 
-      // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
+      // â† NOVO: Se removeu o equipamento atual, limpar rastreamento
       const removedItem = prev[index];
       if (removedItem && removedItem.tipo === 'guindaste') {
       }
@@ -866,10 +866,10 @@ const NovoPedido = () => {
     return total;
   };
 
-  // Funções para carrinho acumulativo
+  // FunÃ§Ãµes para carrinho acumulativo
   const adicionarPedidoAoCarrinhoAcumulativo = () => {
     const novoPedido = {
-      id: Date.now(), // ID único para o pedido
+      id: Date.now(), // ID Ãºnico para o pedido
       carrinho: [...carrinho],
       clienteData: { ...clienteData },
       caminhaoData: { ...caminhaoData },
@@ -929,7 +929,7 @@ const NovoPedido = () => {
 
 
 
-  // Renderizar conteúdo do step
+  // Renderizar conteÃºdo do step
   const renderStepContent = () => {
     switch (currentStep) {
       case 1:
@@ -938,14 +938,14 @@ const NovoPedido = () => {
             <>
               {isModoConcessionaria ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
-                  <span>Região de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
+                  <span>RegiÃ£o de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
                 </div>
               ) : (
                 <SeletorRegiaoCliente
                   regiaoSelecionada={regiaoClienteSelecionada}
                   onRegiaoChange={setRegiaoClienteSelecionada}
                   regioesDisponiveis={user?.regioes_operacao || []}
-                  questionLabel="Região do cliente"
+                  questionLabel="RegiÃ£o do cliente"
                 />
               )}
             </>
@@ -962,11 +962,11 @@ const NovoPedido = () => {
               getImagem={getImagemParaConfigurador}
             />
 
-            {/* Mostrar carrinho e botão de continuar para modo concessionária */}
+            {/* Mostrar carrinho e botÃ£o de continuar para modo concessionÃ¡ria */}
             {isModoConcessionaria && carrinho.length > 0 && (
               <div style={{ marginTop: '20px' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.8125rem', color: '#1f2937', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  🛒 Equipamentos no carrinho
+                  ðŸ›’ Equipamentos no carrinho
                 </div>
                 {carrinho.map((item, idx) => item.tipo === 'guindaste' ? (
                   <div
@@ -1004,7 +1004,7 @@ const NovoPedido = () => {
                         }}
                         title="Remover item"
                       >
-                        ✕
+                        âœ•
                       </button>
                     </div>
                   </div>
@@ -1038,7 +1038,7 @@ const NovoPedido = () => {
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
                     }}
                   >
-                    ✅ Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
+                    âœ… Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
                   </button>
                 </div>
               </div>
@@ -1050,8 +1050,8 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             <div className="step-header">
-              <h2>Política de Pagamento</h2>
-              <p>{isModoConcessionaria ? 'Condição de compra para concessionária' : 'Selecione a forma de pagamento e visualize os descontos'}</p>
+              <h2>PolÃ­tica de Pagamento</h2>
+              <p>{isModoConcessionaria ? 'CondiÃ§Ã£o de compra para concessionÃ¡ria' : 'Selecione a forma de pagamento e visualize os descontos'}</p>
             </div>
             
             <PaymentPolicy
@@ -1079,11 +1079,11 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             {isModoConcessionaria ? (
-              /* Estudo Veicular para Concessionária */
+              /* Estudo Veicular para ConcessionÃ¡ria */
               <div className="step-content">
                 <div className="step-header">
-                  <h2>🚛 Estudo Veicular</h2>
-                  <p>Configure o veículo para instalação do guindaste</p>
+                  <h2>ðŸš› Estudo Veicular</h2>
+                  <p>Configure o veÃ­culo para instalaÃ§Ã£o do guindaste</p>
                 </div>
                 <EstudoVeicular
                   caminhaoData={caminhaoData}
@@ -1109,7 +1109,7 @@ const NovoPedido = () => {
                   
                   <div className="step-header">
                     <h2>Dados do Cliente</h2>
-                    <p>Preencha as informações do cliente para seguir</p>
+                    <p>Preencha as informaÃ§Ãµes do cliente para seguir</p>
                   </div>
                 </div>
                 
@@ -1138,7 +1138,7 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             {isModoConcessionaria ? (
-              /* Resumo para Concessionária */
+              /* Resumo para ConcessionÃ¡ria */
               <div className="step-content">
                 <div className="step-header">
                   <h2>Resumo do Pedido de Compra</h2>
@@ -1193,7 +1193,7 @@ const NovoPedido = () => {
           <div className="step-content">
             <div className="step-header">
               <h2>Resumo da Proposta</h2>
-              <p>Revise e confirme as informações</p>
+              <p>Revise e confirme as informaÃ§Ãµes</p>
             </div>
             <ResumoPedidoExterno
               carrinho={carrinho}
@@ -1222,7 +1222,7 @@ const NovoPedido = () => {
     
     if (isModoConcessionaria) {
       if (step === 1) {
-        if (!regiaoClienteSelecionada) errors.regiao = 'Selecione a região de compra';
+        if (!regiaoClienteSelecionada) errors.regiao = 'Selecione a regiÃ£o de compra';
         if (carrinho.length === 0) errors.guindaste = 'Selecione pelo menos um guindaste';
       }
       if (step === 2) {
@@ -1242,24 +1242,24 @@ const NovoPedido = () => {
           errors.tipoPagamento = 'Selecione o tipo de pagamento';
         }
         
-        // Prazo de pagamento NÃO é obrigatório se houver financiamento bancário
+        // Prazo de pagamento NÃƒO Ã© obrigatÃ³rio se houver financiamento bancÃ¡rio
         if (!pagamentoData.prazoPagamento && pagamentoData.financiamentoBancario !== 'sim') {
           errors.prazoPagamento = 'Selecione o prazo de pagamento';
         }
         
-        // Local de instalação e tipo de instalação são obrigatórios apenas para cliente
+        // Local de instalaÃ§Ã£o e tipo de instalaÃ§Ã£o sÃ£o obrigatÃ³rios apenas para cliente
         if (pagamentoData.tipoPagamento === 'cliente') {
           if (!pagamentoData.localInstalacao) {
-            errors.localInstalacao = 'Informe o local de instalação';
+            errors.localInstalacao = 'Informe o local de instalaÃ§Ã£o';
           }
           if (!pagamentoData.tipoInstalacao) {
-            errors.tipoInstalacao = 'Selecione o tipo de instalação';
+            errors.tipoInstalacao = 'Selecione o tipo de instalaÃ§Ã£o';
           }
-          // Participação de revenda é obrigatória para cliente
+          // ParticipaÃ§Ã£o de revenda Ã© obrigatÃ³ria para cliente
           if (!pagamentoData.participacaoRevenda) {
-            errors.participacaoRevenda = 'Selecione se há participação de revenda';
+            errors.participacaoRevenda = 'Selecione se hÃ¡ participaÃ§Ã£o de revenda';
           }
-          // Se respondeu participação, IE/Tipo é obrigatório
+          // Se respondeu participaÃ§Ã£o, IE/Tipo Ã© obrigatÃ³rio
           if (pagamentoData.participacaoRevenda && !pagamentoData.revendaTemIE) {
             errors.revendaTemIE = 'Selecione o tipo de cliente/revenda';
           }
@@ -1270,24 +1270,24 @@ const NovoPedido = () => {
         }
         break;
       case 3:
-        if (!clienteData.nome) errors.nome = 'Nome é obrigatório';
-        if (!clienteData.telefone) errors.telefone = 'Telefone é obrigatório';
+        if (!clienteData.nome) errors.nome = 'Nome Ã© obrigatÃ³rio';
+        if (!clienteData.telefone) errors.telefone = 'Telefone Ã© obrigatÃ³rio';
         if (!clienteData.modoInternacional) {
-          if (!clienteData.documento) errors.documento = 'CNPJ ou CPF é obrigatório';
+          if (!clienteData.documento) errors.documento = 'CNPJ ou CPF Ã© obrigatÃ³rio';
           if (!clienteData.inscricao_estadual || (clienteData.inscricao_estadual !== 'ISENTO' && clienteData.inscricao_estadual.trim() === '')) {
-            errors.inscricao_estadual = 'Inscrição Estadual é obrigatória';
+            errors.inscricao_estadual = 'InscriÃ§Ã£o Estadual Ã© obrigatÃ³ria';
           }
-          if (!clienteData.endereco) errors.endereco = 'Endereço é obrigatório';
+          if (!clienteData.endereco) errors.endereco = 'EndereÃ§o Ã© obrigatÃ³rio';
         }
         break;
       case 4:
-        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veículo é obrigatório';
-        if (!caminhaoData.marca) errors.marca = 'Marca é obrigatória';
-        if (!caminhaoData.modelo) errors.modelo = 'Modelo é obrigatório';
-        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem é obrigatória';
-        // Ano é opcional; se informado, validar intervalo
+        if (!caminhaoData.tipo) errors.tipo = 'Tipo do veÃ­culo Ã© obrigatÃ³rio';
+        if (!caminhaoData.marca) errors.marca = 'Marca Ã© obrigatÃ³ria';
+        if (!caminhaoData.modelo) errors.modelo = 'Modelo Ã© obrigatÃ³rio';
+        if (!caminhaoData.voltagem) errors.voltagem = 'Voltagem Ã© obrigatÃ³ria';
+        // Ano Ã© opcional; se informado, validar intervalo
         if (caminhaoData.ano && (parseInt(caminhaoData.ano) < 1960 || parseInt(caminhaoData.ano) > new Date().getFullYear())) {
-          errors.ano = 'Ano inválido';
+          errors.ano = 'Ano invÃ¡lido';
         }
         break;
     }
@@ -1305,7 +1305,7 @@ const NovoPedido = () => {
         case 2:
           return !!pagamentoData.tipoFrete;
         case 3:
-          return true; // Step 3 é o resumo, sempre pode finalizar
+          return true; // Step 3 Ã© o resumo, sempre pode finalizar
         default:
           return false;
       }
@@ -1314,13 +1314,13 @@ const NovoPedido = () => {
       case 1:
         return guindastesSelecionados.length > 0;
       case 2:
-        // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete são obrigatórios
+        // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete sÃ£o obrigatÃ³rios
         if (pagamentoData.tipoPagamento === 'revenda') {
           return pagamentoData.tipoPagamento && 
                  pagamentoData.prazoPagamento && 
                  pagamentoData.tipoFrete;
         }
-        // Para cliente com financiamento bancário, não exige prazoPagamento
+        // Para cliente com financiamento bancÃ¡rio, nÃ£o exige prazoPagamento
         if (pagamentoData.tipoPagamento === 'cliente' && pagamentoData.financiamentoBancario === 'sim') {
           return pagamentoData.tipoPagamento && 
                  pagamentoData.localInstalacao && 
@@ -1329,7 +1329,7 @@ const NovoPedido = () => {
                  pagamentoData.participacaoRevenda &&
                  (pagamentoData.participacaoRevenda ? pagamentoData.revendaTemIE : true);
         }
-        // Para cliente sem financiamento bancário, todos os campos são obrigatórios
+        // Para cliente sem financiamento bancÃ¡rio, todos os campos sÃ£o obrigatÃ³rios
         return pagamentoData.tipoPagamento && 
                pagamentoData.prazoPagamento && 
                pagamentoData.localInstalacao && 
@@ -1361,7 +1361,7 @@ const NovoPedido = () => {
 
   const handleNext = () => {
     
-    // Adicionar log detalhado ANTES da validação
+    // Adicionar log detalhado ANTES da validaÃ§Ã£o
     if (currentStep === 2) {
     }
     
@@ -1372,22 +1372,22 @@ const NovoPedido = () => {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
-      setValidationErrors({}); // Limpar erros ao avançar
+      setValidationErrors({}); // Limpar erros ao avanÃ§ar
     } else {
-      console.warn('⚠️ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
-      console.warn('📋 Campos obrigatórios faltando:', Object.keys(validationErrors));
+      console.warn('âš ï¸ NÃ£o pode avanÃ§ar. isValid:', isValid, 'currentStep:', currentStep);
+      console.warn('ðŸ“‹ Campos obrigatÃ³rios faltando:', Object.keys(validationErrors));
     }
   };
 
   const handlePrevious = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-      // O reset do pagamentoData é feito pelo useEffect que monitora currentStep
+      // O reset do pagamentoData Ã© feito pelo useEffect que monitora currentStep
     }
   };
 
   const handleStepClick = (stepId) => {
-    // Permite navegar para qualquer step que já foi alcançado
+    // Permite navegar para qualquer step que jÃ¡ foi alcanÃ§ado
     if (stepId <= maxStepReached) {
       setCurrentStep(stepId);
       setValidationErrors({}); // Limpar erros ao navegar
@@ -1398,10 +1398,10 @@ const NovoPedido = () => {
 
   const handleFinish = async () => {
     try {
-      // Salvar relatório no banco de dados
+      // Salvar relatÃ³rio no banco de dados
       await salvarRelatorio();
       
-      // Limpar carrinho e navegar para histórico
+      // Limpar carrinho e navegar para histÃ³rico
       limparCarrinho();
       navigate(isModoConcessionaria ? '/dashboard-admin' : '/historico');
       
@@ -1424,8 +1424,8 @@ const NovoPedido = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : (isModoConcessionaria ? 'Novo Pedido da Concessionária' : 'Nova Proposta')}
-        subtitle={isEdicao ? "Atualize os dados da proposta existente" : (isModoConcessionaria ? 'Compra interna simplificada' : 'Criar orçamento profissional')}
+        title={isEdicao ? `Editar Proposta #${propostaOriginal?.numero_proposta || ''}` : (isModoConcessionaria ? 'Novo Pedido da ConcessionÃ¡ria' : 'Nova Proposta')}
+        subtitle={isEdicao ? "Atualize os dados da proposta existente" : (isModoConcessionaria ? 'Compra interna simplificada' : 'Criar orÃ§amento profissional')}
         extraButtons={[
           import.meta.env.DEV && (
             <>
@@ -1433,7 +1433,7 @@ const NovoPedido = () => {
                 key="debug-prices"
                 onClick={async () => {
 
-                  // Verificar preços de todas as regiões para os primeiros equipamentos
+                  // Verificar preÃ§os de todas as regiÃµes para os primeiros equipamentos
                   const regioesParaTestar = ['rs-com-ie', 'rs-sem-ie', 'sul-sudeste'];
                   const equipamentosParaTestar = guindastes.slice(0, 3);
 
@@ -1443,12 +1443,12 @@ const NovoPedido = () => {
                       try {
                         const preco = await db.getPrecoPorRegiao(equipamento.id, regiao);
                       } catch (error) {
-                        console.error(`  ❌ Erro em ${regiao}:`, error.message);
+                        console.error(`  âŒ Erro em ${regiao}:`, error.message);
                       }
                     }
                   }
 
-                  // Testar lógica atual
+                  // Testar lÃ³gica atual
                   const temIE = determinarClienteTemIE();
                   const regiaoAtual = normalizarRegiao(regiaoClienteSelecionada || 'sul-sudeste', temIE);
                 }}
@@ -1462,15 +1462,15 @@ const NovoPedido = () => {
                   fontSize: '12px',
                   marginRight: '5px'
                 }}
-                title="Debug completo de preços"
+                title="Debug completo de preÃ§os"
               >
-                🔍 DEBUG PREÇOS
+                ðŸ” DEBUG PREÃ‡OS
               </button>
               <button
                 key="test-context"
                 onClick={() => {
 
-                  // Simular mudança de contexto
+                  // Simular mudanÃ§a de contexto
                   setPagamentoData({
                     ...pagamentoData,
                     tipoPagamento: 'cliente',
@@ -1487,16 +1487,16 @@ const NovoPedido = () => {
                   cursor: 'pointer',
                   fontSize: '12px'
                 }}
-                title="Testar mudança de contexto"
+                title="Testar mudanÃ§a de contexto"
               >
-                🧪 TESTE CONTEXTO
+                ðŸ§ª TESTE CONTEXTO
               </button>
             </>
           )
         ]}
       />
 
-      {/* Banner de Edição */}
+      {/* Banner de EdiÃ§Ã£o */}
       {isEdicao && (
         <div style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -1509,14 +1509,14 @@ const NovoPedido = () => {
           alignItems: 'center',
           gap: '12px'
         }}>
-          <span style={{ fontSize: '24px' }}>✏️</span>
+          <span style={{ fontSize: '24px' }}>âœï¸</span>
           <div>
             <div style={{ fontWeight: '600', fontSize: '16px', marginBottom: '4px' }}>
-              Modo Edição Ativo
+              Modo EdiÃ§Ã£o Ativo
             </div>
             <div style={{ fontSize: '14px', opacity: 0.9 }}>
-              Você está editando a proposta <strong>#{propostaOriginal?.numero_proposta}</strong>. 
-              As alterações substituirão os dados atuais ao gerar o PDF.
+              VocÃª estÃ¡ editando a proposta <strong>#{propostaOriginal?.numero_proposta}</strong>. 
+              As alteraÃ§Ãµes substituirÃ£o os dados atuais ao gerar o PDF.
             </div>
           </div>
         </div>
@@ -1574,28 +1574,28 @@ const NovoPedido = () => {
   );
 };
 
-// Função para extrair configurações do título do guindaste com ícones
+// FunÃ§Ã£o para extrair configuraÃ§Ãµes do tÃ­tulo do guindaste com Ã­cones
 const extrairConfiguracoes = (subgrupo) => {
   const configuracoes = [];
   
-  // Extrair configurações do título (mais específico para evitar falsos positivos)
+  // Extrair configuraÃ§Ãµes do tÃ­tulo (mais especÃ­fico para evitar falsos positivos)
   if (subgrupo.includes(' CR') || subgrupo.includes('CR ') || subgrupo.includes('CR/')) {
     configuracoes.push({  text: 'CR - Controle Remoto' });
   }
   if (subgrupo.includes(' EH') || subgrupo.includes('EH ') || subgrupo.includes('/EH')) {
-    configuracoes.push({ text: 'EH - Extensiva Hidráulica' });
+    configuracoes.push({ text: 'EH - Extensiva HidrÃ¡ulica' });
   }
   if (subgrupo.includes(' ECS') || subgrupo.includes('ECS ') || subgrupo.includes('/ECS')) {
     configuracoes.push({ text: 'ECS - Extensiva Cilindro Superior' });
   }
   if (subgrupo.includes(' P') || subgrupo.includes('P ') || subgrupo.includes('/P')) {
-    configuracoes.push({ text: 'P - Preparação p/ Perfuratriz' });
+    configuracoes.push({ text: 'P - PreparaÃ§Ã£o p/ Perfuratriz' });
   }
   if (subgrupo.includes(' GR') || subgrupo.includes('GR ') || subgrupo.includes('/GR')) {
-    configuracoes.push({ text: 'GR - Preparação p/ Garra e Rotator' });
+    configuracoes.push({ text: 'GR - PreparaÃ§Ã£o p/ Garra e Rotator' });
   }
-  if (subgrupo.includes('Caminhão 3/4')) {
-    configuracoes.push({ text: 'Caminhão 3/4' });
+  if (subgrupo.includes('CaminhÃ£o 3/4')) {
+    configuracoes.push({ text: 'CaminhÃ£o 3/4' });
   }
   
   return configuracoes;
@@ -1617,10 +1617,10 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
         )}
       </div>
 
-      {/* Cabeçalho com Imagem e Informações Principais */}
+      {/* CabeÃ§alho com Imagem e InformaÃ§Ãµes Principais */}
       <div className="card-header">
         <div className="guindaste-image-container">
-          {/* ⚡ Lazy loading sob demanda com cache de 30min — sem download em massa de base64 */}
+          {/* âš¡ Lazy loading sob demanda com cache de 30min â€” sem download em massa de base64 */}
           <LazyGuindasteImage
             guindasteId={guindaste.id}
             subgrupo={guindaste.subgrupo}
@@ -1649,13 +1649,13 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
           <div className="guindaste-meta">
             <span className="categoria">{guindaste.Grupo}</span>
             {guindaste.codigo_referencia && (
-              <span className="codigo-display">Cód: {guindaste.codigo_referencia}</span>
+              <span className="codigo-display">CÃ³d: {guindaste.codigo_referencia}</span>
             )}
           </div>
         </div>
       </div>
 
-      {/* Corpo do Card com Especificações Detalhadas */}
+      {/* Corpo do Card com EspecificaÃ§Ãµes Detalhadas */}
       <div className="card-body">
         <div className="specs-grid">
           <div className="spec-item">
@@ -1665,8 +1665,8 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
               </svg>
             </div>
             <div className="spec-content">
-              <span className="spec-label">Configuração de Lanças</span>
-              <span className="spec-value">{guindaste.peso_kg || 'Padrão'}</span>
+              <span className="spec-label">configuracao de Lanças</span>
+              <span className="spec-value">{guindaste.peso_kg || 'PadrÃ£o'}</span>
             </div>
           </div>
 
@@ -1678,7 +1678,7 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
                 </svg>
               </div>
               <div className="spec-content">
-                <span className="spec-label">Opcionais Incluídos</span>
+                <span className="spec-label">Opcionais IncluÃ­dos</span>
                 <div className="opcionais-list">
                   {configuracoes.slice(0, 2).map((config, idx) => (
                     <span key={idx} className="opcional-item">
@@ -1694,7 +1694,7 @@ const GuindasteCard = ({ guindaste, isSelected, onSelect }) => {
           )}
         </div>
 
-        {/* Área de Ações */}
+        {/* Ãrea de AÃ§Ãµes */}
         <div className="card-footer">
           <button className={`btn-select ${isSelected ? 'selected' : ''}`}>
             {isSelected ? (
@@ -1741,7 +1741,7 @@ const OpcionalCard = ({ opcional, isSelected, onToggle }) => {
   );
 };
 
-// Componente Política de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
+// Componente PolÃ­tica de Pagamento foi movido para src/features/payment/PaymentPolicy.jsx
 
 // Componente Form do Cliente
 const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
@@ -1803,7 +1803,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
   const handleChange = (field, value) => {
     setFormData(prev => {
       let maskedValue = value;
-      // Campos numéricos: aceitar apenas dígitos
+      // Campos numÃ©ricos: aceitar apenas dÃ­gitos
       if (field === 'telefone') maskedValue = maskPhone(value.replace(/\D/g, ''));
       else if (field === 'cep') maskedValue = modoInternacional ? value : maskCEP(value.replace(/\D/g, ''));
       else if (field === 'documento') {
@@ -1815,14 +1815,14 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
         }
       }
       else if (field === 'inscricao_estadual' && value !== 'ISENTO') {
-        // IE: aceitar apenas números (exceto quando é ISENTO)
+        // IE: aceitar apenas nÃºmeros (exceto quando Ã© ISENTO)
         maskedValue = value.replace(/\D/g, '');
       }
       else {
         maskedValue = value;
       }
       const next = { ...prev, [field]: maskedValue };
-      // Consistência BR: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
+      // ConsistÃªncia BR: ao mudar UF/Cidade manualmente, limpar CEP; ao mudar UF, limpar Cidade
       if (!modoInternacional) {
         if (field === 'uf') {
           next.cidade = '';
@@ -1842,7 +1842,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
           }
         }
       }
-      // Se o campo alterado é parte do endereço detalhado, atualizar 'endereco' composto
+      // Se o campo alterado Ã© parte do endereÃ§o detalhado, atualizar 'endereco' composto
       if ([
         'logradouro', 'numero', 'bairro', 'cidade', 'uf', 'cep', 'pais'
       ].includes(field)) {
@@ -1866,10 +1866,10 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
           const next = {
             ...prev,
             cep: maskCEP(raw),
-            // CEP é a fonte da verdade para UF e Cidade
+            // CEP Ã© a fonte da verdade para UF e Cidade
             uf: data.uf || '',
             cidade: data.localidade || '',
-            // Logradouro e bairro: preencher apenas se ainda não informados
+            // Logradouro e bairro: preencher apenas se ainda nÃ£o informados
             logradouro: prev.logradouro || data.logradouro || '',
             bairro: prev.bairro || data.bairro || '',
           };
@@ -1912,16 +1912,16 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
 
   return (
     <div className="client-form">
-      {/* Informações Pessoais */}
+      {/* InformaÃ§Ãµes Pessoais */}
      <div className="client-form-container">
   <div className="client-form">
 
-    {/* Informações pessoais */}
+    {/* InformaÃ§Ãµes pessoais */}
     <div className="form-section">
       <div className="section-header">
         <div>
-          <h3>Informações pessoais</h3>
-          <p>Dados básicos do cliente</p>
+          <h3>InformaÃ§Ãµes pessoais</h3>
+          <p>Dados bÃ¡sicos do cliente</p>
         </div>
       </div>
 
@@ -1967,7 +1967,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
                 }
               }}
             />
-            <label htmlFor="semEmail">Não possui e-mail</label>
+            <label htmlFor="semEmail">NÃ£o possui e-mail</label>
           </div>
 
           <input
@@ -1988,7 +1988,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
             type="text"
             value={formData.documento || ''}
             onChange={(e) => handleChange('documento', e.target.value)}
-            placeholder={modoInternacional ? 'Número de identificação fiscal' : '000.000.000-00'}
+            placeholder={modoInternacional ? 'NÃºmero de identificaÃ§Ã£o fiscal' : '000.000.000-00'}
             className={errors.documento ? 'error' : ''}
           />
           {errors.documento && <span className="error-message">{errors.documento}</span>}
@@ -1996,7 +1996,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
 
         {!modoInternacional && (
           <div className="form-group">
-            <label>Inscrição Estadual {!isentoIE && '*'}</label>
+            <label>InscriÃ§Ã£o Estadual {!isentoIE && '*'}</label>
 
             <div className="checkbox-row">
               <input
@@ -2012,7 +2012,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
                   }
                 }}
               />
-              <label htmlFor="isentoIE">Isento de Inscrição Estadual</label>
+              <label htmlFor="isentoIE">Isento de InscriÃ§Ã£o Estadual</label>
             </div>
 
             <input
@@ -2032,12 +2032,12 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
       </div>
     </div>
 
-    {/* Endereço */}
+    {/* EndereÃ§o */}
     <div className="form-section">
       <div className="section-header">
         <div>
-          <h3>Endereço</h3>
-          <p>Localização do cliente</p>
+          <h3>EndereÃ§o</h3>
+          <p>LocalizaÃ§Ã£o do cliente</p>
         </div>
 
         {isExteriorUser && (
@@ -2046,18 +2046,18 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
             onClick={toggleModo}
             className={`btn-mode-toggle ${modoInternacional ? 'active' : ''}`}
           >
-            {modoInternacional ? 'Internacional ativo' : 'Endereço internacional'}
+            {modoInternacional ? 'Internacional ativo' : 'EndereÃ§o internacional'}
           </button>
         )}
       </div>
 
       {modoInternacional ? (
         <div className="form-group full-width">
-          <label>Endereço completo *</label>
+          <label>EndereÃ§o completo *</label>
           <textarea
             value={formData.endereco || ''}
             onChange={(e) => handleChange('endereco', e.target.value)}
-            placeholder="Digite o endereço completo: rua, número, cidade, estado, país e código postal"
+            placeholder="Digite o endereÃ§o completo: rua, nÃºmero, cidade, estado, paÃ­s e cÃ³digo postal"
             rows={4}
             className={errors.endereco ? 'error' : ''}
           />
@@ -2065,7 +2065,7 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
         </div>
       ) : (
         <div className="form-group full-width">
-          <label>Endereço *</label>
+          <label>EndereÃ§o *</label>
 
           <div className="form-grid">
             <div className="form-group">
@@ -2154,12 +2154,12 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
                 </div>
 
                 <div className="form-group">
-                  <label>Número</label>
+                  <label>NÃºmero</label>
                   <input
                     type="text"
                     value={formData.numero || ''}
                     onChange={(e) => handleChange('numero', e.target.value)}
-                    placeholder="Número"
+                    placeholder="NÃºmero"
                   />
                 </div>
 
@@ -2177,12 +2177,12 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
           </div>
 
           <div className="form-group generated-address">
-            <label>Endereço completo</label>
+            <label>EndereÃ§o completo</label>
             <input
               type="text"
               value={formData.endereco || ''}
               readOnly
-              placeholder="Endereço completo gerado automaticamente"
+              placeholder="EndereÃ§o completo gerado automaticamente"
               className={errors.endereco ? 'error' : ''}
             />
           </div>
@@ -2192,11 +2192,11 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
       )}
 
       <div className="form-group observacoes-group">
-        <label>Observações</label>
+        <label>ObservaÃ§Ãµes</label>
         <textarea
           value={formData.observacoes || ''}
           onChange={(e) => handleChange('observacoes', e.target.value)}
-          placeholder="Informações adicionais sobre o cliente"
+          placeholder="InformaÃ§Ãµes adicionais sobre o cliente"
           rows="3"
         />
       </div>
@@ -2208,19 +2208,19 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
   );
 };
 
-// Componente Form do Caminhão
+// Componente Form do CaminhÃ£o
 const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
   
-  // Função para calcular o patolamento baseado na medida C
+  // FunÃ§Ã£o para calcular o patolamento baseado na medida C
   const calcularPatolamento = (medidaC) => {
     if (!medidaC) return '';
     const medida = parseFloat(medidaC);
     if (isNaN(medida)) return '';
     
-    // Regras: >= 70cm → 580mm | 60-69cm → 440mm | < 60cm → 390mm
+    // Regras: >= 70cm â†’ 580mm | 60-69cm â†’ 440mm | < 60cm â†’ 390mm
     if (medida >= 70) return '580mm';
     if (medida >= 60) return '440mm';
     return '390mm';
@@ -2240,12 +2240,12 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
   const showMedidaD = (noDetection || temGSE) && formData.tipo === 'Bitruck';
   const showComprimento = noDetection || temGSE;
   const instrucaoMedidas = noDetection
-    ? 'Preencha conforme a imagem. Caminhão 1 = GSI Interno · Caminhão 2 = GSE Externo.'
+    ? 'Preencha conforme a imagem. CaminhÃ£o 1 = GSI Interno Â· CaminhÃ£o 2 = GSE Externo.'
     : temGSI && !temGSE
-      ? 'Para instalação GSI, preencha as medidas A, B e C.'
+      ? 'Para instalaÃ§Ã£o GSI, preencha as medidas A, B e C.'
       : !temGSI && temGSE
-        ? 'Para instalação GSE, preencha a medida C (define patolamento), o comprimento do chassi e, se Bitruck, a medida D.'
-        : 'Preencha conforme a imagem. Caminhão 1 = GSI Interno · Caminhão 2 = GSE Externo.';
+        ? 'Para instalaÃ§Ã£o GSE, preencha a medida C (define patolamento), o comprimento do chassi e, se Bitruck, a medida D.'
+        : 'Preencha conforme a imagem. CaminhÃ£o 1 = GSI Interno Â· CaminhÃ£o 2 = GSE Externo.';
 
   const years = (() => {
     const current = new Date().getFullYear();
@@ -2257,10 +2257,10 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
 
   return (
     <div className="client-form-container">
-      {/* Informações do Veículo */}
+      {/* InformaÃ§Ãµes do VeÃ­culo */}
       <div className="form-section">
         <div className="section-header">
-          <h3>Informações do Veículo</h3>
+          <h3>InformaÃ§Ãµes do VeÃ­culo</h3>
         </div>
         
         <div className="form-grid">
@@ -2346,21 +2346,21 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
           </div>
           
           <div className="form-group full-width">
-            <label>Observações</label>
+            <label>ObservaÃ§Ãµes</label>
             <textarea
               value={formData.observacoes || ''}
               onChange={(e) => handleChange('observacoes', e.target.value)}
-              placeholder="Informações adicionais sobre o caminhão..."
+              placeholder="InformaÃ§Ãµes adicionais sobre o caminhÃ£o..."
               rows="2"
             />
           </div>
         </div>
       </div>
 
-      {/* Seção de Medidas */}
+      {/* SeÃ§Ã£o de Medidas */}
       <div className="form-section">
         <div className="section-header">
-          <h3>Medidas para Instalação</h3>
+          <h3>Medidas para InstalaÃ§Ã£o</h3>
         </div>
           
           <div className="estudo-veicular-container">
@@ -2376,7 +2376,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
                 }}
               />
               <div className="estudo-veicular-fallback">
-                <p>Imagem não disponível</p>
+                <p>Imagem nÃ£o disponÃ­vel</p>
               </div>
             </div>
 
@@ -2387,7 +2387,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
               <div className="form-grid">
                 {showMedidaA && (
                 <div className="form-group">
-                  <label>Medida A — Chassi ao Assoalho (cm)</label>
+                  <label>Medida A â€” Chassi ao Assoalho (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaA || ''}
@@ -2399,7 +2399,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
                 
                 {showMedidaB && (
                 <div className="form-group">
-                  <label>Medida B — Chassi (cm)</label>
+                  <label>Medida B â€” Chassi (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaB || ''}
@@ -2410,7 +2410,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
                 )}
                 
                 <div className="form-group">
-                  <label>Medida C — Solo ao Chassi (cm)</label>
+                  <label>Medida C â€” Solo ao Chassi (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaC || ''}
@@ -2427,7 +2427,7 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
                 
                 {showMedidaD && (
                 <div className="form-group">
-                  <label>Medida D — Dist. entre Eixos, GSE (cm)</label>
+                  <label>Medida D â€” Dist. entre Eixos, GSE (cm)</label>
                   <input
                     type="text"
                     value={formData.medidaD || ''}
@@ -2456,8 +2456,8 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
                   <span className="patolamento-label">Patolamento calculado:</span>
                   <span className="patolamento-value">{formData.patolamento}</span>
                   <span className="patolamento-note">
-                    {parseFloat(formData.medidaC) >= 70 && 'Medida C ≥ 70cm'}
-                    {parseFloat(formData.medidaC) >= 60 && parseFloat(formData.medidaC) < 70 && 'Medida C entre 60–69cm'}
+                    {parseFloat(formData.medidaC) >= 70 && 'Medida C â‰¥ 70cm'}
+                    {parseFloat(formData.medidaC) >= 60 && parseFloat(formData.medidaC) < 70 && 'Medida C entre 60â€“69cm'}
                     {parseFloat(formData.medidaC) < 60 && 'Medida C < 60cm'}
                   </span>
                 </div>
@@ -2484,12 +2484,12 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     patolamento: data.patolamento || null
   });
 
-  // Modo edição de verdade vem da URL (propostaId). Isso evita timing issues de estado
+  // Modo ediÃ§Ã£o de verdade vem da URL (propostaId). Isso evita timing issues de estado
   // que podem fazer o fluxo cair em INSERT e duplicar registros.
   const modoEdicaoCalc = !!propostaId;
   const propostaIdCalc = propostaOriginal?.id || propostaId || null;
 
-  // Quando estiver editando, considerar a proposta como "já salva" para evitar INSERT
+  // Quando estiver editando, considerar a proposta como "jÃ¡ salva" para evitar INSERT
   useEffect(() => {
     if (modoEdicaoCalc && propostaIdCalc) {
       setPedidoSalvoId(propostaIdCalc);
@@ -2505,10 +2505,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             vendedorNome: user?.nome || ''
           });
         } catch (bitrixError) {
-          console.warn('Bitrix: falha ao criar negócio automaticamente.', bitrixError);
+          console.warn('Bitrix: falha ao criar negÃ³cio automaticamente.', bitrixError);
         }
       }
-      // Detectar se é proposta preliminar (Proposta Rápida)
+      // Detectar se Ã© proposta preliminar (Proposta RÃ¡pida)
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
                                     caminhaoData?.marca === 'PREENCHER' || 
                                     caminhaoData?.modelo === 'PREENCHER';
@@ -2522,7 +2522,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         return;
       }
       
-      // Critérios mínimos para salvar automaticamente sem interromper a experiência
+      // CritÃ©rios mÃ­nimos para salvar automaticamente sem interromper a experiÃªncia
       const camposClienteOK = clienteData?.modoInternacional
         ? Boolean(clienteData?.nome && clienteData?.telefone)
         : Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
@@ -2538,32 +2538,32 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       const camposCompraOK = Boolean(pedidoData?.regiaoCompraSelecionada && carrinho.length > 0 && pagamentoData?.tipoFrete);
 
       if ((isConcessionariaCompra ? camposCompraOK : (camposClienteOK && camposCaminhaoOK)) && usuarioOK) {
-        // Salvar relatório automaticamente no banco de dados (apenas uma vez)
+        // Salvar relatÃ³rio automaticamente no banco de dados (apenas uma vez)
         if (!pedidoSalvoId) {
           const pedido = await salvarRelatorio();
           setPedidoSalvoId(pedido?.id || null);
         }
         const tipoMsg = isPropostaPreliminar ? ' (Proposta Preliminar)' : '';
-        alert(`PDF gerado com sucesso: ${fileName}\nRelatório salvo automaticamente!${tipoMsg}`);
+        alert(`PDF gerado com sucesso: ${fileName}\nRelatÃ³rio salvo automaticamente!${tipoMsg}`);
       } else {
-        alert(`PDF gerado com sucesso: ${fileName}\nObservação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios (Cliente e/ou Caminhão). Ao clicar em Finalizar, ele será salvo.`);
+        alert(`PDF gerado com sucesso: ${fileName}\nObservaÃ§Ã£o: RelatÃ³rio nÃ£o foi salvo automaticamente porque ainda faltam dados obrigatÃ³rios (Cliente e/ou CaminhÃ£o). Ao clicar em Finalizar, ele serÃ¡ salvo.`);
       }
     } catch (error) {
-      console.error('Erro ao salvar relatório:', error);
+      console.error('Erro ao salvar relatÃ³rio:', error);
       const msg = (error && error.message) ? `\nMotivo: ${error.message}` : '';
-      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatório automaticamente.${msg}`);
+      alert(`PDF gerado com sucesso: ${fileName}\nErro ao salvar relatÃ³rio automaticamente.${msg}`);
     }
   };
 
   const salvarRelatorio = async () => {
     try {
-      // Verificação defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
+      // VerificaÃ§Ã£o defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
       const modoEdicao = modoEdicaoCalc;
       const proposta = propostaOriginal || null;
       const propostaIdToUpdate = propostaIdCalc;
       
       
-      // Se for edição, fazer UPDATE direto
+      // Se for ediÃ§Ã£o, fazer UPDATE direto
       if (modoEdicao && propostaIdToUpdate) {
         
         // Buscar o ID do guindaste principal no carrinho
@@ -2586,7 +2586,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             guindasteId,
             concessionaria_id: user?.concessionaria_id || null
           },
-          // Atualizar também campos principais se mudaram
+          // Atualizar tambÃ©m campos principais se mudaram
           cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
           cliente_documento: documentoClienteDB
         };
@@ -2596,7 +2596,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         return propostaAtualizada;
       }
       
-      // Modo criação normal
+      // Modo criaÃ§Ã£o normal
 
       if (isConcessionariaCompra) {
         const timestamp = Date.now().toString();
@@ -2613,10 +2613,10 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
             const paisesInternacionais = ['PY','AR','UY','BO','CL','PE','CO','VE','EC','GY','SR'];
             return paisesInternacionais.includes(ufConc)
-              ? 'Concessionária Internacional'
-              : 'Concessionária Nacional';
+              ? 'ConcessionÃ¡ria Internacional'
+              : 'ConcessionÃ¡ria Nacional';
           }
-          return 'Concessionária Nacional';
+          return 'ConcessionÃ¡ria Nacional';
         })();
         const linhaCarrinhoConc = carrinhoFinal.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
           ? 'GSI'
@@ -2632,8 +2632,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           numero_proposta: numeroPedido,
           data: new Date().toISOString(),
           vendedor_id: user.id,
-          vendedor_nome: user.nome || 'Não informado',
-          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
+          vendedor_nome: user.nome || 'NÃ£o informado',
+          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'ConcessionÃ¡ria',
           cliente_documento: clienteDocumentoDB,
           valor_total: valorTotal,
           tipo: 'proposta',
@@ -2660,14 +2660,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       // 1. Criar cliente
       
-      // Montar endereço completo a partir dos campos separados
+      // Montar endereÃ§o completo a partir dos campos separados
       const enderecoCompleto = (() => {
         const c = clienteData;
         const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
         const bairro = c.bairro ? ` - ${c.bairro}` : '';
         const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
         const cep = c.cep ? ` - CEP: ${c.cep}` : '';
-        return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'Não informado';
+        return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'NÃ£o informado';
       })();
       
       // Filtrar apenas campos que existem na tabela clientes
@@ -2683,9 +2683,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       const cliente = await createCliente(clienteDataToSave);
       
-      // 2. Criar caminhão
+      // 2. Criar caminhÃ£o
       
-      // Detectar se é proposta preliminar
+      // Detectar se Ã© proposta preliminar
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
                                     caminhaoData?.marca === 'PREENCHER' || 
                                     caminhaoData?.modelo === 'PREENCHER';
@@ -2693,7 +2693,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       let caminhao = null;
       
       if (isPropostaPreliminar) {
-        // Para proposta preliminar: não salvar no banco, apenas usar dados em memória
+        // Para proposta preliminar: nÃ£o salvar no banco, apenas usar dados em memÃ³ria
         caminhao = {
           id: null,
           ...caminhaoData,
@@ -2704,7 +2704,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
         const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
         if (camposFaltando.length > 0) {
-          throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+          throw new Error(`Campos obrigatÃ³rios do caminhÃ£o nÃ£o preenchidos: ${camposFaltando.join(', ')}`);
         }
 
         const caminhaoDataToSave = {
@@ -2716,7 +2716,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         caminhao = await createCaminhao(caminhaoDataToSave);
       }
       
-      // 3. Gerar número do pedido (máx. 10 caracteres para caber em VARCHAR(10))
+      // 3. Gerar nÃºmero do pedido (mÃ¡x. 10 caracteres para caber em VARCHAR(10))
       const timestamp = Date.now().toString();
       const numeroPedido = `PED${timestamp.slice(-7)}`; // Ex: PED1234567
       
@@ -2729,8 +2729,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         .slice(0, 10)) || null;
 
       const canalVendaPropostal = (() => {
-        if (user?.tipo === 'vendedor_concessionaria') return 'Concessionária Nacional';
-        if (user?.tipo === 'admin_concessionaria') return 'Concessionária Nacional';
+        if (user?.tipo === 'vendedor_concessionaria') return 'ConcessionÃ¡ria Nacional';
+        if (user?.tipo === 'admin_concessionaria') return 'ConcessionÃ¡ria Nacional';
         return 'Vendedor Interno';
       })();
       const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
@@ -2747,8 +2747,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         numero_proposta: numeroPedido,
         data: new Date().toISOString(),
         vendedor_id: user.id,
-        vendedor_nome: user.nome || 'Não informado',
-        cliente_nome: cliente.nome || 'Não informado',
+        vendedor_nome: user.nome || 'NÃ£o informado',
+        cliente_nome: cliente.nome || 'NÃ£o informado',
         cliente_documento: clienteDocumentoDB,
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
         tipo: 'proposta',
@@ -2771,26 +2771,26 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       
       const pedido = await createpropostas(pedidoDataToSave);
             
-      // 5. Itens do pedido já estão salvos em dados_serializados
-      // Não é necessário criar registros separados em propostas_itens
+      // 5. Itens do pedido jÃ¡ estÃ£o salvos em dados_serializados
+      // NÃ£o Ã© necessÃ¡rio criar registros separados em propostas_itens
       
       return pedido;
     } catch (error) {
-      console.error('❌ Erro ao salvar relatório:', error);
-      console.error('📋 Detalhes do erro:', {
+      console.error('âŒ Erro ao salvar relatÃ³rio:', error);
+      console.error('ðŸ“‹ Detalhes do erro:', {
         message: error.message,
         code: error.code,
         details: error.details,
         hint: error.hint,
         stack: error.stack
       });
-      console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
+      console.error('ðŸ” Erro completo:', JSON.stringify(error, null, 2));
       throw error;
     }
   };
 
   // Buscar dados completos dos guindastes do carrinho
-  // Combinar carrinho acumulativo + carrinho atual para concessionária
+  // Combinar carrinho acumulativo + carrinho atual para concessionÃ¡ria
   const carrinhoFinal = isConcessionariaCompra && carrinhoAcumulativo.length > 0
     ? [...carrinhoAcumulativo.flatMap(p => p.carrinho), ...carrinho]
     : carrinho;
@@ -2809,7 +2809,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         codigo_referencia: item.codigo_produto,
         peso_kg: item.configuracao_lancas,
         grafico_carga_url: item.grafico_carga_url,
-        // PRIORIZAR dados do carrinho (que já vêm completos do banco)
+        // PRIORIZAR dados do carrinho (que jÃ¡ vÃªm completos do banco)
         descricao: item.descricao || guindasteCompleto?.descricao || '',
         nao_incluido: item.nao_incluido || guindasteCompleto?.nao_incluido || '',
         finame: item.finame || guindasteCompleto?.finame || '',
@@ -2822,7 +2822,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
     clienteData,
     caminhaoData,
     pagamentoData,
-    vendedor: user?.nome || 'Não informado',
+    vendedor: user?.nome || 'NÃ£o informado',
     vendedorTelefone: user?.telefone || '',
     guindastes: guindastesCompletos,
     isConcessionariaCompra,
@@ -2861,37 +2861,37 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           <div className="resumo-grid">
             <div className="resumo-field">
               <span className="resumo-label">Nome</span>
-              <span className="resumo-value">{clienteData.nome || '—'}</span>
+              <span className="resumo-value">{clienteData.nome || 'â€”'}</span>
             </div>
             <div className="resumo-field">
               <span className="resumo-label">Telefone</span>
-              <span className="resumo-value">{clienteData.telefone || '—'}</span>
+              <span className="resumo-value">{clienteData.telefone || 'â€”'}</span>
             </div>
             <div className="resumo-field">
               <span className="resumo-label">Email</span>
-              <span className="resumo-value">{clienteData.email || '—'}</span>
+              <span className="resumo-value">{clienteData.email || 'â€”'}</span>
             </div>
             <div className="resumo-field">
               <span className="resumo-label">CNPJ / CPF</span>
-              <span className="resumo-value">{clienteData.documento || '—'}</span>
+              <span className="resumo-value">{clienteData.documento || 'â€”'}</span>
             </div>
             <div className="resumo-field">
-              <span className="resumo-label">Inscrição Estadual</span>
-              <span className="resumo-value">{clienteData.inscricao_estadual || '—'}</span>
+              <span className="resumo-label">InscriÃ§Ã£o Estadual</span>
+              <span className="resumo-value">{clienteData.inscricao_estadual || 'â€”'}</span>
             </div>
             {(clienteData.cidade || clienteData.uf) && (
               <div className="resumo-field">
                 <span className="resumo-label">Cidade / UF{clienteData.cep ? ' / CEP' : ''}</span>
-                <span className="resumo-value">{clienteData.cidade || '—'} / {clienteData.uf || '—'}{clienteData.cep ? ` — ${clienteData.cep}` : ''}</span>
+                <span className="resumo-value">{clienteData.cidade || 'â€”'} / {clienteData.uf || 'â€”'}{clienteData.cep ? ` â€” ${clienteData.cep}` : ''}</span>
               </div>
             )}
             <div className="resumo-field resumo-field-wide">
-              <span className="resumo-label">Endereço</span>
-              <span className="resumo-value">{clienteData.endereco || '—'}</span>
+              <span className="resumo-label">EndereÃ§o</span>
+              <span className="resumo-value">{clienteData.endereco || 'â€”'}</span>
             </div>
             {clienteData.observacoes && (
               <div className="resumo-field resumo-field-wide">
-                <span className="resumo-label">Observações</span>
+                <span className="resumo-label">ObservaÃ§Ãµes</span>
                 <span className="resumo-value">{clienteData.observacoes}</span>
               </div>
             )}
@@ -2906,15 +2906,15 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           <div className="resumo-grid">
             <div className="resumo-field">
               <span className="resumo-label">Tipo</span>
-              <span className="resumo-value">{caminhaoData.tipo || '—'}</span>
+              <span className="resumo-value">{caminhaoData.tipo || 'â€”'}</span>
             </div>
             <div className="resumo-field">
               <span className="resumo-label">Marca</span>
-              <span className="resumo-value">{caminhaoData.marca || '—'}</span>
+              <span className="resumo-value">{caminhaoData.marca || 'â€”'}</span>
             </div>
             <div className="resumo-field">
               <span className="resumo-label">Modelo</span>
-              <span className="resumo-value">{caminhaoData.modelo || '—'}</span>
+              <span className="resumo-value">{caminhaoData.modelo || 'â€”'}</span>
             </div>
             {caminhaoData.ano && (
               <div className="resumo-field">
@@ -2924,7 +2924,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             )}
             <div className="resumo-field">
               <span className="resumo-label">Voltagem</span>
-              <span className="resumo-value">{caminhaoData.voltagem || '—'}</span>
+              <span className="resumo-value">{caminhaoData.voltagem || 'â€”'}</span>
             </div>
             {caminhaoData.medidaA && <div className="resumo-field"><span className="resumo-label">Medida A</span><span className="resumo-value">{caminhaoData.medidaA} cm</span></div>}
             {caminhaoData.medidaB && <div className="resumo-field"><span className="resumo-label">Medida B</span><span className="resumo-value">{caminhaoData.medidaB} cm</span></div>}
@@ -2944,7 +2944,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             )}
             {caminhaoData.observacoes && (
               <div className="resumo-field resumo-field-wide">
-                <span className="resumo-label">Observações</span>
+                <span className="resumo-label">ObservaÃ§Ãµes</span>
                 <span className="resumo-value">{caminhaoData.observacoes}</span>
               </div>
             )}
@@ -2952,31 +2952,31 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         </div>
       )}
 
-      {/* Política de Pagamento */}
+      {/* PolÃ­tica de Pagamento */}
       <div className="resumo-section">
-        <div className="section-header"><h3>Política de Pagamento</h3></div>
+        <div className="section-header"><h3>PolÃ­tica de Pagamento</h3></div>
         <div className="resumo-grid">
           <div className="resumo-field">
             <span className="resumo-label">Tipo de Pagamento</span>
             <span className="resumo-value">
-              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda — GSI'}
-              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ — GSE'}
+              {pagamentoData.tipoPagamento === 'revenda_gsi' && 'Revenda â€” GSI'}
+              {pagamentoData.tipoPagamento === 'cnpj_cpf_gse' && 'CNPJ â€” GSE'}
               {pagamentoData.tipoPagamento === 'parcelamento_interno' && 'Parcelamento Interno'}
               {pagamentoData.tipoPagamento === 'parcelamento_cnpj' && 'Parcelamento CNPJ'}
-              {!pagamentoData.tipoPagamento && '—'}
+              {!pagamentoData.tipoPagamento && 'â€”'}
             </span>
           </div>
           <div className="resumo-field">
             <span className="resumo-label">Prazo</span>
             <span className="resumo-value">
-              {pagamentoData.prazoPagamento === 'a_vista' && 'À Vista'}
+              {pagamentoData.prazoPagamento === 'a_vista' && 'Ã€ Vista'}
               {pagamentoData.prazoPagamento === '30_dias' && '30 dias (+3%)'}
               {pagamentoData.prazoPagamento === '60_dias' && '60 dias (+1%)'}
               {pagamentoData.prazoPagamento === '120_dias_interno' && '120 dias'}
               {pagamentoData.prazoPagamento === '90_dias_cnpj' && '90 dias'}
-              {pagamentoData.prazoPagamento === 'mais_120_dias' && '+120 dias (+2%/mês)'}
-              {pagamentoData.prazoPagamento === 'mais_90_dias' && '+90 dias (+2%/mês)'}
-              {!pagamentoData.prazoPagamento && '—'}
+              {pagamentoData.prazoPagamento === 'mais_120_dias' && '+120 dias (+2%/mÃªs)'}
+              {pagamentoData.prazoPagamento === 'mais_90_dias' && '+90 dias (+2%/mÃªs)'}
+              {!pagamentoData.prazoPagamento && 'â€”'}
             </span>
           </div>
           {pagamentoData.desconto > 0 && (
@@ -2987,7 +2987,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           )}
           {pagamentoData.acrescimo > 0 && (
             <div className="resumo-field">
-              <span className="resumo-label">Acréscimo</span>
+              <span className="resumo-label">AcrÃ©scimo</span>
               <span className="resumo-value">{pagamentoData.acrescimo}%</span>
             </div>
           )}
@@ -3005,13 +3005,13 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           )}
           {pagamentoData.tipoCliente === 'cliente' && pagamentoData.localInstalacao && (
             <div className="resumo-field">
-              <span className="resumo-label">Local de Instalação</span>
+              <span className="resumo-label">Local de InstalaÃ§Ã£o</span>
               <span className="resumo-value">{pagamentoData.localInstalacao}</span>
             </div>
           )}
           {pagamentoData.tipoCliente === 'cliente' && pagamentoData.tipoInstalacao && (
             <div className="resumo-field">
-              <span className="resumo-label">Tipo de Instalação</span>
+              <span className="resumo-label">Tipo de InstalaÃ§Ã£o</span>
               <span className="resumo-value">
                 {pagamentoData.tipoInstalacao === 'cliente paga direto' && 'Cliente paga direto'}
                 {pagamentoData.tipoInstalacao === 'Incluso no pedido' && 'Incluso no pedido'}
@@ -3020,14 +3020,14 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
           )}
           {pagamentoData.participacaoRevenda && (
             <div className="resumo-field">
-              <span className="resumo-label">Participação de Revenda</span>
-              <span className="resumo-value">{pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'Não'}</span>
+              <span className="resumo-label">ParticipaÃ§Ã£o de Revenda</span>
+              <span className="resumo-value">{pagamentoData.participacaoRevenda === 'sim' ? 'Sim' : 'NÃ£o'}</span>
             </div>
           )}
           {pagamentoData.participacaoRevenda === 'sim' && pagamentoData.revendaTemIE && (
             <div className="resumo-field">
               <span className="resumo-label">Revenda possui IE</span>
-              <span className="resumo-value">{pagamentoData.revendaTemIE === 'sim' ? 'Sim' : 'Não'}</span>
+              <span className="resumo-value">{pagamentoData.revendaTemIE === 'sim' ? 'Sim' : 'NÃ£o'}</span>
             </div>
           )}
           {pagamentoData.revendaTemIE === 'sim' && pagamentoData.descontoRevendaIE > 0 && (
@@ -3056,7 +3056,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
                 <>
                   <div className="resumo-field">
                     <span className="resumo-label">Sinal pago</span>
-                    <span className="resumo-value">— {formatCurrency(pagamentoData.valorSinal)}</span>
+                    <span className="resumo-value">â€” {formatCurrency(pagamentoData.valorSinal)}</span>
                   </div>
                   <div className="resumo-field">
                     <span className="resumo-label">Falta pagar (entrada)</span>
@@ -3079,20 +3079,20 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         </div>
       </div>
 
-      {/* Ações */}
+      {/* AÃ§Ãµes */}
       <div className="resumo-acoes">
         {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
           <div className="resumo-acumulativo">
             <div className="resumo-acumulativo-header">
-              Equipamentos já adicionados ({carrinhoAcumulativo.length})
+              Equipamentos jÃ¡ adicionados ({carrinhoAcumulativo.length})
             </div>
             {carrinhoAcumulativo.map((pedido, idx) => (
               <div key={pedido.id} className="resumo-acumulativo-item">
                 <span>
-                  <strong>#{idx + 1}</strong> — {pedido.carrinho.map(i => i.nome).join(', ')}
+                  <strong>#{idx + 1}</strong> â€” {pedido.carrinho.map(i => i.nome).join(', ')}
                   <span className="resumo-acum-preco"> ({formatCurrency(pedido.carrinho.reduce((s, i) => s + ((parseFloat(i.preco) || 0) * (parseInt(i.quantidade, 10) || 1)), 0))})</span>
                 </span>
-                <button className="btn-remover-acum" onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}>✕</button>
+                <button className="btn-remover-acum" onClick={() => onRemoverDoCarrinhoAcumulativo && onRemoverDoCarrinhoAcumulativo(pedido.id)}>âœ•</button>
               </div>
             ))}
             <div className="resumo-acumulativo-atual">
@@ -3124,7 +3124,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             }}
           />
           {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
-            <span className="resumo-pdf-note">O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)</span>
+            <span className="resumo-pdf-note">O PDF incluirÃ¡ {carrinhoAcumulativo.length + 1} equipamento(s)</span>
           )}
         </div>
       </div>
@@ -3142,9 +3142,9 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
 
   return (
     <div className="vehicle-form-container">
-      {/* Aviso Proposta Rápida */}
+      {/* Aviso Proposta RÃ¡pida */}
       <div className="proposta-rapida-hint">
-        <span>Não tem os dados do veículo agora?</span>
+        <span>NÃ£o tem os dados do veÃ­culo agora?</span>
         <button
           className="btn-proposta-rapida"
           onClick={() => {
@@ -3155,12 +3155,12 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
               ano: '',
               voltagem: 'PREENCHER',
               comprimentoChassi: 'PREENCHER',
-              observacoes: 'PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
+              observacoes: 'PROPOSTA PRELIMINAR - Dados do veÃ­culo a confirmar com o cliente'
             });
             if (onPropostaRapida) { onPropostaRapida(); } else { onNext(); }
           }}
         >
-          Gerar proposta rápida
+          Gerar proposta rÃ¡pida
         </button>
         <span className="proposta-rapida-hint-note">(campos marcados como "A PREENCHER")</span>
       </div>
@@ -3186,3 +3186,7 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
 };
 
 export default NovoPedido;
+
+
+
+

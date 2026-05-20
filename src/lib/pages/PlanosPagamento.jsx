@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import { db } from '../config/supabase';
-import { getGuindastesLite, getGuindasteById } from '../api/guindastes';
-import { getPaymentPlans } from '../services/paymentPlans';
-import '../styles/PlanosPagamento.css';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import { db } from '../../config/supabase';
+import { getGuindastesLite, getGuindasteById } from '../../api/guindastes';
+import { getPaymentPlans } from '../../services/paymentPlans';
+import '../../styles/PlanosPagamento.css';
 
 const AUDIENCES = [
   { value: 'cliente', label: 'Vendedor' },
-  { value: 'concessionaria_compra', label: 'Compra Concessionária' },
-  { value: 'comercio_exterior', label: 'Comércio Exterior' }
+  { value: 'concessionaria_compra', label: 'Compra ConcessionÃ¡ria' },
+  { value: 'comercio_exterior', label: 'ComÃ©rcio Exterior' }
 ];
 
 const ENTRY_FILTERS = [
@@ -113,7 +113,7 @@ export default function PlanosPagamento() {
         const protos = (all || []).filter(g => !!g.is_prototipo);
         setProtoGuindastes(protos);
       } catch (e) {
-        console.error('Erro ao carregar protótipos:', e);
+        console.error('Erro ao carregar protÃ³tipos:', e);
         setProtoGuindastes([]);
       } finally {
         setIsLoading(false);
@@ -152,7 +152,7 @@ export default function PlanosPagamento() {
           .filter(i => (i.entry_percent_required ?? null) === targetEntry);
         setProtoItems(filtered.map(toUiItem));
       } catch (e) {
-        console.error('Erro ao carregar itens do protótipo:', e);
+        console.error('Erro ao carregar itens do protÃ³tipo:', e);
         setProtoItems([]);
       } finally {
         setIsLoading(false);
@@ -191,12 +191,12 @@ export default function PlanosPagamento() {
         const ids = (vis || []).filter(v => v.ativo).map(v => v.user_id);
         setProtoVendedoresSelecionados(ids);
       } catch (e) {
-        console.warn('Falha ao carregar visibilidade do protótipo:', e);
+        console.warn('Falha ao carregar visibilidade do protÃ³tipo:', e);
         setProtoVendedoresSelecionados([]);
       }
     } catch (e) {
-      console.error('Erro ao selecionar protótipo:', e);
-      setStatusInfo({ type: 'error', message: 'Erro ao carregar dados do protótipo.' });
+      console.error('Erro ao selecionar protÃ³tipo:', e);
+      setStatusInfo({ type: 'error', message: 'Erro ao carregar dados do protÃ³tipo.' });
     } finally {
       setIsLoading(false);
     }
@@ -204,7 +204,7 @@ export default function PlanosPagamento() {
 
   const protoEnsureDraft = async () => {
     if (!protoSelectedId) {
-      setStatusInfo({ type: 'error', message: 'Selecione um protótipo.' });
+      setStatusInfo({ type: 'error', message: 'Selecione um protÃ³tipo.' });
       return;
     }
     try {
@@ -261,10 +261,10 @@ export default function PlanosPagamento() {
       setProtoSets(sets || []);
       setProtoDraftSetId(id);
       setProtoIsEditing(true);
-      setStatusInfo({ type: 'success', message: 'Rascunho do protótipo pronto para edição.' });
+      setStatusInfo({ type: 'success', message: 'Rascunho do protÃ³tipo pronto para ediÃ§Ã£o.' });
     } catch (e) {
-      console.error('Erro ao criar/obter rascunho do protótipo:', e);
-      setStatusInfo({ type: 'error', message: 'Erro ao criar/obter rascunho do protótipo.' });
+      console.error('Erro ao criar/obter rascunho do protÃ³tipo:', e);
+      setStatusInfo({ type: 'error', message: 'Erro ao criar/obter rascunho do protÃ³tipo.' });
     } finally {
       setIsLoading(false);
     }
@@ -273,7 +273,7 @@ export default function PlanosPagamento() {
   const protoSaveRow = async (idx) => {
     const row = protoItems[idx];
     if (!protoDraftSetId) {
-      setStatusInfo({ type: 'error', message: 'Crie um rascunho do protótipo para salvar.' });
+      setStatusInfo({ type: 'error', message: 'Crie um rascunho do protÃ³tipo para salvar.' });
       return;
     }
     const targetEntry = entryFilter === '' ? null : Number(entryFilter);
@@ -293,10 +293,10 @@ export default function PlanosPagamento() {
       };
       const saved = await db.upsertPrototypePaymentPlanItem(payload);
       setProtoItems(prev => prev.map((it, i) => (i === idx ? toUiItem(saved) : it)));
-      setStatusInfo({ type: 'success', message: 'Plano do protótipo salvo.' });
+      setStatusInfo({ type: 'success', message: 'Plano do protÃ³tipo salvo.' });
     } catch (e) {
-      console.error('Erro ao salvar plano do protótipo:', e);
-      const msg = e?.message ? String(e.message) : 'Erro ao salvar plano do protótipo.';
+      console.error('Erro ao salvar plano do protÃ³tipo:', e);
+      const msg = e?.message ? String(e.message) : 'Erro ao salvar plano do protÃ³tipo.';
       setStatusInfo({ type: 'error', message: msg });
     } finally {
       setIsLoading(false);
@@ -311,7 +311,7 @@ export default function PlanosPagamento() {
       return;
     }
 
-    const ok = window.confirm('Tem certeza que deseja excluir este plano do protótipo?');
+    const ok = window.confirm('Tem certeza que deseja excluir este plano do protÃ³tipo?');
     if (!ok) return;
 
     try {
@@ -319,10 +319,10 @@ export default function PlanosPagamento() {
       setStatusInfo({ type: '', message: '' });
       await db.deletePrototypePaymentPlanItem(row.id);
       setProtoItems(prev => prev.filter((_, i) => i !== idx));
-      setStatusInfo({ type: 'success', message: 'Plano do protótipo excluído.' });
+      setStatusInfo({ type: 'success', message: 'Plano do protÃ³tipo excluÃ­do.' });
     } catch (e) {
-      console.error('Erro ao excluir plano do protótipo:', e);
-      setStatusInfo({ type: 'error', message: 'Erro ao excluir plano do protótipo.' });
+      console.error('Erro ao excluir plano do protÃ³tipo:', e);
+      setStatusInfo({ type: 'error', message: 'Erro ao excluir plano do protÃ³tipo.' });
     } finally {
       setIsLoading(false);
     }
@@ -330,7 +330,7 @@ export default function PlanosPagamento() {
 
   const protoAddNewRow = () => {
     if (!protoDraftSetId) {
-      setStatusInfo({ type: 'error', message: 'Crie um rascunho do protótipo para adicionar planos.' });
+      setStatusInfo({ type: 'error', message: 'Crie um rascunho do protÃ³tipo para adicionar planos.' });
       return;
     }
     const targetEntry = entryFilter === '' ? null : Number(entryFilter);
@@ -342,11 +342,11 @@ export default function PlanosPagamento() {
 
   const protoPublishDraft = async () => {
     if (!protoDraftSetId) {
-      setStatusInfo({ type: 'error', message: 'Não há rascunho do protótipo para publicar.' });
+      setStatusInfo({ type: 'error', message: 'NÃ£o hÃ¡ rascunho do protÃ³tipo para publicar.' });
       return;
     }
 
-    const ok = window.confirm('Publicar este rascunho do protótipo? Isso substituirá o conjunto publicado do protótipo.');
+    const ok = window.confirm('Publicar este rascunho do protÃ³tipo? Isso substituirÃ¡ o conjunto publicado do protÃ³tipo.');
     if (!ok) return;
 
     try {
@@ -358,12 +358,12 @@ export default function PlanosPagamento() {
       const published = (sets || []).find(s => s.status === 'published');
       setProtoPublishedSetId(published?.id || null);
       setProtoIsEditing(false);
-      setStatusInfo({ type: 'success', message: 'Planos do protótipo publicados.' });
+      setStatusInfo({ type: 'success', message: 'Planos do protÃ³tipo publicados.' });
       const refreshed = await getGuindasteById(parseInt(protoSelectedId, 10));
       setProtoInfo(refreshed || null);
     } catch (e) {
-      console.error('Erro ao publicar planos do protótipo:', e);
-      setStatusInfo({ type: 'error', message: 'Erro ao publicar planos do protótipo.' });
+      console.error('Erro ao publicar planos do protÃ³tipo:', e);
+      setStatusInfo({ type: 'error', message: 'Erro ao publicar planos do protÃ³tipo.' });
     } finally {
       setIsLoading(false);
     }
@@ -371,7 +371,7 @@ export default function PlanosPagamento() {
 
   const protoSalvarVisibilidade = async () => {
     if (!protoSelectedId) {
-      setStatusInfo({ type: 'error', message: 'Selecione um protótipo.' });
+      setStatusInfo({ type: 'error', message: 'Selecione um protÃ³tipo.' });
       return;
     }
     try {
@@ -381,10 +381,10 @@ export default function PlanosPagamento() {
         guindasteId: parseInt(protoSelectedId, 10),
         userIds: protoVendedoresSelecionados
       });
-      setStatusInfo({ type: 'success', message: 'Visibilidade do protótipo salva.' });
+      setStatusInfo({ type: 'success', message: 'Visibilidade do protÃ³tipo salva.' });
     } catch (e) {
-      console.error('Erro ao salvar visibilidade do protótipo:', e);
-      setStatusInfo({ type: 'error', message: 'Erro ao salvar visibilidade do protótipo.' });
+      console.error('Erro ao salvar visibilidade do protÃ³tipo:', e);
+      setStatusInfo({ type: 'error', message: 'Erro ao salvar visibilidade do protÃ³tipo.' });
     } finally {
       setIsLoading(false);
     }
@@ -550,7 +550,7 @@ export default function PlanosPagamento() {
       await loadSets();
       setDraftSetId(id);
       setIsEditing(true);
-      setStatusInfo({ type: 'success', message: 'Rascunho pronto para edição.' });
+      setStatusInfo({ type: 'success', message: 'Rascunho pronto para ediÃ§Ã£o.' });
     } catch (e) {
       console.error('Erro ao criar/obter rascunho:', e);
       setStatusInfo({ type: 'error', message: 'Erro ao criar/obter rascunho.' });
@@ -631,7 +631,7 @@ export default function PlanosPagamento() {
       setStatusInfo({ type: '', message: '' });
       await db.deletePaymentPlanItem(row.id);
       setItems(prev => prev.filter((_, i) => i !== idx));
-      setStatusInfo({ type: 'success', message: 'Plano excluído.' });
+      setStatusInfo({ type: 'success', message: 'Plano excluÃ­do.' });
     } catch (e) {
       console.error('Erro ao excluir plano:', e);
       setStatusInfo({ type: 'error', message: 'Erro ao excluir plano.' });
@@ -642,11 +642,11 @@ export default function PlanosPagamento() {
 
   const publishDraft = async () => {
     if (!draftSetId) {
-      setStatusInfo({ type: 'error', message: 'Não há rascunho para publicar.' });
+      setStatusInfo({ type: 'error', message: 'NÃ£o hÃ¡ rascunho para publicar.' });
       return;
     }
 
-    const ok = window.confirm('Publicar este rascunho? Isso substituirá o conjunto publicado atual.');
+    const ok = window.confirm('Publicar este rascunho? Isso substituirÃ¡ o conjunto publicado atual.');
     if (!ok) return;
 
     try {
@@ -673,7 +673,7 @@ export default function PlanosPagamento() {
           <div>
             <h1>Planos de Pagamento</h1>
             <p className="sub">
-              {scope === 'stark' ? 'Escopo: Stark' : `Escopo: Concessionária (${concessionariaId || '-'})`}
+              {scope === 'stark' ? 'Escopo: Stark' : `Escopo: ConcessionÃ¡ria (${concessionariaId || '-'})`}
             </p>
           </div>
 
@@ -691,10 +691,10 @@ export default function PlanosPagamento() {
         {isAdminStark && (
           <div className="table-wrap" style={{ marginBottom: 14 }}>
             <div style={{ padding: 14 }}>
-              <div style={{ fontWeight: 800, marginBottom: 10 }}>Protótipo — Planos de Pagamento + Visibilidade</div>
+              <div style={{ fontWeight: 800, marginBottom: 10 }}>ProtÃ³tipo â€” Planos de Pagamento + Visibilidade</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Selecionar protótipo</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Selecionar protÃ³tipo</div>
                   <select
                     className="inp"
                     value={protoSelectedId}
@@ -704,20 +704,20 @@ export default function PlanosPagamento() {
                     <option value="">-- Selecione --</option>
                     {(protoGuindastes || []).map(g => (
                       <option key={g.id} value={g.id}>
-                        {g.codigo_referencia ? `${g.codigo_referencia} — ` : ''}{g.subgrupo} {g.modelo}{g.prototipo_label ? ` (${g.prototipo_label})` : ''}
+                        {g.codigo_referencia ? `${g.codigo_referencia} â€” ` : ''}{g.subgrupo} {g.modelo}{g.prototipo_label ? ` (${g.prototipo_label})` : ''}
                       </option>
                     ))}
                   </select>
                   {protoInfo?.id ? (
                     <div style={{ marginTop: 6, fontSize: 12, color: '#374151' }}>
-                      Set publicado do protótipo: {protoInfo?.prototipo_payment_set_id ? 'Sim' : 'Não'}
+                      Set publicado do protÃ³tipo: {protoInfo?.prototipo_payment_set_id ? 'Sim' : 'NÃ£o'}
                     </div>
                   ) : null}
                 </div>
 
                 {protoSelectedId ? (
                   <div>
-                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Vendedores habilitados (CTRL para múltiplos)</div>
+                    <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 6 }}>Vendedores habilitados (CTRL para mÃºltiplos)</div>
                     <select
                       multiple
                       className="inp"
@@ -742,13 +742,13 @@ export default function PlanosPagamento() {
                 {protoSelectedId ? (
                   <div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
-                      <button className="btn primary" onClick={protoEnsureDraft} disabled={isLoading}>Editar planos do protótipo</button>
-                      <button className="btn success" onClick={protoPublishDraft} disabled={isLoading || !protoDraftSetId}>Publicar planos do protótipo</button>
+                      <button className="btn primary" onClick={protoEnsureDraft} disabled={isLoading}>Editar planos do protÃ³tipo</button>
+                      <button className="btn success" onClick={protoPublishDraft} disabled={isLoading || !protoDraftSetId}>Publicar planos do protÃ³tipo</button>
                       <button className="btn" onClick={() => setProtoIsEditing(false)} disabled={isLoading}>Sair</button>
                     </div>
 
                     <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 10 }}>
-                      Rascunho: {protoDraftSetId ? 'Sim' : 'Não'} | Publicado: {protoPublishedSetId ? 'Sim' : 'Não'} | Modo: {protoIsEditing ? 'Editando rascunho' : 'Visualizando publicado'}
+                      Rascunho: {protoDraftSetId ? 'Sim' : 'NÃ£o'} | Publicado: {protoPublishedSetId ? 'Sim' : 'NÃ£o'} | Modo: {protoIsEditing ? 'Editando rascunho' : 'Visualizando publicado'}
                     </div>
 
                     <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
@@ -761,7 +761,7 @@ export default function PlanosPagamento() {
                           <tr>
                             <th>Ativo</th>
                             <th>Ordem</th>
-                            <th>Descrição</th>
+                            <th>DescriÃ§Ã£o</th>
                             <th>Parcelas</th>
                             <th>Desc. (%)</th>
                             <th>Acr. (%)</th>
@@ -772,7 +772,7 @@ export default function PlanosPagamento() {
                         <tbody>
                           {protoItems.length === 0 ? (
                             <tr>
-                              <td colSpan={8} className="empty">{protoIsEditing ? 'Nenhum plano no rascunho do protótipo para esta audiência/entrada.' : 'Edite para visualizar os planos do protótipo.'}</td>
+                              <td colSpan={8} className="empty">{protoIsEditing ? 'Nenhum plano no rascunho do protÃ³tipo para esta audiÃªncia/entrada.' : 'Edite para visualizar os planos do protÃ³tipo.'}</td>
                             </tr>
                           ) : protoItems.map((it, idx) => (
                             <tr key={it.id || `proto-new-${idx}`}>
@@ -849,8 +849,8 @@ export default function PlanosPagamento() {
         )}
 
         <div className="planos-meta">
-          <div className="meta-item"><span className="k">Publicado:</span><span className="v">{publishedSetId ? 'Sim' : 'Não'}</span></div>
-          <div className="meta-item"><span className="k">Rascunho:</span><span className="v">{draftSetId ? 'Sim' : 'Não'}</span></div>
+          <div className="meta-item"><span className="k">Publicado:</span><span className="v">{publishedSetId ? 'Sim' : 'NÃ£o'}</span></div>
+          <div className="meta-item"><span className="k">Rascunho:</span><span className="v">{draftSetId ? 'Sim' : 'NÃ£o'}</span></div>
           <div className="meta-item"><span className="k">Modo:</span><span className="v">{isEditing ? 'Editando rascunho' : 'Visualizando publicado'}</span></div>
         </div>
 
@@ -888,7 +888,7 @@ export default function PlanosPagamento() {
               <tr>
                 <th>Ativo</th>
                 <th>Ordem</th>
-                <th>Descrição</th>
+                <th>DescriÃ§Ã£o</th>
                 <th>Parcelas</th>
                 <th>Desc. (%)</th>
                 <th>Acr. (%)</th>
@@ -899,7 +899,7 @@ export default function PlanosPagamento() {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="empty">{isEditing ? 'Nenhum plano no rascunho para esta audiência/entrada.' : 'Nenhum plano publicado para esta audiência/entrada.'}</td>
+                  <td colSpan={8} className="empty">{isEditing ? 'Nenhum plano no rascunho para esta audiÃªncia/entrada.' : 'Nenhum plano publicado para esta audiÃªncia/entrada.'}</td>
                 </tr>
               ) : items.map((it, idx) => (
                 <tr key={it.id || `new-${idx}`}>
@@ -975,3 +975,7 @@ export default function PlanosPagamento() {
     </div>
   );
 }
+
+
+
+

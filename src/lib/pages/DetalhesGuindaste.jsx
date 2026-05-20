@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import '../styles/DetalhesGuindaste.css';
-import UnifiedHeader from '../components/UnifiedHeader';
+import '../../styles/DetalhesGuindaste.css';
+import UnifiedHeader from '../../components/UnifiedHeader';
 
 const DetalhesGuindaste = () => {
   const navigate = useNavigate();
@@ -12,13 +12,13 @@ const DetalhesGuindaste = () => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [user, setUser] = useState(null);
 
-  // Verificar usuário logado
+  // Verificar usuÃ¡rio logado
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
     } else {
-      console.error('❌ Nenhum usuário encontrado, redirecionando para login');
+      console.error('âŒ Nenhum usuÃ¡rio encontrado, redirecionando para login');
       navigate('/');
     }
   }, [navigate]);
@@ -26,7 +26,7 @@ const DetalhesGuindaste = () => {
   // Verificar se tem dados do guindaste
   useEffect(() => {
     if (!guindaste) {
-      console.warn('⚠️ Nenhum guindaste selecionado, redirecionando...');
+      console.warn('âš ï¸ Nenhum guindaste selecionado, redirecionando...');
       navigate(location.state?.returnTo || '/novo-pedido', { replace: true });
     }
   }, [guindaste, navigate, location.state?.returnTo]);
@@ -91,24 +91,24 @@ const DetalhesGuindaste = () => {
         subtitle={guindaste?.subgrupo}
       />
       <div className="detalhes-content">
-        {/* Header substituído por UnifiedHeader */}
+        {/* Header substituÃ­do por UnifiedHeader */}
 
-        {/* Informações do Guindaste */}
+        {/* InformaÃ§Ãµes do Guindaste */}
         <div className="guindaste-info-section">
           <h2>{guindaste.subgrupo}</h2>
           <div className="guindaste-meta">
             <span className="modelo">Modelo: {guindaste.modelo}</span>
-            <span className="peso">Configuração de Lanças: {guindaste.peso_kg || 'N/A'}</span>
-            <span className="configuracao">{guindaste.configuração}</span>
+            <span className="peso">configuracao de Lanças: {guindaste.peso_kg || 'N/A'}</span>
+            <span className="configuracao">{guindaste.configuracao}</span>
           </div>
         </div>
 
-        {/* O que NÃO está incluído */}
+        {/* O que NÃƒO estÃ¡ incluÃ­do */}
         {guindaste.nao_incluido && (
           <div className="nao-incluido-section">
             <div className="nao-incluido-content">
-              <span className="nao-incluido-icon">⚠️</span>
-              <p><strong>Não está incluído:</strong> {guindaste.nao_incluido}</p>
+              <span className="nao-incluido-icon">âš ï¸</span>
+              <p><strong>NÃ£o estÃ¡ incluÃ­do:</strong> {guindaste.nao_incluido}</p>
             </div>
           </div>
         )}
@@ -126,8 +126,8 @@ const DetalhesGuindaste = () => {
               />
             ) : (
               <div className="sem-foto">
-                <span>📷</span>
-                <p>Nenhuma foto disponível</p>
+                <span>ðŸ“·</span>
+                <p>Nenhuma foto disponÃ­vel</p>
               </div>
             )}
           </div>
@@ -152,28 +152,28 @@ const DetalhesGuindaste = () => {
           </div>
         )}
 
-        {/* Descrição Técnica */}
+        {/* DescriÃ§Ã£o TÃ©cnica */}
         <div className="descricao-section">
-          <h3>Descrição Técnica</h3>
+          <h3>DescriÃ§Ã£o TÃ©cnica</h3>
           <div className="descricao-content">
             {guindaste.descricao ? (
               <p>{guindaste.descricao}</p>
             ) : (
               <p className="sem-descricao">
-                <span>📝</span>
-                Nenhuma descrição técnica cadastrada para este equipamento.
+                <span>ðŸ“</span>
+                Nenhuma descriÃ§Ã£o tÃ©cnica cadastrada para este equipamento.
               </p>
             )}
           </div>
         </div>
 
-        {/* Botão Continuar */}
+        {/* BotÃ£o Continuar */}
         <div className="acoes-section">
           <button onClick={handleContinuar} className="continuar-btn">
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
             </svg>
-            Continuar para Política de Pagamento
+            Continuar para PolÃ­tica de Pagamento
           </button>
         </div>
       </div>
@@ -182,7 +182,7 @@ const DetalhesGuindaste = () => {
       {showImageModal && (
         <div className="image-modal-overlay" onClick={closeImageModal}>
           <div className="image-modal-content" onClick={(e) => e.stopPropagation()}>
-            <button onClick={closeImageModal} className="close-modal-btn">×</button>
+            <button onClick={closeImageModal} className="close-modal-btn">Ã—</button>
             
             <div className="modal-image-container">
               <button onClick={prevImage} className="nav-btn prev-btn">
@@ -221,3 +221,7 @@ const DetalhesGuindaste = () => {
 };
 
 export default DetalhesGuindaste;
+
+
+
+

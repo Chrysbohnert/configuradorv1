@@ -1,11 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { formatCurrency } from '../utils/formatters';
+﻿import React, { useEffect, useMemo, useState } from 'react';
+import { formatCurrency } from '../../utils/formatters';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import { db } from '../config/supabase';
-import { getPropostas } from '../api/propostas';
-import { normalizarRegiaoPorUF } from '../utils/regiaoHelper';
-import '../styles/GerenciarVendedores.css';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import { db } from '../../config/supabase';
+import { getPropostas } from '../../api/propostas';
+import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
+import '../../styles/GerenciarVendedores.css';
 
 const GerenciarVendedores = () => {
   const navigate = useNavigate();
@@ -77,7 +77,7 @@ const GerenciarVendedores = () => {
 
       setVendedores(vendedoresComVendas);
     } catch {
-      alert('Erro ao carregar vendedores. Verifique a conexão com o banco.');
+      alert('Erro ao carregar vendedores. Verifique a conexÃ£o com o banco.');
     } finally {
       setIsLoading(false);
     }
@@ -99,7 +99,7 @@ const GerenciarVendedores = () => {
 
       if (isAdminConcessionaria) {
         if (!concessionariaId) {
-          alert('Erro: este admin não está vinculado a nenhuma concessionária.');
+          alert('Erro: este admin nÃ£o estÃ¡ vinculado a nenhuma concessionÃ¡ria.');
           return;
         }
 
@@ -107,8 +107,8 @@ const GerenciarVendedores = () => {
         const regiaoNorm = c?.regiao_preco || normalizarRegiaoPorUF(c?.uf);
 
         const labelPorRegiao = {
-          'rs-com-ie': 'RS com Inscrição Estadual',
-          'rs-sem-ie': 'RS sem Inscrição Estadual',
+          'rs-com-ie': 'RS com InscriÃ§Ã£o Estadual',
+          'rs-sem-ie': 'RS sem InscriÃ§Ã£o Estadual',
           'centro-oeste': 'Centro-Oeste',
           'norte-nordeste': 'Norte-Nordeste',
           'sul-sudeste': 'Sul-Sudeste',
@@ -305,7 +305,7 @@ const GerenciarVendedores = () => {
 
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
 
-  const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const MESES_NOMES = ['Janeiro','Fevereiro','MarÃ§o','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
   return (
     <>
@@ -326,7 +326,7 @@ const GerenciarVendedores = () => {
 
             <div className="vendedores-hero-top">
               <div className="hero-copy">
-                <span className="hero-eyebrow">Gestão de equipe</span>
+                <span className="hero-eyebrow">GestÃ£o de equipe</span>
                 <h1>Vendedores</h1>
                 <p>Organize contatos, acompanhe a equipe e gerencie cadastros com uma interface mais elegante.</p>
               </div>
@@ -374,7 +374,7 @@ const GerenciarVendedores = () => {
               <div className="hero-kpi-card">
                 <span className="hero-kpi-label">Ativos em vendas</span>
                 <strong>{resumo.comVendas}</strong>
-                <small>com movimentação</small>
+                <small>com movimentaÃ§Ã£o</small>
               </div>
 
               <div className="hero-kpi-card">
@@ -425,7 +425,7 @@ const GerenciarVendedores = () => {
 
                         <div className="vendedor-status-row">
                           <span className={`soft-status ${(vendedor.vendas || 0) > 0 ? 'success' : 'neutral'}`}>
-                            {(vendedor.vendas || 0) > 0 ? 'Com movimentação' : 'Sem vendas'}
+                            {(vendedor.vendas || 0) > 0 ? 'Com movimentaÃ§Ã£o' : 'Sem vendas'}
                           </span>
 
                           {vendedor.regiao && (
@@ -446,12 +446,12 @@ const GerenciarVendedores = () => {
                       <div className="info-grid">
                         <div className="info-item">
                           <span className="info-label">Telefone</span>
-                          <span className="info-value">{vendedor.telefone || 'Não informado'}</span>
+                          <span className="info-value">{vendedor.telefone || 'NÃ£o informado'}</span>
                         </div>
 
                         <div className="info-item">
                           <span className="info-label">CPF</span>
-                          <span className="info-value">{vendedor.cpf || 'Não informado'}</span>
+                          <span className="info-value">{vendedor.cpf || 'NÃ£o informado'}</span>
                         </div>
                       </div>
                     </div>
@@ -579,22 +579,22 @@ const GerenciarVendedores = () => {
             <div className="modal-content modal-content-premium" style={{ maxWidth: 680 }} onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h2>🎯 Metas — {metasModal.vendedor?.nome}</h2>
-                  <p className="modal-subtitle">Defina a meta de propostas e de valor de vendas para cada mês.</p>
+                  <h2>ðŸŽ¯ Metas â€” {metasModal.vendedor?.nome}</h2>
+                  <p className="modal-subtitle">Defina a meta de propostas e de valor de vendas para cada mÃªs.</p>
                 </div>
-                <button type="button" className="close-modal-btn" onClick={() => setMetasModal({ open: false, vendedor: null })}>✕</button>
+                <button type="button" className="close-modal-btn" onClick={() => setMetasModal({ open: false, vendedor: null })}>âœ•</button>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 0 16px 0' }}>
                 <label style={{ fontWeight: 700, fontSize: 14, color: '#475569' }}>Ano:</label>
-                <button onClick={() => handleMetasAnoChange(metasAno - 1)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>‹</button>
+                <button onClick={() => handleMetasAnoChange(metasAno - 1)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>â€¹</button>
                 <span style={{ fontWeight: 800, fontSize: 18, color: '#0f172a', minWidth: 50, textAlign: 'center' }}>{metasAno}</span>
-                <button onClick={() => handleMetasAnoChange(metasAno + 1)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>›</button>
+                <button onClick={() => handleMetasAnoChange(metasAno + 1)} style={{ background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontWeight: 700 }}>â€º</button>
               </div>
 
               <div style={{ display: 'grid', gap: 8, maxHeight: 420, overflowY: 'auto', paddingRight: 4 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr 1fr', gap: 8, padding: '6px 10px', background: '#f8fafc', borderRadius: 10, fontSize: 12, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                  <span>Mês</span>
+                  <span>MÃªs</span>
                   <span>Propostas (qtd)</span>
                   <span>Valor de Vendas (R$)</span>
                 </div>
@@ -643,7 +643,7 @@ const GerenciarVendedores = () => {
                   <h2>{editingVendedor ? 'Editar Vendedor' : 'Novo Vendedor'}</h2>
                   <p className="modal-subtitle">
                     {editingVendedor
-                      ? 'Atualize as informações do vendedor.'
+                      ? 'Atualize as informaÃ§Ãµes do vendedor.'
                       : 'Preencha os dados para cadastrar um novo vendedor.'}
                   </p>
                 </div>
@@ -704,7 +704,7 @@ const GerenciarVendedores = () => {
 
                   {!isAdminConcessionaria && (
                     <div className="form-group">
-                      <label htmlFor="tipo">Tipo de Usuário *</label>
+                      <label htmlFor="tipo">Tipo de UsuÃ¡rio *</label>
                       <select
                         id="tipo"
                         value={formData.tipo || 'vendedor'}
@@ -719,38 +719,38 @@ const GerenciarVendedores = () => {
 
                   {!isAdminConcessionaria && (
                     <div className="form-group form-group-full">
-                      <label htmlFor="regiao">Região Principal * (Grupo de Região)</label>
+                      <label htmlFor="regiao">RegiÃ£o Principal * (Grupo de RegiÃ£o)</label>
                       <select
                         id="regiao"
                         value={formData.regiao || ''}
                         onChange={(e) => handleInputChange('regiao', e.target.value)}
                         required
                       >
-                        <option value="">Selecione a região</option>
+                        <option value="">Selecione a regiÃ£o</option>
                         <option value="Norte-Nordeste">Norte-Nordeste (Estados do Norte e Nordeste)</option>
                         <option value="Centro-Oeste">Centro-Oeste (MT, MS, GO, DF)</option>
                         <option value="Sul-Sudeste">Sul-Sudeste (PR, SC, SP, RJ, MG, ES - exceto RS)</option>
-                        <option value="RS com Inscrição Estadual">RS com Inscrição Estadual (🚜 Produtor Rural)</option>
-                        <option value="RS sem Inscrição Estadual">RS sem Inscrição Estadual (📄 CNPJ/CPF)</option>
-                        <option value="Comércio Exterior">Comércio Exterior (🌐 Exportação / USD)</option>
+                        <option value="RS com InscriÃ§Ã£o Estadual">RS com InscriÃ§Ã£o Estadual (ðŸšœ Produtor Rural)</option>
+                        <option value="RS sem InscriÃ§Ã£o Estadual">RS sem InscriÃ§Ã£o Estadual (ðŸ“„ CNPJ/CPF)</option>
+                        <option value="ComÃ©rcio Exterior">ComÃ©rcio Exterior (ðŸŒ ExportaÃ§Ã£o / USD)</option>
                       </select>
                       <small className="form-help">
-                        Selecione o grupo de região principal. Ele será o padrão do vendedor.
+                        Selecione o grupo de regiÃ£o principal. Ele serÃ¡ o padrÃ£o do vendedor.
                       </small>
                     </div>
                   )}
 
                   {!isAdminConcessionaria && (
                     <div className="form-group form-group-full">
-                      <label>Regiões de Operação (para vendedores internos)</label>
+                      <label>RegiÃµes de OperaÃ§Ã£o (para vendedores internos)</label>
                       <div className="regiao-cards">
                         {[
                           { id: 'norte-nordeste', label: 'Norte-Nordeste', desc: 'Estados do Norte e Nordeste' },
                           { id: 'centro-oeste', label: 'Centro-Oeste', desc: 'MT, MS, GO, DF' },
                           { id: 'sul-sudeste', label: 'Sul-Sudeste', desc: 'PR, SC, SP, RJ, MG, ES (exceto RS)' },
-                          { id: 'rs-com-ie', label: 'RS com Inscrição Estadual', desc: '🚜 Produtor Rural (com IE)' },
-                          { id: 'rs-sem-ie', label: 'RS sem Inscrição Estadual', desc: '📄 CNPJ/CPF (sem IE)' },
-                          { id: 'comercio-exterior', label: 'Comércio Exterior', desc: '🌐 Exportação / Preços USD' },
+                          { id: 'rs-com-ie', label: 'RS com InscriÃ§Ã£o Estadual', desc: 'ðŸšœ Produtor Rural (com IE)' },
+                          { id: 'rs-sem-ie', label: 'RS sem InscriÃ§Ã£o Estadual', desc: 'ðŸ“„ CNPJ/CPF (sem IE)' },
+                          { id: 'comercio-exterior', label: 'ComÃ©rcio Exterior', desc: 'ðŸŒ ExportaÃ§Ã£o / PreÃ§os USD' },
                         ].map((regiao) => {
                           const active = formData.regioes_operacao?.includes(regiao.label);
 
@@ -783,7 +783,7 @@ const GerenciarVendedores = () => {
                       </div>
 
                       <small className="form-help">
-                        Selecione os grupos de região que este vendedor pode atender.
+                        Selecione os grupos de regiÃ£o que este vendedor pode atender.
                       </small>
                     </div>
                   )}
@@ -800,7 +800,7 @@ const GerenciarVendedores = () => {
                         placeholder={
                           editingVendedor
                             ? 'Deixe vazio para manter a senha atual'
-                            : 'Senha padrão: vendedor123'
+                            : 'Senha padrÃ£o: vendedor123'
                         }
                       />
                       <button
@@ -809,13 +809,13 @@ const GerenciarVendedores = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         title={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
                       >
-                        {showPassword ? '👁️' : '👁️‍🗨️'}
+                        {showPassword ? 'ðŸ‘ï¸' : 'ðŸ‘ï¸â€ðŸ—¨ï¸'}
                       </button>
                     </div>
                     <small className="form-help">
                       {editingVendedor
                         ? 'Digite uma nova senha ou deixe em branco para manter a atual.'
-                        : 'Senha padrão para primeiro acesso. O vendedor poderá alterar depois.'}
+                        : 'Senha padrÃ£o para primeiro acesso. O vendedor poderÃ¡ alterar depois.'}
                     </small>
                   </div>
                 </div>
@@ -825,7 +825,7 @@ const GerenciarVendedores = () => {
                     Cancelar
                   </button>
                   <button type="submit" className="save-btn">
-                    {editingVendedor ? 'Salvar Alterações' : 'Cadastrar Vendedor'}
+                    {editingVendedor ? 'Salvar AlteraÃ§Ãµes' : 'Cadastrar Vendedor'}
                   </button>
                 </div>
               </form>
@@ -838,8 +838,8 @@ const GerenciarVendedores = () => {
             <div className="modal-content modal-content-premium modal-sm" onClick={(e) => e.stopPropagation()}>
               <div className="modal-header">
                 <div>
-                  <h2>Confirmar Remoção</h2>
-                  <p className="modal-subtitle">Esta ação não poderá ser desfeita.</p>
+                  <h2>Confirmar RemoÃ§Ã£o</h2>
+                  <p className="modal-subtitle">Esta aÃ§Ã£o nÃ£o poderÃ¡ ser desfeita.</p>
                 </div>
                 <button
                   onClick={() => setConfirmDelete({ open: false, id: null, nome: '' })}
@@ -891,3 +891,6 @@ const GerenciarVendedores = () => {
 };
 
 export default GerenciarVendedores;
+
+
+

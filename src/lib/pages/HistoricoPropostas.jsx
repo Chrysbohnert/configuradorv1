@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../config/supabase';
-import { getPropostas, deletePropostaPermanente, updateResultadoVendaProposta } from '../api/propostas';
-import { formatCurrency } from '../utils/formatters';
-import { getCurrentUser } from '../utils/auth';
+import { db } from '../../config/supabase';
+import { getPropostas, deletePropostaPermanente, updateResultadoVendaProposta } from '../../api/propostas';
+import { formatCurrency } from '../../utils/formatters';
+import { getCurrentUser } from '../../utils/auth';
 
 /**
- * Página de Histórico de Propostas e Orçamentos
+ * PÃ¡gina de HistÃ³rico de Propostas e OrÃ§amentos
  */
 const HistoricoPropostas = () => {
   const navigate = useNavigate();
@@ -42,7 +42,7 @@ const HistoricoPropostas = () => {
     const raw = String(numero || '').trim();
     if (!raw) return '';
 
-    // Padronizar números gerados como PEDxxxxxxx para um formato curto e legível
+    // Padronizar nÃºmeros gerados como PEDxxxxxxx para um formato curto e legÃ­vel
     // Ex: PED9654089 -> 9654089
     if (/^PED\d+$/i.test(raw)) {
       return raw.replace(/^PED/i, '');
@@ -105,20 +105,20 @@ const HistoricoPropostas = () => {
       setPropostas(data);
     } catch (error) {
       console.error('Erro ao carregar propostas:', error);
-      alert('Erro ao carregar histórico de propostas');
+      alert('Erro ao carregar histÃ³rico de propostas');
     } finally {
       setLoading(false);
     }
   };
 
   const handleExcluir = async (id, numeroProposta) => {
-    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta ação não pode ser desfeita e os dados serão removidos do banco.`)) {
+    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita e os dados serÃ£o removidos do banco.`)) {
       return;
     }
 
     try {
       await deletePropostaPermanente(id);
-      alert('Proposta excluída com sucesso!');
+      alert('Proposta excluÃ­da com sucesso!');
       carregarPropostas();
     } catch (error) {
       console.error('Erro ao excluir proposta:', error);
@@ -127,7 +127,7 @@ const HistoricoPropostas = () => {
   };
 
   const handleReabrir = (proposta) => {
-    // Navegar para modo edição passando o ID da proposta na URL
+    // Navegar para modo ediÃ§Ã£o passando o ID da proposta na URL
     navigate(`/novo-pedido/${proposta.id}`);
   };
 
@@ -208,7 +208,7 @@ const HistoricoPropostas = () => {
     const styles = {
       pendente: { bg: '#fff3cd', color: '#856404', label: 'Pendente' },
       finalizado: { bg: '#d4edda', color: '#155724', label: 'Finalizado' },
-      excluido: { bg: '#f8d7da', color: '#721c24', label: 'Excluído' }
+      excluido: { bg: '#f8d7da', color: '#721c24', label: 'ExcluÃ­do' }
     };
     
     const style = styles[status] || styles.pendente;
@@ -229,7 +229,7 @@ const HistoricoPropostas = () => {
 
   const getTipoBadge = (tipo) => {
     const styles = {
-      orcamento: { bg: '#e3f2fd', color: '#0d47a1', label: ' Orçamento',  },
+      orcamento: { bg: '#e3f2fd', color: '#0d47a1', label: ' OrÃ§amento',  },
       proposta: { bg: '#f3e5f5', color: '#4a148c', label: ' Proposta',  }
     };
     
@@ -252,8 +252,8 @@ const HistoricoPropostas = () => {
   if (loading) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
-        <p style={{ color: '#666' }}>Carregando histórico...</p>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>â³</div>
+        <p style={{ color: '#666' }}>Carregando histÃ³rico...</p>
       </div>
     );
   }
@@ -266,7 +266,7 @@ const HistoricoPropostas = () => {
           Propostas
         </h1>
         <p style={{ color: '#000000', fontSize: '14px' }}>
-          Gerencie seus orçamentos e propostas comerciais. Edite orçamentos pendentes ou consulte propostas finalizadas.
+          Gerencie seus orÃ§amentos e propostas comerciais. Edite orÃ§amentos pendentes ou consulte propostas finalizadas.
         </p>
       </div>
 
@@ -289,7 +289,7 @@ const HistoricoPropostas = () => {
             type="text"
             value={busca}
             onChange={(e) => setBusca(e.target.value)}
-            placeholder="Nº, cliente ou vendedor..."
+            placeholder="NÂº, cliente ou vendedor..."
             style={{
               width: '100%',
               padding: '8px 12px',
@@ -338,7 +338,7 @@ const HistoricoPropostas = () => {
               cursor: 'pointer'
             }}
           >
-            🔄
+            ðŸ”„
           </button>
         </div>
       </div>
@@ -352,7 +352,7 @@ const HistoricoPropostas = () => {
           textAlign: 'center',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
-          <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3 }}>📋</div>
+          <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3 }}>ðŸ“‹</div>
           <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
             Nenhuma proposta encontrada
           </h3>
@@ -444,7 +444,7 @@ const HistoricoPropostas = () => {
                           fontWeight: '600',
                           cursor: 'pointer'
                         }}
-                        title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
+                        title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar ediÃ§Ã£o'}
                       >
                         Editar
                       </button>
@@ -483,12 +483,12 @@ const HistoricoPropostas = () => {
                     }}
                     title="Excluir proposta permanentemente"
                   >
-                    ❌
+                    âŒ
                   </button>
 
                   {proposta.status === 'excluido' && (
                     <span style={{ fontSize: '12px', color: '#999' }}>
-                      Excluída
+                      ExcluÃ­da
                     </span>
                   )}
                 </div>
@@ -508,7 +508,7 @@ const HistoricoPropostas = () => {
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                   <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Nº Proposta
+                    NÂº Proposta
                   </th>
                   <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
                     Cliente
@@ -523,7 +523,7 @@ const HistoricoPropostas = () => {
                     Resultado
                   </th>
                   <th style={{ padding: '11px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Ações
+                    AÃ§Ãµes
                   </th>
                 </tr>
               </thead>
@@ -578,12 +578,12 @@ const HistoricoPropostas = () => {
                               style={{ padding: '5px 10px', background: '#d3d3d3', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
                               title="Excluir proposta"
                             >
-                              ❌
+                              âŒ
                             </button>
                           </>
                         )}
                         {proposta.status === 'excluido' && (
-                          <span style={{ fontSize: '12px', color: '#d3d3d3' }}>Excluída</span>
+                          <span style={{ fontSize: '12px', color: '#d3d3d3' }}>ExcluÃ­da</span>
                         )}
                       </div>
                     </td>
@@ -621,7 +621,7 @@ const HistoricoPropostas = () => {
             cursor: 'pointer'
           }}
         >
-          ➕ Nova Proposta
+          âž• Nova Proposta
         </button>
       </div>
 
@@ -664,7 +664,7 @@ const HistoricoPropostas = () => {
                   Resultado da Proposta
                 </div>
                 <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
-                  #{formatNumeroProposta(propostaSelecionada?.numero_proposta)} • {propostaSelecionada?.cliente_nome}
+                  #{formatNumeroProposta(propostaSelecionada?.numero_proposta)} â€¢ {propostaSelecionada?.cliente_nome}
                 </div>
               </div>
               <button
@@ -682,7 +682,7 @@ const HistoricoPropostas = () => {
                 }}
                 title="Fechar"
               >
-                ✕
+                âœ•
               </button>
             </div>
 
@@ -710,8 +710,8 @@ const HistoricoPropostas = () => {
                       textAlign: 'left'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>⏳ Sem resultado</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>â³ Sem resultado</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Ainda em negociaÃ§Ã£o / sem definiÃ§Ã£o.</div>
                   </button>
 
                   <button
@@ -726,8 +726,8 @@ const HistoricoPropostas = () => {
                       textAlign: 'left'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>✅ Efetivada</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Virou venda. Entra no cálculo de conversão do admin.</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>âœ… Efetivada</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Virou venda. Entra no cÃ¡lculo de conversÃ£o do admin.</div>
                   </button>
 
                   <button
@@ -742,8 +742,8 @@ const HistoricoPropostas = () => {
                       textAlign: 'left'
                     }}
                   >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>❌ Perdida</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
+                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>âŒ Perdida</div>
+                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>NÃ£o virou venda. Informe o motivo (curto) abaixo.</div>
                   </button>
                 </div>
               </div>
@@ -757,7 +757,7 @@ const HistoricoPropostas = () => {
                   onChange={(e) => setMotivoPerda(e.target.value)}
                   disabled={salvandoResultado || resultadoSelecionado !== 'perdida'}
                   maxLength={140}
-                  placeholder={resultadoSelecionado === 'perdida' ? 'Ex: preço alto, prazo, concorrência, desistiu...' : '—'}
+                  placeholder={resultadoSelecionado === 'perdida' ? 'Ex: preÃ§o alto, prazo, concorrÃªncia, desistiu...' : 'â€”'}
                   style={{
                     width: '100%',
                     padding: '10px 12px',
@@ -770,7 +770,7 @@ const HistoricoPropostas = () => {
                 />
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>
                   <span>
-                    {resultadoSelecionado === 'perdida' ? 'Obrigatório' : 'Desabilitado'}
+                    {resultadoSelecionado === 'perdida' ? 'ObrigatÃ³rio' : 'Desabilitado'}
                   </span>
                   <span>
                     {(motivoPerda || '').length}/140
@@ -829,3 +829,7 @@ const HistoricoPropostas = () => {
 };
 
 export default HistoricoPropostas;
+
+
+
+

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { showError } from '../utils/errorHandler';
-import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
-import '../styles/Login.css';
+import { showError } from '../../utils/errorHandler';
+import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../../utils/rateLimiter';
+import '../../styles/Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -25,21 +25,21 @@ const Login = () => {
     if (!isConcessionariaUser) return true;
 
     if (!user.concessionaria_id) {
-      setError('Usuário de concessionária sem vínculo. Contate o administrador.');
+      setError('UsuÃ¡rio de concessionÃ¡ria sem vÃ­nculo. Contate o administrador.');
       return false;
     }
 
-    // TODO: endpoint GET /api/concessionarias/:id ainda não implementado
-    // Quando disponível, descomentar o bloco abaixo:
+    // TODO: endpoint GET /api/concessionarias/:id ainda nÃ£o implementado
+    // Quando disponÃ­vel, descomentar o bloco abaixo:
     // try {
     //   const res = await fetch(`https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${user.concessionaria_id}`);
     //   const data = await res.json();
     //   if (data?.data?.ativo === false) {
-    //     setError('Concessionária inativa. Contate o administrador Stark.');
+    //     setError('ConcessionÃ¡ria inativa. Contate o administrador Stark.');
     //     return false;
     //   }
     // } catch (e) {
-    //   console.error('Erro ao validar concessionária:', e);
+    //   console.error('Erro ao validar concessionÃ¡ria:', e);
     // }
 
     return true;
@@ -85,7 +85,7 @@ const Login = () => {
 
       if (!response.ok || !data.success) {
         recordLoginAttempt(clientIP, email, false);
-        setError(data.error || 'Credenciais inválidas');
+        setError(data.error || 'Credenciais invÃ¡lidas');
         return;
       }
 
@@ -111,7 +111,7 @@ const Login = () => {
       }
     } catch (err) {
       const errorInfo = showError(err, 'Login');
-      setError(errorInfo.message || 'Erro de conexão. Tente novamente.');
+      setError(errorInfo.message || 'Erro de conexÃ£o. Tente novamente.');
       recordLoginAttempt(getClientIP(), formData.email, false);
     } finally {
       setIsLoading(false);
@@ -120,10 +120,10 @@ const Login = () => {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    setError('Recuperação de senha ainda não disponível. Contate o administrador.');
+    setError('RecuperaÃ§Ã£o de senha ainda nÃ£o disponÃ­vel. Contate o administrador.');
   };
 
-  const bgImage = encodeURI('/páginas do pdf/CAPA-1.jpg');
+  const bgImage = encodeURI('/pÃ¡ginas do pdf/CAPA-1.jpg');
 
   return (
     <div className="login-page">
@@ -135,7 +135,7 @@ const Login = () => {
         <div className="login-left-overlay" />
       </div>
 
-      {/* Painel Direito - Formulário */}
+      {/* Painel Direito - FormulÃ¡rio */}
       <div className="login-right">
         <div className="login-card">
           {/* Logo da marca */}
@@ -206,7 +206,7 @@ const Login = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.senha}
                       onChange={(e) => handleInputChange('senha', e.target.value)}
-                      placeholder="••••••••"
+                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                       required
                     />
                     <button
@@ -251,7 +251,7 @@ const Login = () => {
               </form>
 
               <div className="signup-row">
-                Não tem cadastro?{' '}
+                NÃ£o tem cadastro?{' '}
                 <a href="mailto:contato@starkguindastes.com.br">Solicitar acesso</a>
               </div>
             </>
@@ -259,7 +259,7 @@ const Login = () => {
             <>
               <div className="form-header">
                 <h2>Recuperar senha</h2>
-                <p>Digite seu email para receber o link de recuperação.</p>
+                <p>Digite seu email para receber o link de recuperaÃ§Ã£o.</p>
               </div>
 
               {error && (
@@ -308,7 +308,7 @@ const Login = () => {
                 <button type="submit" className="login-button" disabled={isLoading}>
                   {isLoading ? (
                     <><div className="loading-spinner" />Enviando...</>
-                  ) : 'Enviar Link de Recuperação'}
+                  ) : 'Enviar Link de RecuperaÃ§Ã£o'}
                 </button>
 
                 <button
@@ -316,7 +316,7 @@ const Login = () => {
                   className="back-btn"
                   onClick={() => { setShowForgotPassword(false); setError(''); setResetSuccess(false); }}
                 >
-                  ← Voltar para Login
+                  â† Voltar para Login
                 </button>
               </form>
             </>
@@ -324,7 +324,7 @@ const Login = () => {
         </div>
 
         <div className="login-footer">
-          © 2026 Stark Guindastes. Todos os direitos reservados.
+          Â© 2026 Stark Guindastes. Todos os direitos reservados.
         </div>
       </div>
     </div>
@@ -332,3 +332,7 @@ const Login = () => {
 };
 
 export default Login; 
+
+
+
+

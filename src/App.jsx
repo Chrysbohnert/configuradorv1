@@ -7,31 +7,31 @@ import { AuthProvider } from './contexts/AuthContext';
 import { CarrinhoProvider } from './contexts/CarrinhoContext';
 
 // ⚡ OTIMIZAÇÃO: Apenas Login carrega imediatamente (rota pública inicial)
-import Login from './pages/Login';
+import Login from './lib/pages/Login';
 
 // ⚡ OTIMIZAÇÃO: Todos os componentes admin e vendedor são lazy
 // Isso reduz o bundle inicial de ~800KB para ~200KB
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const VendedorLayout = lazy(() => import('./components/VendedorLayout'));
-const DashboardAdmin = lazy(() => import('./pages/DashboardAdmin'));
-const GerenciarVendedores = lazy(() => import('./pages/GerenciarVendedores'));
-const GerenciarGuindastes = lazy(() => import('./pages/GerenciarGuindastes'));
-const RelatorioCompleto = lazy(() => import('./pages/RelatorioCompleto'));
-const GerenciarGraficosCarga = lazy(() => import('./pages/GerenciarGraficosCarga'));
+const DashboardAdmin = lazy(() => import('./lib/pages/DashboardAdmin'));
+const GerenciarVendedores = lazy(() => import('./lib/pages/GerenciarVendedores'));
+const GerenciarGuindastes = lazy(() => import('./lib/pages/GerenciarGuindastes'));
+const RelatorioCompleto = lazy(() => import('./lib/pages/RelatorioCompleto'));
+const GerenciarGraficosCarga = lazy(() => import('./lib/pages/GerenciarGraficosCarga'));
 
-const Configuracoes = lazy(() => import('./pages/Configuracoes'));
-const AprovacoesDescontos = lazy(() => import('./pages/AprovacoesDescontos'));
-const Concessionarias = lazy(() => import('./pages/Concessionarias'));
-const PlanosPagamento = lazy(() => import('./pages/PlanosPagamento'));
-const DashboardVendedor = lazy(() => import('./pages/DashboardVendedor'));
-const NovoPedido = lazy(() => import('./pages/NovoPedido'));
-const Support = lazy(() => import('./pages/Support'));
-const GraficosCarga = lazy(() => import('./pages/GraficosCarga'));
-const DetalhesGuindaste = lazy(() => import('./pages/DetalhesGuindaste'));
-const HistoricoPropostas = lazy(() => import('./pages/HistoricoPropostas'));
-const VisualizarProposta = lazy(() => import('./pages/VisualizarProposta'));
-const CotacaoDolar = lazy(() => import('./pages/CotacaoDolar'));
-const EstoqueConcessionaria = lazy(() => import('./pages/EstoqueConcessionaria'));
+const Configuracoes = lazy(() => import('./lib/pages/Configuracoes'));
+const AprovacoesDescontos = lazy(() => import('./lib/pages/AprovacoesDescontos'));
+const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
+const PlanosPagamento = lazy(() => import('./lib/pages/PlanosPagamento'));
+const DashboardVendedor = lazy(() => import('./lib/pages/DashboardVendedor'));
+const NovoPedido = lazy(() => import('./lib/pages/NovoPedido'));
+const Support = lazy(() => import('./lib/pages/Support'));
+const GraficosCarga = lazy(() => import('./lib/pages/GraficosCarga'));
+const DetalhesGuindaste = lazy(() => import('./lib/pages/DetalhesGuindaste'));
+const HistoricoPropostas = lazy(() => import('./lib/pages/HistoricoPropostas'));
+const VisualizarProposta = lazy(() => import('./lib/pages/VisualizarProposta'));
+const CotacaoDolar = lazy(() => import('./lib/pages/CotacaoDolar'));
+const EstoqueConcessionaria = lazy(() => import('./lib/pages/EstoqueConcessionaria'));
 
 
 function App() {

@@ -1,15 +1,15 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../components/UnifiedHeader';
-import { db } from '../config/supabase';
+import UnifiedHeader from '../../components/UnifiedHeader';
+import { db } from '../../config/supabase';
 
 const Concessionarias = () => {
   const navigate = useNavigate();
   const { user } = useOutletContext();
 
   const REGIOES_PRECO = [
-    { value: 'rs-com-ie', label: 'RS com Inscrição Estadual' },
-    { value: 'rs-sem-ie', label: 'RS sem Inscrição Estadual' },
+    { value: 'rs-com-ie', label: 'RS com InscriÃ§Ã£o Estadual' },
+    { value: 'rs-sem-ie', label: 'RS sem InscriÃ§Ã£o Estadual' },
     { value: 'centro-oeste', label: 'Centro-Oeste' },
     { value: 'norte-nordeste', label: 'Norte-Nordeste' },
     { value: 'sul-sudeste', label: 'Sul-Sudeste' }
@@ -42,8 +42,8 @@ const Concessionarias = () => {
       const data = await db.getConcessionarias({ includeInactive: showInactive });
       setConcessionarias(data);
     } catch (e) {
-      console.error('Erro ao carregar concessionárias:', e);
-      alert('Erro ao carregar concessionárias.');
+      console.error('Erro ao carregar concessionÃ¡rias:', e);
+      alert('Erro ao carregar concessionÃ¡rias.');
     } finally {
       setIsLoading(false);
     }
@@ -125,22 +125,22 @@ const Concessionarias = () => {
 
   const handleToggleAtivo = async (c) => {
     if (user?.tipo !== 'admin') {
-      alert('Apenas Admin Stark pode ativar/inativar concessionárias.');
+      alert('Apenas Admin Stark pode ativar/inativar concessionÃ¡rias.');
       return;
     }
 
     const novoAtivo = !(c?.ativo === true);
     const acao = novoAtivo ? 'ativar' : 'inativar';
-    const ok = window.confirm(`Tem certeza que deseja ${acao} a concessionária "${c.nome}"?`);
+    const ok = window.confirm(`Tem certeza que deseja ${acao} a concessionÃ¡ria "${c.nome}"?`);
     if (!ok) return;
 
     try {
       setIsLoading(true);
       await db.updateConcessionaria(c.id, { ativo: novoAtivo });
       await loadConcessionarias();
-      alert(`Concessionária ${novoAtivo ? 'ativada' : 'inativada'} com sucesso!`);
+      alert(`ConcessionÃ¡ria ${novoAtivo ? 'ativada' : 'inativada'} com sucesso!`);
     } catch (e) {
-      console.error('Erro ao ativar/inativar concessionária:', {
+      console.error('Erro ao ativar/inativar concessionÃ¡ria:', {
         message: e?.message,
         details: e?.details,
         hint: e?.hint,
@@ -158,14 +158,14 @@ const Concessionarias = () => {
     e.preventDefault();
 
     if (user?.tipo !== 'admin') {
-      alert('Apenas Admin Stark pode cadastrar concessionárias.');
+      alert('Apenas Admin Stark pode cadastrar concessionÃ¡rias.');
       return;
     }
 
     const regiao_preco = (formData.regiao_preco || '').trim();
     const regiaoValida = REGIOES_PRECO.some(r => r.value === regiao_preco);
     if (!regiaoValida) {
-      alert('Região inválida. Selecione uma região válida.');
+      alert('RegiÃ£o invÃ¡lida. Selecione uma regiÃ£o vÃ¡lida.');
       return;
     }
 
@@ -174,7 +174,7 @@ const Concessionarias = () => {
 
       if (isEditMode) {
         if (!editingId) {
-          throw new Error('Falha ao editar concessionária: ID não informado.');
+          throw new Error('Falha ao editar concessionÃ¡ria: ID nÃ£o informado.');
         }
 
         await db.updateConcessionaria(editingId, {
@@ -190,7 +190,7 @@ const Concessionarias = () => {
 
         handleCloseModal();
         await loadConcessionarias();
-        alert('Concessionária atualizada com sucesso!');
+        alert('ConcessionÃ¡ria atualizada com sucesso!');
         return;
       }
 
@@ -208,7 +208,7 @@ const Concessionarias = () => {
       const concessionariaId = concessionariaCriada?.id;
 
       if (!concessionariaCriada?.id) {
-        throw new Error('Falha ao criar concessionária: ID não retornado pelo banco.');
+        throw new Error('Falha ao criar concessionÃ¡ria: ID nÃ£o retornado pelo banco.');
       }
 
       await db.createUser({
@@ -221,9 +221,9 @@ const Concessionarias = () => {
 
       handleCloseModal();
       await loadConcessionarias();
-      alert('Concessionária e admin criados com sucesso!');
+      alert('ConcessionÃ¡ria e admin criados com sucesso!');
     } catch (e) {
-      console.error('Erro ao criar concessionária/admin:', {
+      console.error('Erro ao criar concessionÃ¡ria/admin:', {
         message: e?.message,
         details: e?.details,
         hint: e?.hint,
@@ -248,8 +248,8 @@ const Concessionarias = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="Concessionárias"
-        subtitle="Cadastre e gerencie concessionárias"
+        title="ConcessionÃ¡rias"
+        subtitle="Cadastre e gerencie concessionÃ¡rias"
       />
 
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -257,17 +257,17 @@ const Concessionarias = () => {
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 6px 0', color: '#111' }}>
-            Concessionárias
+            ConcessionÃ¡rias
           </h1>
           <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
-            Cadastre e gerencie as concessionárias parceiras
+            Cadastre e gerencie as concessionÃ¡rias parceiras
           </p>
         </div>
 
         {/* Card principal */}
         <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
 
-          {/* Barra de ações */}
+          {/* Barra de aÃ§Ãµes */}
           <div style={{ padding: '13px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
             <span style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
               Listagem <span style={{ color: '#9ca3af', fontWeight: 500 }}>({concessionarias.length})</span>
@@ -288,7 +288,7 @@ const Concessionarias = () => {
                 disabled={isLoading}
                 style={{ ...btnBase, padding: '7px 16px', background: '#111827', color: '#fff', fontSize: '13px' }}
               >
-                + Nova Concessionária
+                + Nova ConcessionÃ¡ria
               </button>
             </div>
           </div>
@@ -298,7 +298,7 @@ const Concessionarias = () => {
             <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>Carregando...</div>
           ) : concessionarias.length === 0 ? (
             <div style={{ padding: '48px 20px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>
-              Nenhuma concessionária cadastrada.
+              Nenhuma concessionÃ¡ria cadastrada.
             </div>
           ) : (
             <div style={{ overflowX: 'auto' }}>
@@ -306,11 +306,11 @@ const Concessionarias = () => {
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
                     <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Nome</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Região</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>RegiÃ£o</th>
                     <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
                     <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Email</th>
                     <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Telefone</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ações</th>
+                    <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>AÃ§Ãµes</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -382,12 +382,12 @@ const Concessionarias = () => {
             {/* Modal Header */}
             <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>
-                {isEditMode ? 'Editar Concessionária' : 'Nova Concessionária'}
+                {isEditMode ? 'Editar ConcessionÃ¡ria' : 'Nova ConcessionÃ¡ria'}
               </span>
               <button
                 onClick={handleCloseModal}
                 style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: '#6b7280', lineHeight: 1 }}
-              >×</button>
+              >Ã—</button>
             </div>
 
             {/* Modal Body */}
@@ -396,12 +396,12 @@ const Concessionarias = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
 
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Nome da Concessionária *</label>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Nome da ConcessionÃ¡ria *</label>
                     <input type="text" value={formData.nome} onChange={(e) => handleInputChange('nome', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
                   </div>
 
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Região *</label>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>RegiÃ£o *</label>
                     <select value={formData.regiao_preco} onChange={(e) => handleInputChange('regiao_preco', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#fff' }}>
                       <option value="">Selecione...</option>
                       {REGIOES_PRECO.map((r) => (
@@ -426,14 +426,14 @@ const Concessionarias = () => {
                   </div>
 
                   <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Endereço</label>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>EndereÃ§o</label>
                     <input type="text" value={formData.endereco} onChange={(e) => handleInputChange('endereco', e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
                   </div>
 
                   {!isEditMode && (
                     <>
                       <div style={{ gridColumn: '1 / -1', marginTop: '6px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Admin da Concessionária
+                        Admin da ConcessionÃ¡ria
                       </div>
 
                       <div>
@@ -477,3 +477,7 @@ const Concessionarias = () => {
 };
 
 export default Concessionarias;
+
+
+
+
