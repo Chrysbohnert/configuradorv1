@@ -77,9 +77,16 @@ const login = async (req, res) => {
       return res.status(401).json({ success: false, error: 'Email ou senha inválidos' });
     }
 
+    //if (user.ativo === false) {
+      //console.warn('[AUTH LOGIN] Usuário inativo tentou logar:', { email });
+      //return res.status(403).json({ success: false, error: 'Usuário inativo. Contate o administrador.' });
+    //}
+
     if (!verificarSenha(senha, user.senha)) {
       return res.status(401).json({ success: false, error: 'Email ou senha inválidos' });
     }
+
+    console.log('[AUTH LOGIN]', { email, userId: user?.id, tipo: user?.tipo, ativo: user?.ativo });
 
     const secret = process.env.JWT_SECRET || 'stark-dev-secret-fallback';
     const token = jwt.sign(

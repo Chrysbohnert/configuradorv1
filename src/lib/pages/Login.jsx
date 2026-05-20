@@ -1,11 +1,13 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { showError } from '../../utils/errorHandler';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../../utils/rateLimiter';
 import '../../styles/Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { initSession } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     senha: ''
@@ -97,9 +99,8 @@ const Login = () => {
         return;
       }
 
-      localStorage.setItem('user', JSON.stringify(user));
-      localStorage.setItem('authToken', token);
       localStorage.setItem('rememberMe', String(rememberMe));
+      initSession(user, token);
 
       recordLoginAttempt(clientIP, email, true);
 

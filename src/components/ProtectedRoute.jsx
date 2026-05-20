@@ -1,26 +1,29 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { getCurrentUser, isAdmin, isVendedor, validateSession } from '../utils/auth';
+import { useAuth } from '../contexts/AuthContext';
 
 const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = false }) => {
-  const user = getCurrentUser();
-  const sessionValid = validateSession();
-  
-  // Se não há usuário logado
-  if (!user || !sessionValid) {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return null;
+  }
+
+  if (!user) {
     return <Navigate to="/" replace />;
   }
-  
-  // Se requer admin mas usuário não é admin
-  if (requireAdmin && !isAdmin()) {
+
+  const tipoAdmin = user.tipo === 'admin' || user.tipo === 'admin_concessionaria';
+  const tipoVendedor = user.tipo === 'vendedor' || user.tipo === 'vendedor_concessionaria' || user.tipo === 'vendedor_exterior' || user.tipo === 'admin_concessionaria';
+
+  if (requireAdmin && !tipoAdmin) {
     return <Navigate to="/dashboard" replace />;
   }
-  
-  // Se requer vendedor mas usuário não é vendedor
-  if (requireVendedor && !isVendedor()) {
+
+  if (requireVendedor && !tipoVendedor) {
     return <Navigate to="/dashboard-admin" replace />;
   }
-  
+
   return children;
 };
 

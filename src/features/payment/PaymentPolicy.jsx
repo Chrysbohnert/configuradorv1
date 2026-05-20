@@ -307,6 +307,12 @@ export default function PaymentPolicy({
   // O NovoPedido.jsx já faz o recálculo em recalcularPrecosCarrinho quando a região muda
   // Não precisamos buscar preço aqui novamente!
 
+  const planoEfetivo = useMemo(() => {
+    if (!planoSelecionado) return null;
+    if (!bloquearDesconto) return planoSelecionado;
+    return { ...planoSelecionado, discount_percent: 0 };
+  }, [planoSelecionado, bloquearDesconto]);
+
   // ⚡ Ref atualizado a cada render — garante valores frescos no callback Realtime
   // sem recriar o canal WebSocket a cada mudança de estado
   const _rtVals = useRef({});
@@ -524,12 +530,6 @@ export default function PaymentPolicy({
       ? 'concessionaria_compra'
       : (tipoCliente === 'revenda' ? 'revenda' : 'cliente');
   const [todosPlanos, setTodosPlanos] = useState(() => getPaymentPlans(audience));
-
-  const planoEfetivo = useMemo(() => {
-    if (!planoSelecionado) return null;
-    if (!bloquearDesconto) return planoSelecionado;
-    return { ...planoSelecionado, discount_percent: 0 };
-  }, [planoSelecionado, bloquearDesconto]);
 
   const descontoVendedorEfetivo = bloquearDesconto ? 0 : descontoVendedor;
 

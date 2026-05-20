@@ -65,8 +65,8 @@ function normalizarUsuario(row) {
     user.regioes_operacao = normalizarArray(user.regioes_operacao);
   }
   // Garante que tipo sempre exista (fallback para compatibilidade)
-  if (!user.tipo && user.role) {
-    user.tipo = user.role;
+  if (!user.tipo) {
+    user.tipo = user.role || 'vendedor';
   }
   return user;
 }

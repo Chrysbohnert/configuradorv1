@@ -15,6 +15,7 @@ const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const VendedorLayout = lazy(() => import('./components/VendedorLayout'));
 
 // Páginas ativas
+const DashboardAdmin = lazy(() => import('./lib/pages/DashboardAdmin'));
 const GerenciarVendedores = lazy(() => import('./lib/pages/GerenciarVendedores'));
 const RelatorioCompleto = lazy(() => import('./lib/pages/RelatorioCompleto'));
 
@@ -109,6 +110,15 @@ function App() {
                     </ProtectedRoute>
                   }
                 >
+
+                  <Route
+                    path="/dashboard-admin"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Dashboard Admin...">
+                        <DashboardAdmin />
+                      </LazyRoute>
+                    }
+                  />
 
                   <Route
                     path="/gerenciar-vendedores"

@@ -15,8 +15,8 @@ function _normalizarUser(user) {
   if (!user) return user;
   return {
     ...user,
+    tipo: user.tipo || user.role || 'vendedor',
     regioes_operacao: normalizarArray(user.regioes_operacao),
-    // outros campos jsonb do banco podem ser adicionados aqui
   };
 }
 
@@ -58,19 +58,28 @@ export const AuthProvider = ({ children }) => {
             const normalized = _normalizarUser(json.data);
             setUser(normalized);
             localStorage.setItem('user', JSON.stringify(normalized));
+            console.log('[AUTH RESTORE]', { user: normalized?.email, tipo: normalized?.tipo, tokenExiste: !!token });
           } else {
+            console.warn('[AUTH RESTORE] Resposta inesperada do /me:', json);
             _clearStorage();
           }
+        } else if (res.status === 401) {
+          console.warn('[AUTH RESTORE] Token inválido ou expirado (401) – sessão limpa');
+          _clearStorage();
+          setError('Sessão expirada ou usuário sem permissão. Faça login novamente.');
         } else {
+          console.warn('[AUTH RESTORE] Falha ao restaurar sessão, status:', res.status);
           _clearStorage();
         }
       } catch (err) {
-        console.error('Erro ao restaurar sessão:', err);
+        console.error('[AUTH RESTORE] Erro de rede ao restaurar sessão:', err);
         const cached = localStorage.getItem('user');
         if (cached) {
           try {
             const parsed = JSON.parse(cached);
-            setUser(_normalizarUser(parsed));
+            const normalized = _normalizarUser(parsed);
+            setUser(normalized);
+            console.log('[AUTH RESTORE] Usando cache local:', { user: normalized?.email });
           } catch (_) { _clearStorage(); }
         }
       } finally {
@@ -160,12 +169,23 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   }, [user]);
 
+  // Inicializar sessão a partir de login externo (Login.jsx faz fetch próprio)
+  const initSession = useCallback((userData, token) => {
+    const normalized = _normalizarUser(userData);
+    localStorage.setItem('authToken', token);
+    localStorage.setItem('user', JSON.stringify(normalized));
+    setUser(normalized);
+    setError(null);
+    console.log('[LOGIN OK]', { user: normalized?.email, tipo: normalized?.tipo, tokenExiste: !!token });
+  }, []);
+
   const value = {
     user,
     loading,
     error,
     login,
     logout,
+    initSession,
     isAdmin,
     isVendedor,
     isAuthenticated,

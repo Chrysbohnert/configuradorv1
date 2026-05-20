@@ -981,7 +981,7 @@ const NovoPedido = () => {
 
 
   // Renderizar conteúdo do step
-  const renderStepContent = () => {
+  function renderStepContent() {
     switch (currentStep) {
       case 1:
         return (
@@ -1101,7 +1101,7 @@ const NovoPedido = () => {
               </div>
             )}
           </div>
-        );
+        )
 
       case 2:
         return (
@@ -1273,7 +1273,7 @@ const NovoPedido = () => {
     }
   };
 
-  const validateStep = (step) => {
+  function validateStep(step) {
     const errors = {};
     
     
@@ -1354,7 +1354,7 @@ const NovoPedido = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const canGoNext = () => {
+  function canGoNext() {
     if (isModoConcessionaria) {
       switch (currentStep) {
         case 1:
@@ -1416,7 +1416,7 @@ const NovoPedido = () => {
     }
   };
 
-  const handleNext = () => {
+  function handleNext() {
     
     // Adicionar log detalhado ANTES da validação
     if (currentStep === 2) {
@@ -1436,14 +1436,14 @@ const NovoPedido = () => {
     }
   };
 
-  const handlePrevious = () => {
+  function handlePrevious() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       // O reset do pagamentoData é feito pelo useEffect que monitora currentStep
     }
   };
 
-  const handleStepClick = (stepId) => {
+  function handleStepClick(stepId) {
     // Permite navegar para qualquer step que já foi alcançado
     if (stepId <= maxStepReached) {
       setCurrentStep(stepId);
