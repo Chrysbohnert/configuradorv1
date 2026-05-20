@@ -6,7 +6,12 @@
 const { query } = require('../db/pool');
 
 const KNOWN_FIELDS = [
-  'subgrupo', 'modelo', 'grupo', 'peso_kg', 'configuração', 'tem_contr',
+  'subgrupo',
+  'modelo',
+  'grupo',
+  'peso_kg',
+  'configuracao',
+  'tem_contr',
   'imagem_url', 'descricao', 'nao_incluido', 'imagens_adicionais', 'finame', 'ncm',
   'codigo_referencia', 'quantidade_disponivel', 'is_prototipo', 'prototipo_label',
   'prototipo_observacoes_pdf', 'is_comercio_exterior', 'valor_instalacao_cliente',

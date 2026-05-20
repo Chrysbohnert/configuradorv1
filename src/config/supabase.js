@@ -64,31 +64,58 @@ class DatabaseService {
   }
 
   // ===== USUÁRIOS =====
-  async getUsers(filters = {}) {
-    let query = supabase
-      .from('users')
-      .select('id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, created_at, updated_at')
-      .order('nome');
+  // ===== USUÁRIOS =====
+async getUsers(filters = {}) {
+  try {
+    const token = localStorage.getItem('authToken');
 
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value === undefined) return;
-        if (value === null) {
-          query = query.is(key, null);
-          return;
+    const response = await fetch(
+      'https://api-pedidos.starkindustrial.ind.br/api/users',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
         }
-        if (Array.isArray(value)) {
-          query = query.in(key, value);
-          return;
-        }
-        query = query.eq(key, value);
+      }
+    );
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Erro API users:', result);
+      throw new Error(result.error || 'Erro ao buscar usuários');
+    }
+
+    let users = result.data || [];
+
+    // Aplicar filtros localmente
+    if (filters && Object.keys(filters).length > 0) {
+      users = users.filter(user => {
+        return Object.entries(filters).every(([key, value]) => {
+          if (value === undefined) return true;
+
+          if (Array.isArray(value)) {
+            return value.includes(user[key]);
+          }
+
+          return user[key] === value;
+        });
       });
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
-    return data || [];
+    // Ordenar por nome
+    users.sort((a, b) =>
+      (a.nome || '').localeCompare(b.nome || '')
+    );
+
+    return users;
+
+  } catch (error) {
+    console.error('❌ [getUsers] Erro:', error);
+    return [];
   }
+}
 
   async getPrototypePaymentPlanSets({ guindaste_id, status = null } = {}) {
     if (!guindaste_id) throw new Error('guindaste_id é obrigatório');
@@ -265,50 +292,36 @@ class DatabaseService {
   }
 
   // Buscar um usuário específico por ID (otimizado)
-  async getUserById(id) {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) {
-      console.error('❌ [getUserById] Erro:', error);
-      throw error;
-    }
-    return data;
-  }
+ // Buscar um usuário específico por ID
+async getUserById(id) {
+  try {
+    const token = localStorage.getItem('authToken');
 
-  async createUser(userData) {
-    // Evitar enviar undefined para o PostgREST (pode causar 400 dependendo do schema/constraints)
-    const sanitizedUserData = Object.fromEntries(
-      Object.entries(userData || {}).filter(([, v]) => v !== undefined)
+    const response = await fetch(
+      `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        }
+      }
     );
 
-    // Se a senha não estiver em hash, fazer hash automaticamente
-    if (sanitizedUserData.senha && !this.isPasswordHashed(sanitizedUserData.senha)) {
-      const { hashPassword } = await import('../utils/passwordHash');
-      sanitizedUserData.senha = hashPassword(sanitizedUserData.senha);
+    const result = await response.json();
+
+    if (!response.ok) {
+      console.error('❌ Erro API user by id:', result);
+      throw new Error(result.error || 'Erro ao buscar usuário');
     }
-    
-    const { data, error } = await supabase
-      .from('users')
-      .insert([sanitizedUserData])
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ [createUser] Erro ao inserir user:', {
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code,
-        payloadKeys: Object.keys(sanitizedUserData || {})
-      });
-      throw error;
-    }
-    return data;
+
+    return result.data;
+
+  } catch (error) {
+    console.error('❌ [getUserById] Erro:', error);
+    return null;
   }
+}
 
   // Verificar se a senha já está em hash
   isPasswordHashed(password) {
@@ -321,16 +334,21 @@ class DatabaseService {
       const { hashPassword } = await import('../utils/passwordHash');
       userData.senha = hashPassword(userData.senha);
     }
+    const vendedor = await this.getUserById(vendedorId);
+
+if (!vendedor) {
+  console.warn('⚠️ Vendedor não encontrado');
+  return [];
+}
+    //const { data, error } = await supabase
+    //  .from('users')
+     // .update(userData)
+     // .eq('id', id)
+     // .select()
+     // .single();
     
-    const { data, error } = await supabase
-      .from('users')
-      .update(userData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+   // if (error) throw error;
+    //return data;
   }
 
   async deleteUser(id) {
