@@ -7,7 +7,7 @@ import '../../styles/Configuracoes.css';
 
 const Configuracoes = () => {
   const navigate = useNavigate();
-  const { user: contextUser } = useOutletContext(); // Pega o usuÃ¡rio do AdminLayout
+  const { user: contextUser } = useOutletContext(); // Pega o usuário do AdminLayout
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('perfil');
   const [isSaving, setIsSaving] = useState(false);
@@ -49,7 +49,7 @@ const Configuracoes = () => {
       });
       setPhotoPreview(contextUser.foto_perfil || null);
     } else {
-      // Fallback: pegar usuÃ¡rio do localStorage se contexto nÃ£o estiver disponÃ­vel
+      // Fallback: pegar usuário do localStorage se contexto não estiver disponível
       const userData = localStorage.getItem('user');
       if (userData) {
         const parsedUser = JSON.parse(userData);
@@ -76,7 +76,7 @@ const Configuracoes = () => {
         });
         setConcessionariaLogoPreview(c?.logo_url || '');
       } catch (error) {
-        console.error('Erro ao carregar concessionÃ¡ria:', error);
+        console.error('Erro ao carregar concessionária:', error);
       }
     };
     carregarConcessionaria();
@@ -95,12 +95,12 @@ const Configuracoes = () => {
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setMessage({ type: 'error', text: 'Por favor, selecione uma imagem vÃ¡lida.' });
+      setMessage({ type: 'error', text: 'Por favor, selecione uma imagem válida.' });
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'A imagem deve ter no mÃ¡ximo 5MB.' });
+      setMessage({ type: 'error', text: 'A imagem deve ter no máximo 5MB.' });
       return;
     }
 
@@ -118,7 +118,7 @@ const Configuracoes = () => {
       setMessage({ type: '', text: '' });
 
       if (!contextUser?.concessionaria_id) {
-        setMessage({ type: 'error', text: 'ConcessionÃ¡ria nÃ£o vinculada.' });
+        setMessage({ type: 'error', text: 'Concessionária não vinculada.' });
         return;
       }
 
@@ -152,10 +152,10 @@ const Configuracoes = () => {
         logo_url: logoUrl || ''
       }));
       setConcessionariaLogoFile(null);
-      setMessage({ type: 'success', text: 'ConfiguraÃ§Ãµes da concessionÃ¡ria atualizadas!' });
+      setMessage({ type: 'success', text: 'Configurações da concessionária atualizadas!' });
     } catch (error) {
-      console.error('Erro ao salvar concessionÃ¡ria:', error);
-      setMessage({ type: 'error', text: 'Erro ao salvar dados da concessionÃ¡ria.' });
+      console.error('Erro ao salvar concessionária:', error);
+      setMessage({ type: 'error', text: 'Erro ao salvar dados da concessionária.' });
     } finally {
       setIsSaving(false);
     }
@@ -170,13 +170,13 @@ const Configuracoes = () => {
     if (file) {
       // Validar tipo de arquivo
       if (!file.type.startsWith('image/')) {
-        setMessage({ type: 'error', text: 'Por favor, selecione uma imagem vÃ¡lida.' });
+        setMessage({ type: 'error', text: 'Por favor, selecione uma imagem válida.' });
         return;
       }
 
       // Validar tamanho (max 2MB)
       if (file.size > 2 * 1024 * 1024) {
-        setMessage({ type: 'error', text: 'A imagem deve ter no mÃ¡ximo 2MB.' });
+        setMessage({ type: 'error', text: 'A imagem deve ter no máximo 2MB.' });
         return;
       }
 
@@ -196,21 +196,21 @@ const Configuracoes = () => {
       setIsSaving(true);
       setMessage({ type: '', text: '' });
 
-      // ValidaÃ§Ãµes
+      // Validações
       if (!profileData.nome.trim()) {
-        setMessage({ type: 'error', text: 'Nome Ã© obrigatÃ³rio.' });
+        setMessage({ type: 'error', text: 'Nome é obrigatório.' });
         return;
       }
 
       if (!profileData.email.trim()) {
-        setMessage({ type: 'error', text: 'Email Ã© obrigatÃ³rio.' });
+        setMessage({ type: 'error', text: 'Email é obrigatório.' });
         return;
       }
 
-      // Email vÃ¡lido
+      // Email válido
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(profileData.email)) {
-        setMessage({ type: 'error', text: 'Email invÃ¡lido.' });
+        setMessage({ type: 'error', text: 'Email inválido.' });
         return;
       }
 
@@ -243,7 +243,7 @@ const Configuracoes = () => {
               });
               
               if (createError) {
-                console.warn('NÃ£o foi possÃ­vel criar bucket, usando base64:', createError);
+                console.warn('Não foi possível criar bucket, usando base64:', createError);
               }
             }
             
@@ -256,7 +256,7 @@ const Configuracoes = () => {
               });
 
             if (!uploadError && uploadData) {
-              // Obter URL pÃºblica
+              // Obter URL pública
               const { data: urlData } = supabase.storage
                 .from('perfis')
                 .getPublicUrl(fileName);
@@ -299,7 +299,7 @@ const Configuracoes = () => {
       setMessage({ type: 'success', text: 'Perfil atualizado com sucesso!' });
       setPhotoFile(null);
 
-      // Recarregar pÃ¡gina para atualizar o sidebar
+      // Recarregar página para atualizar o sidebar
       setTimeout(() => {
         window.location.reload();
       }, 1500);
@@ -317,28 +317,28 @@ const Configuracoes = () => {
       setIsSaving(true);
       setMessage({ type: '', text: '' });
 
-      // ValidaÃ§Ãµes
+      // Validações
       if (!passwordData.senhaAtual) {
-        setMessage({ type: 'error', text: 'Senha atual Ã© obrigatÃ³ria.' });
+        setMessage({ type: 'error', text: 'Senha atual é obrigatória.' });
         return;
       }
 
       if (!passwordData.novaSenha) {
-        setMessage({ type: 'error', text: 'Nova senha Ã© obrigatÃ³ria.' });
+        setMessage({ type: 'error', text: 'Nova senha é obrigatória.' });
         return;
       }
 
       if (passwordData.novaSenha.length < 6) {
-        setMessage({ type: 'error', text: 'A nova senha deve ter no mÃ­nimo 6 caracteres.' });
+        setMessage({ type: 'error', text: 'A nova senha deve ter no mínimo 6 caracteres.' });
         return;
       }
 
       if (passwordData.novaSenha !== passwordData.confirmarSenha) {
-        setMessage({ type: 'error', text: 'As senhas nÃ£o coincidem.' });
+        setMessage({ type: 'error', text: 'As senhas não coincidem.' });
         return;
       }
 
-      // Alterar senha via REST (verificaÃ§Ã£o da senha atual feita no backend)
+      // Alterar senha via REST (verificação da senha atual feita no backend)
       await changeUserPassword({
         senhaAtual: passwordData.senhaAtual,
         novaSenha: passwordData.novaSenha
@@ -370,8 +370,8 @@ const Configuracoes = () => {
           showSupportButton={true}
           showUserInfo={true}
           user={user}
-          title="ConfiguraÃ§Ãµes"
-          subtitle="Gerencie suas informaÃ§Ãµes pessoais"
+          title="Configurações"
+          subtitle="Gerencie suas informações pessoais"
         />
 
         <div className="configuracoes-container">
@@ -410,7 +410,7 @@ const Configuracoes = () => {
                     <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14" />
                     <path d="M9 21v-8h6v8" />
                   </svg>
-                  ConcessionÃ¡ria
+                  Concessionária
                 </button>
               )}
             </div>
@@ -431,11 +431,11 @@ const Configuracoes = () => {
 
             {activeTab === 'concessionaria' && contextUser?.tipo === 'admin_concessionaria' && (
               <div className="config-panel">
-                <h2>ConfiguraÃ§Ãµes da ConcessionÃ¡ria</h2>
+                <h2>Configurações da Concessionária</h2>
 
                 <div className="config-form">
                   <div className="form-group">
-                    <label>Logo da ConcessionÃ¡ria</label>
+                    <label>Logo da Concessionária</label>
                     <input
                       type="file"
                       accept="image/*"
@@ -445,7 +445,7 @@ const Configuracoes = () => {
                       <div style={{ marginTop: '12px' }}>
                         <img
                           src={concessionariaLogoPreview}
-                          alt="Logo da concessionÃ¡ria"
+                          alt="Logo da concessionária"
                           style={{ maxWidth: '200px', maxHeight: '90px', objectFit: 'contain' }}
                         />
                       </div>
@@ -453,12 +453,12 @@ const Configuracoes = () => {
                   </div>
 
                   <div className="form-group">
-                    <label>Dados BancÃ¡rios (texto livre)</label>
+                    <label>Dados Bancários (texto livre)</label>
                     <textarea
                       value={concessionariaData.dados_bancarios}
                       onChange={(e) => handleConcessionariaChange('dados_bancarios', e.target.value)}
                       rows={5}
-                      placeholder="Banco X\nAgÃªncia: 0001\nConta: 00000-0\nPix: ..."
+                      placeholder="Banco X\nAgência: 0001\nConta: 00000-0\nPix: ..."
                     />
                   </div>
 
@@ -477,7 +477,7 @@ const Configuracoes = () => {
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                         </svg>
-                        Salvar ConfiguraÃ§Ãµes
+                        Salvar Configurações
                       </>
                     )}
                   </button>
@@ -488,7 +488,7 @@ const Configuracoes = () => {
             {/* Tab Perfil */}
             {activeTab === 'perfil' && (
               <div className="config-panel">
-                <h2>InformaÃ§Ãµes do Perfil</h2>
+                <h2>Informações do Perfil</h2>
 
                 {/* Upload de Foto */}
                 <div className="photo-section">
@@ -518,11 +518,11 @@ const Configuracoes = () => {
                         style={{ display: 'none' }}
                       />
                     </label>
-                    <p className="photo-hint">JPG, PNG ou GIF. MÃ¡ximo 2MB.</p>
+                    <p className="photo-hint">JPG, PNG ou GIF. Máximo 2MB.</p>
                   </div>
                 </div>
 
-                {/* FormulÃ¡rio */}
+                {/* Formulário */}
                 <div className="config-form">
                   <div className="form-group">
                     <label>Nome Completo *</label>
@@ -582,7 +582,7 @@ const Configuracoes = () => {
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/>
                         </svg>
-                        Salvar AlteraÃ§Ãµes
+                        Salvar Alterações
                       </>
                     )}
                   </button>
@@ -612,7 +612,7 @@ const Configuracoes = () => {
                       type="password"
                       value={passwordData.novaSenha}
                       onChange={(e) => handlePasswordChange('novaSenha', e.target.value)}
-                      placeholder="MÃ­nimo 6 caracteres"
+                      placeholder="Mínimo 6 caracteres"
                     />
                   </div>
 

@@ -9,7 +9,7 @@ import '../../styles/Dashboard.css';
 
 const RelatorioCompleto = () => {
   const navigate = useNavigate();
-  const { user } = useOutletContext(); // Pega o usuÃ¡rio do AdminLayout
+  const { user } = useOutletContext(); // Pega o usuário do AdminLayout
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
   const [pedidosFiltrados, setPedidosFiltrados] = useState([]);
@@ -38,8 +38,8 @@ const RelatorioCompleto = () => {
   };
 
   const extractEquipamentos = (proposta) => {
-    // âš¡ Usar produto_principal (jÃ¡ salvo separadamente) como fonte primÃ¡ria
-    // dados_serializados nÃ£o Ã© mais carregado em queries de listagem para economizar egress
+    // ⚡ Usar produto_principal (já salvo separadamente) como fonte primária
+    // dados_serializados não é mais carregado em queries de listagem para economizar egress
     if (proposta?.produto_principal) return proposta.produto_principal;
 
     const dados = proposta?.dados_serializados || {};
@@ -61,7 +61,7 @@ const RelatorioCompleto = () => {
   };
 
   const handleExcluir = async (id, numeroProposta) => {
-    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta aÃ§Ã£o nÃ£o pode ser desfeita e os dados serÃ£o removidos do banco.`)) {
+    if (!window.confirm(`Tem certeza que deseja excluir PERMANENTEMENTE a proposta ${numeroProposta}?\n\nEsta ação não pode ser desfeita e os dados serão removidos do banco.`)) {
       return;
     }
     setExcluindo(id);
@@ -101,8 +101,8 @@ const RelatorioCompleto = () => {
       setVendedores(vendedoresData);
       setTodosPedidos(propostas || []);
     } catch (error) {
-      console.error('Erro ao carregar relatÃ³rio:', error);
-      alert('Erro ao carregar dados. Verifique a conexÃ£o com o banco.');
+      console.error('Erro ao carregar relatório:', error);
+      alert('Erro ao carregar dados. Verifique a conexão com o banco.');
     } finally {
       setIsLoading(false);
     }
@@ -147,7 +147,7 @@ const RelatorioCompleto = () => {
   }, [vendedores]);
 
   const resumo = useMemo(() => {
-    // Considerar todos os pedidos como finalizados para mÃ©tricas simples
+    // Considerar todos os pedidos como finalizados para métricas simples
     const finalizados = pedidosFiltrados;
     const valorTotal = finalizados.reduce((t, p) => t + (p.valor_total || 0), 0);
     const ticketMedio = finalizados.length > 0 ? valorTotal / finalizados.length : 0;
@@ -248,7 +248,7 @@ const RelatorioCompleto = () => {
 
     const filtersLabel = [
       filtroVendedor ? `Vendedor: ${vendedoresMap.get(String(filtroVendedor)) || filtroVendedor}` : 'Vendedor: Todos',
-      filtroMes ? `MÃªs: ${filtroMes}` : 'MÃªs: Todos',
+      filtroMes ? `Mês: ${filtroMes}` : 'Mês: Todos',
       busca ? `Busca: ${busca}` : 'Busca: -',
     ].join('   |   ');
 
@@ -259,7 +259,7 @@ const RelatorioCompleto = () => {
       doc.setTextColor(30);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(16);
-      doc.text('RELATÃ“RIO DE PROPOSTAS', marginX, marginTop);
+      doc.text('RELATÓRIO DE PROPOSTAS', marginX, marginTop);
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
@@ -272,13 +272,13 @@ const RelatorioCompleto = () => {
 
       const yResumo = yFilters + 16;
       doc.setTextColor(30);
-      doc.text(`Qtd: ${fonte.length}   |   Total: ${formatCurrency(totalValor)}   |   Ticket mÃ©dio: ${formatCurrency(ticket)}`, marginX, yResumo);
+      doc.text(`Qtd: ${fonte.length}   |   Total: ${formatCurrency(totalValor)}   |   Ticket médio: ${formatCurrency(ticket)}`, marginX, yResumo);
 
       doc.setDrawColor(220);
       doc.line(marginX, yResumo + 10, pageW - marginX, yResumo + 10);
 
       doc.setTextColor(120);
-      doc.text(`PÃ¡gina ${pageNum}/${totalPages}`, pageW - marginX, pageH - 16, { align: 'right' });
+      doc.text(`Página ${pageNum}/${totalPages}`, pageW - marginX, pageH - 16, { align: 'right' });
     };
 
     const colW = {
@@ -316,7 +316,7 @@ const RelatorioCompleto = () => {
       doc.setFontSize(9);
       doc.setTextColor(40);
 
-      doc.text('NÂº', colX.numero + 2, y + 12);
+      doc.text('Nº', colX.numero + 2, y + 12);
       doc.text('Data', colX.data + 2, y + 12);
       doc.text('Vendedor', colX.vendedor + 2, y + 12);
       doc.text('Cliente', colX.cliente + 2, y + 12);
@@ -424,18 +424,18 @@ const RelatorioCompleto = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="RelatÃ³rio"
-        subtitle="Resumo simples por perÃ­odo e vendedor"
+        title="Relatório"
+        subtitle="Resumo simples por período e vendedor"
       />
       <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
           <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 6px 0', color: '#111' }}>
-            RelatÃ³rio Admin
+            Relatório Admin
           </h1>
           <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
-            Resumo de propostas por perÃ­odo e vendedor
+            Resumo de propostas por período e vendedor
           </p>
         </div>
 
@@ -463,7 +463,7 @@ const RelatorioCompleto = () => {
             </select>
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#555' }}>MÃªs</label>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#555' }}>Mês</label>
             <input
               type="month"
               value={filtroMes}
@@ -477,7 +477,7 @@ const RelatorioCompleto = () => {
               type="text"
               value={busca}
               onChange={(e) => setBusca(e.target.value)}
-              placeholder="Cliente, vendedor ou nÂº"
+              placeholder="Cliente, vendedor ou nº"
               style={{ padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', minWidth: 200 }}
             />
           </div>
@@ -486,7 +486,7 @@ const RelatorioCompleto = () => {
               onClick={loadRelatorio}
               disabled={isLoading}
               style={{ padding: '7px 12px', background: '#f3f4f6', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}
-            >â†º</button>
+            >↺</button>
             <button
               onClick={handleExportarPDF}
               disabled={pedidosFiltrados.length === 0}
@@ -506,7 +506,7 @@ const RelatorioCompleto = () => {
             { label: 'Total Propostas', value: resumo.totalPedidos },
             { label: 'Finalizadas', value: resumo.pedidosFinalizados },
             { label: 'Valor Total', value: formatCurrency(resumo.valorTotal) },
-            { label: 'Ticket MÃ©dio', value: formatCurrency(resumo.ticketMedio) },
+            { label: 'Ticket Médio', value: formatCurrency(resumo.ticketMedio) },
           ].map((card) => (
             <div key={card.label} style={{ background: 'white', borderRadius: '10px', padding: '13px 18px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
               <div style={{ fontSize: '11px', fontWeight: '600', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.label}</div>
@@ -532,7 +532,7 @@ const RelatorioCompleto = () => {
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Cliente</th>
                   <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
                   <th style={{ padding: '10px 16px', textAlign: 'right', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Valor</th>
-                  <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>AÃ§Ãµes</th>
+                  <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -573,7 +573,7 @@ const RelatorioCompleto = () => {
                           disabled={excluindo === p.id}
                           style={{ padding: '5px 10px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', cursor: excluindo === p.id ? 'not-allowed' : 'pointer', opacity: excluindo === p.id ? 0.5 : 1 }}
                           title="Excluir proposta permanentemente"
-                        >{excluindo === p.id ? '...' : 'ðŸ—‘ï¸'}</button>
+                        >{excluindo === p.id ? '...' : '🗑ï¸'}</button>
                       </div>
                     </td>
                   </tr>

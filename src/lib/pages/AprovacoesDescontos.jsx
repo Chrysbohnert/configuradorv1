@@ -6,7 +6,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import '../../styles/AprovacoesDescontos.css';
 
 /**
- * Painel do Gestor para Aprovar/Negar SolicitaÃ§Ãµes de Desconto
+ * Painel do Gestor para Aprovar/Negar Solicitações de Desconto
  * Atualiza em tempo real via Supabase Realtime
  */
 export default function AprovacoesDescontos() {
@@ -15,13 +15,13 @@ export default function AprovacoesDescontos() {
   
   const [solicitacoes, setSolicitacoes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [processando, setProcessando] = useState(null); // ID da solicitaÃ§Ã£o sendo processada
+  const [processando, setProcessando] = useState(null); // ID da solicitação sendo processada
   
-  // Estados para aprovaÃ§Ã£o
+  // Estados para aprovação
   const [descontoSelecionado, setDescontoSelecionado] = useState({});
   const [observacoes, setObservacoes] = useState({});
 
-  // Configurar listener para atualizaÃ§Ãµes em tempo real
+  // Configurar listener para atualizações em tempo real
   useEffect(() => {
     if (user?.tipo === 'admin_concessionaria') {
       navigate('/dashboard-admin');
@@ -39,7 +39,7 @@ export default function AprovacoesDescontos() {
         setSolicitacoes(current => {
           const index = current.findIndex(s => s.id === payload.new?.id || payload.old?.id);
           
-          // Se for uma atualizaÃ§Ã£o ou deleÃ§Ã£o
+          // Se for uma atualização ou deleção
           if (index !== -1) {
             // Se foi aprovado/negado, remove da lista
             if (payload.eventType === 'UPDATE' && 
@@ -54,7 +54,7 @@ export default function AprovacoesDescontos() {
             );
           }
           
-          // Se for uma nova inserÃ§Ã£o e estiver pendente, adiciona
+          // Se for uma nova inserção e estiver pendente, adiciona
           if (payload.eventType === 'INSERT' && payload.new.status === 'pendente') {
             return [payload.new, ...current];
           }
@@ -76,7 +76,7 @@ export default function AprovacoesDescontos() {
     try {
       setLoading(true);
       
-      // Busca apenas solicitaÃ§Ãµes pendentes
+      // Busca apenas solicitações pendentes
       const { data, error } = await supabase
         .from('solicitacoes_desconto')
         .select('id, vendedor_nome, vendedor_id, equipamento, valor_base, desconto_atual, justificativa, status, created_at')
@@ -88,7 +88,7 @@ export default function AprovacoesDescontos() {
       setSolicitacoes(data || []);
     } catch (error) {
       console.error('âŒ [AprovacoesDescontos] Erro ao carregar:', error);
-      alert('Erro ao carregar solicitaÃ§Ãµes. Tente atualizar a pÃ¡gina.');
+      alert('Erro ao carregar solicitações. Tente atualizar a página.');
     } finally {
       setLoading(false);
     }
@@ -99,15 +99,15 @@ export default function AprovacoesDescontos() {
       const desconto = descontoSelecionado[solicitacao.id];
       
       if (!desconto) {
-        alert('âš ï¸ Selecione o percentual de desconto antes de aprovar!');
+        alert('⚠ï¸ Selecione o percentual de desconto antes de aprovar!');
         return;
       }
 
-      // Converter para nÃºmero para garantir o tipo correto
+      // Converter para número para garantir o tipo correto
       const descontoNumerico = parseFloat(desconto);
       
       if (isNaN(descontoNumerico) || descontoNumerico < 0) {
-        alert('âš ï¸ O desconto deve ser um nÃºmero maior ou igual a 0%!');
+        alert('⚠ï¸ O desconto deve ser um número maior ou igual a 0%!');
         return;
       }
 
@@ -116,20 +116,20 @@ export default function AprovacoesDescontos() {
 
       const confirmar = window.confirm(
         `Aprovar desconto de ${descontoFinal}% para ${solicitacao.vendedor_nome}?\n\n` +
-        `Equipamento: ${solicitacao.equipamento_descricao || 'NÃ£o informado'}\n` +
-        `Valor: ${formatCurrency(solicitacao.valor_base) || 'NÃ£o informado'}`
+        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+        `Valor: ${formatCurrency(solicitacao.valor_base) || 'Não informado'}`
       );
 
       if (!confirmar) return;
 
       setProcessando(solicitacao.id);
-      // Verificar se o usuÃ¡rio tem permissÃ£o de administrador
+      // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
-        console.error('âŒ [AprovacoesDescontos] UsuÃ¡rio nÃ£o Ã© administrador:', user);
+        console.error('âŒ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
       }
 
-      // Chamar a funÃ§Ã£o de aprovaÃ§Ã£o
+      // Chamar a função de aprovação
       await db.aprovarSolicitacaoDesconto(
         solicitacao.id,
         descontoFinal, // Arredondado para 2 casas decimais
@@ -138,9 +138,9 @@ export default function AprovacoesDescontos() {
         observacoes[solicitacao.id] || null
       );
 
-      // Feedback ao usuÃ¡rio
-      const mensagemSucesso = `âœ… Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
-        `O vendedor ${solicitacao.vendedor_nome} serÃ¡ notificado automaticamente.`;
+      // Feedback ao usuário
+      const mensagemSucesso = `✅ Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
+        `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
       
       alert(mensagemSucesso);
       
@@ -161,14 +161,14 @@ export default function AprovacoesDescontos() {
     } catch (error) {
       console.error('âŒ [AprovacoesDescontos] Erro ao aprovar:', error);
       
-      // Mensagem de erro mais amigÃ¡vel
+      // Mensagem de erro mais amigável
       let mensagemErro = 'Erro ao aprovar desconto. Tente novamente.';
       
       if (error.message.includes('permission denied') || 
           error.message.includes('Acesso negado')) {
-        mensagemErro = 'VocÃª nÃ£o tem permissÃ£o para executar esta aÃ§Ã£o.';
+        mensagemErro = 'Você não tem permissão para executar esta ação.';
       } else if (error.message.includes('network error')) {
-        mensagemErro = 'Erro de conexÃ£o. Verifique sua internet e tente novamente.';
+        mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
       } else if (error.message) {
         mensagemErro = error.message;
       }
@@ -184,17 +184,17 @@ export default function AprovacoesDescontos() {
       const motivo = observacoes[solicitacao.id] || 'Nenhum motivo informado';
       
       const confirmar = window.confirm(
-        `Negar solicitaÃ§Ã£o de ${solicitacao.vendedor_nome}?\n\n` +
-        `Equipamento: ${solicitacao.equipamento_descricao || 'NÃ£o informado'}\n` +
+        `Negar solicitação de ${solicitacao.vendedor_nome}?\n\n` +
+        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
         `Motivo: ${motivo}`
       );
 
       if (!confirmar) return;
 
       setProcessando(solicitacao.id);
-      // Verificar se o usuÃ¡rio tem permissÃ£o de administrador
+      // Verificar se o usuário tem permissão de administrador
       if (user?.tipo !== 'admin') {
-        console.error('âŒ [AprovacoesDescontos] UsuÃ¡rio nÃ£o Ã© administrador:', user);
+        console.error('âŒ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem negar descontos.');
       }
 
@@ -205,7 +205,7 @@ export default function AprovacoesDescontos() {
         motivo
       );
 
-      const mensagemSucesso = `âŒ SolicitaÃ§Ã£o de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
+      const mensagemSucesso = `âŒ Solicitação de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
         `Motivo: ${motivo}`;
       
       alert(mensagemSucesso);
@@ -227,14 +227,14 @@ export default function AprovacoesDescontos() {
     } catch (error) {
       console.error('âŒ [AprovacoesDescontos] Erro ao negar:', error);
       
-      // Mensagem de erro mais amigÃ¡vel
-      let mensagemErro = 'Erro ao negar solicitaÃ§Ã£o. Tente novamente.';
+      // Mensagem de erro mais amigável
+      let mensagemErro = 'Erro ao negar solicitação. Tente novamente.';
       
       if (error.message.includes('permission denied') || 
           error.message.includes('Acesso negado')) {
-        mensagemErro = 'VocÃª nÃ£o tem permissÃ£o para executar esta aÃ§Ã£o.';
+        mensagemErro = 'Você não tem permissão para executar esta ação.';
       } else if (error.message.includes('network error')) {
-        mensagemErro = 'Erro de conexÃ£o. Verifique sua internet e tente novamente.';
+        mensagemErro = 'Erro de conexão. Verifique sua internet e tente novamente.';
       } else if (error.message) {
         mensagemErro = error.message;
       }
@@ -260,10 +260,10 @@ export default function AprovacoesDescontos() {
   if (loading) {
     return (
       <div className="aprovacoes-container">
-        <UnifiedHeader title="AprovaÃ§Ãµes de Desconto" showBackButton onBack={() => navigate('/admin')} />
+        <UnifiedHeader title="Aprovações de Desconto" showBackButton onBack={() => navigate('/admin')} />
         <div className="loading-container">
           <div className="spinner"></div>
-          <p>Carregando solicitaÃ§Ãµes...</p>
+          <p>Carregando solicitações...</p>
         </div>
       </div>
     );
@@ -272,7 +272,7 @@ export default function AprovacoesDescontos() {
   return (
     <div className="aprovacoes-container">
       <UnifiedHeader 
-        title="AprovaÃ§Ãµes de Desconto" 
+        title="Aprovações de Desconto" 
         showBackButton 
         onBack={() => navigate('/admin')} 
       />
@@ -280,18 +280,18 @@ export default function AprovacoesDescontos() {
       <div className="aprovacoes-content">
         {/* Header com contador */}
         <div className="aprovacoes-header">
-          <h2>SolicitaÃ§Ãµes Pendentes</h2>
+          <h2>Solicitações Pendentes</h2>
           <div className="contador-badge">
-            {solicitacoes.length} {solicitacoes.length === 1 ? 'solicitaÃ§Ã£o' : 'solicitaÃ§Ãµes'}
+            {solicitacoes.length} {solicitacoes.length === 1 ? 'solicitação' : 'solicitações'}
           </div>
         </div>
 
-        {/* Lista de solicitaÃ§Ãµes */}
+        {/* Lista de solicitações */}
         {solicitacoes.length === 0 ? (
           <div className="empty-state">
             <div className="empty-icon"></div>
-            <h3>Nenhuma solicitaÃ§Ã£o pendente</h3>
-            <p>Todas as solicitaÃ§Ãµes foram processadas!</p>
+            <h3>Nenhuma solicitação pendente</h3>
+            <p>Todas as solicitações foram processadas!</p>
           </div>
         ) : (
           <div className="solicitacoes-grid">
@@ -336,7 +336,7 @@ export default function AprovacoesDescontos() {
                       marginTop: '10px'
                     }}>
                       <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
-                        ðŸŽ¯ Vendedor solicita: {solicitacao.desconto_desejado}%
+                        🎯 Vendedor solicita: {solicitacao.desconto_desejado}%
                       </p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
                         <div>
@@ -344,7 +344,7 @@ export default function AprovacoesDescontos() {
                           <br />
                           <strong>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}</strong>
                         </div>
-                        <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>â†’</div>
+                        <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>→</div>
                         <div>
                           <span style={{ color: '#16a34a' }}>Valor com {solicitacao.desconto_desejado}%:</span>
                           <br />
@@ -352,7 +352,7 @@ export default function AprovacoesDescontos() {
                         </div>
                       </div>
                       <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
-                        DiferenÃ§a: -{formatCurrency((solicitacao.valor_base * solicitacao.desconto_desejado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
+                        Diferença: -{formatCurrency((solicitacao.valor_base * solicitacao.desconto_desejado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
                       </p>
                     </div>
                   )}
@@ -365,7 +365,7 @@ export default function AprovacoesDescontos() {
                   )}
                 </div>
 
-                {/* AÃ§Ãµes */}
+                {/* Ações */}
                 <div className="card-actions">
                   {/* Input de Desconto Livre */}
                   <div className="form-group">
@@ -383,7 +383,7 @@ export default function AprovacoesDescontos() {
                       }))}
                       disabled={processando === solicitacao.id}
                     />
-                    {/* BotÃ£o rÃ¡pido para aplicar o % solicitado */}
+                    {/* Botão rápido para aplicar o % solicitado */}
                     {solicitacao.desconto_desejado && !descontoSelecionado[solicitacao.id] && (
                       <button
                         type="button"
@@ -418,7 +418,7 @@ export default function AprovacoesDescontos() {
                         fontSize: '13px'
                       }}>
                         <p style={{ fontWeight: 600, color: '#0c4a6e', marginBottom: '4px' }}>
-                          ðŸ’° Com {parseFloat(descontoSelecionado[solicitacao.id])}%:
+                          💰 Com {parseFloat(descontoSelecionado[solicitacao.id])}%:
                         </p>
                         <p>
                           Valor final: <strong style={{ color: '#0369a1' }}>
@@ -432,9 +432,9 @@ export default function AprovacoesDescontos() {
                     )}
                   </div>
 
-                  {/* ObservaÃ§Ã£o */}
+                  {/* Observação */}
                   <div className="form-group">
-                    <label>ObservaÃ§Ã£o (opcional):</label>
+                    <label>Observação (opcional):</label>
                     <textarea
                       className="form-control"
                       rows="2"
@@ -449,7 +449,7 @@ export default function AprovacoesDescontos() {
                     />
                   </div>
 
-                  {/* BotÃµes */}
+                  {/* Botões */}
                   <div className="button-group">
                     <button
                       className="btn btn-danger"
@@ -463,7 +463,7 @@ export default function AprovacoesDescontos() {
                       onClick={() => handleAprovar(solicitacao)}
                       disabled={processando === solicitacao.id || !descontoSelecionado[solicitacao.id]}
                     >
-                      {processando === solicitacao.id ? 'â³ Processando...' : 'âœ… Aprovar'}
+                      {processando === solicitacao.id ? 'â³ Processando...' : '✅ Aprovar'}
                     </button>
                   </div>
                 </div>

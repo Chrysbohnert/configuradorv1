@@ -25,21 +25,21 @@ const Login = () => {
     if (!isConcessionariaUser) return true;
 
     if (!user.concessionaria_id) {
-      setError('UsuÃ¡rio de concessionÃ¡ria sem vÃ­nculo. Contate o administrador.');
+      setError('Usuário de concessionária sem vínculo. Contate o administrador.');
       return false;
     }
 
-    // TODO: endpoint GET /api/concessionarias/:id ainda nÃ£o implementado
-    // Quando disponÃ­vel, descomentar o bloco abaixo:
+    // TODO: endpoint GET /api/concessionarias/:id ainda não implementado
+    // Quando disponível, descomentar o bloco abaixo:
     // try {
     //   const res = await fetch(`https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${user.concessionaria_id}`);
     //   const data = await res.json();
     //   if (data?.data?.ativo === false) {
-    //     setError('ConcessionÃ¡ria inativa. Contate o administrador Stark.');
+    //     setError('Concessionária inativa. Contate o administrador Stark.');
     //     return false;
     //   }
     // } catch (e) {
-    //   console.error('Erro ao validar concessionÃ¡ria:', e);
+    //   console.error('Erro ao validar concessionária:', e);
     // }
 
     return true;
@@ -85,7 +85,7 @@ const Login = () => {
 
       if (!response.ok || !data.success) {
         recordLoginAttempt(clientIP, email, false);
-        setError(data.error || 'Credenciais invÃ¡lidas');
+        setError(data.error || 'Credenciais inválidas');
         return;
       }
 
@@ -111,7 +111,7 @@ const Login = () => {
       }
     } catch (err) {
       const errorInfo = showError(err, 'Login');
-      setError(errorInfo.message || 'Erro de conexÃ£o. Tente novamente.');
+      setError(errorInfo.message || 'Erro de conexão. Tente novamente.');
       recordLoginAttempt(getClientIP(), formData.email, false);
     } finally {
       setIsLoading(false);
@@ -120,10 +120,10 @@ const Login = () => {
 
   const handleForgotPassword = (e) => {
     e.preventDefault();
-    setError('RecuperaÃ§Ã£o de senha ainda nÃ£o disponÃ­vel. Contate o administrador.');
+    setError('Recuperação de senha ainda não disponível. Contate o administrador.');
   };
 
-  const bgImage = encodeURI('/pÃ¡ginas do pdf/CAPA-1.jpg');
+  const bgImage = encodeURI('/páginas do pdf/CAPA-1.jpg');
 
   return (
     <div className="login-page">
@@ -135,7 +135,7 @@ const Login = () => {
         <div className="login-left-overlay" />
       </div>
 
-      {/* Painel Direito - FormulÃ¡rio */}
+      {/* Painel Direito - Formulário */}
       <div className="login-right">
         <div className="login-card">
           {/* Logo da marca */}
@@ -206,7 +206,7 @@ const Login = () => {
                       type={showPassword ? 'text' : 'password'}
                       value={formData.senha}
                       onChange={(e) => handleInputChange('senha', e.target.value)}
-                      placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+                      placeholder="••••••••"
                       required
                     />
                     <button
@@ -251,7 +251,7 @@ const Login = () => {
               </form>
 
               <div className="signup-row">
-                NÃ£o tem cadastro?{' '}
+                Não tem cadastro?{' '}
                 <a href="mailto:contato@starkguindastes.com.br">Solicitar acesso</a>
               </div>
             </>
@@ -259,7 +259,7 @@ const Login = () => {
             <>
               <div className="form-header">
                 <h2>Recuperar senha</h2>
-                <p>Digite seu email para receber o link de recuperaÃ§Ã£o.</p>
+                <p>Digite seu email para receber o link de recuperação.</p>
               </div>
 
               {error && (
@@ -308,7 +308,7 @@ const Login = () => {
                 <button type="submit" className="login-button" disabled={isLoading}>
                   {isLoading ? (
                     <><div className="loading-spinner" />Enviando...</>
-                  ) : 'Enviar Link de RecuperaÃ§Ã£o'}
+                  ) : 'Enviar Link de Recuperação'}
                 </button>
 
                 <button
@@ -324,7 +324,7 @@ const Login = () => {
         </div>
 
         <div className="login-footer">
-          Â© 2026 Stark Guindastes. Todos os direitos reservados.
+          © 2026 Stark Guindastes. Todos os direitos reservados.
         </div>
       </div>
     </div>

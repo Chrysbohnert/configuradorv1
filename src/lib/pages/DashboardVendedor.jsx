@@ -24,7 +24,7 @@ const DashboardVendedor = () => {
       .catch(() => {});
   }, [user]);
 
-  // Fetch apenas quando user muda â€” nÃ£o refaz requisiÃ§Ã£o ao banco por mudanÃ§a de perÃ­odo
+  // Fetch apenas quando user muda — não refaz requisição ao banco por mudança de período
   useEffect(() => {
     if (!user) return;
 
@@ -56,7 +56,7 @@ const DashboardVendedor = () => {
     });
   }, [propostas, periodo]);
 
-  // Recalcula stats client-side quando perÃ­odo ou propostas mudam
+  // Recalcula stats client-side quando período ou propostas mudam
   const stats = useMemo(() => {
     const vendasEfetivadas = propostasFiltradas.filter(
       (p) => p.resultado_venda === 'efetivada' || p.status === 'finalizado'
@@ -74,7 +74,7 @@ const DashboardVendedor = () => {
         const valor = formatCurrency(p.valor_total || 0);
         const status = p.resultado_venda ? p.resultado_venda : p.status || 'em andamento';
         return {
-          texto: `Proposta para ${cliente} (${valor}) estÃ¡ ${status}.`,
+          texto: `Proposta para ${cliente} (${valor}) está ${status}.`,
           tipo: p.resultado_venda === 'efetivada' ? 'success' : p.resultado_venda === 'perdida' ? 'danger' : 'info',
         };
       });
@@ -125,9 +125,9 @@ const DashboardVendedor = () => {
   }, [propostasFiltradas]);
 
   const periodLabel = useMemo(() => {
-    if (periodo === '30') return 'Ãšltimos 30 dias';
-    if (periodo === '90') return 'Ãšltimos 90 dias';
-    return 'Todo o perÃ­odo';
+    if (periodo === '30') return 'Últimos 30 dias';
+    if (periodo === '90') return 'Últimos 90 dias';
+    return 'Todo o período';
   }, [periodo]);
 
   const seriePropostas = useMemo(() => {
@@ -160,13 +160,13 @@ const DashboardVendedor = () => {
 
   const pipelineData = useMemo(() => [
     {
-      label: 'Em NegociaÃ§Ã£o',
+      label: 'Em Negociação',
       count: emNegociacao.length,
       value: emNegociacao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
       tone: 'warning',
     },
     {
-      label: 'Aguardando DecisÃ£o',
+      label: 'Aguardando Decisão',
       count: aguardandoDecisao.length,
       value: aguardandoDecisao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
       tone: 'info',
@@ -192,7 +192,7 @@ const DashboardVendedor = () => {
       <UnifiedHeader
         user={user}
         title="Meu Dashboard"
-        subtitle={`OlÃ¡, ${user.nome}! Aqui estÃ¡ o resumo do seu desempenho.`}
+        subtitle={`Olá, ${user.nome}! Aqui está o resumo do seu desempenho.`}
       />
 
       <div className="dashboard-container-redesigned vendedor-dashboard-premium">
@@ -205,7 +205,7 @@ const DashboardVendedor = () => {
               <span className="seller-eyebrow">Painel Comercial</span>
               <h1 className="seller-hero-title">Desempenho do Vendedor</h1>
               <p className="seller-hero-subtitle">
-                Acompanhe sua evoluÃ§Ã£o, pipeline, atividades e oportunidades com uma visÃ£o mais estratÃ©gica.
+                Acompanhe sua evolução, pipeline, atividades e oportunidades com uma visão mais estratégica.
               </p>
             </div>
 
@@ -220,15 +220,15 @@ const DashboardVendedor = () => {
           <div className="dashboard-header-redesigned">
             <div className="filters-container">
               <div className="filter-group">
-                <label className="filter-label">PerÃ­odo</label>
+                <label className="filter-label">Período</label>
                 <select
                   className="filter-select"
                   value={periodo}
                   onChange={(e) => setPeriodo(e.target.value)}
                 >
-                  <option value="30">Ãšltimos 30 dias</option>
-                  <option value="90">Ãšltimos 90 dias</option>
-                  <option value="all">Todo o perÃ­odo</option>
+                  <option value="30">Últimos 30 dias</option>
+                  <option value="90">Últimos 90 dias</option>
+                  <option value="all">Todo o período</option>
                 </select>
               </div>
             </div>
@@ -246,28 +246,28 @@ const DashboardVendedor = () => {
 
         <section className="kpi-grid">
           <div className="card kpi-card seller-kpi-card seller-kpi-sales">
-            <div className="seller-kpi-icon">ðŸ’°</div>
-            <span className="kpi-label">Vendas no PerÃ­odo</span>
+            <div className="seller-kpi-icon">💰</div>
+            <span className="kpi-label">Vendas no Período</span>
             <span className="kpi-value">{formatCurrency(stats.vendasMes)}</span>
-            <small className="kpi-helper-text">Valor total efetivado no perÃ­odo selecionado</small>
+            <small className="kpi-helper-text">Valor total efetivado no período selecionado</small>
           </div>
 
           <div className="card kpi-card seller-kpi-card seller-kpi-proposals">
-            <div className="seller-kpi-icon">ðŸ“„</div>
+            <div className="seller-kpi-icon">📄</div>
             <span className="kpi-label">Propostas Enviadas</span>
             <span className="kpi-value">{stats.propostasEnviadas}</span>
-            <small className="kpi-helper-text">Total de propostas registradas no perÃ­odo</small>
+            <small className="kpi-helper-text">Total de propostas registradas no período</small>
           </div>
 
           <div className="card kpi-card seller-kpi-card seller-kpi-conversion">
-            <div className="seller-kpi-icon">ðŸ“ˆ</div>
-            <span className="kpi-label">Taxa de ConversÃ£o</span>
+            <div className="seller-kpi-icon">📈</div>
+            <span className="kpi-label">Taxa de Conversão</span>
             <span className="kpi-value">{stats.taxaConversao}%</span>
-            <small className="kpi-helper-text">ConversÃ£o sobre propostas com resultado</small>
+            <small className="kpi-helper-text">Conversão sobre propostas com resultado</small>
           </div>
 
           <div className="card kpi-card seller-kpi-card meta-card seller-kpi-meta">
-            <div className="seller-kpi-icon">ðŸŽ¯</div>
+            <div className="seller-kpi-icon">🎯</div>
             <span className="kpi-label">Meta Mensal</span>
 
             {metaMes.meta_valor > 0 || metaMes.meta_propostas > 0 ? (
@@ -307,7 +307,7 @@ const DashboardVendedor = () => {
                 <div className="meta-progress-container">
                   <div className="meta-progress-bar" style={{ width: '0%' }} />
                 </div>
-                <small className="kpi-helper-text" style={{ marginTop: 8, display: 'block' }}>Sem meta definida para este mÃªs.<br/>O admin pode configurar em Gerenciar Vendedores.</small>
+                <small className="kpi-helper-text" style={{ marginTop: 8, display: 'block' }}>Sem meta definida para este mês.<br/>O admin pode configurar em Gerenciar Vendedores.</small>
               </>
             )}
           </div>
@@ -317,9 +317,9 @@ const DashboardVendedor = () => {
          <div className="card seller-chart-card seller-period-table-card">
   <div className="card-top-row">
     <div>
-      <h3 className="section-title">MovimentaÃ§Ã£o do PerÃ­odo</h3>
+      <h3 className="section-title">Movimentação do Período</h3>
       <p className="section-subtitle">
-        Ãšltimas propostas registradas dentro do perÃ­odo selecionado.
+        Últimas propostas registradas dentro do período selecionado.
       </p>
     </div>
     <span className="seller-chip seller-chip-primary">{periodLabel}</span>
@@ -369,7 +369,7 @@ const DashboardVendedor = () => {
             ) : (
               <tr>
                 <td colSpan="4" className="seller-table-empty">
-                  Nenhuma proposta encontrada neste perÃ­odo.
+                  Nenhuma proposta encontrada neste período.
                 </td>
               </tr>
             )}
@@ -382,17 +382,17 @@ const DashboardVendedor = () => {
             <div className="card-top-row">
               <div>
                 <h3 className="section-title">Resumo Comercial</h3>
-                <p className="section-subtitle">Indicadores rÃ¡pidos do teu momento atual.</p>
+                <p className="section-subtitle">Indicadores rápidos do teu momento atual.</p>
               </div>
             </div>
 
             <div className="seller-summary-grid">
               <div className="seller-summary-item">
-                <span className="seller-summary-label">Ticket MÃ©dio</span>
+                <span className="seller-summary-label">Ticket Médio</span>
                 <strong>{formatCurrency(ticketMedio)}</strong>
               </div>
               <div className="seller-summary-item">
-                <span className="seller-summary-label">Em NegociaÃ§Ã£o</span>
+                <span className="seller-summary-label">Em Negociação</span>
                 <strong>{emNegociacao.length}</strong>
               </div>
               <div className="seller-summary-item">
@@ -431,10 +431,10 @@ const DashboardVendedor = () => {
                   {item.count > 0 ? (
                     [...propostasFiltradas]
                       .filter((p) => {
-                        if (item.label === 'Em NegociaÃ§Ã£o') {
+                        if (item.label === 'Em Negociação') {
                           return !p.resultado_venda && p.status !== 'finalizado';
                         }
-                        if (item.label === 'Aguardando DecisÃ£o') {
+                        if (item.label === 'Aguardando Decisão') {
                           const status = (p.status || '').toLowerCase();
                           return !p.resultado_venda && (status.includes('aguard') || status.includes('analise'));
                         }
@@ -464,7 +464,7 @@ const DashboardVendedor = () => {
             <div className="card-top-row">
               <div>
                 <h3 className="section-title">Atividades Recentes</h3>
-                <p className="section-subtitle">Ãšltimas movimentaÃ§Ãµes relacionadas Ã s tuas propostas.</p>
+                <p className="section-subtitle">Últimas movimentações relacionadas às tuas propostas.</p>
               </div>
             </div>
 
@@ -486,7 +486,7 @@ const DashboardVendedor = () => {
               <div className="card-top-row">
                 <div>
                   <h3 className="section-title">Oportunidades Quentes</h3>
-                  <p className="section-subtitle">Maiores negociaÃ§Ãµes abertas no perÃ­odo.</p>
+                  <p className="section-subtitle">Maiores negociações abertas no período.</p>
                 </div>
               </div>
 
@@ -502,7 +502,7 @@ const DashboardVendedor = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="empty-state-inline">Nenhuma oportunidade quente no perÃ­odo.</div>
+                  <div className="empty-state-inline">Nenhuma oportunidade quente no período.</div>
                 )}
               </div>
             </div>
@@ -511,7 +511,7 @@ const DashboardVendedor = () => {
               <div className="card-top-row">
                 <div>
                   <h3 className="section-title">Propostas Recentes</h3>
-                  <p className="section-subtitle">Ãšltimas propostas registradas por ti.</p>
+                  <p className="section-subtitle">Últimas propostas registradas por ti.</p>
                 </div>
               </div>
 

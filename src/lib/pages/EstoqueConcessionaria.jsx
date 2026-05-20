@@ -24,17 +24,17 @@ const EstoqueConcessionaria = () => {
     try {
       setIsLoading(true);
 
-      // Carregar dados da concessionÃ¡ria
+      // Carregar dados da concessionária
       const conc = await db.getConcessionariaById(user.concessionaria_id);
       setConcessionaria(conc);
 
       // Carregar estoque
       const estoqueData = await db.getEstoqueConcessionaria(user.concessionaria_id);
       
-      // Carregar apenas os guindastes que estÃ£o no estoque (otimizado)
+      // Carregar apenas os guindastes que estão no estoque (otimizado)
       const idsNoEstoque = estoqueData.map(item => item.guindaste_id);
       
-      // Buscar dados dos guindastes (apenas campos necessÃ¡rios)
+      // Buscar dados dos guindastes (apenas campos necessários)
       const { data: guindastesData, error } = await supabase
         .from('guindastes')
         .select('id, subgrupo, modelo, codigo_referencia, imagem_url')
@@ -54,7 +54,7 @@ const EstoqueConcessionaria = () => {
           ...item,
           guindaste: guindasteMap[item.guindaste_id]
         }))
-        .filter(item => item.guindaste) // Apenas itens com guindaste vÃ¡lido
+        .filter(item => item.guindaste) // Apenas itens com guindaste válido
         .sort((a, b) => {
           // Ordenar: primeiro com estoque > 0, depois por nome
           if (a.quantidade > 0 && b.quantidade === 0) return -1;
@@ -81,11 +81,11 @@ const EstoqueConcessionaria = () => {
   return (
     <div className="estoque-container">
         <div className="estoque-content">
-          {/* Header com estatÃ­sticas */}
+          {/* Header com estatísticas */}
           <div className="estoque-header">
             <div className="header-info">
-              <h1>ðŸ“¦ Estoque de Guindastes</h1>
-              <p>Gerencie o inventÃ¡rio da sua concessionÃ¡ria</p>
+              <h1>📦 Estoque de Guindastes</h1>
+              <p>Gerencie o inventário da sua concessionária</p>
             </div>
             
             <div className="estoque-stats">
@@ -100,14 +100,14 @@ const EstoqueConcessionaria = () => {
               <div className="stat-card">
                 <div className="stat-icon"></div>
                 <div className="stat-info">
-                  <span className="stat-label">Modelos DisponÃ­veis</span>
+                  <span className="stat-label">Modelos Disponíveis</span>
                   <span className="stat-value">{modelosComEstoque}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* BotÃµes de aÃ§Ã£o */}
+          {/* Botões de ação */}
           <div className="estoque-actions">
             <button 
               onClick={() => navigate('/nova-proposta-concessionaria')}
@@ -143,7 +143,7 @@ const EstoqueConcessionaria = () => {
             <div className="empty-state">
               <div className="empty-icon"></div>
               <h3>Estoque Vazio</h3>
-              <p>VocÃª ainda nÃ£o possui guindastes em estoque.</p>
+              <p>Você ainda não possui guindastes em estoque.</p>
               <button 
                 onClick={() => navigate('/nova-proposta-concessionaria')}
                 className="btn-primary"
@@ -158,7 +158,7 @@ const EstoqueConcessionaria = () => {
                   <tr>
                     <th>Imagem</th>
                     <th>Modelo</th>
-                    <th>CÃ³digo</th>
+                    <th>Código</th>
                     <th className="text-center">Quantidade</th>
                     <th className="text-center">Status</th>
                   </tr>
@@ -191,9 +191,9 @@ const EstoqueConcessionaria = () => {
                       </td>
                       <td className="text-center">
                         {item.quantidade > 0 ? (
-                          <span className="status-badge disponivel">âœ“ DisponÃ­vel</span>
+                          <span className="status-badge disponivel">✓ Disponível</span>
                         ) : (
-                          <span className="status-badge esgotado">âœ— Esgotado</span>
+                          <span className="status-badge esgotado">✗ Esgotado</span>
                         )}
                       </td>
                     </tr>
@@ -203,14 +203,14 @@ const EstoqueConcessionaria = () => {
             </div>
           )}
 
-          {/* InformaÃ§Ãµes adicionais */}
+          {/* Informações adicionais */}
           <div className="estoque-info-box">
-            <h3>â„¹ï¸ Como funciona o estoque?</h3>
+            <h3>ℹï¸ Como funciona o estoque?</h3>
             <ul>
-              <li><strong>Comprar Guindastes:</strong> FaÃ§a pedidos de compra Ã  Stark para adicionar guindastes ao seu estoque.</li>
-              <li><strong>Vendas:</strong> Quando seus vendedores fazem uma venda, o estoque Ã© descontado automaticamente.</li>
-              <li><strong>Visibilidade:</strong> Seus vendedores sÃ³ veem guindastes que estÃ£o em estoque (quantidade {'>'} 0).</li>
-              <li><strong>PreÃ§os:</strong> Use o botÃ£o "PreÃ§o" em Gerenciar Guindastes para definir seus preÃ§os de venda.</li>
+              <li><strong>Comprar Guindastes:</strong> Faça pedidos de compra à Stark para adicionar guindastes ao seu estoque.</li>
+              <li><strong>Vendas:</strong> Quando seus vendedores fazem uma venda, o estoque é descontado automaticamente.</li>
+              <li><strong>Visibilidade:</strong> Seus vendedores só veem guindastes que estão em estoque (quantidade {'>'} 0).</li>
+              <li><strong>Preços:</strong> Use o botão "Preço" em Gerenciar Guindastes para definir seus preços de venda.</li>
             </ul>
           </div>
         </div>

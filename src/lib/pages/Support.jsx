@@ -12,12 +12,12 @@ const Support = () => {
   };
 
   const handleWhatsApp = () => {
-    const message = encodeURIComponent('OlÃ¡! Preciso de ajuda com o sistema STARK OrÃ§amento.');
+    const message = encodeURIComponent('Olá! Preciso de ajuda com o sistema STARK Orçamento.');
     window.open(`https://wa.me/55981721286?text=${message}`, '_blank');
   };
 
   const handleEmail = () => {
-    window.open('mailto:starkorcamento@gmail.com?subject=Suporte - STARK OrÃ§amento', '_blank');
+    window.open('mailto:starkorcamento@gmail.com?subject=Suporte - STARK Orçamento', '_blank');
   };
 
   return (
@@ -37,7 +37,7 @@ const Support = () => {
             className={`tab-button ${activeTab === 'contact' ? 'active' : ''}`}
             onClick={() => setActiveTab('contact')}
           >
-            ðŸ“ž Contato
+            📞 Contato
           </button>
           <button 
             className={`tab-button ${activeTab === 'help' ? 'active' : ''}`}
@@ -49,7 +49,7 @@ const Support = () => {
             className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
             onClick={() => setActiveTab('about')}
           >
-            â„¹ï¸ Sobre
+            ℹï¸ Sobre
           </button>
         </div>
 
@@ -63,7 +63,7 @@ const Support = () => {
                   </svg>
                 </div>
                 <h3>WhatsApp</h3>
-                <p>Suporte rÃ¡pido e direto</p>
+                <p>Suporte rápido e direto</p>
                 <button onClick={handleWhatsApp} className="contact-button whatsapp">
                   Abrir WhatsApp
                 </button>
@@ -90,7 +90,7 @@ const Support = () => {
                 </div>
                 <h3>Telefone</h3>
                 <p>(55) 98172-1286</p>
-                <p className="phone-hours">Seg-Sex: 8h Ã s 18h</p>
+                <p className="phone-hours">Seg-Sex: 8h às 18h</p>
               </div>
             </div>
           )}
@@ -98,25 +98,25 @@ const Support = () => {
           {activeTab === 'help' && (
             <div className="help-section">
               <div className="faq-item">
-                <h3>Como criar um novo orÃ§amento?</h3>
+                <h3>Como criar um novo orçamento?</h3>
                 <p>1. Acesse "Nova Proposta" no menu<br/>
                 2. Selecione o guindaste desejado<br/>
-                3. Adicione opcionais se necessÃ¡rio<br/>
+                3. Adicione opcionais se necessário<br/>
                 4. Preencha os dados do cliente<br/>
-                5. Configure o caminhÃ£o<br/>
-                6. Revise e finalize o orÃ§amento</p>
+                5. Configure o caminhão<br/>
+                6. Revise e finalize o orçamento</p>
               </div>
 
               <div className="faq-item">
                 <h3>Como compartilhar a proposta com o cliente?</h3>
-                <p>1. VÃ¡ para "Propostas"<br/>
+                <p>1. Vá para "Propostas"<br/>
                 2. Gere o PDF da proposta<br/>
-                3. Compartilhe o arquivo e/ou o link pÃºblico da proposta</p>
+                3. Compartilhe o arquivo e/ou o link público da proposta</p>
               </div>
 
               <div className="faq-item">
                 <h3>Como alterar minha senha?</h3>
-                <p>Entre em contato com o administrador do sistema para solicitar a alteraÃ§Ã£o de senha.</p>
+                <p>Entre em contato com o administrador do sistema para solicitar a alteração de senha.</p>
               </div>
             </div>
           )}
@@ -124,16 +124,16 @@ const Support = () => {
           {activeTab === 'about' && (
             <div className="about-section">
               <div className="about-card">
-                <h3>Sobre o STARK OrÃ§amento</h3>
-                <p>O STARK OrÃ§amento Ã© um sistema profissional desenvolvido para facilitar a criaÃ§Ã£o e digitalizaÃ§Ã£o de proposta comercial de guindastes.</p>
+                <h3>Sobre o STARK Orçamento</h3>
+                <p>O STARK Orçamento é um sistema profissional desenvolvido para facilitar a criação e digitalização de proposta comercial de guindastes.</p>
                 
                 <div className="version-info">
-                  <h4>InformaÃ§Ãµes do Sistema</h4>
+                  <h4>Informações do Sistema</h4>
                   <ul>
-                    <li><strong>VersÃ£o:</strong> 1.0.0</li>
+                    <li><strong>Versão:</strong> 1.0.0</li>
                     <li><strong>Desenvolvido por:</strong> Chrystian Bohnert e Mathias Fuhr</li>
                     <li><strong>Sistema criado em:</strong> Julho 2025</li>
-                    <li><strong>Ãšltima atualizaÃ§Ã£o:</strong> Outubro 2025</li>
+                    <li><strong>Última atualização:</strong> Outubro 2025</li>
                     <li><strong>Suporte:</strong> 24/7</li>
                   </ul>
                 </div>
@@ -141,12 +141,12 @@ const Support = () => {
                 <div className="features-list">
                   <h4>Funcionalidades Principais</h4>
                   <ul>
-                    <li>âœ… CriaÃ§Ã£o de proposta comercial profissional</li>
-                    <li>âœ… GeraÃ§Ã£o de PDFs automÃ¡tica</li>
-                    <li>âœ… IntegraÃ§Ã£o com WhatsApp</li>
-                    <li>âœ… Dashboard administrativo</li>
-                    <li>âœ… Sistema de relatÃ³rios</li>
-                    <li>âœ… Interface responsiva</li>
+                    <li>✅ Criação de proposta comercial profissional</li>
+                    <li>✅ Geração de PDFs automática</li>
+                    <li>✅ Integração com WhatsApp</li>
+                    <li>✅ Dashboard administrativo</li>
+                    <li>✅ Sistema de relatórios</li>
+                    <li>✅ Interface responsiva</li>
                   </ul>
                 </div>
               </div>

@@ -34,8 +34,8 @@ const GerenciarGraficosCarga = () => {
       const graficosData = await db.getGraficosCarga();
       setGraficos(graficosData || []);
     } catch (error) {
-      console.error('Erro ao carregar grÃ¡ficos:', error);
-      alert('Erro ao carregar grÃ¡ficos. Verifique a conexÃ£o com o banco.');
+      console.error('Erro ao carregar gráficos:', error);
+      alert('Erro ao carregar gráficos. Verifique a conexão com o banco.');
     } finally {
       setIsLoading(false);
     }
@@ -47,9 +47,9 @@ const GerenciarGraficosCarga = () => {
     try {
       setIsLoading(true);
 
-      // ðŸš« LOGIN SUPABASE DESATIVADO TEMPORARIAMENTE
-      // Durante migraÃ§Ã£o Supabase -> PostgreSQL
-      // O sistema agora usa autenticaÃ§Ã£o via API REST/PostgreSQL
+      // 🚫 LOGIN SUPABASE DESATIVADO TEMPORARIAMENTE
+      // Durante migração Supabase -> PostgreSQL
+      // O sistema agora usa autenticação via API REST/PostgreSQL
 
       let arquivoUrl = '';
 
@@ -65,10 +65,10 @@ const GerenciarGraficosCarga = () => {
 
       if (editingGrafico) {
         await db.updateGraficoCarga(editingGrafico.id, graficoData);
-        alert('GrÃ¡fico atualizado com sucesso!');
+        alert('Gráfico atualizado com sucesso!');
       } else {
         await db.createGraficoCarga(graficoData);
-        alert('GrÃ¡fico criado com sucesso!');
+        alert('Gráfico criado com sucesso!');
       }
 
       setShowModal(false);
@@ -76,37 +76,37 @@ const GerenciarGraficosCarga = () => {
       resetForm();
       loadGraficos();
     } catch (error) {
-      console.error('Erro ao salvar grÃ¡fico:', error);
+      console.error('Erro ao salvar gráfico:', error);
       console.error('Detalhes completos:', JSON.stringify(error, null, 2));
 
-      let errorMessage = 'Erro ao salvar grÃ¡fico. Tente novamente.';
+      let errorMessage = 'Erro ao salvar gráfico. Tente novamente.';
 
       if (error.message) {
         if (error.message.includes('storage')) {
           errorMessage =
-            'Erro no sistema de arquivos. Verifique se o arquivo Ã© vÃ¡lido e tente novamente.';
+            'Erro no sistema de arquivos. Verifique se o arquivo é válido e tente novamente.';
         } else if (error.message.includes('bucket')) {
           errorMessage =
             'Erro na configuracao do sistema. Entre em contato com o suporte.';
         } else if (error.message.includes('permission')) {
-          errorMessage = 'Erro de permissÃ£o. Verifique suas credenciais.';
+          errorMessage = 'Erro de permissão. Verifique suas credenciais.';
         } else if (error.message.includes('file size')) {
-          errorMessage = 'Arquivo muito grande. O tamanho mÃ¡ximo Ã© 50MB.';
+          errorMessage = 'Arquivo muito grande. O tamanho máximo é 50MB.';
         } else if (error.message.includes('file type')) {
           errorMessage =
-            'Tipo de arquivo nÃ£o suportado. Use apenas arquivos PDF.';
+            'Tipo de arquivo não suportado. Use apenas arquivos PDF.';
         } else if (
           error.message.includes('RLS') ||
           error.message.includes('row-level security policy')
         ) {
           errorMessage =
-            'Erro de permissÃ£o: configure as polÃ­ticas de acesso no Supabase Storage.';
+            'Erro de permissão: configure as políticas de acesso no Supabase Storage.';
         } else if (error.message.includes('400')) {
           errorMessage =
-            'Erro de requisiÃ§Ã£o. Verifique se o arquivo Ã© vÃ¡lido.';
+            'Erro de requisição. Verifique se o arquivo é válido.';
         } else if (error.message.includes('403')) {
           errorMessage =
-            'Acesso negado. Verifique suas permissÃµes no Supabase.';
+            'Acesso negado. Verifique suas permissões no Supabase.';
         }
       }
 
@@ -133,18 +133,18 @@ const GerenciarGraficosCarga = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Tem certeza que deseja excluir este grÃ¡fico?')) {
+    if (!window.confirm('Tem certeza que deseja excluir este gráfico?')) {
       return;
     }
 
     try {
       setIsLoading(true);
       await db.deleteGraficoCarga(id);
-      alert('GrÃ¡fico excluÃ­do com sucesso!');
+      alert('Gráfico excluído com sucesso!');
       loadGraficos();
     } catch (error) {
-      console.error('Erro ao excluir grÃ¡fico:', error);
-      alert('Erro ao excluir grÃ¡fico. Tente novamente.');
+      console.error('Erro ao excluir gráfico:', error);
+      alert('Erro ao excluir gráfico. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -179,8 +179,8 @@ const GerenciarGraficosCarga = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="Gerenciar GrÃ¡ficos de Carga"
-        subtitle="Upload e gestÃ£o de grÃ¡ficos tÃ©cnicos"
+        title="Gerenciar Gráficos de Carga"
+        subtitle="Upload e gestão de gráficos técnicos"
       />
 
       {/* restante do JSX permanece igual */}

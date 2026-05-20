@@ -35,7 +35,7 @@ const DashboardAdmin = () => {
 
         const [usersResp, guindastesCountResp] = await Promise.all([
           usersPromise.catch((err) => {
-            console.error('âŒ Erro ao carregar usuÃ¡rios:', err);
+            console.error('âŒ Erro ao carregar usuários:', err);
             return [];
           }),
           getGuindastesCountForDashboard().catch((err) => {
@@ -48,7 +48,7 @@ const DashboardAdmin = () => {
           .filter((u) => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
           .map((u) => u.id);
 
-        // âš¡ includeDadosSerializados:true necessÃ¡rio para analytics de GSI/GSE, topProdutos e regiÃ£o
+        // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
         const pedidosResp = await (isAdminConcessionaria
           ? getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
               console.error('âŒ Erro ao carregar propostas:', err);
@@ -351,7 +351,7 @@ const DashboardAdmin = () => {
         p.regiao_venda ||
         p.dados_serializados?.regiaoCompraSelecionada ||
         vendedor?.regiao ||
-        'NÃ£o definida';
+        'Não definida';
       const current = totals.get(region) || { count: 0, value: 0, gsiValue: 0, gseValue: 0 };
       const valorTotal = p.valor_total || 0;
       const items = p.dados_serializados?.carrinho || [];
@@ -419,7 +419,7 @@ const DashboardAdmin = () => {
   }, [propostasFiltradas]);
 
   const exportCSV = useCallback(() => {
-    const header = 'NÃºmero;Data;Vendedor;Cliente;Valor (R$);Resultado\n';
+    const header = 'Número;Data;Vendedor;Cliente;Valor (R$);Resultado\n';
     const rows = propostasFiltradas.map((p) => [
       p.numero_proposta || p.id || '',
       (p.created_at || p.data || '').slice(0, 10),
@@ -444,7 +444,7 @@ const DashboardAdmin = () => {
       posicao: index + 1,
       badge:
         index === 0
-          ? 'LÃ­der do perÃ­odo'
+          ? 'Líder do período'
           : index === 1
           ? 'Destaque comercial'
           : 'Top performance',
@@ -541,15 +541,15 @@ const DashboardAdmin = () => {
       items.push({
         tone: 'danger',
         title: 'Propostas perdidas',
-        description: `${pipeline.perdida} proposta(s) perdidas no perÃ­odo.`,
+        description: `${pipeline.perdida} proposta(s) perdidas no período.`,
       });
     }
 
     if (kpis.taxaConversao >= 30) {
       items.push({
         tone: 'success',
-        title: 'ConversÃ£o saudÃ¡vel',
-        description: `Taxa de conversÃ£o atual em ${kpis.taxaConversao}%.`,
+        title: 'Conversão saudável',
+        description: `Taxa de conversão atual em ${kpis.taxaConversao}%.`,
       });
     }
 
@@ -567,14 +567,14 @@ const DashboardAdmin = () => {
   }, [pipeline, kpis.taxaConversao, rankingVendedores]);
 
   const periodLabel = useMemo(() => {
-    if (periodo === '7') return 'Ãšltimos 7 dias';
-    if (periodo === '30') return 'Ãšltimos 30 dias';
-    if (periodo === '90') return 'Ãšltimos 90 dias';
-    return 'Todo o perÃ­odo';
+    if (periodo === '7') return 'Últimos 7 dias';
+    if (periodo === '30') return 'Últimos 30 dias';
+    if (periodo === '90') return 'Últimos 90 dias';
+    return 'Todo o período';
   }, [periodo]);
 
   const visaoLabel = useMemo(() => {
-    return visaoConversao === 'efetivadas' ? 'VisÃ£o por resultado' : 'VisÃ£o por criaÃ§Ã£o';
+    return visaoConversao === 'efetivadas' ? 'Visão por resultado' : 'Visão por criação';
   }, [visaoConversao]);
 
   if (!user) return null;
@@ -601,49 +601,49 @@ const DashboardAdmin = () => {
       label: 'Propostas Criadas',
       value: kpis.totalPropostas,
       trend: kpis.varPropostas,
-      icon: 'ðŸ“„',
+      icon: '📄',
       tone: 'blue',
-      helper: 'comparado ao perÃ­odo anterior',
-      sub: kpis.totalPropostasAnt > 0 ? `${kpis.totalPropostasAnt} no perÃ­odo anterior` : null,
+      helper: 'comparado ao período anterior',
+      sub: kpis.totalPropostasAnt > 0 ? `${kpis.totalPropostasAnt} no período anterior` : null,
       sparkData: seriePropostas.map((item) => item.value),
     },
     {
       label: 'Propostas Efetivadas',
       value: kpis.efetivadas,
       trend: kpis.totalPropostas > 0 ? Math.round((kpis.efetivadas / kpis.totalPropostas) * 100) : 0,
-      icon: 'âœ…',
+      icon: '✅',
       tone: 'green',
       helper: 'ganhos confirmados',
       sparkData: serieReceita.map((item) => item.value),
-      trendLabel: 'participaÃ§Ã£o',
+      trendLabel: 'participação',
     },
     {
-      label: 'Taxa de ConversÃ£o',
+      label: 'Taxa de Conversão',
       value: `${kpis.taxaConversao}%`,
       trend: kpis.taxaConversao,
-      icon: 'ðŸ“ˆ',
+      icon: '📈',
       tone: 'purple',
       helper: 'sobre propostas com resultado',
       sparkData: seriePropostas.map((item) => item.value),
-      trendLabel: 'Ã­ndice',
+      trendLabel: 'índice',
     },
     {
       label: 'Vendedores Ativos',
       value: kpis.totalVendedores,
       trend: rankingVendedores.length,
-      icon: 'ðŸ‘¥',
+      icon: '👥',
       tone: 'orange',
-      helper: 'usuÃ¡rios de vendas no sistema',
+      helper: 'usuários de vendas no sistema',
       sparkData: seriePropostas.map((item) => item.value),
       trendLabel: 'no ranking',
     },
     {
-      label: 'Ticket MÃ©dio',
+      label: 'Ticket Médio',
       value: formatCurrency(kpis.ticketMedio),
       trend: kpis.varResultado,
       icon: '',
       tone: 'cyan',
-      helper: 'valor mÃ©dio por proposta',
+      helper: 'valor médio por proposta',
       sparkData: serieReceita.map((item) => item.value),
     },
     {
@@ -652,8 +652,8 @@ const DashboardAdmin = () => {
       trend: kpis.varResultado,
       icon: '',
       tone: 'emerald',
-      helper: 'volume do perÃ­odo',
-      sub: kpis.resultadoAnt > 0 ? `${formatCurrency(kpis.resultadoAnt)} no perÃ­odo anterior` : null,
+      helper: 'volume do período',
+      sub: kpis.resultadoAnt > 0 ? `${formatCurrency(kpis.resultadoAnt)} no período anterior` : null,
       sparkData: serieReceita.map((item) => item.value),
     },
     {
@@ -664,7 +664,7 @@ const DashboardAdmin = () => {
       tone: 'red',
       helper: 'perdas comerciais',
       sparkData: seriePropostas.map((item) => item.value),
-      trendLabel: 'participaÃ§Ã£o',
+      trendLabel: 'participação',
     },
     {
       label: 'Receita Efetivada',
@@ -699,7 +699,7 @@ const DashboardAdmin = () => {
                   <div className="eyebrow-label">Painel executivo</div>
                   <h1 className="admin-hero-title">Dashboard Admin</h1>
                   <p className="admin-hero-subtitle">
-                    Acompanhe propostas, conversÃ£o, receita, pipeline e desempenho da equipe em um sÃ³ lugar.
+                    Acompanhe propostas, conversão, receita, pipeline e desempenho da equipe em um só lugar.
                   </p>
                 </div>
 
@@ -712,34 +712,34 @@ const DashboardAdmin = () => {
               <div className="dashboard-header-redesigned">
                 <div className="filters-container">
                   <div className="filter-group">
-                    <label className="filter-label">PerÃ­odo</label>
+                    <label className="filter-label">Período</label>
                     <select
                       className="filter-select"
                       value={periodo}
                       onChange={(e) => setPeriodo(e.target.value)}
                     >
-                      <option value="7">Ãšltimos 7 dias</option>
-                      <option value="30">Ãšltimos 30 dias</option>
-                      <option value="90">Ãšltimos 90 dias</option>
-                      <option value="all">Todo o perÃ­odo</option>
+                      <option value="7">Últimos 7 dias</option>
+                      <option value="30">Últimos 30 dias</option>
+                      <option value="90">Últimos 90 dias</option>
+                      <option value="all">Todo o período</option>
                     </select>
                   </div>
 
                   <div className="filter-group">
-                    <label className="filter-label">VisÃ£o</label>
+                    <label className="filter-label">Visão</label>
                     <select
                       className="filter-select"
                       value={visaoConversao}
                       onChange={(e) => setVisaoConversao(e.target.value)}
                     >
-                      <option value="criadas">VisÃ£o por CriaÃ§Ã£o</option>
-                      <option value="efetivadas">VisÃ£o por Resultado</option>
+                      <option value="criadas">Visão por Criação</option>
+                      <option value="efetivadas">Visão por Resultado</option>
                     </select>
                   </div>
                 </div>
 
                 <button type="button" className="filter-export-btn" onClick={exportCSV} title={`Exportar ${propostasFiltradas.length} propostas como CSV`}>
-                  â†“ Exportar CSV
+                  ↓ Exportar CSV
                 </button>
 
                 <div className="quick-summary">
@@ -793,7 +793,7 @@ const DashboardAdmin = () => {
                       <div className="spotlight-info">
                         <span className="spotlight-badge">{currentSpotlight.badge}</span>
                         <h4>{currentSpotlight.nome}</h4>
-                        <strong className="spotlight-count-primary">{currentSpotlight.count} prop Â· {kpis.totalPropostas > 0 ? Math.round((currentSpotlight.count / kpis.totalPropostas) * 100) : 0}%</strong>
+                        <strong className="spotlight-count-primary">{currentSpotlight.count} prop · {kpis.totalPropostas > 0 ? Math.round((currentSpotlight.count / kpis.totalPropostas) * 100) : 0}%</strong>
                         <span className="spotlight-value-secondary">{formatCurrency(currentSpotlight.valor)}</span>
                       </div>
                     </div>
@@ -813,17 +813,17 @@ const DashboardAdmin = () => {
 
                     <div className="spotlight-mini-metrics">
                       <div className="spotlight-mini-card">
-                        <span>Ticket mÃ©dio</span>
+                        <span>Ticket médio</span>
                         <strong>{formatCurrency(kpis.ticketMedio)}</strong>
                       </div>
                       <div className="spotlight-mini-card">
-                        <span>ConversÃ£o geral</span>
+                        <span>Conversão geral</span>
                         <strong>{kpis.taxaConversao}%</strong>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="spotlight-empty">Sem ranking disponÃ­vel no perÃ­odo.</div>
+                  <div className="spotlight-empty">Sem ranking disponível no período.</div>
                 )}
               </div>
             </div>
@@ -847,9 +847,9 @@ const DashboardAdmin = () => {
                     typeof card.trend === 'number' && card.trend < 0 ? 'down' : 'up'
                   }`}
                 >
-                  {typeof card.trend === 'number' && card.trend < 0 ? 'â–¼' : 'â–²'}{' '}
+                  {typeof card.trend === 'number' && card.trend < 0 ? '▼' : '▲'}{' '}
                   {Math.abs(card.trend || 0)}%
-                  <small>{card.trendLabel || 'vs. perÃ­odo anterior'}</small>
+                  <small>{card.trendLabel || 'vs. período anterior'}</small>
                 </span>
                 <span className="kpi-helper">{card.helper}</span>
                 {card.sub && <span className="kpi-sub">{card.sub}</span>}
@@ -865,7 +865,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Performance por linha de produto</h3>
-                <p className="section-subtitle">ParticipaÃ§Ã£o por quantidade e linha de produto</p>
+                <p className="section-subtitle">Participação por quantidade e linha de produto</p>
               </div>
             </div>
 
@@ -882,8 +882,8 @@ const DashboardAdmin = () => {
                 </div>
                 <div className="breakdown-value">
                   <span className="breakdown-primary">
-                    {statsBySubgroup.GSI.count} prop Â· {Math.round((statsBySubgroup.GSI.count / totalSubgroupCount) * 100)}%
-                    {statsBySubgroupAnt.GSI.count > 0 ? ` Â· ${varPct(statsBySubgroup.GSI.count, statsBySubgroupAnt.GSI.count) >= 0 ? '+' : ''}${varPct(statsBySubgroup.GSI.count, statsBySubgroupAnt.GSI.count)}% vs ant.` : ''}
+                    {statsBySubgroup.GSI.count} prop · {Math.round((statsBySubgroup.GSI.count / totalSubgroupCount) * 100)}%
+                    {statsBySubgroupAnt.GSI.count > 0 ? ` · ${varPct(statsBySubgroup.GSI.count, statsBySubgroupAnt.GSI.count) >= 0 ? '+' : ''}${varPct(statsBySubgroup.GSI.count, statsBySubgroupAnt.GSI.count)}% vs ant.` : ''}
                   </span>
                   <span className="breakdown-meta">{formatCurrency(statsBySubgroup.GSI.value)}</span>
                 </div>
@@ -901,8 +901,8 @@ const DashboardAdmin = () => {
                 </div>
                 <div className="breakdown-value">
                   <span className="breakdown-primary">
-                    {statsBySubgroup.GSE.count} prop Â· {Math.round((statsBySubgroup.GSE.count / totalSubgroupCount) * 100)}%
-                    {statsBySubgroupAnt.GSE.count > 0 ? ` Â· ${varPct(statsBySubgroup.GSE.count, statsBySubgroupAnt.GSE.count) >= 0 ? '+' : ''}${varPct(statsBySubgroup.GSE.count, statsBySubgroupAnt.GSE.count)}% vs ant.` : ''}
+                    {statsBySubgroup.GSE.count} prop · {Math.round((statsBySubgroup.GSE.count / totalSubgroupCount) * 100)}%
+                    {statsBySubgroupAnt.GSE.count > 0 ? ` · ${varPct(statsBySubgroup.GSE.count, statsBySubgroupAnt.GSE.count) >= 0 ? '+' : ''}${varPct(statsBySubgroup.GSE.count, statsBySubgroupAnt.GSE.count)}% vs ant.` : ''}
                   </span>
                   <span className="breakdown-meta">{formatCurrency(statsBySubgroup.GSE.value)}</span>
                 </div>
@@ -920,7 +920,7 @@ const DashboardAdmin = () => {
                 </div>
                 <div className="breakdown-value">
                   <span className="breakdown-primary">
-                    {statsBySubgroup.Outros.count} prop Â· {Math.round((statsBySubgroup.Outros.count / totalSubgroupCount) * 100)}%
+                    {statsBySubgroup.Outros.count} prop · {Math.round((statsBySubgroup.Outros.count / totalSubgroupCount) * 100)}%
                   </span>
                   <span className="breakdown-meta">{formatCurrency(statsBySubgroup.Outros.value)}</span>
                 </div>
@@ -931,8 +931,8 @@ const DashboardAdmin = () => {
           <div className="card">
             <div className="card-header-inline">
               <div>
-                <h3 className="section-title">Performance por regiÃ£o</h3>
-                <p className="section-subtitle">Propostas por regiÃ£o de venda</p>
+                <h3 className="section-title">Performance por região</h3>
+                <p className="section-subtitle">Propostas por região de venda</p>
               </div>
             </div>
 
@@ -949,14 +949,14 @@ const DashboardAdmin = () => {
                     </div>
                     <div className="breakdown-value">
                       <span className="breakdown-primary">
-                        {region.count} prop Â· {propostasFiltradas.length > 0 ? Math.round((region.count / propostasFiltradas.length) * 100) : 0}%
+                        {region.count} prop · {propostasFiltradas.length > 0 ? Math.round((region.count / propostasFiltradas.length) * 100) : 0}%
                       </span>
                       <span className="breakdown-meta">{formatCurrency(region.value)}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="empty-ranking">Sem dados de regiÃ£o.</div>
+                <div className="empty-ranking">Sem dados de região.</div>
               )}
             </div>
           </div>
@@ -967,7 +967,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Propostas criadas por dia</h3>
-                <p className="section-subtitle">EvoluÃ§Ã£o diÃ¡ria do volume comercial no perÃ­odo selecionado</p>
+                <p className="section-subtitle">Evolução diária do volume comercial no período selecionado</p>
               </div>
               {kpis.varPropostas !== 0 && (
                 <span className={`chip ${kpis.varPropostas >= 0 ? 'chip-positive' : 'chip-negative'}`}>
@@ -982,7 +982,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Valor movimentado por dia</h3>
-                <p className="section-subtitle">Volume financeiro das propostas no perÃ­odo</p>
+                <p className="section-subtitle">Volume financeiro das propostas no período</p>
               </div>
               {kpis.varResultado !== 0 && (
                 <span className={`chip ${kpis.varResultado >= 0 ? 'chip-positive' : 'chip-negative'}`}>
@@ -999,7 +999,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Top Produtos</h3>
-                <p className="section-subtitle">Itens mais cotados no perÃ­odo â€” por quantidade</p>
+                <p className="section-subtitle">Itens mais cotados no período — por quantidade</p>
               </div>
             </div>
             <div className="breakdown-list">
@@ -1014,7 +1014,7 @@ const DashboardAdmin = () => {
                     </div>
                     <div className="breakdown-value">
                       <span className="breakdown-primary">
-                        {p.count} prop Â· {kpis.totalPropostas > 0 ? Math.round((p.count / kpis.totalPropostas) * 100) : 0}%
+                        {p.count} prop · {kpis.totalPropostas > 0 ? Math.round((p.count / kpis.totalPropostas) * 100) : 0}%
                       </span>
                       <span className="breakdown-meta">
                         {formatCurrency(p.value)}
@@ -1023,7 +1023,7 @@ const DashboardAdmin = () => {
                   </div>
                 ))
               ) : (
-                <div className="empty-ranking">Sem dados de produto no perÃ­odo.</div>
+                <div className="empty-ranking">Sem dados de produto no período.</div>
               )}
             </div>
           </div>
@@ -1032,7 +1032,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Propostas por Estado (UF)</h3>
-                <p className="section-subtitle">ConcentraÃ§Ã£o geogrÃ¡fica das propostas no perÃ­odo</p>
+                <p className="section-subtitle">Concentração geográfica das propostas no período</p>
               </div>
             </div>
             <div className="breakdown-list">
@@ -1048,14 +1048,14 @@ const DashboardAdmin = () => {
                     </div>
                     <div className="breakdown-value">
                       <span className="breakdown-primary">
-                        {e.count} prop Â· {kpis.totalPropostas > 0 ? Math.round((e.count / kpis.totalPropostas) * 100) : 0}%
+                        {e.count} prop · {kpis.totalPropostas > 0 ? Math.round((e.count / kpis.totalPropostas) * 100) : 0}%
                       </span>
                       <span className="breakdown-meta">{formatCurrency(e.value)}</span>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="empty-ranking">Preencha UF nos dados do cliente para ver esta anÃ¡lise.</div>
+                <div className="empty-ranking">Preencha UF nos dados do cliente para ver esta análise.</div>
               )}
             </div>
           </div>
@@ -1065,8 +1065,8 @@ const DashboardAdmin = () => {
           <div className="card proposals-card">
             <div className="card-header-inline">
               <div>
-                <h3 className="section-title">Ãšltimas propostas</h3>
-                <p className="section-subtitle">MovimentaÃ§Ãµes mais recentes do perÃ­odo</p>
+                <h3 className="section-title">Últimas propostas</h3>
+                <p className="section-subtitle">Movimentações mais recentes do período</p>
               </div>
             </div>
 
@@ -1099,7 +1099,7 @@ const DashboardAdmin = () => {
                       return (
                         <tr key={`${p.id || index}-${index}`}>
                           <td>#{p.id || index + 1}</td>
-                          <td>{p.cliente_nome || p.nome_cliente || 'Cliente nÃ£o informado'}</td>
+                          <td>{p.cliente_nome || p.nome_cliente || 'Cliente não informado'}</td>
                           <td>{vendedorNome}</td>
                           <td>{formatCurrency(p.valor_total || 0)}</td>
                           <td>
@@ -1118,7 +1118,7 @@ const DashboardAdmin = () => {
                   ) : (
                     <tr>
                       <td colSpan="6" className="table-empty">
-                        Nenhuma proposta encontrada para o perÃ­odo selecionado.
+                        Nenhuma proposta encontrada para o período selecionado.
                       </td>
                     </tr>
                   )}
@@ -1150,7 +1150,7 @@ const DashboardAdmin = () => {
                         </div>
                         <div className="ranking-value">
                           <span className="breakdown-primary" style={{ textAlign: 'right' }}>
-                            {vendedor.count} prop Â· {kpis.totalPropostas > 0 ? Math.round((vendedor.count / kpis.totalPropostas) * 100) : 0}%
+                            {vendedor.count} prop · {kpis.totalPropostas > 0 ? Math.round((vendedor.count / kpis.totalPropostas) * 100) : 0}%
                           </span>
                           <span className="breakdown-meta" style={{ textAlign: 'right' }}>
                             {formatCurrency(vendedor.valor)}
@@ -1168,7 +1168,7 @@ const DashboardAdmin = () => {
                     </div>
                   ))
                 ) : (
-                  <div className="empty-ranking">Sem vendas registradas no perÃ­odo.</div>
+                  <div className="empty-ranking">Sem vendas registradas no período.</div>
                 )}
               </div>
             </div>
@@ -1180,28 +1180,28 @@ const DashboardAdmin = () => {
           <div className="card">
             <div className="card-header-inline">
               <div>
-                <h3 className="section-title">SaÃºde do funil</h3>
-                <p className="section-subtitle">SituaÃ§Ã£o atual da carteira comercial</p>
+                <h3 className="section-title">Saúde do funil</h3>
+                <p className="section-subtitle">Situação atual da carteira comercial</p>
               </div>
             </div>
 
             <div className="pipeline-summary pipeline-summary-rich">
               <div className="pipeline-stage-card pipeline-stage-open">
-                <span className="pipeline-stage-label">Em negociaÃ§Ã£o</span>
+                <span className="pipeline-stage-label">Em negociação</span>
                 <span className="pipeline-value">{pipeline.sem_resultado}</span>
-                <small>oportunidades em aberto{statusData.total > 0 ? ` Â· ${Math.round((pipeline.sem_resultado / statusData.total) * 100)}%` : ''}</small>
+                <small>oportunidades em aberto{statusData.total > 0 ? ` · ${Math.round((pipeline.sem_resultado / statusData.total) * 100)}%` : ''}</small>
               </div>
 
               <div className="pipeline-stage-card pipeline-stage-win">
                 <span className="pipeline-stage-label">Ganhos</span>
                 <span className="pipeline-value">{pipeline.efetivada}</span>
-                <small>propostas efetivadas{statusData.total > 0 ? ` Â· ${Math.round((pipeline.efetivada / statusData.total) * 100)}%` : ''}</small>
+                <small>propostas efetivadas{statusData.total > 0 ? ` · ${Math.round((pipeline.efetivada / statusData.total) * 100)}%` : ''}</small>
               </div>
 
               <div className="pipeline-stage-card pipeline-stage-loss">
                 <span className="pipeline-stage-label">Perdidos</span>
                 <span className="pipeline-value">{pipeline.perdida}</span>
-                <small>encerradas sem venda{statusData.total > 0 ? ` Â· ${Math.round((pipeline.perdida / statusData.total) * 100)}%` : ''}</small>
+                <small>encerradas sem venda{statusData.total > 0 ? ` · ${Math.round((pipeline.perdida / statusData.total) * 100)}%` : ''}</small>
               </div>
             </div>
             <DonutChart data={statusData.list} centerLabel="Total" centerValue={statusData.total} />
@@ -1211,7 +1211,7 @@ const DashboardAdmin = () => {
             <div className="card-header-inline">
               <div>
                 <h3 className="section-title">Alertas e oportunidades</h3>
-                <p className="section-subtitle">Indicadores rÃ¡pidos para tomada de decisÃ£o</p>
+                <p className="section-subtitle">Indicadores rápidos para tomada de decisão</p>
               </div>
             </div>
 
@@ -1279,7 +1279,7 @@ function LineAreaChart({ data = [], color = '#3b82f6' }) {
   const padding = 18;
 
   if (!data.length) {
-    return <div className="chart-placeholder">Sem dados para exibir neste perÃ­odo.</div>;
+    return <div className="chart-placeholder">Sem dados para exibir neste período.</div>;
   }
 
   const max = Math.max(...data.map((d) => d.value), 1);
@@ -1357,7 +1357,7 @@ function LineAreaChart({ data = [], color = '#3b82f6' }) {
 
 function SimpleBarChart({ data = [], color = '#8b5cf6' }) {
   if (!data.length) {
-    return <div className="chart-placeholder">Sem dados para exibir neste perÃ­odo.</div>;
+    return <div className="chart-placeholder">Sem dados para exibir neste período.</div>;
   }
 
   const max = Math.max(...data.map((d) => d.value), 1);

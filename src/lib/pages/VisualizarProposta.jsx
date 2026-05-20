@@ -18,7 +18,7 @@ const VisualizarProposta = () => {
 
         const proposta = await getPropostaById(id);
         if (!proposta) {
-          setError('Proposta nÃ£o encontrada.');
+          setError('Proposta não encontrada.');
           return;
         }
 
@@ -34,7 +34,7 @@ const VisualizarProposta = () => {
           numeroProposta: proposta.numero_proposta,
         });
       } catch (err) {
-        console.error('Erro ao carregar proposta para visualizaÃ§Ã£o:', err);
+        console.error('Erro ao carregar proposta para visualização:', err);
         setError('Erro ao carregar a proposta.');
       } finally {
         setLoading(false);
@@ -44,7 +44,7 @@ const VisualizarProposta = () => {
     if (id) {
       carregarProposta();
     } else {
-      setError('ID da proposta nÃ£o informado.');
+      setError('ID da proposta não informado.');
       setLoading(false);
     }
   }, [id]);
@@ -61,7 +61,7 @@ const VisualizarProposta = () => {
   if (error) {
     return (
       <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>âš ï¸</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠ï¸</div>
         <p style={{ color: '#666' }}>{error}</p>
       </div>
     );
@@ -77,7 +77,7 @@ const VisualizarProposta = () => {
         Proposta Comercial
       </h1>
       <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px', textAlign: 'center' }}>
-        VisualizaÃ§Ã£o da proposta #{pedidoData.numeroProposta}
+        Visualização da proposta #{pedidoData.numeroProposta}
       </p>
 
       <div style={{ marginBottom: '24px' }}>

@@ -32,8 +32,8 @@ const GraficosCarga = () => {
       setGraficos(graficosData);
       setFilteredGraficos(graficosData);
     } catch (error) {
-      console.error('Erro ao carregar grÃ¡ficos:', error);
-      alert('Erro ao carregar grÃ¡ficos.');
+      console.error('Erro ao carregar gráficos:', error);
+      alert('Erro ao carregar gráficos.');
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +73,7 @@ const GraficosCarga = () => {
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Erro ao fazer download:', error);
-      alert('Erro ao fazer download. Tente usar o botÃ£o Visualizar e salvar pelo navegador.');
+      alert('Erro ao fazer download. Tente usar o botão Visualizar e salvar pelo navegador.');
     }
   };
 
@@ -89,16 +89,16 @@ const GraficosCarga = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="GrÃ¡ficos de Carga"
-        subtitle="Download de grÃ¡ficos tÃ©cnicos"
+        title="Gráficos de Carga"
+        subtitle="Download de gráficos técnicos"
       />
 
       <div className="gerenciar-graficos-container">
         <div className="gerenciar-content">
           <div className="header-section">
             <div className="header-info">
-              <h1>GrÃ¡ficos de Carga</h1>
-              <p>Baixe e visualize os grÃ¡ficos tÃ©cnicos dos guindastes</p>
+              <h1>Gráficos de Carga</h1>
+              <p>Baixe e visualize os gráficos técnicos dos guindastes</p>
             </div>
             
             <div className="search-box">
@@ -125,8 +125,8 @@ const GraficosCarga = () => {
                     <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                   </svg>
                 </div>
-                <h3>Carregando grÃ¡ficos</h3>
-                <p>Aguarde enquanto buscamos os arquivos tÃ©cnicos.</p>
+                <h3>Carregando gráficos</h3>
+                <p>Aguarde enquanto buscamos os arquivos técnicos.</p>
               </div>
             ) : filteredGraficos.length === 0 ? (
               <div className="empty-state">
@@ -135,8 +135,8 @@ const GraficosCarga = () => {
                     <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
                   </svg>
                 </div>
-                <h3>Nenhum grÃ¡fico cadastrado</h3>
-                <p>Nenhum grÃ¡fico de carga foi encontrado.</p>
+                <h3>Nenhum gráfico cadastrado</h3>
+                <p>Nenhum gráfico de carga foi encontrado.</p>
               </div>
             ) : (
               <div className="graficos-grid">
@@ -182,7 +182,7 @@ const GraficosCarga = () => {
                       <BlobButton 
                         onClick={() => handleDownload(grafico)}
                         className="edit-btn"
-                        title="Baixar grÃ¡fico de carga"
+                        title="Baixar gráfico de carga"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
@@ -192,7 +192,7 @@ const GraficosCarga = () => {
                       <BlobButton 
                         onClick={() => window.open(grafico.arquivo_url, '_blank')}
                         className="view-btn"
-                        title="Visualizar grÃ¡fico de carga"
+                        title="Visualizar gráfico de carga"
                       >
                         <svg viewBox="0 0 24 24" fill="currentColor">
                           <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 10.5a3 3 0 110-6 3 3 0 010 6z"/>
