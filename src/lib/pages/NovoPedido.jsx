@@ -2604,402 +2604,294 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
   };
 
   const salvarRelatorio = async () => {
-    try {
-      // Verificação defensiva ULTRA ROBUSTA: garantir que isEdicao e propostaOriginal existam
-      const modoEdicao = modoEdicaoCalc;
-      const proposta = propostaOriginal || null;
-      const propostaIdToUpdate = propostaIdCalc;
-      
-      
-      // Se for edição, fazer UPDATE direto
-      if (modoEdicao && propostaIdToUpdate) {
-        
-        // Buscar o ID do guindaste principal no carrinho
-        const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
-        const guindasteId = guindasteNoCarrinho?.id || null;
+  try {
+    const modoEdicao = modoEdicaoCalc;
+    const proposta = propostaOriginal || null;
+    const propostaIdToUpdate = propostaIdCalc;
 
-        const documentoClienteDB = (String(clienteData.documento || proposta?.cliente_documento || '')
+    if (modoEdicao && propostaIdToUpdate) {
+      const guindasteNoCarrinho = carrinho.find(item =>
+        item.tipo === 'equipamento' || item.tipo === 'guindaste'
+      );
+
+      const guindasteId = guindasteNoCarrinho?.id || null;
+
+      const documentoClienteDB = (
+        String(clienteData.documento || proposta?.cliente_documento || '')
           .replace(/\D/g, '')
-          .slice(0, 10)) || null;
-        
-        const dadosAtualizados = {
-          data: new Date().toISOString(),
-          valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
-          concessionaria_id: user?.concessionaria_id || null,
-          dados_serializados: {
-            carrinho,
-            clienteData,
-            caminhaoData,
-            pagamentoData,
-            guindasteId,
-            concessionaria_id: user?.concessionaria_id || null
-          },
-          // Atualizar também campos principais se mudaram
-          cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
-          cliente_documento: documentoClienteDB
-        };
-        
-        const propostaAtualizada = await updateProposta(propostaIdToUpdate, dadosAtualizados);
-        
-        return propostaAtualizada;
-      }
-      
-      // Modo criação normal
+          .slice(0, 14)
+      ) || null;
 
-      if (isConcessionariaCompra) {
-        const timestamp = Date.now().toString();
-        const numeroPedido = `PC${timestamp.slice(-8)}`;
-
-        const valorTotal = pagamentoData.valorFinal || carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
-
-        const clienteDocumentoDB = (String(concessionariaInfo?.cnpj || clienteData?.documento || '')
-          .replace(/\D/g, '')
-          .slice(0, 10)) || null;
-
-        const canalVendaConcessionaria = (() => {
-          if (user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria') {
-            const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
-            const paisesInternacionais = ['PY','AR','UY','BO','CL','PE','CO','VE','EC','GY','SR'];
-            return paisesInternacionais.includes(ufConc)
-              ? 'Concessionária Internacional'
-              : 'Concessionária Nacional';
-          }
-          return 'Concessionária Nacional';
-        })();
-        const linhaCarrinhoConc = carrinhoFinal.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
-          ? 'GSI'
-          : carrinhoFinal.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
-          ? 'GSE'
-          : 'Outros';
-        const produtoPrincipalConc = (carrinhoFinal.find(i =>
-          i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
-          i.nome?.includes('GSI') || i.nome?.includes('GSE')
-        ) || carrinhoFinal[0])?.nome || null;
-
-        const pedidoDataToSave = {
-          numero_proposta: numeroPedido,
-          data: new Date().toISOString(),
-          vendedor_id: user.id,
-          vendedor_nome: user.nome || 'Não informado',
-          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
-          cliente_documento: clienteDocumentoDB,
-          valor_total: valorTotal,
-          tipo: 'proposta',
-          status: 'finalizado',
-          concessionaria_id: user?.concessionaria_id || null,
-          canal_venda: canalVendaConcessionaria,
-          segmento_cliente: clienteData?.segmento_cliente || null,
-          cliente_uf: (concessionariaInfo?.uf || clienteData?.uf || null),
-          cliente_cidade: (concessionariaInfo?.cidade || clienteData?.cidade || null),
-          produto_principal: produtoPrincipalConc,
-          linha_produto: linhaCarrinhoConc,
-          dados_serializados: {
-            carrinho: carrinhoFinal,
-            pagamentoData,
-            regiaoCompraSelecionada: regiaoCompraSelecionada || null,
-            concessionaria_id: user?.concessionaria_id || null,
-            concessionariaInfo: concessionariaInfo || null,
-          }
-        };
-
-        const pedido = await createpropostas(pedidoDataToSave);
-        return pedido;
-      }
-      
-      // 1. Criar cliente
-      
-      // Montar endereço completo a partir dos campos separados
-      const enderecoCompleto = (() => {
-        const c = clienteData;
-        const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
-        const bairro = c.bairro ? ` - ${c.bairro}` : '';
-        const cidadeUf = (c.cidade || c.uf) ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}` : '';
-        const cep = c.cep ? ` - CEP: ${c.cep}` : '';
-        return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'Não informado';
-      })();
-      
-      // Filtrar apenas campos que existem na tabela clientes
-      const clienteDataToSave = {
-        nome: clienteData.nome,
-        telefone: clienteData.telefone,
-        email: clienteData.email,
-        documento: clienteData.documento,
-        inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
-        endereco: enderecoCompleto,
-        observacoes: clienteData.observacoes || null
-      };
-      
-      const cliente = await createCliente(clienteDataToSave);
-      
-      // 2. Criar caminhão
-      
-      // Detectar se é proposta preliminar
-      const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' || 
-                                    caminhaoData?.marca === 'PREENCHER' || 
-                                    caminhaoData?.modelo === 'PREENCHER';
-      
-      let caminhao = null;
-      
-      if (isPropostaPreliminar) {
-        // Para proposta preliminar: não salvar no banco, apenas usar dados em memória
-        caminhao = {
-          id: null,
-          ...caminhaoData,
-          cliente_id: cliente.id
-        };
-      } else {
-        // Para proposta normal: exigir voltagem e salvar no banco
-        const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
-        const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
-        if (camposFaltando.length > 0) {
-          throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
-        }
-
-        const caminhaoDataToSave = {
-          ...filterCaminhaoDataForDB(caminhaoData),
-          cliente_id: cliente.id
-        };
-        
-        
-        caminhao = await createCaminhao(caminhaoDataToSave);
-      }
-      
-      // 3. Gerar número do pedido (máx. 10 caracteres para caber em VARCHAR(10))
-      const timestamp = Date.now().toString();
-      const numeroPedido = `PED${timestamp.slice(-7)}`; // Ex: PED1234567
-      
-      // 4. Criar pedido
-      
-            
-            
-      const clienteDocumentoDB = (String(cliente.documento || '')
-        .replace(/\D/g, '')
-        .slice(0, 10)) || null;
-
-      const canalVendaPropostal = (() => {
-        if (user?.tipo === 'vendedor_concessionaria') return 'Concessionária Nacional';
-        if (user?.tipo === 'admin_concessionaria') return 'Concessionária Nacional';
-        return 'Vendedor Interno';
-      })();
-      const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
-        ? 'GSI'
-        : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
-        ? 'GSE'
-        : 'Outros';
-      const produtoPrincipal = (carrinho.find(i =>
-        i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
-        i.nome?.includes('GSI') || i.nome?.includes('GSE')
-      ) || carrinho[0])?.nome || null;
-
-      const pedidoDataToSave = {
-        numero_proposta: numeroPedido,
+      const dadosAtualizados = {
         data: new Date().toISOString(),
-        vendedor_id: user.id,
-        vendedor_nome: user.nome || 'Não informado',
-        cliente_nome: cliente.nome || 'Não informado',
-        cliente_documento: clienteDocumentoDB,
-        valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
-        tipo: 'proposta',
-        status: 'finalizado',
+        id_guindaste: guindasteId,
+        valor_total:
+          pagamentoData.valorFinal ||
+          carrinho.reduce((total, item) => {
+            return total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1));
+          }, 0),
         concessionaria_id: user?.concessionaria_id || null,
-        canal_venda: canalVendaPropostal,
-        segmento_cliente: clienteData?.segmento_cliente || null,
-        cliente_uf: clienteData?.uf || null,
-        cliente_cidade: clienteData?.cidade || null,
-        produto_principal: produtoPrincipal,
-        linha_produto: linhaCarrinho,
+        cliente_nome: clienteData.nome || proposta?.cliente_nome || null,
+        cliente_documento: documentoClienteDB,
         dados_serializados: {
           carrinho,
-          clienteData: cliente,
-          caminhaoData: caminhao,
+          clienteData,
+          caminhaoData,
           pagamentoData,
+          guindasteId,
           concessionaria_id: user?.concessionaria_id || null
         }
       };
-      
-      const pedido = await createpropostas(pedidoDataToSave);
-            
-      // 5. Itens do pedido já estão salvos em dados_serializados
-      // Não é necessário criar registros separados em propostas_itens
-      
-      return pedido;
-    } catch (error) {
-      console.error('❌ Erro ao salvar relatório:', error);
-      console.error('📋 Detalhes do erro:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint,
-        stack: error.stack
-      });
-      console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
-      throw error;
+
+      console.log('[DEBUG UPDATE PROPOSTA PAYLOAD]', dadosAtualizados);
+
+      const propostaAtualizada = await updateProposta(propostaIdToUpdate, dadosAtualizados);
+      return propostaAtualizada;
     }
-  };
 
-  // Buscar dados completos dos guindastes do carrinho
-  // Combinar carrinho acumulativo + carrinho atual para concessionária
-  const carrinhoFinal = isConcessionariaCompra && carrinhoAcumulativo.length > 0
-    ? [...carrinhoAcumulativo.flatMap(p => p.carrinho), ...carrinho]
-    : carrinho;
+    if (isConcessionariaCompra) {
+      const timestamp = Date.now().toString();
+      const numeroPedido = `PC${timestamp.slice(-8)}`;
 
-  const guindastesCompletos = carrinhoFinal
-    .filter(item => item.tipo === 'guindaste')
-    .map(item => {
-      // Buscar guindaste completo da lista carregada (fallback)
-      const guindasteCompleto = guindastes.find(g => g.id === item.id);
-      return {
-        id: item.id,
-        nome: item.nome,
-        modelo: item.modelo || guindasteCompleto?.modelo,
-        subgrupo: item.nome,
-        codigo_produto: item.codigo_produto,
-        codigo_referencia: item.codigo_produto,
-        peso_kg: item.configuracao_lancas,
-        grafico_carga_url: item.grafico_carga_url,
-        // PRIORIZAR dados do carrinho (que já vêm completos do banco)
-        descricao: item.descricao || guindasteCompleto?.descricao || '',
-        nao_incluido: item.nao_incluido || guindasteCompleto?.nao_incluido || '',
-        finame: item.finame || guindasteCompleto?.finame || '',
-        ncm: item.ncm || guindasteCompleto?.ncm || ''
+      const guindasteNoCarrinho = carrinhoFinal.find(item =>
+        item.tipo === 'guindaste' || item.tipo === 'equipamento'
+      );
+
+      const guindasteId = guindasteNoCarrinho?.id || null;
+
+      const valorTotal =
+        pagamentoData.valorFinal ||
+        carrinhoFinal.reduce((total, item) => {
+          return total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1));
+        }, 0);
+
+      const clienteDocumentoDB = (
+        String(concessionariaInfo?.cnpj || clienteData?.documento || '')
+          .replace(/\D/g, '')
+          .slice(0, 14)
+      ) || null;
+
+      const canalVendaConcessionaria = (() => {
+        if (user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria') {
+          const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
+          const paisesInternacionais = ['PY', 'AR', 'UY', 'BO', 'CL', 'PE', 'CO', 'VE', 'EC', 'GY', 'SR'];
+
+          return paisesInternacionais.includes(ufConc)
+            ? 'Concessionária Internacional'
+            : 'Concessionária Nacional';
+        }
+
+        return 'Concessionária Nacional';
+      })();
+
+      const linhaCarrinhoConc = carrinhoFinal.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+        ? 'GSI'
+        : carrinhoFinal.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+          ? 'GSE'
+          : 'Outros';
+
+      const produtoPrincipalConc = (
+        carrinhoFinal.find(i =>
+          i.tipo === 'equipamento' ||
+          i.tipo === 'guindaste' ||
+          i.nome?.includes('GSI') ||
+          i.nome?.includes('GSE')
+        ) || carrinhoFinal[0]
+      )?.nome || null;
+
+      const pedidoDataToSave = {
+        numero_proposta: numeroPedido,
+        id_guindaste: guindasteId,
+        data: new Date().toISOString(),
+
+        vendedor_id: user.id,
+        vendedor_nome: user.nome || 'Não informado',
+
+        cliente_nome:
+          concessionariaInfo?.nome ||
+          clienteData?.nome ||
+          'Concessionária',
+
+        cliente_documento: clienteDocumentoDB,
+        valor_total: valorTotal,
+
+        tipo: 'proposta',
+        status: 'finalizado',
+
+        concessionaria_id: user?.concessionaria_id || null,
+        canal_venda: canalVendaConcessionaria,
+        segmento_cliente: clienteData?.segmento_cliente || null,
+        cliente_uf: concessionariaInfo?.uf || clienteData?.uf || null,
+        cliente_cidade: concessionariaInfo?.cidade || clienteData?.cidade || null,
+        produto_principal: produtoPrincipalConc,
+        linha_produto: linhaCarrinhoConc,
+
+        dados_serializados: {
+          carrinho: carrinhoFinal,
+          pagamentoData,
+          regiaoCompraSelecionada: regiaoCompraSelecionada || null,
+          concessionaria_id: user?.concessionaria_id || null,
+          concessionariaInfo: concessionariaInfo || null,
+          guindasteId
+        }
       };
+
+      console.log('[DEBUG PROPOSTA PAYLOAD - CONCESSIONARIA]', pedidoDataToSave);
+
+      const pedido = await createpropostas(pedidoDataToSave);
+      return pedido;
+    }
+
+    const enderecoCompleto = (() => {
+      const c = clienteData;
+      const ruaNumero = [c.logradouro || '', c.numero ? `, ${c.numero}` : ''].join('');
+      const bairro = c.bairro ? ` - ${c.bairro}` : '';
+      const cidadeUf = (c.cidade || c.uf)
+        ? ` - ${(c.cidade || '')}${c.uf ? `${c.cidade ? '/' : ''}${c.uf}` : ''}`
+        : '';
+      const cep = c.cep ? ` - CEP: ${c.cep}` : '';
+
+      return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || 'Não informado';
+    })();
+
+    const clienteDataToSave = {
+      nome: clienteData.nome,
+      telefone: clienteData.telefone,
+      email: clienteData.email,
+      documento: clienteData.documento,
+      inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
+      endereco: enderecoCompleto,
+      observacoes: clienteData.observacoes || null
+    };
+
+    const cliente = await createCliente(clienteDataToSave);
+
+    const isPropostaPreliminar =
+      caminhaoData?.tipo === 'PREENCHER' ||
+      caminhaoData?.marca === 'PREENCHER' ||
+      caminhaoData?.modelo === 'PREENCHER';
+
+    let caminhao = null;
+
+    if (isPropostaPreliminar) {
+      caminhao = {
+        id: null,
+        ...caminhaoData,
+        cliente_id: cliente.id
+      };
+    } else {
+      const camposObrigatorios = ['tipo', 'marca', 'modelo', 'voltagem'];
+      const camposFaltando = camposObrigatorios.filter(campo => !caminhaoData[campo]);
+
+      if (camposFaltando.length > 0) {
+        throw new Error(`Campos obrigatórios do caminhão não preenchidos: ${camposFaltando.join(', ')}`);
+      }
+
+      const caminhaoDataToSave = {
+        ...filterCaminhaoDataForDB(caminhaoData),
+        cliente_id: cliente.id
+      };
+
+      caminhao = await createCaminhao(caminhaoDataToSave);
+    }
+
+    const timestamp = Date.now().toString();
+    const numeroPedido = `PED${timestamp.slice(-7)}`;
+
+    const guindasteNoCarrinho = carrinho.find(item =>
+      item.tipo === 'guindaste' || item.tipo === 'equipamento'
+    );
+
+    const guindasteId = guindasteNoCarrinho?.id || null;
+
+    const clienteDocumentoDB = (
+      String(cliente.documento || '')
+        .replace(/\D/g, '')
+        .slice(0, 14)
+    ) || null;
+
+    const canalVendaPropostal = (() => {
+      if (user?.tipo === 'vendedor_concessionaria') return 'Concessionária Nacional';
+      if (user?.tipo === 'admin_concessionaria') return 'Concessionária Nacional';
+      return 'Vendedor Interno';
+    })();
+
+    const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+      ? 'GSI'
+      : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+        ? 'GSE'
+        : 'Outros';
+
+    const produtoPrincipal = (
+      carrinho.find(i =>
+        i.tipo === 'equipamento' ||
+        i.tipo === 'guindaste' ||
+        i.nome?.includes('GSI') ||
+        i.nome?.includes('GSE')
+      ) || carrinho[0]
+    )?.nome || null;
+
+    const valorTotal =
+      pagamentoData.valorFinal ||
+      carrinho.reduce((total, item) => {
+        return total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1));
+      }, 0);
+
+    const pedidoDataToSave = {
+      numero_proposta: numeroPedido,
+      id_guindaste: guindasteId,
+      data: new Date().toISOString(),
+
+      vendedor_id: user.id,
+      vendedor_nome: user.nome || 'Não informado',
+
+      cliente_nome: cliente.nome || 'Não informado',
+      cliente_documento: clienteDocumentoDB,
+
+      valor_total: valorTotal,
+
+      tipo: 'proposta',
+      status: 'finalizado',
+
+      concessionaria_id: user?.concessionaria_id || null,
+      canal_venda: canalVendaPropostal,
+      segmento_cliente: clienteData?.segmento_cliente || null,
+      cliente_uf: clienteData?.uf || null,
+      cliente_cidade: clienteData?.cidade || null,
+      produto_principal: produtoPrincipal,
+      linha_produto: linhaCarrinho,
+
+      dados_serializados: {
+        carrinho,
+        clienteData: cliente,
+        caminhaoData: caminhao,
+        pagamentoData,
+        guindasteId,
+        concessionaria_id: user?.concessionaria_id || null
+      }
+    };
+
+    console.log('[DEBUG PROPOSTA PAYLOAD - NORMAL]', pedidoDataToSave);
+
+    const pedido = await createpropostas(pedidoDataToSave);
+    return pedido;
+
+  } catch (error) {
+    console.error('❌ Erro ao salvar relatório:', error);
+    console.error('📋 Detalhes do erro:', {
+      message: error.message,
+      code: error.code,
+      details: error.details,
+      hint: error.hint,
+      stack: error.stack
     });
+    console.error('🔍 Erro completo:', JSON.stringify(error, null, 2));
+    throw error;
+  }
+};
 
-  const pedidoData = {
-    carrinho: carrinhoFinal,
-    clienteData,
-    caminhaoData,
-    pagamentoData,
-    vendedor: user?.nome || 'Não informado',
-    vendedorTelefone: user?.telefone || '',
-    guindastes: guindastesCompletos,
-    isConcessionariaCompra,
-    regiaoCompraSelecionada: regiaoCompraSelecionada || '',
-    concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
-    concessionariaDadosBancarios: concessionariaInfo?.dados_bancarios || '',
-    concessionariaNome: concessionariaInfo?.nome || '',
-  };
-
-  return (
-    <div className="resumo-container">
-      {/* Itens Selecionados */}
-      <div className="resumo-section">
-        <div className="section-header">
-          <h3>Itens Selecionados</h3>
-          <span className="resumo-badge">{carrinhoFinal.length} {carrinhoFinal.length === 1 ? 'item' : 'itens'}</span>
-        </div>
-        <div className="resumo-itens-list">
-          {carrinhoFinal.map((item, idx) => (
-            <div key={idx} className="resumo-item-row">
-              <span className="resumo-item-nome">{item.nome}</span>
-              <span className="resumo-item-preco">{formatCurrency((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1))}</span>
-            </div>
-          ))}
-          <div className="resumo-item-total">
-            <span>Total dos equipamentos</span>
-            <span>{formatCurrency(carrinhoFinal.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0))}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Dados do Cliente */}
-      {!isConcessionariaCompra && (
-        <div className="resumo-section">
-          <div className="section-header"><h3>Dados do Cliente</h3></div>
-          <div className="resumo-grid">
-            <div className="resumo-field">
-              <span className="resumo-label">Nome</span>
-              <span className="resumo-value">{clienteData.nome || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">Telefone</span>
-              <span className="resumo-value">{clienteData.telefone || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">Email</span>
-              <span className="resumo-value">{clienteData.email || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">CNPJ / CPF</span>
-              <span className="resumo-value">{clienteData.documento || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">Inscrição Estadual</span>
-              <span className="resumo-value">{clienteData.inscricao_estadual || '—'}</span>
-            </div>
-            {(clienteData.cidade || clienteData.uf) && (
-              <div className="resumo-field">
-                <span className="resumo-label">Cidade / UF{clienteData.cep ? ' / CEP' : ''}</span>
-                <span className="resumo-value">{clienteData.cidade || '—'} / {clienteData.uf || '—'}{clienteData.cep ? ` — ${clienteData.cep}` : ''}</span>
-              </div>
-            )}
-            <div className="resumo-field resumo-field-wide">
-              <span className="resumo-label">Endereço</span>
-              <span className="resumo-value">{clienteData.endereco || '—'}</span>
-            </div>
-            {clienteData.observacoes && (
-              <div className="resumo-field resumo-field-wide">
-                <span className="resumo-label">Observações</span>
-                <span className="resumo-value">{clienteData.observacoes}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Estudo Veicular */}
-      {!isConcessionariaCompra && (
-        <div className="resumo-section">
-          <div className="section-header"><h3>Estudo Veicular</h3></div>
-          <div className="resumo-grid">
-            <div className="resumo-field">
-              <span className="resumo-label">Tipo</span>
-              <span className="resumo-value">{caminhaoData.tipo || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">Marca</span>
-              <span className="resumo-value">{caminhaoData.marca || '—'}</span>
-            </div>
-            <div className="resumo-field">
-              <span className="resumo-label">Modelo</span>
-              <span className="resumo-value">{caminhaoData.modelo || '—'}</span>
-            </div>
-            {caminhaoData.ano && (
-              <div className="resumo-field">
-                <span className="resumo-label">Ano</span>
-                <span className="resumo-value">{caminhaoData.ano}</span>
-              </div>
-            )}
-            <div className="resumo-field">
-              <span className="resumo-label">Voltagem</span>
-              <span className="resumo-value">{caminhaoData.voltagem || '—'}</span>
-            </div>
-            {caminhaoData.medidaA && <div className="resumo-field"><span className="resumo-label">Medida A</span><span className="resumo-value">{caminhaoData.medidaA} cm</span></div>}
-            {caminhaoData.medidaB && <div className="resumo-field"><span className="resumo-label">Medida B</span><span className="resumo-value">{caminhaoData.medidaB} cm</span></div>}
-            {caminhaoData.medidaC && <div className="resumo-field"><span className="resumo-label">Medida C</span><span className="resumo-value">{caminhaoData.medidaC} cm</span></div>}
-            {caminhaoData.medidaD && <div className="resumo-field"><span className="resumo-label">Medida D</span><span className="resumo-value">{caminhaoData.medidaD} cm</span></div>}
-            {caminhaoData.patolamento && (
-              <div className="resumo-field">
-                <span className="resumo-label">Patolamento</span>
-                <span className="resumo-value resumo-value-bold">{caminhaoData.patolamento}</span>
-              </div>
-            )}
-            {caminhaoData.comprimentoChassi && (
-              <div className="resumo-field">
-                <span className="resumo-label">Comprimento do Chassi</span>
-                <span className="resumo-value">{caminhaoData.comprimentoChassi} m</span>
-              </div>
-            )}
-            {caminhaoData.observacoes && (
-              <div className="resumo-field resumo-field-wide">
-                <span className="resumo-label">Observações</span>
-                <span className="resumo-value">{caminhaoData.observacoes}</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
+return (
+  <>
       {/* Política de Pagamento */}
       <div className="resumo-section">
         <div className="section-header"><h3>Política de Pagamento</h3></div>
@@ -3172,15 +3064,17 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
             }}
           />
           {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
-            <span className="resumo-pdf-note">O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)</span>
-          )}
+              <span className="resumo-pdf-note">
+                O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s)
+              </span>
+            )}
         </div>
-      </div>
-    </div>
+     </div>
+    </>
   );
 };
 
-const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPrev, errors = {}, onPropostaRapida }) => {
+function EstudoVeicular({ caminhaoData, setCaminhaoData, carrinho, onNext, onPrev, errors = {}, onPropostaRapida }) {
   const podeContinuar = Boolean(
     caminhaoData?.tipo &&
     caminhaoData?.marca &&
@@ -3206,7 +3100,7 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
               observacoes: 'PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente'
             });
             if (onPropostaRapida) { onPropostaRapida(); } else { onNext(); }
-          }}
+          } }
         >
           Gerar proposta rápida
         </button>
@@ -3218,20 +3112,20 @@ const EstudoVeicular = ({ caminhaoData, setCaminhaoData, carrinho, onNext, onPre
       <div className="form-actions">
         <button className="btn-back-secondary" onClick={onPrev}>
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+            <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
           Voltar
         </button>
         <button className="btn-continue" onClick={onNext} disabled={!podeContinuar}>
           <span>Continuar</span>
           <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+            <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z" />
           </svg>
         </button>
       </div>
     </div>
   );
-};
+}
 
 export default NovoPedido;
 
