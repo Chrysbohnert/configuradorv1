@@ -3,6 +3,7 @@
  * Queries SQL para a tabela `propostas`.
  */
 
+const { randomUUID } = require('crypto');
 const { query } = require('../db/pool');
 
 const PROPOSTA_FIELDS = [
@@ -64,19 +65,28 @@ async function findById(id) {
 }
 
 async function create(data) {
-  const { id_guindaste, ...propostaData } = data;
-  const cols = [], vals = [], params = [];
+  const { id_guindaste, id: _ignoredId, ...propostaData } = data;
+
+  const nextId = randomUUID();
+
+  const cols = ['id'];
+  const vals = ['$1'];
+  const params = [nextId];
 
   PROPOSTA_FIELDS.forEach(f => {
     if (propostaData[f] !== undefined) {
       cols.push(`"${f}"`);
       const v = propostaData[f];
-      params.push(f === 'dados_serializados' && v !== null && typeof v === 'object' ? JSON.stringify(v) : (v === '' ? null : v));
+      params.push(
+        f === 'dados_serializados' && v !== null && typeof v === 'object'
+          ? JSON.stringify(v)
+          : (v === '' ? null : v)
+      );
       vals.push(`$${params.length}`);
     }
   });
 
-  if (cols.length === 0) throw new Error('Nenhum campo fornecido para criar proposta');
+  if (cols.length <= 1) throw new Error('Nenhum campo fornecido para criar proposta');
 
   const { rows } = await query(
     `INSERT INTO propostas (${cols.join(', ')}) VALUES (${vals.join(', ')}) RETURNING *`,

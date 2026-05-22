@@ -5,6 +5,18 @@
 
 const { query } = require('../db/pool');
 
+/** Campos leves para listagem inicial (Nova Proposta) — sem imagem/descrição/base64 */
+const LITE_COLUMNS = [
+  'id',
+  'subgrupo',
+  'modelo',
+  'codigo_referencia',
+  'peso_kg',
+  'grupo',
+  'is_prototipo',
+  'is_comercio_exterior',
+].join(', ');
+
 const KNOWN_FIELDS = [
   'subgrupo',
   'modelo',
@@ -18,8 +30,9 @@ const KNOWN_FIELDS = [
   'valor_instalacao_incluso', 'bloquear_desconto',
 ];
 
-async function findAll({ limit, offset } = {}) {
-  let sql = `SELECT * FROM guindastes ORDER BY subgrupo ASC`;
+async function findAll({ limit, offset, lite = false } = {}) {
+  const select = lite ? LITE_COLUMNS : '*';
+  let sql = `SELECT ${select} FROM guindastes ORDER BY subgrupo ASC`;
   const params = [];
   if (limit !== undefined) { params.push(limit); sql += ` LIMIT $${params.length}`; }
   if (offset !== undefined) { params.push(offset); sql += ` OFFSET $${params.length}`; }

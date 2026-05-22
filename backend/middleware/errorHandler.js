@@ -10,7 +10,8 @@ const PG_ERRORS = {
 function errorHandler(err, req, res, _next) {
   const pgErr = PG_ERRORS[err.code];
   if (pgErr) {
-    console.error(`❌ [DB ${err.code}] ${err.message}`);
+    console.error('❌ ERRO COMPLETO POSTGRESQL:');
+    console.error(err);
     return res.status(pgErr.status).json({
       success: false,
       error: pgErr.message,

@@ -463,27 +463,16 @@ const NovoPedido = () => {
 
   // Função para carregar dados dos guindastes
   const loadData = useCallback(async () => {
+    console.time('loadData-total');
     try {
       setIsLoading(true);
 
-      const pageSize = 200;
-      const maxPages = 10;
-      const all = [];
+      console.time('getGuindastesLite');
+      const result = await getGuindastesLite(1, 100, true);
+      console.timeEnd('getGuindastesLite');
+      const all = result?.data || [];
 
-      const loadTimerId = Date.now();
-      const loadTimerLabel = `getGuindastesLite-${loadTimerId}`;
-      console.time(loadTimerLabel);
-      for (let page = 1; page <= maxPages; page++) {
-        const pageTimerLabel = `${loadTimerLabel}-p${page}`;
-        console.time(pageTimerLabel);
-        const result = await getGuindastesLite(page, pageSize, true);
-        console.timeEnd(pageTimerLabel);
-        const chunk = result?.data || [];
-        all.push(...chunk);
-        if (chunk.length < pageSize) break;
-      }
-      console.timeEnd(loadTimerLabel);
-
+      console.time('filtros');
       const isVendedorCE = normalizarArray(user?.regioes_operacao).some(r => {
         const rLower = (r || '').toLowerCase().trim();
         return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
@@ -492,21 +481,24 @@ const NovoPedido = () => {
       const filtrados = (all || []).filter(g => {
         if (g?.is_prototipo && !isAdminStark) return false;
 
-        // Filtro de Comércio Exterior: só vendedores CE ou admin stark
         if (g?.is_comercio_exterior) {
           if (!isAdminStark && !isVendedorCE) return false;
         }
-        
+
         return true;
       });
+      console.timeEnd('filtros');
 
+      console.time('setGuindastes');
       setGuindastes(filtrados);
+      console.timeEnd('setGuindastes');
 
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
     } finally {
       setIsLoading(false);
+      console.timeEnd('loadData-total');
     }
   }, [isAdminStark, user]);
 

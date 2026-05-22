@@ -15,7 +15,10 @@ const router = Router();
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const limit  = req.query.limit  ? parseInt(req.query.limit,  10) : undefined;
   const offset = req.query.offset ? parseInt(req.query.offset, 10) : undefined;
-  const [data, total] = await Promise.all([svc.findAll({ limit, offset }), svc.count()]);
+  const [data, total] = await Promise.all([
+    svc.findAll({ limit, offset, lite: true }),
+    svc.count(),
+  ]);
   return res_.ok(res, data, { count: total });
 }));
 
