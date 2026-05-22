@@ -124,7 +124,13 @@ export default function GuindasteConfigurador({
     if (!fetchPreco) return;
 
     const guindasteId = variant.id;
-    const regiaoLabel = precoContextKeyRef.current;
+    const regiaoLabel = (precoContextKeyRef.current || '').trim();
+    if (!regiaoLabel) {
+      setPrecoExibido(null);
+      setLoadingPreco(false);
+      return;
+    }
+
     const regiaoNorm = normalizarRegiao(regiaoLabel);
     let cancelled = false;
 
@@ -133,7 +139,7 @@ export default function GuindasteConfigurador({
       setPrecoExibido(null);
 
       try {
-        const preco = await fetchPreco(guindasteId);
+        const preco = await fetchPreco(guindasteId, regiaoLabel);
         if (cancelled || String(activeVariantIdRef.current) !== String(guindasteId)) return;
 
         const valor = parsePreco(preco);

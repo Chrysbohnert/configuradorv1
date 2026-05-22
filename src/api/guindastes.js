@@ -53,6 +53,15 @@ export async function getGuindasteById(id) {
   return { ...g, finame: g.finame || '', ncm: g.ncm || '' };
 }
 
+export async function getGuindasteImagemById(id) {
+  const res = await fetch(`${BASE_URL}/${id}/imagem`, { headers: authHeaders() });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao carregar imagem do guindaste');
+  }
+  return json.data?.imagem_url ?? null;
+}
+
 export async function createGuindaste(data) {
   const res = await fetch(BASE_URL, {
     method: 'POST',
@@ -86,6 +95,30 @@ export async function deleteGuindaste(id) {
   if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao excluir guindaste');
   _cache.clear();
   return true;
+}
+
+export async function fetchPrecoPorRegiao(guindasteId, regiao) {
+  const regiaoParam = encodeURIComponent(regiao || '');
+  const res = await fetch(`${BASE_URL}/${guindasteId}/preco?regiao=${regiaoParam}`, {
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao buscar preço por região');
+  }
+  return json.data?.preco ?? 0;
+}
+
+export async function fetchPrecoCompraPorRegiao(guindasteId, regiao) {
+  const regiaoParam = encodeURIComponent(regiao || '');
+  const res = await fetch(`${BASE_URL}/${guindasteId}/preco-compra?regiao=${regiaoParam}`, {
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao buscar preço de compra por região');
+  }
+  return json.data?.preco ?? 0;
 }
 
 export async function getGuindastesCountForDashboard() {

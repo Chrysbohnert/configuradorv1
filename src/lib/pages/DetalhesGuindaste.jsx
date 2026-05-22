@@ -35,6 +35,19 @@ const DetalhesGuindaste = () => {
     return null;
   }
 
+  const imagensAdicionais = Array.isArray(guindaste.imagens_adicionais)
+    ? guindaste.imagens_adicionais
+    : typeof guindaste.imagens_adicionais === 'string'
+      ? (() => {
+          try {
+            const parsed = JSON.parse(guindaste.imagens_adicionais || '[]');
+            return Array.isArray(parsed) ? parsed : [];
+          } catch {
+            return [];
+          }
+        })()
+      : [];
+
   const handleContinuar = () => {
     const returnTo = location.state?.returnTo || '/novo-pedido';
     navigate(returnTo, { 
@@ -68,16 +81,16 @@ const DetalhesGuindaste = () => {
   };
 
   const nextImage = () => {
-    const totalImages = [guindaste.imagem_url, ...(guindaste.imagens_adicionais || [])].filter(Boolean).length;
+    const totalImages = [guindaste.imagem_url, ...imagensAdicionais].filter(Boolean).length;
     setSelectedImage((prev) => (prev + 1) % totalImages);
   };
 
   const prevImage = () => {
-    const totalImages = [guindaste.imagem_url, ...(guindaste.imagens_adicionais || [])].filter(Boolean).length;
+    const totalImages = [guindaste.imagem_url, ...imagensAdicionais].filter(Boolean).length;
     setSelectedImage((prev) => (prev - 1 + totalImages) % totalImages);
   };
 
-  const allImages = [guindaste.imagem_url, ...(guindaste.imagens_adicionais || [])].filter(Boolean);
+  const allImages = [guindaste.imagem_url, ...imagensAdicionais].filter(Boolean);
 
   return (
     <div className="detalhes-guindaste-container">
@@ -134,11 +147,11 @@ const DetalhesGuindaste = () => {
         </div>
 
         {/* Galeria de Fotos Adicionais */}
-        {guindaste.imagens_adicionais && guindaste.imagens_adicionais.length > 0 && (
+        {imagensAdicionais.length > 0 && (
           <div className="galeria-section">
             <h3>Galeria de Fotos</h3>
             <div className="galeria-grid">
-              {guindaste.imagens_adicionais.map((imagem, index) => (
+              {imagensAdicionais.map((imagem, index) => (
                 <div key={index} className="galeria-item">
                   <img
                     src={imagem}

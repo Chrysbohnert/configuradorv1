@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { normalizarRegiao } from '../utils/regiaoHelper';
+import { fetchPrecoPorRegiao, fetchPrecoCompraPorRegiao, getGuindasteById, getGuindasteImagemById } from '../api/guindastes';
 
 // Configuração do Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -601,20 +602,15 @@ if (!vendedor) {
   }
 
   async getPrecoCompraPorRegiao(guindasteId, regiao) {
-    const { data, error } = await supabase
-      .from('precos_compra_concessionaria_por_regiao')
-      .select('preco')
-      .eq('guindaste_id', guindasteId)
-      .eq('regiao', regiao)
-      .limit(1);
+    if (guindasteId == null || guindasteId === '' || !regiao) return 0;
 
-    if (error) {
-      console.error('Erro ao buscar preço de compra por região:', error);
+    const regiaoNorm = normalizarRegiao(regiao);
+    try {
+      return Number(await fetchPrecoCompraPorRegiao(guindasteId, regiaoNorm)) || 0;
+    } catch (error) {
+      console.error('Erro ao buscar preço de compra por região:', { guindasteId, regiao: regiaoNorm, error });
       return 0;
     }
-
-    if (!data || data.length === 0) return 0;
-    return data[0]?.preco || 0;
   }
 
   // ===== PREÇOS DA CONCESSIONÁRIA (OVERRIDE) =====
@@ -913,21 +909,14 @@ if (!vendedor) {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('guindastes')
-        .select('id, imagem_url')
-        .eq('id', id)
-        .single();
-      
-      if (error) throw error;
-      
-      // Armazenar no cache
+      const imagemUrl = await getGuindasteImagemById(id);
+
       this._guindastesCache.set(cacheKey, {
-        data: data?.imagem_url || null,
+        data: imagemUrl,
         timestamp: Date.now()
       });
-      
-      return data?.imagem_url || null;
+
+      return imagemUrl;
     } catch (error) {
       console.error(`❌ Erro ao carregar imagem do guindaste ${id}:`, error);
       return null;
@@ -946,27 +935,13 @@ if (!vendedor) {
       }
     }
 
-    const { data, error } = await supabase
-      .from('guindastes')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
-    
-    // Garantir que os campos finame e ncm existam, mesmo que vazios
-    const guindasteCompleto = {
-      ...data,
-      finame: data.finame || '',
-      ncm: data.ncm || ''
-    };
-    
-    // Armazenar no cache
+    const guindasteCompleto = await getGuindasteById(id);
+
     this._guindastesCache.set(cacheKey, {
       data: guindasteCompleto,
       timestamp: Date.now()
     });
-    
+
     return guindasteCompleto;
   }
 
@@ -1657,53 +1632,17 @@ if (!vendedor) {
     }
   }
 
-  // Buscar preço específico de um guindaste por região
+  // Buscar preço específico de um guindaste por região (PostgreSQL via API)
   async getPrecoPorRegiao(guindasteId, regiao) {
     if (guindasteId == null || guindasteId === '' || !regiao) return 0;
 
     const regiaoNorm = normalizarRegiao(regiao);
-    const idsToTry = [...new Set(
-      [guindasteId, String(guindasteId), Number(guindasteId)]
-        .filter((v) => v !== '' && v != null && !Number.isNaN(v))
-    )];
-
-    for (const id of idsToTry) {
-      const { data, error } = await supabase
-        .from('precos_guindaste_regiao')
-        .select('preco')
-        .eq('guindaste_id', id)
-        .eq('regiao', regiaoNorm)
-        .limit(1);
-
-      if (error) {
-        console.error('Erro ao buscar preço por região:', { guindasteId: id, regiao: regiaoNorm, error });
-        continue;
-      }
-      if (data?.length && data[0]?.preco != null) {
-        return Number(data[0].preco) || 0;
-      }
+    try {
+      return Number(await fetchPrecoPorRegiao(guindasteId, regiaoNorm)) || 0;
+    } catch (error) {
+      console.error('Erro ao buscar preço por região:', { guindasteId, regiao: regiaoNorm, error });
+      return 0;
     }
-
-    // Fallback: lista de preços do guindaste e casamento flexível de região
-    for (const id of idsToTry) {
-      const { data, error } = await supabase
-        .from('precos_guindaste_regiao')
-        .select('preco, regiao')
-        .eq('guindaste_id', id);
-
-      if (error || !data?.length) continue;
-
-      const row = data.find((p) => {
-        const r = (p.regiao || '').toLowerCase().trim();
-        return r === regiaoNorm
-          || normalizarRegiao(p.regiao) === regiaoNorm
-          || r === (regiao || '').toLowerCase().trim();
-      });
-
-      if (row?.preco != null) return Number(row.preco) || 0;
-    }
-
-    return 0;
   }
 
   // ===== GRÁFICOS DE CARGA =====

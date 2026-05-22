@@ -22,6 +22,28 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, data, { count: total });
 }));
 
+router.get('/:id/preco', requireAuth, asyncHandler(async (req, res) => {
+  const regiao = (req.query.regiao || '').trim();
+  if (!regiao) return res_.badRequest(res, 'Query regiao é obrigatória');
+
+  const preco = await svc.findPrecoPorRegiao(req.params.id, regiao);
+  return res_.ok(res, { preco });
+}));
+
+router.get('/:id/preco-compra', requireAuth, asyncHandler(async (req, res) => {
+  const regiao = (req.query.regiao || '').trim();
+  if (!regiao) return res_.badRequest(res, 'Query regiao é obrigatória');
+
+  const preco = await svc.findPrecoCompraPorRegiao(req.params.id, regiao);
+  return res_.ok(res, { preco });
+}));
+
+router.get('/:id/imagem', requireAuth, asyncHandler(async (req, res) => {
+  const data = await svc.findImagemById(req.params.id);
+  if (!data) return res_.notFound(res, 'Guindaste não encontrado');
+  return res_.ok(res, { id: data.id, imagem_url: data.imagem_url ?? null });
+}));
+
 router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const data = await svc.findById(req.params.id);
   if (!data) return res_.notFound(res, 'Guindaste não encontrado');

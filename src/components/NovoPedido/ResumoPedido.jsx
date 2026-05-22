@@ -17,6 +17,7 @@ const ResumoPedido = ({
   isConcessionariaCompra = false,
   concessionariaInfo: concessionariaInfoProp = null,
   regiaoCompraSelecionada = '',
+  regiaoClienteSelecionada = '',
   carrinhoAcumulativo = [],
   onAdicionarAoCarrinho,
   onLimparPedidoAtual,
@@ -110,6 +111,7 @@ const ResumoPedido = ({
             caminhaoData,
             pagamentoData,
             guindasteId,
+            regiaoClienteSelecionada: regiaoClienteSelecionada || regiaoCompraSelecionada || null,
             concessionaria_id: user?.concessionaria_id || null
           },
           cliente_nome: clienteData.nome || propostaOriginal?.cliente_nome || null,
@@ -201,6 +203,7 @@ const ResumoPedido = ({
           clienteData: cliente,
           caminhaoData: caminhao,
           pagamentoData,
+          regiaoClienteSelecionada: regiaoClienteSelecionada || regiaoCompraSelecionada || null,
           concessionaria_id: user?.concessionaria_id || null
         }
       };

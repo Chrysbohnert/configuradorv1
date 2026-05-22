@@ -4,6 +4,7 @@
  */
 
 const { query } = require('../db/pool');
+const { normalizarRegiao } = require('../utils/regiaoHelper');
 
 /** Campos leves para listagem inicial (Nova Proposta) — sem imagem/descrição/base64 */
 const LITE_COLUMNS = [
@@ -50,6 +51,14 @@ async function findById(id) {
   return rows[0] || null;
 }
 
+async function findImagemById(id) {
+  const { rows } = await query(
+    `SELECT id, imagem_url FROM guindastes WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
 async function create(data) {
   const cols = [], vals = [], params = [];
   KNOWN_FIELDS.forEach(f => {
@@ -89,4 +98,73 @@ async function remove(id) {
   return rowCount > 0;
 }
 
-module.exports = { findAll, count, findById, create, update, remove };
+function casarRegiaoPreco(regiaoNorm, regiaoOriginal, regiaoDb) {
+  const r = (regiaoDb || '').toLowerCase().trim();
+  return (
+    r === regiaoNorm ||
+    normalizarRegiao(regiaoDb) === regiaoNorm ||
+    r === (regiaoOriginal || '').toLowerCase().trim()
+  );
+}
+
+async function findPrecoPorRegiao(guindasteId, regiao) {
+  if (guindasteId == null || guindasteId === '' || !regiao) return 0;
+
+  const regiaoNorm = normalizarRegiao(regiao);
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) return 0;
+
+  const { rows: exact } = await query(
+    `SELECT preco FROM precos_guindaste_regiao
+     WHERE guindaste_id = $1 AND regiao = $2
+     LIMIT 1`,
+    [id, regiaoNorm]
+  );
+  if (exact[0]?.preco != null) return Number(exact[0].preco) || 0;
+
+  const { rows: all } = await query(
+    `SELECT preco, regiao FROM precos_guindaste_regiao WHERE guindaste_id = $1`,
+    [id]
+  );
+  const row = (all || []).find((p) => casarRegiaoPreco(regiaoNorm, regiao, p.regiao));
+  if (row?.preco != null) return Number(row.preco) || 0;
+
+  return 0;
+}
+
+async function findPrecoCompraPorRegiao(guindasteId, regiao) {
+  if (guindasteId == null || guindasteId === '' || !regiao) return 0;
+
+  const regiaoNorm = normalizarRegiao(regiao);
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) return 0;
+
+  const { rows: exact } = await query(
+    `SELECT preco FROM precos_compra_concessionaria_por_regiao
+     WHERE guindaste_id = $1 AND regiao = $2
+     LIMIT 1`,
+    [id, regiaoNorm]
+  );
+  if (exact[0]?.preco != null) return Number(exact[0].preco) || 0;
+
+  const { rows: all } = await query(
+    `SELECT preco, regiao FROM precos_compra_concessionaria_por_regiao WHERE guindaste_id = $1`,
+    [id]
+  );
+  const row = (all || []).find((p) => casarRegiaoPreco(regiaoNorm, regiao, p.regiao));
+  if (row?.preco != null) return Number(row.preco) || 0;
+
+  return 0;
+}
+
+module.exports = {
+  findAll,
+  count,
+  findById,
+  findImagemById,
+  create,
+  update,
+  remove,
+  findPrecoPorRegiao,
+  findPrecoCompraPorRegiao,
+};
