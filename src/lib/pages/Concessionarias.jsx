@@ -39,7 +39,7 @@ const Concessionarias = () => {
   const loadConcessionarias = async () => {
     try {
       setIsLoading(true);
-      const data = await db.getConcessionarias({ includeInactive: showInactive });
+      const data = await db.getConcessionarias(showInactive);
       setConcessionarias(data);
     } catch (e) {
       console.error('Erro ao carregar concessionárias:', e);

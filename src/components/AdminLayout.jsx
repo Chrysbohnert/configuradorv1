@@ -2,36 +2,35 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AdminNavigation from './AdminNavigation';
 import WelcomeLoading from './WelcomeLoading';
+import { useAuth } from '../contexts/AuthContext';
 import '../styles/AdminLayout.css';
 
 const AdminLayout = () => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user, loading } = useAuth();
   const [showWelcome, setShowWelcome] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (userData) {
-      const parsedUser = JSON.parse(userData);
-      // Verificar se é admin
-      if (parsedUser.tipo === 'admin' || parsedUser.tipo === 'admin_concessionaria') {
-        setUser(parsedUser);
-        // Mostrar loading de boas-vindas apenas uma vez por sessão
-        const hasShown = sessionStorage.getItem('welcomeShownAdmin');
-        if (!hasShown) {
-          setShowWelcome(true);
-        }
-      } else {
-        console.warn('Usuário não é admin, redirecionando...');
-        navigate('/');
-      }
-    } else {
+    if (loading) return;
+
+    if (!user) {
       console.warn('Usuário não encontrado, redirecionando para login...');
       navigate('/');
+      return;
     }
-    setIsLoading(false);
-  }, [navigate]);
+
+    if (user.tipo !== 'admin' && user.tipo !== 'admin_concessionaria') {
+      console.warn('Usuário não é admin, redirecionando...');
+      navigate('/');
+      return;
+    }
+
+    // Mostrar loading de boas-vindas apenas uma vez por sessão
+    const hasShown = sessionStorage.getItem('welcomeShownAdmin');
+    if (!hasShown) {
+      setShowWelcome(true);
+    }
+  }, [user, loading, navigate]);
 
   const handleWelcomeComplete = () => {
     setShowWelcome(false);
@@ -39,7 +38,7 @@ const AdminLayout = () => {
     sessionStorage.setItem('welcomeShownAdmin', '1');
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="loading-container">
         <div className="loading-spinner">

@@ -330,107 +330,182 @@ async getUserById(id) {
     return password && password.length === 64 && /^[a-f0-9]+$/i.test(password);
   }
 
-  async updateUser(id, userData) {
-    // Se a senha não estiver em hash, fazer hash automaticamente
-    if (userData.senha && !this.isPasswordHashed(userData.senha)) {
-      const { hashPassword } = await import('../utils/passwordHash');
-      userData.senha = hashPassword(userData.senha);
-    }
-    const vendedor = await this.getUserById(vendedorId);
+  async createUser(userData) {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        'https://api-pedidos.starkindustrial.ind.br/api/users',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(userData)
+        }
+      );
 
-if (!vendedor) {
-  console.warn('⚠️ Vendedor não encontrado');
-  return [];
-}
-    //const { data, error } = await supabase
-    //  .from('users')
-     // .update(userData)
-     // .eq('id', id)
-     // .select()
-     // .single();
-    
-   // if (error) throw error;
-    //return data;
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ [createUser] Erro API:', result);
+        throw new Error(result.error || 'Erro ao criar usuário');
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error('❌ [createUser] Erro:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id, userData) {
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(userData)
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ [updateUser] Erro API:', result);
+        throw new Error(result.error || 'Erro ao atualizar usuário');
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error('❌ [updateUser] Erro:', error);
+      throw error;
+    }
   }
 
   async deleteUser(id) {
-    const { error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id);
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
 
-    if (error) throw error;
+      const result = await response.json();
+
+      if (!response.ok) {
+        console.error('❌ [deleteUser] Erro API:', result);
+        throw new Error(result.error || 'Erro ao remover usuário');
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error('❌ [deleteUser] Erro:', error);
+      throw error;
+    }
   }
 
   async getConcessionarias(includeInactive = false) {
-
-    let query = supabase
-      .from('concessionarias')
-      .select('*')
-      .order('nome');
-
-    if (!includeInactive) {
-      query = query.eq('ativo', true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const params = includeInactive ? '?includeInactive=true' : '';
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias${params}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao carregar concessionárias');
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ [getConcessionarias] Erro:', error);
+      throw error;
     }
-    
-    const { data, error } = await query;
-
-    if (!error) return data || [];
-
-    if (!includeInactive) {
-      const { data: retryData, error: retryError } = await supabase
-        .from('concessionarias')
-        .select('*')
-        .order('nome');
-
-      if (retryError) throw error;
-      return retryData || [];
-    }
-
-    throw error;
   }
 
   async getConcessionariaById(id) {
-    const { data, error } = await supabase
-      .from('concessionarias')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) throw error;
-    return data;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Concessionária não encontrada');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [getConcessionariaById] Erro:', error);
+      throw error;
+    }
   }
 
   async createConcessionaria(concessionariaData) {
-    const { data, error } = await supabase
-      .from('concessionarias')
-      .insert([concessionariaData])
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        'https://api-pedidos.starkindustrial.ind.br/api/concessionarias',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(concessionariaData)
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao criar concessionária');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [createConcessionaria] Erro:', error);
+      throw error;
+    }
   }
 
   async updateConcessionaria(id, updates) {
-    const { data, error } = await supabase
-      .from('concessionarias')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(updates)
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar concessionária');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [updateConcessionaria] Erro:', error);
+      throw error;
+    }
   }
 
   async deleteConcessionaria(id) {
-    const { error } = await supabase
-      .from('concessionarias')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao remover concessionária');
+      return true;
+    } catch (error) {
+      console.error('❌ [deleteConcessionaria] Erro:', error);
+      throw error;
+    }
   }
 
   async getPaymentPlanSets({ scope, concessionaria_id = null, status = null } = {}) {
@@ -615,77 +690,55 @@ if (!vendedor) {
 
   // ===== PREÇOS DA CONCESSIONÁRIA (OVERRIDE) =====
   async getConcessionariaPrecos(concessionariaId) {
-    const { data, error } = await supabase
-      .from('concessionaria_precos')
-      .select('*')
-      .eq('concessionaria_id', concessionariaId);
-
-    if (error) throw error;
-    return data || [];
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos/${concessionariaId}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao carregar preços');
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ [getConcessionariaPrecos] Erro:', error);
+      throw error;
+    }
   }
 
   async getConcessionariaPreco(concessionariaId, guindasteId) {
-    const { data, error } = await supabase
-      .from('concessionaria_precos')
-      .select('preco_override')
-      .eq('concessionaria_id', concessionariaId)
-      .eq('guindaste_id', guindasteId)
-      .limit(1);
-
-    if (error) throw error;
-    if (!data || data.length === 0) return null;
-    return data[0]?.preco_override ?? null;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos/${concessionariaId}/${guindasteId}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao carregar preço');
+      return result.data?.preco_override ?? null;
+    } catch (error) {
+      console.error('❌ [getConcessionariaPreco] Erro:', error);
+      throw error;
+    }
   }
 
   async upsertConcessionariaPreco({ concessionaria_id, guindaste_id, preco_override, updated_by }) {
-    // Primeiro, tentar verificar se já existe
-    const { data: existing, error: checkError } = await supabase
-      .from('concessionaria_precos')
-      .select('id')
-      .eq('concessionaria_id', concessionaria_id)
-      .eq('guindaste_id', guindaste_id)
-      .limit(1)
-      .maybeSingle();
-
-    if (checkError && checkError.code !== 'PGRST116') {
-      // Erro real, não é "not found"
-      throw checkError;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        'https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos',
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ concessionaria_id, guindaste_id, preco_override, updated_by })
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao salvar preço');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [upsertConcessionariaPreco] Erro:', error);
+      throw error;
     }
-
-    const payload = {
-      concessionaria_id,
-      guindaste_id,
-      preco_override,
-      updated_by: updated_by ?? null,
-      updated_at: new Date().toISOString()
-    };
-
-    let result;
-    if (existing) {
-      // UPDATE se já existe
-      const { data, error } = await supabase
-        .from('concessionaria_precos')
-        .update(payload)
-        .eq('concessionaria_id', concessionaria_id)
-        .eq('guindaste_id', guindaste_id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      result = data;
-    } else {
-      // INSERT se não existe
-      const { data, error } = await supabase
-        .from('concessionaria_precos')
-        .insert([payload])
-        .select()
-        .single();
-
-      if (error) throw error;
-      result = data;
-    }
-
-    return result;
   }
 
   // ===== ESTOQUE DA CONCESSIONÁRIA =====
@@ -1647,13 +1700,19 @@ if (!vendedor) {
 
   // ===== GRÁFICOS DE CARGA =====
   async getGraficosCarga() {
-    const { data, error } = await supabase
-      .from('graficos_carga')
-      .select('*')
-      .order('nome');
-    
-    if (error) throw error;
-    return data || [];
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        'https://api-pedidos.starkindustrial.ind.br/api/graficos-carga',
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao carregar gráficos');
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ [getGraficosCarga] Erro:', error);
+      throw error;
+    }
   }
 
   // Buscar um gráfico de carga específico por ID (otimizado)
@@ -1694,17 +1753,6 @@ if (!vendedor) {
       return null;
     }
 
-    return data;
-  }
-  
-  async createGraficoCarga(graficoData) {
-    const { data, error } = await supabase
-      .from('graficos_carga')
-      .insert([graficoData])
-      .select()
-      .single();
-    
-    if (error) throw error;
     return data;
   }
   
@@ -1861,35 +1909,62 @@ if (!vendedor) {
     if (error) throw error;
   }
   async createGraficoCarga(graficoData) {
-    const { data, error } = await supabase
-      .from('graficos_carga')
-      .insert([graficoData])
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        'https://api-pedidos.starkindustrial.ind.br/api/graficos-carga',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(graficoData)
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao criar gráfico');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [createGraficoCarga] Erro:', error);
+      throw error;
+    }
   }
 
   async updateGraficoCarga(id, graficoData) {
-    const { data, error } = await supabase
-      .from('graficos_carga')
-      .update(graficoData)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
-    return data;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/graficos-carga/${id}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(graficoData)
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao atualizar gráfico');
+      return result.data;
+    } catch (error) {
+      console.error('❌ [updateGraficoCarga] Erro:', error);
+      throw error;
+    }
   }
 
   async deleteGraficoCarga(id) {
-    const { error } = await supabase
-      .from('graficos_carga')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/graficos-carga/${id}`,
+        {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao remover gráfico');
+      return true;
+    } catch (error) {
+      console.error('❌ [deleteGraficoCarga] Erro:', error);
+      throw error;
+    }
   }
 
   // ===== PROPOSTAS =====
@@ -2441,49 +2516,46 @@ if (!vendedor) {
   }
 
   async getMetasAnoVendedor(vendedorId, ano) {
-    const { data, error } = await supabase
-      .from('metas_vendedores')
-      .select('*')
-      .eq('vendedor_id', vendedorId)
-      .eq('ano', ano)
-      .order('mes');
-    if (error) throw error;
-    return data || [];
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/metas/${vendedorId}/${ano}`,
+        { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao carregar metas');
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ [getMetasAnoVendedor] Erro:', error);
+      throw error;
+    }
   }
 
   async setMetaVendedor(vendedorId, ano, mes, metaPropostas, metaValor) {
-    const { data, error } = await supabase
-      .from('metas_vendedores')
-      .upsert(
-        {
-          vendedor_id: vendedorId,
-          ano,
-          mes,
-          meta_propostas: parseInt(metaPropostas, 10) || 0,
-          meta_valor: parseFloat(metaValor) || 0,
-        },
-        { onConflict: 'vendedor_id,ano,mes' }
-      )
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    // Delegate to setMetasAnoVendedor with a single-element array
+    return this.setMetasAnoVendedor(vendedorId, ano, [
+      { mes, meta_propostas: metaPropostas, meta_valor: metaValor }
+    ]);
   }
 
   async setMetasAnoVendedor(vendedorId, ano, metas) {
-    const rows = metas.map((m) => ({
-      vendedor_id: vendedorId,
-      ano,
-      mes: m.mes,
-      meta_propostas: parseInt(m.meta_propostas, 10) || 0,
-      meta_valor: parseFloat(m.meta_valor) || 0,
-    }));
-    const { data, error } = await supabase
-      .from('metas_vendedores')
-      .upsert(rows, { onConflict: 'vendedor_id,ano,mes' })
-      .select();
-    if (error) throw error;
-    return data || [];
+    try {
+      const token = localStorage.getItem('authToken');
+      const response = await fetch(
+        `https://api-pedidos.starkindustrial.ind.br/api/metas/${vendedorId}/${ano}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ metas })
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erro ao salvar metas');
+      return result.data || [];
+    } catch (error) {
+      console.error('❌ [setMetasAnoVendedor] Erro:', error);
+      throw error;
+    }
   }
 }
 

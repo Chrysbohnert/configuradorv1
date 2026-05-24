@@ -17,6 +17,9 @@ const paymentPlansRouter    = require('./payment_plans');
 const configuracoesRouter   = require('./configuracoes');
 const fretesRouter          = require('./fretes');
 const graficosCargaRouter   = require('./graficos_carga');
+const concessionariasRouter = require('./concessionarias');
+const metasRouter           = require('./metas');
+const concPrecosRouter      = require('./concessionaria_precos');
 
 const router = Router();
 
@@ -29,5 +32,8 @@ router.use('/payment-plans',   paymentPlansRouter);
 router.use('/configuracoes',   configuracoesRouter);
 router.use('/fretes',          fretesRouter);
 router.use('/graficos-carga',  graficosCargaRouter);
+router.use('/concessionarias', concessionariasRouter);
+router.use('/metas',           metasRouter);
+router.use('/concessionaria-precos', concPrecosRouter);
 
 module.exports = router;

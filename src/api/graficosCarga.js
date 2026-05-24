@@ -25,3 +25,41 @@ export async function getGraficoCargaById(id) {
   }
   return json.data;
 }
+
+export async function createGraficoCarga(data) {
+  const res = await fetch(BASE_URL, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao criar gráfico de carga');
+  }
+  return json.data;
+}
+
+export async function updateGraficoCarga(id, data) {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao atualizar gráfico de carga');
+  }
+  return json.data;
+}
+
+export async function deletGraficoCarga(id) {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao remover gráfico de carga');
+  }
+  return true;
+}
