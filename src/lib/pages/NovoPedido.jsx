@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
@@ -45,8 +45,8 @@ const NovoPedido = () => {
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
   const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   const [carrinho, setCarrinho] = useState(() => {
-    // ✅ Só carrega do localStorage em modo edição ou vindo de detalhes
-    if (propostaId || location.state?.fromDetalhes) {
+    // ✅ Carrega do localStorage em modo edição, vindo de detalhes, ou retornando com guindaste selecionado
+    if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
       const savedCart = localStorage.getItem('carrinho');
       try { return savedCart ? JSON.parse(savedCart) : []; } catch { return []; }
     }
@@ -106,7 +106,7 @@ const NovoPedido = () => {
 
   // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
   React.useEffect(() => {
-    if (!propostaId && !location.state?.fromDetalhes) {
+    if (!propostaId && !location.state?.fromDetalhes && !location.state?.guindasteSelecionado) {
       setCarrinho([]);
       setCarrinhoAcumulativo([]);
       setClienteData({});
@@ -127,7 +127,7 @@ const NovoPedido = () => {
       localStorage.removeItem('novoPedido_pagamentoData');
       localStorage.removeItem('carrinhoAcumulativo');
     }
-  }, [propostaId, location.state?.fromDetalhes]);
+  }, [propostaId, location.state?.fromDetalhes, location.state?.guindasteSelecionado]);
 
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
@@ -493,11 +493,21 @@ const NovoPedido = () => {
     loadData();
   }, [user, navigate, loadData]);
 
+  // Ref para evitar duplicação por React StrictMode (double-fire do useEffect)
+  const processedNavKeyRef = useRef(null);
+
   // Verificar se há um guindaste selecionado vindo da tela de detalhes
   useEffect(() => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
+
+        // Evitar duplicação: se já processamos esta navegação, apenas limpa o state
+        if (processedNavKeyRef.current === location.key) {
+          navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
+          return;
+        }
+        processedNavKeyRef.current = location.key;
         
         //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
         // Em modo concessionária, múltiplos guindastes são permitidos
@@ -557,7 +567,11 @@ const NovoPedido = () => {
         adicionarAoCarrinho(produto, 'guindaste');
 
         // Definir step correto
-        if (location.state.step) {
+        if (isModoConcessionaria) {
+          // Concessionária: ficar no step 1 para permitir adicionar mais equipamentos
+          setCurrentStep(1);
+          setMaxStepReached(Math.max(maxStepReached, 1));
+        } else if (location.state.step) {
           setCurrentStep(location.state.step);
         }
 
@@ -987,7 +1001,7 @@ const NovoPedido = () => {
             {isModoConcessionaria && carrinho.length > 0 && (
               <div style={{ marginTop: '20px' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.8125rem', color: '#1f2937', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  🛒 Equipamentos no carrinho
+                  Equipamentos no carrinho
                 </div>
                 {carrinho.map((item, idx) => item.tipo === 'guindaste' ? (
                   <div
@@ -1040,10 +1054,10 @@ const NovoPedido = () => {
                     style={{
                       width: '100%',
                       padding: '12px 24px',
-                      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      background: 'linear-gradient(135deg, #a3a3a3 0%, #b5b5b5 100%)',
                       border: 'none',
                       borderRadius: '10px',
-                      color: 'white',
+                      color: 'black',
                       fontSize: '1rem',
                       fontWeight: 'bold',
                       cursor: 'pointer',
@@ -1059,7 +1073,7 @@ const NovoPedido = () => {
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
                     }}
                   >
-                    ✅ Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
+                    Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
                   </button>
                 </div>
               </div>
@@ -1182,11 +1196,6 @@ const NovoPedido = () => {
                   concessionariaInfo={concessionariaInfo}
                   regiaoCompraSelecionada={regiaoClienteSelecionada}
                   regiaoClienteSelecionada={regiaoClienteSelecionada}
-                  carrinhoAcumulativo={carrinhoAcumulativo}
-                  onAdicionarAoCarrinho={adicionarPedidoAoCarrinhoAcumulativo}
-                  onLimparPedidoAtual={limparPedidoAtual}
-                  onLimparCarrinhoAcumulativo={limparCarrinhoAcumulativo}
-                  onRemoverDoCarrinhoAcumulativo={removerDoCarrinhoAcumulativo}
                 />
               </div>
             ) : (

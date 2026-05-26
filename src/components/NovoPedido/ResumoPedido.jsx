@@ -59,7 +59,16 @@ const ResumoPedido = ({
 
       const usuarioOK = Boolean(user?.id);
 
-      if (camposClienteOK && camposCaminhaoOK && usuarioOK) {
+      // Para concessionária, validação simplificada (não exige cliente/caminhão completo)
+      const camposCompraOK = isConcessionariaCompra
+        ? Boolean(carrinho.length > 0 && pagamentoData?.tipoFrete)
+        : false;
+
+      const podeSalvar = isConcessionariaCompra
+        ? (camposCompraOK && usuarioOK)
+        : (camposClienteOK && camposCaminhaoOK && usuarioOK);
+
+      if (podeSalvar) {
         if (!pedidoSalvoId) {
           const pedido = await salvarRelatorio();
           setPedidoSalvoId(pedido?.id || null);
@@ -69,8 +78,7 @@ const ResumoPedido = ({
       } else {
         alert(
           `PDF gerado com sucesso: ${fileName}\n` +
-            `Observação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios ` +
-            `(Cliente e/ou Caminhão). Ao clicar em Finalizar, ele será salvo.`
+            `Observação: Relatório não foi salvo automaticamente porque ainda faltam dados obrigatórios.`
         );
       }
     } catch (error) {
@@ -122,6 +130,78 @@ const ResumoPedido = ({
         return propostaAtualizada;
       }
 
+      // Pedido de compra da concessionária (sem criar cliente/caminhão separados)
+      if (isConcessionariaCompra) {
+        const timestamp = Date.now().toString();
+        const numeroPedido = `PC${timestamp.slice(-8)}`;
+
+        const guindasteNoCarrinho = carrinho.find(item =>
+          item.tipo === 'guindaste' || item.tipo === 'equipamento'
+        );
+        const guindasteId = guindasteNoCarrinho?.id || null;
+
+        const valorTotal = pagamentoData.valorFinal ||
+          carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
+
+        const clienteDocumentoDB = (
+          String(concessionariaInfo?.cnpj || clienteData?.documento || '')
+            .replace(/\D/g, '')
+            .slice(0, 14)
+        ) || null;
+
+        const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
+        const paisesInternacionais = ['PY', 'AR', 'UY', 'BO', 'CL', 'PE', 'CO', 'VE', 'EC', 'GY', 'SR'];
+        const canalVendaConcessionaria = paisesInternacionais.includes(ufConc)
+          ? 'Concessionária Internacional'
+          : 'Concessionária Nacional';
+
+        const linhaCarrinho = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+          ? 'GSI'
+          : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+          ? 'GSE'
+          : 'Outros';
+
+        const produtoPrincipal = (carrinho.find(i =>
+          i.tipo === 'equipamento' || i.tipo === 'guindaste' ||
+          i.nome?.includes('GSI') || i.nome?.includes('GSE')
+        ) || carrinho[0])?.nome || null;
+
+        const pedidoDataToSave = {
+          numero_proposta: numeroPedido,
+          id_guindaste: guindasteId,
+          data: new Date().toISOString(),
+          vendedor_id: user.id,
+          vendedor_nome: user.nome || 'Não informado',
+          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
+          cliente_documento: clienteDocumentoDB,
+          valor_total: valorTotal,
+          tipo: 'proposta',
+          status: 'finalizado',
+          concessionaria_id: user?.concessionaria_id || null,
+          canal_venda: canalVendaConcessionaria,
+          segmento_cliente: clienteData?.segmento_cliente || null,
+          cliente_uf: concessionariaInfo?.uf || clienteData?.uf || null,
+          cliente_cidade: concessionariaInfo?.cidade || clienteData?.cidade || null,
+          produto_principal: produtoPrincipal,
+          linha_produto: linhaCarrinho,
+          dados_serializados: {
+            carrinho,
+            caminhaoData,
+            pagamentoData,
+            regiaoCompraSelecionada: regiaoCompraSelecionada || regiaoClienteSelecionada || null,
+            regiaoClienteSelecionada: regiaoCompraSelecionada || regiaoClienteSelecionada || null,
+            concessionaria_id: user?.concessionaria_id || null,
+            concessionariaInfo: concessionariaInfo || null,
+            guindasteId
+          }
+        };
+
+        console.log('[SALVAR PEDIDO CONCESSIONÁRIA]', pedidoDataToSave);
+        const pedido = await createpropostas(pedidoDataToSave);
+        return pedido;
+      }
+
+      // Fluxo normal do vendedor
       const isPropostaPreliminar = caminhaoData?.tipo === 'PREENCHER' ||
         caminhaoData?.marca === 'PREENCHER' ||
         caminhaoData?.modelo === 'PREENCHER';
@@ -969,116 +1049,7 @@ const ResumoPedido = ({
             Ações Finais
           </h3>
 
-          {isConcessionariaCompra && carrinhoAcumulativo.length > 0 && (
-            <div
-              style={{
-                marginBottom: '14px',
-                padding: '14px',
-                background: '#f0fdf4',
-                borderRadius: '12px',
-                border: '1px solid #bbf7d0'
-              }}
-            >
-              <div
-                style={{
-                  fontWeight: 700,
-                  fontSize: '13px',
-                  color: '#166534',
-                  marginBottom: '10px'
-                }}
-              >
-                Equipamentos já adicionados ({carrinhoAcumulativo.length})
-              </div>
-
-              <div style={{ display: 'grid', gap: '8px' }}>
-                {carrinhoAcumulativo.map((pedido, idx) => (
-                  <div
-                    key={pedido.id}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      gap: '10px',
-                      padding: '10px 12px',
-                      background: 'white',
-                      borderRadius: '10px',
-                      fontSize: '13px',
-                      border: '1px solid #dcfce7'
-                    }}
-                  >
-                    <div style={{ color: '#0f172a', lineHeight: 1.45 }}>
-                      <strong>#{idx + 1}</strong> — {pedido.carrinho.map((i) => i.nome).join(', ')}
-                    </div>
-
-                    <button
-                      onClick={() =>
-                        onRemoverDoCarrinhoAcumulativo &&
-                        onRemoverDoCarrinhoAcumulativo(pedido.id)
-                      }
-                      style={{
-                        background: '#ef4444',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        padding: '6px 10px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                        fontWeight: 700
-                      }}
-                      title="Remover do carrinho"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {isConcessionariaCompra ? (
-            <div style={{ display: 'grid', gap: '12px' }}>
-              <button
-                onClick={() => {
-                  if (window.confirm('Deseja adicionar este pedido ao carrinho e continuar comprando?')) {
-                    onAdicionarAoCarrinho();
-                    onLimparPedidoAtual();
-                  }
-                }}
-                style={primaryButtonStyle('#16a34a', '#10b981')}
-              >
-                ➕ Adicionar Mais Equipamentos
-              </button>
-
-              <div>
-                <PDFGenerator
-                  pedidoData={{
-                    ...pedidoData,
-                    carrinho: [...carrinhoAcumulativo.flatMap((p) => p.carrinho), ...carrinho]
-                  }}
-                  onGenerate={(fileName) => {
-                    if (onLimparCarrinhoAcumulativo) {
-                      onLimparCarrinhoAcumulativo();
-                    }
-                    handlePDFGenerated(fileName);
-                  }}
-                />
-                {carrinhoAcumulativo.length > 0 && (
-                  <div
-                    style={{
-                      fontSize: '12px',
-                      color: '#64748b',
-                      marginTop: '8px',
-                      lineHeight: 1.5
-                    }}
-                  >
-                    O PDF incluirá {carrinhoAcumulativo.length + 1} equipamento(s).
-                  </div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <PDFGenerator pedidoData={pedidoData} onGenerate={handlePDFGenerated} />
-          )}
+          <PDFGenerator pedidoData={pedidoData} onGenerate={handlePDFGenerated} />
         </div>
       </div>
     </div>

@@ -642,7 +642,13 @@ async getUserById(id) {
     }
 
     const { data, error } = await query;
-    if (error) throw error;
+    if (error) {
+      // 404 = view/tabela não existe ainda; retorna vazio para o caller usar fallback
+      if (error.code === '42P01' || error.message?.includes('does not exist') || error.code === 'PGRST204') {
+        return [];
+      }
+      throw error;
+    }
     return data || [];
   }
 

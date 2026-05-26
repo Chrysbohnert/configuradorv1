@@ -66,10 +66,7 @@ export default function PaymentPolicy({
   }, [itens]);
 
   const descontoQuantidadePercent = useMemo(() => {
-    if (!modoConcessionaria) return 0;
-    if (totalGuindastes < 2) return 0;
-    // 2% por unidade adicional: 2 unidades = 2%, 3 = 4%, 4 = 6%, etc
-    return (totalGuindastes - 1) * 0.02;
+    return 0;
   }, [modoConcessionaria, totalGuindastes]);
 
   const precoBaseAjustado = useMemo(() => {
@@ -246,6 +243,8 @@ export default function PaymentPolicy({
 
   // =============== CARREGAR PONTOS (para CIF) ====================
   useEffect(() => {
+    // No modo concessionária, frete é FOB e local é fixo — não precisa buscar pontos
+    if (modoConcessionaria) return;
     // Carrega uma lista genérica; teu projeto pode filtrar por região/vendedor
     async function load() {
       try {
@@ -257,7 +256,7 @@ export default function PaymentPolicy({
       }
     }
     load();
-  }, []);
+  }, [modoConcessionaria]);
 
   const ufsDisponiveis = useMemo(() => {
     const set = new Set(
@@ -1243,15 +1242,8 @@ export default function PaymentPolicy({
 
   useEffect(() => {
     if (!modoConcessionaria) return;
-    
-    // Aplicar desconto automático de 2% se houver mais de 1 guindaste no carrinho
-    const quantidadeGuindastes = carrinho.filter(item => item.tipo === 'guindaste').length;
-    if (quantidadeGuindastes > 1) {
-      setDescontoVendedor(2);
-    } else {
-      setDescontoVendedor(Number(descontoConcessionaria) || 0);
-    }
-  }, [modoConcessionaria, descontoConcessionaria, carrinho]);
+    setDescontoVendedor(Number(descontoConcessionaria) || 0);
+  }, [modoConcessionaria, descontoConcessionaria]);
 
   // Notificar onPaymentComputed imediatamente no modo concessionária
   useEffect(() => {
