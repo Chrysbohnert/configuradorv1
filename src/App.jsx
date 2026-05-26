@@ -14,10 +14,16 @@ import Login from './lib/pages/Login';
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const VendedorLayout = lazy(() => import('./components/VendedorLayout'));
 
-// Páginas ativas
+// Páginas ativas — Admin
 const DashboardAdmin = lazy(() => import('./lib/pages/DashboardAdmin'));
 const GerenciarVendedores = lazy(() => import('./lib/pages/GerenciarVendedores'));
 const RelatorioCompleto = lazy(() => import('./lib/pages/RelatorioCompleto'));
+const GerenciarGuindastes = lazy(() => import('./lib/pages/GerenciarGuindastes'));
+const GerenciarGraficosCarga = lazy(() => import('./lib/pages/GerenciarGraficosCarga'));
+const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
+const AprovacoesDescontos = lazy(() => import('./lib/pages/AprovacoesDescontos'));
+const PlanosPagamento = lazy(() => import('./lib/pages/PlanosPagamento'));
+const CotacaoDolar = lazy(() => import('./lib/pages/CotacaoDolar'));
 
 const Configuracoes = lazy(() => import('./lib/pages/Configuracoes'));
 const DashboardVendedor = lazy(() => import('./lib/pages/DashboardVendedor'));
@@ -134,6 +140,78 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Relatório...">
                         <RelatorioCompleto />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/gerenciar-guindastes"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Guindastes...">
+                        <GerenciarGuindastes />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/gerenciar-graficos-carga"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
+                        <GerenciarGraficosCarga />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/concessionarias"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Concessionárias...">
+                        <Concessionarias />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/aprovacoes-descontos"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Aprovações...">
+                        <AprovacoesDescontos />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/planos-pagamento"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Planos...">
+                        <PlanosPagamento />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/cotacao-dolar"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Cotação...">
+                        <CotacaoDolar />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/admin/configuracoes"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Configurações...">
+                        <Configuracoes />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/nova-proposta-concessionaria/:propostaId?"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Pedido...">
+                        <NovoPedido />
                       </LazyRoute>
                     }
                   />
