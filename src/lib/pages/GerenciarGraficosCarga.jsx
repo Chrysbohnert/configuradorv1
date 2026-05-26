@@ -183,7 +183,117 @@ const GerenciarGraficosCarga = () => {
         subtitle="Upload e gestão de gráficos técnicos"
       />
 
-      {/* restante do JSX permanece igual */}
+      <div className="gerenciar-graficos-container">
+        <div className="header-section">
+          <div className="header-info">
+            <h1>Gráficos de Carga</h1>
+            <p>Gerencie os gráficos técnicos dos guindastes</p>
+          </div>
+          <BlobButton
+            text="+ Novo Gráfico"
+            onClick={() => { resetForm(); setEditingGrafico(null); setShowModal(true); }}
+          />
+        </div>
+
+        {isLoading && (
+          <div className="loading-container">
+            <div className="spinner"></div>
+            <p>Carregando...</p>
+          </div>
+        )}
+
+        {!isLoading && graficos.length === 0 && (
+          <div className="empty-state">
+            <h3>Nenhum gráfico cadastrado</h3>
+            <p>Clique em "+ Novo Gráfico" para adicionar o primeiro.</p>
+          </div>
+        )}
+
+        {!isLoading && graficos.length > 0 && (
+          <div className="graficos-grid">
+            {graficos.map((grafico) => (
+              <div key={grafico.id} className="grafico-item">
+                <div className="grafico-info">
+                  <div className="grafico-header">
+                    <div className="grafico-icon">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                      </svg>
+                    </div>
+                    <div className="grafico-details">
+                      <h3>{grafico.nome}</h3>
+                    </div>
+                  </div>
+                  {grafico.arquivo_url && (
+                    <a href={grafico.arquivo_url} target="_blank" rel="noopener noreferrer" className="pdf-chip">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                      </svg>
+                      Ver PDF
+                    </a>
+                  )}
+                </div>
+                <div className="grafico-actions">
+                  <BlobButton text="Editar" onClick={() => handleEdit(grafico)} />
+                  <BlobButton text="Excluir" onClick={() => handleDelete(grafico.id)} />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {showModal && (
+        <div className="modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>{editingGrafico ? 'Editar Gráfico' : 'Novo Gráfico'}</h2>
+              <button className="close-btn" onClick={() => setShowModal(false)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+            <div className="modal-form">
+              <form onSubmit={handleSubmit}>
+                <div className="form-grid">
+                  <div className="form-group full-width">
+                    <label>Nome do Gráfico</label>
+                    <input
+                      type="text"
+                      value={formData.nome}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, nome: e.target.value }))}
+                      placeholder="Ex: Gráfico de Carga GSI 3500"
+                      required
+                    />
+                  </div>
+                  <div className="form-group full-width">
+                    <label>Arquivo PDF</label>
+                    <input
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileChange}
+                    />
+                    {editingGrafico?.arquivo_url && !formData.arquivo && (
+                      <small>Arquivo atual mantido. Selecione um novo para substituir.</small>
+                    )}
+                  </div>
+                </div>
+                <div className="modal-actions">
+                  <button type="button" className="cancel-btn" onClick={() => setShowModal(false)}>Cancelar</button>
+                  <button type="submit" className="save-btn" disabled={isLoading}>
+                    {isLoading ? 'Salvando...' : (editingGrafico ? 'Atualizar' : 'Salvar')}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
