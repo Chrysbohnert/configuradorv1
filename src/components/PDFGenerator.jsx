@@ -1385,6 +1385,7 @@ const renderClausulas = (pedidoData, { inline = false } = {}) => {
     'No faturamento, o preço do equipamento será atualizado conforme a tabela vigente, condicionando o embarque ao pagamento da diferença.',
     'As assinaturas abaixo formalizam o presente pedido e a concordância com os termos e condições.',
     'Refere-se Instalação do Guindaste no Caminhão do cliente Comprador apenas a Implementação do Guindaste no Caminhão, demais alterações Provenientes em Virtude para Permitir a Implementação, não Estão Previstas nos Custos desta Proposta, que devem Obrigatoriamente serem Alinhados e Estritamente Concensado entre Instalador e Cliente Comprador, sem Qualquer Onus Financeiro a Stark.'
+
   ];
 
   const clausulasEs = [

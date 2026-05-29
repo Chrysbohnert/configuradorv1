@@ -8,6 +8,113 @@ import { formatCurrency } from '../../utils/formatters';
 import '../../styles/DashboardAdmin.css';
 import '../../styles/Dashboard.css';
 
+const PRODUCT_LINES = {
+  GSI: 'GSI',
+  GSE: 'GSE',
+  OUTROS: 'Outros',
+};
+
+const normalizeText = (value) =>
+  String(value ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, ' ');
+
+const toSafeNumber = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const getNormalizedFields = (...values) =>
+  values
+    .flat()
+    .map((value) => normalizeText(value))
+    .filter(Boolean);
+
+const detectProductLine = (fields = []) => {
+  const normalizedFields = getNormalizedFields(fields);
+  if (normalizedFields.some((field) => field.startsWith('GSI') || field.includes('GSI'))) {
+    return PRODUCT_LINES.GSI;
+  }
+  if (normalizedFields.some((field) => field.startsWith('GSE') || field.includes('GSE'))) {
+    return PRODUCT_LINES.GSE;
+  }
+  return PRODUCT_LINES.OUTROS;
+};
+
+const getItemQuantity = (item) => {
+  const qty = toSafeNumber(item?.quantidade);
+  return qty > 0 ? qty : 1;
+};
+
+const getItemTotalValue = (item, fallbackValuePerUnit) => {
+  const qty = getItemQuantity(item);
+  const itemTotal = toSafeNumber(item?.valor_total ?? item?.total);
+  if (itemTotal > 0) return itemTotal;
+
+  const itemUnitValue = toSafeNumber(item?.preco ?? item?.valor_unitario ?? item?.valor);
+  if (itemUnitValue > 0) return itemUnitValue * qty;
+
+  return fallbackValuePerUnit * qty;
+};
+
+const buildProductLineStats = (propostas = []) => {
+  const totals = {
+    [PRODUCT_LINES.GSI]: { count: 0, value: 0 },
+    [PRODUCT_LINES.GSE]: { count: 0, value: 0 },
+    [PRODUCT_LINES.OUTROS]: { count: 0, value: 0 },
+  };
+
+  propostas.forEach((proposta) => {
+    const proposalTotal = toSafeNumber(proposta?.valor_total);
+    const items = Array.isArray(proposta?.dados_serializados?.carrinho)
+      ? proposta.dados_serializados.carrinho
+      : [];
+
+    if (items.length > 0) {
+      const totalQty = items.reduce((sum, item) => sum + getItemQuantity(item), 0);
+      const fallbackValuePerUnit = totalQty > 0 ? proposalTotal / totalQty : 0;
+
+      items.forEach((item) => {
+        const qty = getItemQuantity(item);
+        const itemValue = getItemTotalValue(item, fallbackValuePerUnit);
+        const line = detectProductLine([
+          item?.linha_produto,
+          item?.produto_principal,
+          item?.nome,
+          item?.produto,
+          item?.modelo,
+          item?.subgrupo,
+          proposta?.linha_produto,
+          proposta?.produto_principal,
+          proposta?.nome_guindaste,
+          proposta?.modelo,
+        ]);
+
+        totals[line].count += qty;
+        totals[line].value += itemValue;
+      });
+      return;
+    }
+
+    const line = detectProductLine([
+      proposta?.linha_produto,
+      proposta?.produto_principal,
+      proposta?.nome_guindaste,
+      proposta?.modelo,
+      proposta?.dados_serializados?.linha_produto,
+      proposta?.dados_serializados?.produto_principal,
+      proposta?.dados_serializados?.nome_guindaste,
+      proposta?.dados_serializados?.modelo,
+    ]);
+
+    totals[line].count += 1;
+    totals[line].value += proposalTotal;
+  });
+
+  return totals;
+};
+
 const DashboardAdmin = () => {
   const { user } = useOutletContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -292,54 +399,11 @@ const DashboardAdmin = () => {
   }, [propostasFiltradas, periodo, visaoConversao]);
 
   const statsBySubgroup = useMemo(() => {
-    const totals = {
-      GSI: { count: 0, value: 0 },
-      GSE: { count: 0, value: 0 },
-      Outros: { count: 0, value: 0 },
-    };
-
-    propostasFiltradas.forEach((p) => {
-      const items = p.dados_serializados?.carrinho || [];
-      const valorTotal = p.valor_total || 0;
-      let hasGSI = false;
-      let hasGSE = false;
-
-      if (items && items.length > 0) {
-        hasGSI = items.some((item) => item.nome?.includes('GSI') || item.subgrupo?.includes('GSI'));
-        hasGSE = items.some((item) => item.nome?.includes('GSE') || item.subgrupo?.includes('GSE'));
-      }
-
-      if (hasGSI) {
-        totals.GSI.count += 1;
-        totals.GSI.value += valorTotal;
-      } else if (hasGSE) {
-        totals.GSE.count += 1;
-        totals.GSE.value += valorTotal;
-      } else {
-        totals.Outros.count += 1;
-        totals.Outros.value += valorTotal;
-      }
-    });
-
-    return totals;
+    return buildProductLineStats(propostasFiltradas);
   }, [propostasFiltradas]);
 
   const statsBySubgroupAnt = useMemo(() => {
-    const totals = { GSI: { count: 0, value: 0 }, GSE: { count: 0, value: 0 }, Outros: { count: 0, value: 0 } };
-    propostasAnteriores.forEach((p) => {
-      const items = p.dados_serializados?.carrinho || [];
-      const valorTotal = p.valor_total || 0;
-      let hasGSI = false;
-      let hasGSE = false;
-      if (items.length > 0) {
-        hasGSI = items.some((item) => item.nome?.includes('GSI') || item.subgrupo?.includes('GSI'));
-        hasGSE = items.some((item) => item.nome?.includes('GSE') || item.subgrupo?.includes('GSE'));
-      }
-      if (hasGSI) { totals.GSI.count += 1; totals.GSI.value += valorTotal; }
-      else if (hasGSE) { totals.GSE.count += 1; totals.GSE.value += valorTotal; }
-      else { totals.Outros.count += 1; totals.Outros.value += valorTotal; }
-    });
-    return totals;
+    return buildProductLineStats(propostasAnteriores);
   }, [propostasAnteriores]);
 
   const statsByRegion = useMemo(() => {
