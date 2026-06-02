@@ -122,6 +122,28 @@ export async function fetchPrecoCompraPorRegiao(guindasteId, regiao) {
   return json.data?.preco ?? 0;
 }
 
+export async function fetchPrecosPorRegiao(guindasteId) {
+  const res = await fetch(`${BASE_URL}/${guindasteId}/precos`, {
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao buscar preços por região');
+  }
+  return json.data || [];
+}
+
+export async function fetchPrecosCompraPorRegiao(guindasteId) {
+  const res = await fetch(`${BASE_URL}/${guindasteId}/precos-compra`, {
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || 'Erro ao buscar preços de compra por região');
+  }
+  return json.data || [];
+}
+
 export async function savePrecosPorRegiao(guindasteId, precos) {
   const res = await fetch(`${BASE_URL}/${guindasteId}/precos`, {
     method: 'POST',

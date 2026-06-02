@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { db } from '../config/supabase';
-import { savePrecosPorRegiao, savePrecosCompraPorRegiao } from '../api/guindastes';
+import {
+  savePrecosPorRegiao,
+  savePrecosCompraPorRegiao,
+  fetchPrecosPorRegiao,
+  fetchPrecosCompraPorRegiao,
+} from '../api/guindastes';
 
 const regioes = [
   { id: 'norte-nordeste', nome: 'Norte-Nordeste', descricao: 'Estados do Norte e Nordeste' },
@@ -53,8 +57,8 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
     setLoading(true);
     try {
       const [dataStark, dataCompra] = await Promise.all([
-        db.getPrecosPorRegiao(guindasteId),
-        db.getPrecosCompraPorRegiao(guindasteId),
+        fetchPrecosPorRegiao(guindasteId),
+        fetchPrecosCompraPorRegiao(guindasteId),
       ]);
       setPrecos(dataStark || []);
       setPrecosCompra(dataCompra || []);

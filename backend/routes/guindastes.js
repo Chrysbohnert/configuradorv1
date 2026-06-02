@@ -38,6 +38,16 @@ router.get('/:id/preco-compra', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, { preco });
 }));
 
+router.get('/:id/precos', requireAuth, asyncHandler(async (req, res) => {
+  const precos = await svc.findAllPrecosPorRegiao(req.params.id);
+  return res_.ok(res, precos);
+}));
+
+router.get('/:id/precos-compra', requireAuth, asyncHandler(async (req, res) => {
+  const precos = await svc.findAllPrecosCompraPorRegiao(req.params.id);
+  return res_.ok(res, precos);
+}));
+
 router.post('/:id/precos', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   const { precos } = req.body;
   if (!Array.isArray(precos)) return res_.badRequest(res, 'precos deve ser um array');

@@ -157,6 +157,26 @@ async function findPrecoCompraPorRegiao(guindasteId, regiao) {
   return 0;
 }
 
+async function findAllPrecosPorRegiao(guindasteId) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) return [];
+  const { rows } = await query(
+    `SELECT regiao, preco FROM precos_guindaste_regiao WHERE guindaste_id = $1`,
+    [id]
+  );
+  return rows || [];
+}
+
+async function findAllPrecosCompraPorRegiao(guindasteId) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) return [];
+  const { rows } = await query(
+    `SELECT regiao, preco FROM precos_compra_concessionaria_por_regiao WHERE guindaste_id = $1`,
+    [id]
+  );
+  return rows || [];
+}
+
 async function savePrecosPorRegiao(guindasteId, precos) {
   const id = Number(guindasteId);
   if (Number.isNaN(id)) throw new Error('guindaste_id inválido');
@@ -217,6 +237,8 @@ module.exports = {
   remove,
   findPrecoPorRegiao,
   findPrecoCompraPorRegiao,
+  findAllPrecosPorRegiao,
+  findAllPrecosCompraPorRegiao,
   savePrecosPorRegiao,
   savePrecosCompraPorRegiao,
 };
