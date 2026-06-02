@@ -32,9 +32,46 @@ const parseMoeda = (valorFormatado) => {
   return isNaN(num) ? null : num;
 };
 
-const handleMoedaInput = (e) => {
-  const apenasDigitos = e.target.value.replace(/\D/g, '');
-  return formatarMoeda(apenasDigitos);
+const handleChange = (regiao, valorDigitado) => {
+  setPrecosFormatados(prev => ({ ...prev, [regiao]: valorDigitado }));
+};
+
+const handleBlur = (regiao, valorDigitado) => {
+  const numerico = parseMoeda(valorDigitado);
+  const formatado = numerico ? formatarMoeda(numerico) : '';
+  setPrecosFormatados(prev => ({ ...prev, [regiao]: formatado }));
+
+  setPrecos(prev => {
+    const idx = prev.findIndex(p => p.regiao === regiao);
+    if (idx >= 0) {
+      const updated = [...prev];
+      updated[idx].preco = numerico;
+      return updated;
+    } else {
+      return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
+    }
+  });
+};
+
+const handleChangeCompra = (regiao, valorDigitado) => {
+  setPrecosCompraFormatados(prev => ({ ...prev, [regiao]: valorDigitado }));
+};
+
+const handleBlurCompra = (regiao, valorDigitado) => {
+  const numerico = parseMoeda(valorDigitado);
+  const formatado = numerico ? formatarMoeda(numerico) : '';
+  setPrecosCompraFormatados(prev => ({ ...prev, [regiao]: formatado }));
+
+  setPrecosCompra(prev => {
+    const idx = prev.findIndex(p => p.regiao === regiao);
+    if (idx >= 0) {
+      const updated = [...prev];
+      updated[idx].preco = numerico;
+      return updated;
+    } else {
+      return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
+    }
+  });
 };
 
 const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
@@ -82,37 +119,6 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
     setLoading(false);
   };
 
-  const handleChange = (regiao, valorDigitado) => {
-    const formatado = handleMoedaInput({ target: { value: valorDigitado } });
-    setPrecosFormatados(prev => ({ ...prev, [regiao]: formatado }));
-    const numerico = parseMoeda(formatado);
-    setPrecos(prev => {
-      const idx = prev.findIndex(p => p.regiao === regiao);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx].preco = numerico;
-        return updated;
-      } else {
-        return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
-      }
-    });
-  };
-
-  const handleChangeCompra = (regiao, valorDigitado) => {
-    const formatado = handleMoedaInput({ target: { value: valorDigitado } });
-    setPrecosCompraFormatados(prev => ({ ...prev, [regiao]: formatado }));
-    const numerico = parseMoeda(formatado);
-    setPrecosCompra(prev => {
-      const idx = prev.findIndex(p => p.regiao === regiao);
-      if (idx >= 0) {
-        const updated = [...prev];
-        updated[idx].preco = numerico;
-        return updated;
-      } else {
-        return [...prev, { guindaste_id: guindasteId, regiao, preco: numerico }];
-      }
-    });
-  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -213,6 +219,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
                         inputMode="numeric"
                         value={precosFormatados[regiao.id] || ''}
                         onChange={e => handleChange(regiao.id, e.target.value)}
+                        onBlur={e => handleBlur(regiao.id, e.target.value)}
                         placeholder="R$"
                       />
                     </div>
@@ -224,6 +231,7 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
                         inputMode="numeric"
                         value={precosCompraFormatados[regiao.id] || ''}
                         onChange={e => handleChangeCompra(regiao.id, e.target.value)}
+                        onBlur={e => handleBlurCompra(regiao.id, e.target.value)}
                         placeholder="R$"
                       />
                     </div>
