@@ -978,7 +978,7 @@ export default function PaymentPolicy({
         vendedorNome: user.nome,
         vendedorEmail: user.email,
         equipamentoDescricao,
-        valorBase: precoBase,
+        valorBase: resultado?.total || precoBase,
         descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
         descontoDesejado: descontoDesejado || null,
         valorFinalDesejado: valorFinalDesejado || null,
@@ -1755,9 +1755,9 @@ export default function PaymentPolicy({
               : 'Equipamento não identificado';
           })()}
           valorBase={precoBase}
+          valorTotalAtual={resultado?.total || precoBase}
           descontoAtual={descontoVendedor || (modoConcessionaria ? 0 : 7)}
           isLoading={aguardandoAprovacao}
-          permitirValorFinal={modoConcessionaria}
         />
       )}
     </div>

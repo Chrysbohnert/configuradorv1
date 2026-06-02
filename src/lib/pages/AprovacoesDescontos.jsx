@@ -323,7 +323,7 @@ export default function AprovacoesDescontos() {
                     <span className="value">{solicitacao.equipamento_descricao}</span>
                   </div>
                   <div className="info-row">
-                    <span className="label">Valor Base:</span>
+                    <span className="label">Valor total atual da proposta:</span>
                     <span className="value">{formatCurrency(solicitacao.valor_base)}</span>
                   </div>
                   <div className="info-row">
@@ -343,12 +343,16 @@ export default function AprovacoesDescontos() {
                     );
                   })()}
 
-                  {/* Desconto solicitado extraído da justificativa */}
+                  {/* Valor final solicitado extraído da justificativa */}
                   {(() => {
+                    const valMatch = solicitacao.justificativa?.match(/Valor solicitado:\s*R\$\s*([\d\.,]+)/);
                     const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
-                    if (!pctMatch) return null;
-                    const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
                     const isConcessionaria = solicitacao.justificativa?.includes('[admin_concessionaria]') || solicitacao.justificativa?.includes('[CONCESSIONÁRIA]');
+                    const base = Number(solicitacao.valor_base) || 0;
+                    const valorSolicitadoStr = valMatch ? valMatch[1].replace(/\./g, '').replace(',', '.') : null;
+                    const valorSolicitado = valorSolicitadoStr ? parseFloat(valorSolicitadoStr) : 0;
+                    const pctSolicitado = pctMatch ? parseFloat(pctMatch[1].replace(',', '.')) : 0;
+                    if (!valorSolicitado && !pctSolicitado) return null;
                     return (
                       <div style={{
                         background: '#fffbeb',
@@ -358,24 +362,26 @@ export default function AprovacoesDescontos() {
                         marginTop: '10px'
                       }}>
                         <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
-                          🎯 {isConcessionaria ? 'Admin Concessionária' : 'Vendedor'} solicita: {pctSolicitado}%
+                          🎯 {isConcessionaria ? 'Admin Concessionária' : 'Vendedor'} solicita:
                         </p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px', alignItems: 'center' }}>
                           <div>
-                            <span style={{ color: '#6b7280' }}>Valor com {solicitacao.desconto_atual}%:</span>
+                            <span style={{ color: '#6b7280' }}>Valor total atual:</span>
                             <br />
-                            <strong>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}</strong>
+                            <strong>{formatCurrency(base)}</strong>
                           </div>
-                          <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>→</div>
+                          <div style={{ textAlign: 'center', color: '#6b7280' }}>→</div>
                           <div>
-                            <span style={{ color: '#16a34a' }}>Valor com {pctSolicitado}%:</span>
+                            <span style={{ color: '#16a34a' }}>Valor final desejado:</span>
                             <br />
-                            <strong style={{ color: '#16a34a' }}>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * pctSolicitado / 100))}</strong>
+                            <strong style={{ color: '#16a34a' }}>{formatCurrency(valorSolicitado || (base - (base * pctSolicitado / 100)))}</strong>
                           </div>
                         </div>
-                        <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
-                          Diferença: -{formatCurrency((solicitacao.valor_base * pctSolicitado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
-                        </p>
+                        {pctSolicitado > 0 && (
+                          <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
+                            Percentual equivalente: {pctSolicitado}% ({formatCurrency(base * pctSolicitado / 100)})
+                          </p>
+                        )}
                       </div>
                     );
                   })()}
@@ -435,27 +441,34 @@ export default function AprovacoesDescontos() {
                       style={{ fontSize: '16px', fontWeight: 600 }}
                     />
 
-                    {/* Botão rápido: aprovar percentual solicitado (preenche valor final) */}
+                    {/* Botão rápido: aprovar valor final solicitado */}
                     {(() => {
+                      const valMatch = solicitacao.justificativa?.match(/Valor solicitado:\s*R\$\s*([\d\.,]+)/);
                       const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
-                      if (!pctMatch) return null;
-                      const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
-                      if (valorFinalAprovado[solicitacao.id]) return null;
                       const base = Number(solicitacao.valor_base) || 0;
-                      const valorFinalSolicitado = base > 0 ? Math.round((base - (base * pctSolicitado / 100)) * 100) / 100 : 0;
+                      let valorFinalSolicitado = 0;
+                      if (valMatch) {
+                        const vStr = valMatch[1].replace(/\./g, '').replace(',', '.');
+                        valorFinalSolicitado = parseFloat(vStr);
+                      } else if (pctMatch) {
+                        const pct = parseFloat(pctMatch[1].replace(',', '.'));
+                        valorFinalSolicitado = base > 0 ? Math.round((base - (base * pct / 100)) * 100) / 100 : 0;
+                      }
+                      if (!valorFinalSolicitado || valorFinalAprovado[solicitacao.id]) return null;
+                      const pctSolicitado = pctMatch ? parseFloat(pctMatch[1].replace(',', '.')) : 0;
                       return (
                         <button
                           type="button"
                           onClick={() => {
                             const base2 = Number(solicitacao.valor_base) || 0;
-                            const vFinal = base2 > 0 ? Math.round((base2 - (base2 * pctSolicitado / 100)) * 100) / 100 : 0;
+                            const pctCalc = base2 > 0 ? Math.round(((base2 - valorFinalSolicitado) / base2) * 10000) / 100 : 0;
                             setValorFinalAprovado(prev => ({
                               ...prev,
-                              [solicitacao.id]: String(vFinal)
+                              [solicitacao.id]: String(valorFinalSolicitado)
                             }));
                             setDescontoSelecionado(prev => ({
                               ...prev,
-                              [solicitacao.id]: String(pctSolicitado)
+                              [solicitacao.id]: String(pctCalc)
                             }));
                           }}
                           style={{
@@ -470,7 +483,8 @@ export default function AprovacoesDescontos() {
                             fontWeight: 500
                           }}
                         >
-                          Aprovar {pctSolicitado}% ({formatCurrency(valorFinalSolicitado)})
+                          Aprovar valor solicitado ({formatCurrency(valorFinalSolicitado)})
+                          {pctSolicitado > 0 && ` ~${pctSolicitado}%`}
                         </button>
                       );
                     })()}
