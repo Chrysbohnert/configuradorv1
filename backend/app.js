@@ -17,6 +17,7 @@ const allowedOrigins = [
   'https://www.starkindustrial.ind.br',
   'https://api-pedidos.starkindustrial.ind.br',
   'https://configurador.starkindustrial.ind.br',
+  'https://configuradorv1-stark.vercel.app',
 ];
 
 const corsOptions = {

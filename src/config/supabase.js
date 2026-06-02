@@ -2266,16 +2266,6 @@ async getUserById(id) {
    * @returns {Object} Solicitação criada
    */
   async criarSolicitacaoDesconto(dados) {
-    
-    // Montar justificativa com metadados (tipo solicitante + valor final desejado)
-    let justificativaFinal = dados.justificativa || '';
-    const isConcessionaria = dados.tipoSolicitante === 'admin_concessionaria';
-    if (isConcessionaria) {
-      justificativaFinal = `[CONCESSIONÁRIA]${dados.valorFinalDesejado ? `[VF:${dados.valorFinalDesejado}]` : ''}${justificativaFinal ? ' ' + justificativaFinal : ''}`;
-    } else if (dados.valorFinalDesejado) {
-      justificativaFinal = `[VF:${dados.valorFinalDesejado}]${justificativaFinal ? ' ' + justificativaFinal : ''}`;
-    }
-
     const { criarSolicitacao } = await import('../api/solicitacoesDesconto.js');
     const data = await criarSolicitacao({
       vendedor_id: dados.vendedorId,
@@ -2285,7 +2275,8 @@ async getUserById(id) {
       valor_base: dados.valorBase,
       desconto_atual: typeof dados.descontoAtual === 'number' ? dados.descontoAtual : 0,
       desconto_desejado: dados.descontoDesejado || null,
-      justificativa: justificativaFinal || null,
+      valor_final_desejado: dados.valorFinalDesejado || null,
+      justificativa: dados.justificativa || null,
       tipo_solicitante: dados.tipoSolicitante || 'vendedor'
     });
     

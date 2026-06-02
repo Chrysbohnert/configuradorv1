@@ -1,13 +1,13 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
-import { db, supabase } from '../../config/supabase';
+import { listarPendentes, aprovarSolicitacao, negarSolicitacao } from '../../api/solicitacoesDesconto';
 import { formatCurrency } from '../../utils/formatters';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import '../../styles/AprovacoesDescontos.css';
 
 /**
  * Painel do Gestor para Aprovar/Negar Solicitações de Desconto
- * Atualiza em tempo real via Supabase Realtime
+ * Usa API REST com polling a cada 30s
  */
 export default function AprovacoesDescontos() {
   const navigate = useNavigate();
@@ -20,71 +20,28 @@ export default function AprovacoesDescontos() {
   // Estados para aprovação
   const [descontoSelecionado, setDescontoSelecionado] = useState({});
   const [observacoes, setObservacoes] = useState({});
+  const [valorFinalAprovado, setValorFinalAprovado] = useState({});
 
-  // Configurar listener para atualizações em tempo real
+  // Carregar solicitações ao montar + polling a cada 30s
   useEffect(() => {
     if (user?.tipo === 'admin_concessionaria') {
       navigate('/dashboard-admin');
       return;
     }
 
-    const channel = supabase
-      .channel('solicitacoes-admin')
-      .on('postgres_changes', {
-        event: '*', // INSERT, UPDATE, DELETE
-        schema: 'public',
-        table: 'solicitacoes_desconto'
-      }, (payload) => {
-        // Atualiza a lista de forma otimizada
-        setSolicitacoes(current => {
-          const index = current.findIndex(s => s.id === payload.new?.id || payload.old?.id);
-          
-          // Se for uma atualização ou deleção
-          if (index !== -1) {
-            // Se foi aprovado/negado, remove da lista
-            if (payload.eventType === 'UPDATE' && 
-                ['aprovado', 'negado'].includes(payload.new.status)) {
-              const novasSolicitacoes = [...current];
-              novasSolicitacoes.splice(index, 1);
-              return novasSolicitacoes;
-            }
-            // Se foi atualizado, substitui o item
-            return current.map(s => 
-              s.id === payload.new.id ? payload.new : s
-            );
-          }
-          
-          // Se for uma nova inserção e estiver pendente, adiciona
-          if (payload.eventType === 'INSERT' && payload.new.status === 'pendente') {
-            return [payload.new, ...current];
-          }
-          
-          return current;
-        });
-      })
-      .subscribe();
-
-    // Carregar dados iniciais
     carregarSolicitacoes();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const interval = setInterval(() => {
+      carregarSolicitacoes();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, [user, navigate]);
 
   const carregarSolicitacoes = async () => {
     try {
       setLoading(true);
-      
-      // Busca apenas solicitações pendentes
-      const { data, error } = await supabase
-        .from('solicitacoes_desconto')
-        .select('id, vendedor_nome, vendedor_id, vendedor_email, equipamento_descricao, valor_base, desconto_atual, desconto_desejado, justificativa, status, created_at')
-        .eq('status', 'pendente')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      
+      const data = await listarPendentes();
       setSolicitacoes(data || []);
     } catch (error) {
       console.error('❌ [AprovacoesDescontos] Erro ao carregar:', error);
@@ -129,12 +86,10 @@ export default function AprovacoesDescontos() {
         throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
       }
 
-      // Chamar a função de aprovação
-      await db.aprovarSolicitacaoDesconto(
+      // Chamar API REST de aprovação
+      await aprovarSolicitacao(
         solicitacao.id,
-        descontoFinal, // Arredondado para 2 casas decimais
-        user.id,
-        user.nome,
+        descontoFinal,
         observacoes[solicitacao.id] || null
       );
 
@@ -198,12 +153,7 @@ export default function AprovacoesDescontos() {
         throw new Error('Acesso negado. Apenas administradores podem negar descontos.');
       }
 
-      await db.negarSolicitacaoDesconto(
-        solicitacao.id,
-        user.id,
-        user.nome,
-        motivo
-      );
+      await negarSolicitacao(solicitacao.id, motivo);
 
       const mensagemSucesso = `❌ Solicitação de ${solicitacao.vendedor_nome} negada com sucesso.\n\n` +
         `Motivo: ${motivo}`;
@@ -278,11 +228,29 @@ export default function AprovacoesDescontos() {
       />
 
       <div className="aprovacoes-content">
-        {/* Header com contador */}
+        {/* Header com contador e botão atualizar */}
         <div className="aprovacoes-header">
           <h2>Solicitações Pendentes</h2>
-          <div className="contador-badge">
-            {solicitacoes.length} {solicitacoes.length === 1 ? 'solicitação' : 'solicitações'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              className="btn btn-secondary"
+              onClick={carregarSolicitacoes}
+              disabled={loading}
+              style={{
+                padding: '6px 14px',
+                fontSize: '13px',
+                background: '#f1f5f9',
+                border: '1px solid #cbd5e1',
+                borderRadius: '6px',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                color: '#475569'
+              }}
+            >
+              {loading ? '⏳ Atualizando...' : '🔄 Atualizar'}
+            </button>
+            <div className="contador-badge">
+              {solicitacoes.length} {solicitacoes.length === 1 ? 'solicitação' : 'solicitações'}
+            </div>
           </div>
         </div>
 
@@ -304,7 +272,7 @@ export default function AprovacoesDescontos() {
                     <div>
                       <h3>{solicitacao.vendedor_nome}</h3>
                       <small>{solicitacao.vendedor_email}</small>
-                      {solicitacao.justificativa?.includes('[CONCESSIONÁRIA]') && (
+                      {(solicitacao.justificativa?.includes('[CONCESSIONÁRIA]') || solicitacao.justificativa?.includes('[admin_concessionaria]')) && (
                         <span style={{
                           display: 'inline-block',
                           marginTop: '4px',
@@ -353,36 +321,42 @@ export default function AprovacoesDescontos() {
                     );
                   })()}
 
-                  {/* Desconto solicitado pelo vendedor */}
-                  {solicitacao.desconto_desejado && (
-                    <div style={{
-                      background: '#fffbeb',
-                      border: '1px solid #fde68a',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                      marginTop: '10px'
-                    }}>
-                      <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
-                        🎯 {solicitacao.justificativa?.includes('[CONCESSIONÁRIA]') ? 'Concessionária' : 'Vendedor'} solicita: {solicitacao.desconto_desejado}%
-                      </p>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
-                        <div>
-                          <span style={{ color: '#6b7280' }}>Valor com {solicitacao.desconto_atual}%:</span>
-                          <br />
-                          <strong>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}</strong>
+                  {/* Desconto solicitado extraído da justificativa */}
+                  {(() => {
+                    const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
+                    if (!pctMatch) return null;
+                    const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
+                    const isConcessionaria = solicitacao.justificativa?.includes('[admin_concessionaria]') || solicitacao.justificativa?.includes('[CONCESSIONÁRIA]');
+                    return (
+                      <div style={{
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        borderRadius: '8px',
+                        padding: '12px 14px',
+                        marginTop: '10px'
+                      }}>
+                        <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
+                          🎯 {isConcessionaria ? 'Admin Concessionária' : 'Vendedor'} solicita: {pctSolicitado}%
+                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
+                          <div>
+                            <span style={{ color: '#6b7280' }}>Valor com {solicitacao.desconto_atual}%:</span>
+                            <br />
+                            <strong>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}</strong>
+                          </div>
+                          <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>→</div>
+                          <div>
+                            <span style={{ color: '#16a34a' }}>Valor com {pctSolicitado}%:</span>
+                            <br />
+                            <strong style={{ color: '#16a34a' }}>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * pctSolicitado / 100))}</strong>
+                          </div>
                         </div>
-                        <div style={{ textAlign: 'center', color: '#6b7280', alignSelf: 'center' }}>→</div>
-                        <div>
-                          <span style={{ color: '#16a34a' }}>Valor com {solicitacao.desconto_desejado}%:</span>
-                          <br />
-                          <strong style={{ color: '#16a34a' }}>{formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * solicitacao.desconto_desejado / 100))}</strong>
-                        </div>
+                        <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
+                          Diferença: -{formatCurrency((solicitacao.valor_base * pctSolicitado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
+                        </p>
                       </div>
-                      <p style={{ fontSize: '11px', color: '#92400e', marginTop: '6px' }}>
-                        Diferença: -{formatCurrency((solicitacao.valor_base * solicitacao.desconto_desejado / 100) - (solicitacao.valor_base * solicitacao.desconto_atual / 100))}
-                      </p>
-                    </div>
-                  )}
+                    );
+                  })()}
                   
                   {solicitacao.justificativa && (() => {
                     const textoLimpo = solicitacao.justificativa
@@ -401,15 +375,15 @@ export default function AprovacoesDescontos() {
 
                 {/* Ações */}
                 <div className="card-actions">
-                  {/* Input de Desconto Livre */}
+                  {/* Input de Desconto / Valor Final */}
                   <div className="form-group">
                     <label>Desconto a conceder (%):</label>
                     <input
                       type="number"
                       className="form-control"
-                      placeholder={solicitacao.desconto_desejado ? `Solicitado: ${solicitacao.desconto_desejado}%` : 'Ex: 10.5'}
+                      placeholder="Ex: 10.5"
                       min="0"
-                      step="0.1"
+                      step="0.01"
                       value={descontoSelecionado[solicitacao.id] || ''}
                       onChange={(e) => setDescontoSelecionado(prev => ({
                         ...prev,
@@ -417,31 +391,66 @@ export default function AprovacoesDescontos() {
                       }))}
                       disabled={processando === solicitacao.id}
                     />
-                    {/* Botão rápido para aplicar o % solicitado */}
-                    {solicitacao.desconto_desejado && !descontoSelecionado[solicitacao.id] && (
-                      <button
-                        type="button"
-                        onClick={() => setDescontoSelecionado(prev => ({
-                          ...prev,
-                          [solicitacao.id]: String(solicitacao.desconto_desejado)
-                        }))}
-                        style={{
-                          marginTop: '6px',
-                          padding: '5px 12px',
-                          fontSize: '12px',
-                          background: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          borderRadius: '6px',
-                          color: '#166534',
-                          cursor: 'pointer',
-                          fontWeight: 500
-                        }}
-                      >
-                        Aplicar {solicitacao.desconto_desejado}% (solicitado)
-                      </button>
-                    )}
 
-                    {/* Simulador em tempo real */}
+                    {/* Botão rápido: aprovar percentual solicitado */}
+                    {(() => {
+                      const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
+                      if (!pctMatch) return null;
+                      const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
+                      if (descontoSelecionado[solicitacao.id]) return null;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => setDescontoSelecionado(prev => ({
+                            ...prev,
+                            [solicitacao.id]: String(pctSolicitado)
+                          }))}
+                          style={{
+                            marginTop: '6px',
+                            padding: '5px 12px',
+                            fontSize: '12px',
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '6px',
+                            color: '#166534',
+                            cursor: 'pointer',
+                            fontWeight: 500
+                          }}
+                        >
+                          Aprovar {pctSolicitado}% (solicitado)
+                        </button>
+                      );
+                    })()}
+
+                    {/* Valor final aprovado */}
+                    <label style={{ marginTop: '10px', display: 'block' }}>Ou informe valor final aprovado (R$):</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Ex: 48000"
+                      min="0"
+                      step="0.01"
+                      value={valorFinalAprovado[solicitacao.id] || ''}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setValorFinalAprovado(prev => ({
+                          ...prev,
+                          [solicitacao.id]: val
+                        }));
+                        const valorFinal = parseFloat(val);
+                        const base = Number(solicitacao.valor_base) || 0;
+                        if (!isNaN(valorFinal) && base > 0 && valorFinal >= 0) {
+                          const pct = ((base - valorFinal) / base) * 100;
+                          setDescontoSelecionado(prev => ({
+                            ...prev,
+                            [solicitacao.id]: String(Math.round(pct * 100) / 100)
+                          }));
+                        }
+                      }}
+                      disabled={processando === solicitacao.id}
+                    />
+
+                    {/* Simulador */}
                     {descontoSelecionado[solicitacao.id] && parseFloat(descontoSelecionado[solicitacao.id]) > 0 && (
                       <div style={{
                         background: '#f0f9ff',

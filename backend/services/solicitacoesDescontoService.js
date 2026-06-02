@@ -4,24 +4,60 @@
  */
 
 const { query } = require('../db/pool');
+const { randomUUID } = require('crypto');
 
 async function criar(dados) {
+  const valorBase = Number(dados.valor_base) || 0;
+  const valorFinal = dados.valor_final_desejado != null ? Number(dados.valor_final_desejado) : null;
+
+  // Se veio valor final desejado, calcular desconto em R$ e %
+  let descontoValor = 0;
+  let percentualCalc = 0;
+  if (valorFinal != null && valorBase > 0) {
+    descontoValor = valorBase - valorFinal;
+    percentualCalc = (descontoValor / valorBase) * 100;
+  }
+
+  // Montar justificativa descritiva (inclui dados extras que não têm coluna própria)
+  const fmt = (v) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+  let justificativaFinal = '';
+
+  // Prefixo: tipo do solicitante
+  if (dados.tipo_solicitante && dados.tipo_solicitante !== 'vendedor') {
+    justificativaFinal = `[${dados.tipo_solicitante}]`;
+  }
+
+  // Corpo: detalhes do desconto
+  if (valorFinal != null && valorBase > 0) {
+    justificativaFinal += ` Valor original: ${fmt(valorBase)} | Valor solicitado: ${fmt(valorFinal)} | Desconto: ${fmt(descontoValor)} | Percentual: ${percentualCalc.toFixed(2)}%`;
+  } else if (dados.desconto_desejado) {
+    justificativaFinal += ` Desconto desejado: ${dados.desconto_desejado}%`;
+  }
+
+  // Sufixo: justificativa livre do usuário
+  if (dados.justificativa) {
+    justificativaFinal += ` | ${dados.justificativa}`;
+  }
+
+  justificativaFinal = justificativaFinal.trim();
+
+  // INSERT usa APENAS colunas garantidas da tabela original
+  const id = randomUUID();
   const { rows } = await query(
     `INSERT INTO solicitacoes_desconto
-      (vendedor_id, vendedor_nome, vendedor_email, equipamento_descricao,
-       valor_base, desconto_atual, desconto_desejado, justificativa, tipo_solicitante, status)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pendente')
+      (id, vendedor_id, vendedor_nome, vendedor_email, equipamento_descricao,
+       valor_base, desconto_atual, justificativa, status)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pendente')
      RETURNING *`,
     [
+      id,
       dados.vendedor_id,
       dados.vendedor_nome,
       dados.vendedor_email || null,
       dados.equipamento_descricao,
-      dados.valor_base,
-      dados.desconto_atual != null ? dados.desconto_atual : 0,
-      dados.desconto_desejado || null,
-      dados.justificativa || null,
-      dados.tipo_solicitante || 'vendedor'
+      valorBase,
+      dados.desconto_atual != null ? Number(dados.desconto_atual) : 0,
+      justificativaFinal || null
     ]
   );
   return rows[0];
@@ -31,7 +67,7 @@ async function listarPendentes() {
   const { rows } = await query(
     `SELECT id, vendedor_nome, vendedor_id, vendedor_email,
             equipamento_descricao, valor_base, desconto_atual,
-            desconto_desejado, justificativa, tipo_solicitante, status, created_at
+            justificativa, status, created_at
      FROM solicitacoes_desconto
      WHERE status = 'pendente'
      ORDER BY created_at DESC`

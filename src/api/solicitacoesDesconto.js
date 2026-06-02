@@ -16,6 +16,29 @@ function authHeaders() {
 }
 
 export async function criarSolicitacao(dados) {
+  // Gerar justificativa automática se ausente
+  if (!dados.justificativa) {
+    const fmt = (v) => Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    const partes = [];
+
+    if (dados.tipo_solicitante === 'admin_concessionaria') {
+      partes.push('Solicitação de desconto via Admin Concessionária.');
+    }
+
+    if (dados.valor_final_desejado && dados.valor_base) {
+      const vBase = Number(dados.valor_base);
+      const vFinal = Number(dados.valor_final_desejado);
+      const descR$ = vBase - vFinal;
+      const pct = ((descR$ / vBase) * 100).toFixed(2).replace('.', ',');
+      partes.push(`Valor original: ${fmt(vBase)} | Valor solicitado: ${fmt(vFinal)} | Desconto solicitado: ${pct}%`);
+    } else if (dados.desconto_desejado) {
+      partes.push(`Desconto solicitado: ${dados.desconto_desejado}%`);
+    }
+
+    dados = { ...dados, justificativa: partes.join(' ') || 'Solicitação de desconto' };
+  }
+
+  console.log('[solicitacoes-desconto] payload enviado:', JSON.stringify(dados, null, 2));
   const res = await fetch(BASE_URL, {
     method: 'POST',
     headers: authHeaders(),

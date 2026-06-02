@@ -15,26 +15,56 @@ const router = Router();
 
 // POST /api/solicitacoes-desconto — criar solicitação (vendedor ou admin_concessionaria)
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
-  const { vendedor_id, vendedor_nome, vendedor_email, equipamento_descricao,
-          valor_base, desconto_atual, desconto_desejado, justificativa, tipo_solicitante } = req.body;
+  console.log('[solicitacoes-desconto] rota produção atingida', req.body);
 
-  if (!vendedor_id || !vendedor_nome || !equipamento_descricao || !valor_base) {
-    return res_.badRequest(res, 'Campos obrigatórios: vendedor_id, vendedor_nome, equipamento_descricao, valor_base');
+  try {
+    const { vendedor_id, vendedor_nome, vendedor_email, equipamento_descricao,
+            valor_base, desconto_atual, desconto_desejado, valor_final_desejado,
+            justificativa, tipo_solicitante } = req.body;
+
+    const missingFields = [];
+    if (!vendedor_id) missingFields.push('vendedor_id');
+    if (!vendedor_nome) missingFields.push('vendedor_nome');
+    if (!equipamento_descricao) missingFields.push('equipamento_descricao');
+    if (valor_base == null) missingFields.push('valor_base');
+
+    if (missingFields.length > 0) {
+      console.log('[solicitacoes-desconto] Campos faltantes:', missingFields);
+      return res.status(400).json({
+        error: 'Campo obrigatório ausente',
+        missingFields,
+        receivedBody: req.body,
+        version: 'debug-2026-06-02-01'
+      });
+    }
+
+    const solicitacao = await svc.criar({
+      vendedor_id,
+      vendedor_nome,
+      vendedor_email,
+      equipamento_descricao,
+      valor_base,
+      desconto_atual,
+      desconto_desejado,
+      valor_final_desejado,
+      justificativa,
+      tipo_solicitante: tipo_solicitante || 'vendedor'
+    });
+
+    return res_.created(res, solicitacao);
+  } catch (error) {
+    console.error('[solicitacoes-desconto] CATCH error:', error);
+    return res.status(500).json({
+      error: 'Erro interno ao criar solicitação',
+      message: error.message,
+      code: error.code,
+      detail: error.detail,
+      constraint: error.constraint,
+      column: error.column,
+      table: error.table,
+      version: 'debug-postgres-insert'
+    });
   }
-
-  const solicitacao = await svc.criar({
-    vendedor_id,
-    vendedor_nome,
-    vendedor_email,
-    equipamento_descricao,
-    valor_base,
-    desconto_atual,
-    desconto_desejado,
-    justificativa,
-    tipo_solicitante: tipo_solicitante || 'vendedor'
-  });
-
-  return res_.created(res, solicitacao);
 }));
 
 // GET /api/solicitacoes-desconto/pendentes — listar pendentes (admin)
