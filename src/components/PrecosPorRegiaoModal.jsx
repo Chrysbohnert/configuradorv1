@@ -17,13 +17,12 @@ const regioes = [
 
 const formatarMoeda = (valor) => {
   if (!valor && valor !== 0) return '';
-  const num = typeof valor === 'string' ? valor.replace(/\D/g, '') : String(Math.round(valor * 100));
-  if (!num || num === '0') return '';
-  const numPadded = num.padStart(3, '0');
-  const inteiro = numPadded.slice(0, -2).replace(/^0+/, '') || '0';
-  const decimal = numPadded.slice(-2);
-  const inteiroFormatado = inteiro.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-  return `${inteiroFormatado},${decimal}`;
+  const num = typeof valor === 'string' ? parseFloat(valor) : Number(valor);
+  if (isNaN(num) || num === 0) return '';
+  const partes = num.toFixed(2).split('.');
+  const inteiro = partes[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const decimal = partes[1];
+  return `${inteiro},${decimal}`;
 };
 
 const parseMoeda = (valorFormatado) => {
