@@ -3,7 +3,8 @@
  * Cliente REST para /api/metas (metas de vendedores).
  */
 
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/metas';
+import { API_URL } from './config.js';
+const BASE_URL = `${API_URL}/api/metas`;
 
 function authHeaders() {
   const token = localStorage.getItem('authToken');

@@ -134,6 +134,7 @@ export default function PaymentPolicy({
   });
   const isRestoringRef = useRef(false);
   const hasRestoredRef = useRef(false);
+  const plansWarnedRef = useRef(false);
 
   // 1) Tipo de cliente
   const [tipoCliente, setTipoCliente] = useState(''); // 'cliente' | 'revenda'
@@ -583,7 +584,10 @@ export default function PaymentPolicy({
           }
         }
       } catch (e) {
-        console.warn('⚠️ [PaymentPolicy] Falha ao carregar planos publicados, usando fallback JSON:', e);
+        if (!plansWarnedRef.current) {
+          console.warn('⚠️ [PaymentPolicy] Falha ao carregar planos publicados, usando fallback JSON:', e);
+          plansWarnedRef.current = true;
+        }
         if (!cancelled) setTodosPlanos(scope === 'concessionaria' ? [] : getPaymentPlans(audience));
       }
     };
@@ -952,7 +956,7 @@ export default function PaymentPolicy({
   const prev = () => setEtapa(e => Math.max(e - 1, isComercioExterior ? 3 : 1));
 
   // =============== SOLICITAR DESCONTO ADICIONAL AO GESTOR ========
-  const handleSolicitarDesconto = async (justificativa, descontoDesejado) => {
+  const handleSolicitarDesconto = async (justificativa, descontoDesejado, valorFinalDesejado) => {
     try {
       setAguardandoAprovacao(true);
 
@@ -977,6 +981,8 @@ export default function PaymentPolicy({
         valorBase: precoBase,
         descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
         descontoDesejado: descontoDesejado || null,
+        valorFinalDesejado: valorFinalDesejado || null,
+        tipoSolicitante: modoConcessionaria ? 'admin_concessionaria' : 'vendedor',
         justificativa
       });
 
@@ -1659,6 +1665,29 @@ export default function PaymentPolicy({
             </div>
           )}
 
+          {modoConcessionaria && !bloquearDesconto && (
+            <div className="form-group">
+              <label>Solicitar Desconto</label>
+              <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '8px' }}>
+                Solicite um desconto especial para este pedido de compra. O Admin Stark irá avaliar.
+              </p>
+              <button
+                type="button"
+                className="pp-extra-btn"
+                onClick={() => setModalSolicitacaoOpen(true)}
+                disabled={aguardandoAprovacao}
+                style={{ marginTop: '4px' }}
+              >
+                {aguardandoAprovacao ? '⏳ Aguardando aprovação...' : '📋 Solicitar Desconto'}
+              </button>
+              {descontoVendedor > 0 && (
+                <div className="pp-info-note" style={{ marginTop: '8px', background: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
+                  ✅ Desconto aprovado: {descontoVendedor}%
+                </div>
+              )}
+            </div>
+          )}
+
         </div>{/* fim pp-inner-2col */}
 
         {percentualEntrada === 'financiamento' && (
@@ -1709,7 +1738,7 @@ export default function PaymentPolicy({
     </div>
 
       {/* Modal de Solicitação de Desconto */}
-      {!isConcessionariaUser && permiteSolicitarDescontoExtra && (
+      {((!isConcessionariaUser && permiteSolicitarDescontoExtra) || (modoConcessionaria && !bloquearDesconto)) && (
         <SolicitarDescontoModal
           isOpen={modalSolicitacaoOpen}
           onClose={() => {
@@ -1724,10 +1753,11 @@ export default function PaymentPolicy({
             return equipamento 
               ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
               : 'Equipamento não identificado';
-          })}
+          })()}
           valorBase={precoBase}
-          descontoAtual={descontoVendedor || 7}
+          descontoAtual={descontoVendedor || (modoConcessionaria ? 0 : 7)}
           isLoading={aguardandoAprovacao}
+          permitirValorFinal={modoConcessionaria}
         />
       )}
     </div>

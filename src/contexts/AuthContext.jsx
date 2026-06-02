@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import { normalizarArray, normalizarObjeto } from '../utils/normalizadores';
 
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/users';
+import { API_URL } from '../api/config.js';
+const BASE_URL = `${API_URL}/api/users`;
 
 function _clearStorage() {
   localStorage.removeItem('user');

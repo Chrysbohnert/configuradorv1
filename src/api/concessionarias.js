@@ -6,7 +6,8 @@
  * de src/config/supabase.js.
  */
 
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/concessionarias';
+import { API_URL } from './config.js';
+const BASE_URL = `${API_URL}/api/concessionarias`;
 
 function authHeaders() {
   const token = localStorage.getItem('authToken');

@@ -5,7 +5,8 @@
  * sem exigir papel de admin (usado em Configuracoes.jsx).
  */
 
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/users';
+import { API_URL } from './config.js';
+const BASE_URL = `${API_URL}/api/users`;
 
 function authHeaders() {
   const token = localStorage.getItem('authToken');

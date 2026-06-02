@@ -304,6 +304,21 @@ export default function AprovacoesDescontos() {
                     <div>
                       <h3>{solicitacao.vendedor_nome}</h3>
                       <small>{solicitacao.vendedor_email}</small>
+                      {solicitacao.justificativa?.includes('[CONCESSIONÁRIA]') && (
+                        <span style={{
+                          display: 'inline-block',
+                          marginTop: '4px',
+                          padding: '2px 8px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          background: '#fef3c7',
+                          color: '#92400e',
+                          borderRadius: '4px',
+                          border: '1px solid #fde68a'
+                        }}>
+                          🏪 CONCESSIONÁRIA
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="data-solicitacao">
@@ -326,6 +341,18 @@ export default function AprovacoesDescontos() {
                     <span className="value highlight">{solicitacao.desconto_atual}%</span>
                   </div>
 
+                  {/* Valor final desejado (extraído da justificativa quando informado) */}
+                  {(() => {
+                    const vfMatch = solicitacao.justificativa?.match(/\[VF:([\d.]+)\]/);
+                    if (!vfMatch) return null;
+                    return (
+                      <div className="info-row">
+                        <span className="label">Valor Final Desejado:</span>
+                        <span className="value" style={{ color: '#0369a1', fontWeight: 600 }}>{formatCurrency(parseFloat(vfMatch[1]))}</span>
+                      </div>
+                    );
+                  })()}
+
                   {/* Desconto solicitado pelo vendedor */}
                   {solicitacao.desconto_desejado && (
                     <div style={{
@@ -336,7 +363,7 @@ export default function AprovacoesDescontos() {
                       marginTop: '10px'
                     }}>
                       <p style={{ fontWeight: 600, color: '#92400e', marginBottom: '6px', fontSize: '13px' }}>
-                        🎯 Vendedor solicita: {solicitacao.desconto_desejado}%
+                        🎯 {solicitacao.justificativa?.includes('[CONCESSIONÁRIA]') ? 'Concessionária' : 'Vendedor'} solicita: {solicitacao.desconto_desejado}%
                       </p>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', gap: '8px' }}>
                         <div>
@@ -357,12 +384,19 @@ export default function AprovacoesDescontos() {
                     </div>
                   )}
                   
-                  {solicitacao.justificativa && (
-                    <div className="justificativa-box">
-                      <strong>Justificativa:</strong>
-                      <p>{solicitacao.justificativa}</p>
-                    </div>
-                  )}
+                  {solicitacao.justificativa && (() => {
+                    const textoLimpo = solicitacao.justificativa
+                      .replace(/\[CONCESSIONÁRIA\]/g, '')
+                      .replace(/\[VF:[\d.]+\]/g, '')
+                      .trim();
+                    if (!textoLimpo) return null;
+                    return (
+                      <div className="justificativa-box">
+                        <strong>Justificativa:</strong>
+                        <p>{textoLimpo}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* Ações */}

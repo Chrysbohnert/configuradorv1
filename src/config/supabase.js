@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { fetchPrecoPorRegiao, fetchPrecoCompraPorRegiao, getGuindasteById, getGuindasteImagemById } from '../api/guindastes';
+import { API_URL } from '../api/config.js';
 
 // Configuração do Supabase
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -72,7 +73,7 @@ async getUsers(filters = {}) {
     const token = localStorage.getItem('authToken');
 
     const response = await fetch(
-      'https://api-pedidos.starkindustrial.ind.br/api/users',
+      `${API_URL}/api/users`,
       {
         method: 'GET',
         headers: {
@@ -300,7 +301,7 @@ async getUserById(id) {
     const token = localStorage.getItem('authToken');
 
     const response = await fetch(
-      `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+      `${API_URL}/api/users/${id}`,
       {
         method: 'GET',
         headers: {
@@ -334,7 +335,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        'https://api-pedidos.starkindustrial.ind.br/api/users',
+        `${API_URL}/api/users`,
         {
           method: 'POST',
           headers: {
@@ -363,7 +364,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+        `${API_URL}/api/users/${id}`,
         {
           method: 'PUT',
           headers: {
@@ -392,7 +393,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/users/${id}`,
+        `${API_URL}/api/users/${id}`,
         {
           method: 'DELETE',
           headers: {
@@ -421,7 +422,7 @@ async getUserById(id) {
       const token = localStorage.getItem('authToken');
       const params = includeInactive ? '?includeInactive=true' : '';
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias${params}`,
+        `${API_URL}/api/concessionarias${params}`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -437,7 +438,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        `${API_URL}/api/concessionarias/${id}`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -453,7 +454,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        'https://api-pedidos.starkindustrial.ind.br/api/concessionarias',
+        `${API_URL}/api/concessionarias`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -473,7 +474,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        `${API_URL}/api/concessionarias/${id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -493,7 +494,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionarias/${id}`,
+        `${API_URL}/api/concessionarias/${id}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -699,7 +700,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos/${concessionariaId}`,
+        `${API_URL}/api/concessionaria-precos/${concessionariaId}`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -715,7 +716,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos/${concessionariaId}/${guindasteId}`,
+        `${API_URL}/api/concessionaria-precos/${concessionariaId}/${guindasteId}`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -731,7 +732,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        'https://api-pedidos.starkindustrial.ind.br/api/concessionaria-precos',
+        `${API_URL}/api/concessionaria-precos`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1709,7 +1710,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        'https://api-pedidos.starkindustrial.ind.br/api/graficos-carga',
+        `${API_URL}/api/graficos-carga`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -1918,7 +1919,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        'https://api-pedidos.starkindustrial.ind.br/api/graficos-carga',
+        `${API_URL}/api/graficos-carga`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1938,7 +1939,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/graficos-carga/${id}`,
+        `${API_URL}/api/graficos-carga/${id}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -1958,7 +1959,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/graficos-carga/${id}`,
+        `${API_URL}/api/graficos-carga/${id}`,
         {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }
@@ -2266,28 +2267,27 @@ async getUserById(id) {
    */
   async criarSolicitacaoDesconto(dados) {
     
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .insert([{
-        pedido_id: dados.pedidoId || null,
-        numero_proposta: dados.numeroProposta || null,
-        vendedor_id: dados.vendedorId,
-        vendedor_nome: dados.vendedorNome,
-        vendedor_email: dados.vendedorEmail || null,
-        equipamento_descricao: dados.equipamentoDescricao,
-        valor_base: dados.valorBase,
-        desconto_atual: typeof dados.descontoAtual === 'number' ? dados.descontoAtual : 0,
-        desconto_desejado: dados.descontoDesejado || null,
-        justificativa: dados.justificativa || null,
-        status: 'pendente'
-      }])
-      .select()
-      .single();
-    
-    if (error) {
-      console.error('❌ [criarSolicitacaoDesconto] Erro:', error);
-      throw error;
+    // Montar justificativa com metadados (tipo solicitante + valor final desejado)
+    let justificativaFinal = dados.justificativa || '';
+    const isConcessionaria = dados.tipoSolicitante === 'admin_concessionaria';
+    if (isConcessionaria) {
+      justificativaFinal = `[CONCESSIONÁRIA]${dados.valorFinalDesejado ? `[VF:${dados.valorFinalDesejado}]` : ''}${justificativaFinal ? ' ' + justificativaFinal : ''}`;
+    } else if (dados.valorFinalDesejado) {
+      justificativaFinal = `[VF:${dados.valorFinalDesejado}]${justificativaFinal ? ' ' + justificativaFinal : ''}`;
     }
+
+    const { criarSolicitacao } = await import('../api/solicitacoesDesconto.js');
+    const data = await criarSolicitacao({
+      vendedor_id: dados.vendedorId,
+      vendedor_nome: dados.vendedorNome,
+      vendedor_email: dados.vendedorEmail || null,
+      equipamento_descricao: dados.equipamentoDescricao,
+      valor_base: dados.valorBase,
+      desconto_atual: typeof dados.descontoAtual === 'number' ? dados.descontoAtual : 0,
+      desconto_desejado: dados.descontoDesejado || null,
+      justificativa: justificativaFinal || null,
+      tipo_solicitante: dados.tipoSolicitante || 'vendedor'
+    });
     
     return data;
   }
@@ -2297,19 +2297,8 @@ async getUserById(id) {
    * @returns {Array} Lista de solicitações pendentes
    */
   async getSolicitacoesPendentes() {
-    
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .select('*')
-      .eq('status', 'pendente')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('❌ [getSolicitacoesPendentes] Erro:', error);
-      throw error;
-    }
-    
-    return data || [];
+    const { listarPendentes } = await import('../api/solicitacoesDesconto.js');
+    return await listarPendentes();
   }
 
   /**
@@ -2318,19 +2307,8 @@ async getUserById(id) {
    * @returns {Array} Lista de solicitações do vendedor
    */
   async getSolicitacoesPorVendedor(vendedorId) {
-    
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .select('*')
-      .eq('vendedor_id', vendedorId)
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('❌ [getSolicitacoesPorVendedor] Erro:', error);
-      throw error;
-    }
-    
-    return data || [];
+    const { buscarPorVendedor } = await import('../api/solicitacoesDesconto.js');
+    return await buscarPorVendedor(vendedorId);
   }
 
   /**
@@ -2339,19 +2317,8 @@ async getUserById(id) {
    * @returns {Object} Solicitação encontrada
    */
   async getSolicitacaoPorId(solicitacaoId) {
-    
-    const { data, error } = await supabase
-      .from('solicitacoes_desconto')
-      .select('*')
-      .eq('id', solicitacaoId)
-      .single();
-    
-    if (error) {
-      console.error('❌ [getSolicitacaoPorId] Erro:', error);
-      throw error;
-    }
-    
-    return data;
+    const { buscarPorId } = await import('../api/solicitacoesDesconto.js');
+    return await buscarPorId(solicitacaoId);
   }
 
   /**
@@ -2525,7 +2492,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/metas/${vendedorId}/${ano}`,
+        `${API_URL}/api/metas/${vendedorId}/${ano}`,
         { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } }
       );
       const result = await response.json();
@@ -2548,7 +2515,7 @@ async getUserById(id) {
     try {
       const token = localStorage.getItem('authToken');
       const response = await fetch(
-        `https://api-pedidos.starkindustrial.ind.br/api/metas/${vendedorId}/${ano}`,
+        `${API_URL}/api/metas/${vendedorId}/${ano}`,
         {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },

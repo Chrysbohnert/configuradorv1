@@ -1,4 +1,5 @@
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/guindastes';
+import { API_URL } from './config.js';
+const BASE_URL = `${API_URL}/api/guindastes`;
 
 const _cache = new Map();
 

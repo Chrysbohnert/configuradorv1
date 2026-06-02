@@ -1314,17 +1314,18 @@ function Sparkline({ data = [] }) {
   const width = 180;
   const height = 42;
 
-  if (!data.length) {
+  const safeData = data.map(v => Number(v)).filter(v => !Number.isNaN(v));
+  if (!safeData.length) {
     return <div className="sparkline-empty" />;
   }
 
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
+  const max = Math.max(...safeData, 1);
+  const min = Math.min(...safeData, 0);
   const range = max - min || 1;
 
-  const points = data
+  const points = safeData
     .map((value, index) => {
-      const x = (index / Math.max(data.length - 1, 1)) * width;
+      const x = (index / Math.max(safeData.length - 1, 1)) * width;
       const y = height - ((value - min) / range) * (height - 8) - 4;
       return `${x},${y}`;
     })
@@ -1342,13 +1343,14 @@ function LineAreaChart({ data = [], color = '#3b82f6' }) {
   const height = 280;
   const padding = 18;
 
-  if (!data.length) {
+  const safeData = data.filter(d => d != null && !Number.isNaN(Number(d.value))).map(d => ({ ...d, value: Number(d.value) }));
+  if (!safeData.length) {
     return <div className="chart-placeholder">Sem dados para exibir neste período.</div>;
   }
 
-  const max = Math.max(...data.map((d) => d.value), 1);
-  const points = data.map((item, index) => {
-    const x = padding + (index / Math.max(data.length - 1, 1)) * (width - padding * 2);
+  const max = Math.max(...safeData.map((d) => d.value), 1);
+  const points = safeData.map((item, index) => {
+    const x = padding + (index / Math.max(safeData.length - 1, 1)) * (width - padding * 2);
     const y = height - padding - (item.value / max) * (height - padding * 2);
     return { x, y, label: item.date, value: item.value };
   });

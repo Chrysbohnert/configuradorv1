@@ -5,7 +5,8 @@
  * db.getCotacaoUSD e db.setCotacaoUSD de src/config/supabase.js.
  */
 
-const BASE_URL = 'https://api-pedidos.starkindustrial.ind.br/api/configuracoes';
+import { API_URL } from './config.js';
+const BASE_URL = `${API_URL}/api/configuracoes`;
 
 function authHeaders() {
   const token = localStorage.getItem('authToken');

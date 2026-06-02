@@ -20,6 +20,8 @@ const graficosCargaRouter   = require('./graficos_carga');
 const concessionariasRouter = require('./concessionarias');
 const metasRouter           = require('./metas');
 const concPrecosRouter      = require('./concessionaria_precos');
+// TODO: reativar após commit dos arquivos de solicitacoes_desconto
+// const solicitacoesDescontoRouter = require('./solicitacoes_desconto');
 
 const router = Router();
 
@@ -35,5 +37,6 @@ router.use('/graficos-carga',  graficosCargaRouter);
 router.use('/concessionarias', concessionariasRouter);
 router.use('/metas',           metasRouter);
 router.use('/concessionaria-precos', concPrecosRouter);
+// router.use('/solicitacoes-desconto', solicitacoesDescontoRouter);
 
 module.exports = router;

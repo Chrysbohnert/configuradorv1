@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { showError } from '../../utils/errorHandler';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../../utils/rateLimiter';
+import { API_URL } from '../../api/config.js';
 import '../../styles/Login.css';
 
 const Login = () => {
@@ -77,7 +78,7 @@ const Login = () => {
         return;
       }
 
-      const response = await fetch('https://api-pedidos.starkindustrial.ind.br/api/users/login', {
+      const response = await fetch(`${API_URL}/api/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
