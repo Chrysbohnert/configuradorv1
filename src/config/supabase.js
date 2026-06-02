@@ -688,7 +688,18 @@ async getUserById(id) {
 
     const regiaoNorm = normalizarRegiao(regiao);
     try {
-      return Number(await fetchPrecoCompraPorRegiao(guindasteId, regiaoNorm)) || 0;
+      const precoBackend = Number(await fetchPrecoCompraPorRegiao(guindasteId, regiaoNorm)) || 0;
+      if (precoBackend > 0) return precoBackend;
+
+      // Fallback: dados ainda não migrados do Supabase para o backend PostgreSQL local
+      const { data, error } = await supabase
+        .from('precos_compra_concessionaria_por_regiao')
+        .select('preco')
+        .eq('guindaste_id', guindasteId)
+        .eq('regiao', regiaoNorm)
+        .maybeSingle();
+      if (error) throw error;
+      return Number(data?.preco) || 0;
     } catch (error) {
       console.error('Erro ao buscar preço de compra por região:', { guindasteId, regiao: regiaoNorm, error });
       return 0;
@@ -1698,7 +1709,18 @@ async getUserById(id) {
 
     const regiaoNorm = normalizarRegiao(regiao);
     try {
-      return Number(await fetchPrecoPorRegiao(guindasteId, regiaoNorm)) || 0;
+      const precoBackend = Number(await fetchPrecoPorRegiao(guindasteId, regiaoNorm)) || 0;
+      if (precoBackend > 0) return precoBackend;
+
+      // Fallback: dados ainda não migrados do Supabase para o backend PostgreSQL local
+      const { data, error } = await supabase
+        .from('precos_guindaste_regiao')
+        .select('preco')
+        .eq('guindaste_id', guindasteId)
+        .eq('regiao', regiaoNorm)
+        .maybeSingle();
+      if (error) throw error;
+      return Number(data?.preco) || 0;
     } catch (error) {
       console.error('Erro ao buscar preço por região:', { guindasteId, regiao: regiaoNorm, error });
       return 0;
