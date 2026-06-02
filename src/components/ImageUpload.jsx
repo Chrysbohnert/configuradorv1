@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles/ImageUpload.css';
 import { supabase } from '../config/supabase'; // Importar o cliente Supabase
 
-const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
+const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem", disableUpload = false }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImageUrl);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -40,6 +40,14 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         reader.readAsDataURL(file);
       });
       setPreview(base64Preview);
+
+      // Bloqueio: não tentar upload se backend ainda não migrado
+      if (disableUpload) {
+        setUploading(false);
+        setShowUrlInput(true);
+        alert('Upload de imagem ainda não migrado para o backend.\n\nCole a URL da imagem no campo abaixo ou use uma URL existente (ex: CDN, imgur, etc).');
+        return;
+      }
 
       // Upload para Supabase Storage
       const fileExtension = file.name.split('.').pop().toLowerCase();

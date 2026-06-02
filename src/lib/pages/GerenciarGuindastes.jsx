@@ -824,7 +824,7 @@ const GerenciarGuindastes = () => {
               <div className="modern-top-section">
                 <div className="modern-left-col">
                   <div className="modern-image-box">
-                    <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} />
+                    <ImageUpload onImageUpload={handleImageUpload} currentImageUrl={formData.imagem_url} disableUpload={true} />
                     {formData.imagem_url && (
                       <div className="modern-image-preview">
                         <img src={formData.imagem_url} alt="Principal" />
