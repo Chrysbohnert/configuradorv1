@@ -5,6 +5,8 @@ import { supabase } from '../config/supabase'; // Importar o cliente Supabase
 const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem" }) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImageUrl);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [manualUrl, setManualUrl] = useState('');
 
   // Sincronizar preview com currentImageUrl
   useEffect(() => {
@@ -71,7 +73,8 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
 
     } catch (error) {
       console.error('❌ Erro no upload:', error);
-      alert(`Erro ao enviar imagem: ${error.message}. Tente novamente.`);
+      setShowUrlInput(true);
+      alert('Upload de imagem ainda não migrado para o backend.\n\nCole a URL da imagem no campo abaixo ou use uma URL existente (ex: CDN, imgur, etc).');
     } finally {
       setUploading(false);
     }
@@ -79,7 +82,18 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
 
   const removeImage = () => {
     setPreview(null);
+    setShowUrlInput(false);
+    setManualUrl('');
     onImageUpload(null);
+  };
+
+  const handleUseManualUrl = () => {
+    const url = manualUrl.trim();
+    if (!url) return;
+    setPreview(url);
+    setShowUrlInput(false);
+    setManualUrl('');
+    onImageUpload(url);
   };
 
   return (
@@ -133,6 +147,35 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
           </div>
         )}
       </div>
+
+      {/* Fallback: URL manual */}
+      {showUrlInput && (
+        <div className="url-fallback" style={{ marginTop: '12px', padding: '12px', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600', display: 'block', marginBottom: '6px' }}>
+            URL da Imagem (fallback)
+          </label>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <input
+              type="text"
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              placeholder="https://..."
+              style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleUseManualUrl(); }}
+            />
+            <button
+              type="button"
+              onClick={handleUseManualUrl}
+              style={{ padding: '8px 14px', background: '#111827', color: '#fff', borderRadius: '6px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+            >
+              Usar URL
+            </button>
+          </div>
+          <span style={{ fontSize: '11px', color: '#94a3b8', marginTop: '4px', display: 'block' }}>
+            O preview local já está visível acima.
+          </span>
+        </div>
+      )}
 
       {/* Informações */}
       <div className="upload-info">

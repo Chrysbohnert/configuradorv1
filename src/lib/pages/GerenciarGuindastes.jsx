@@ -12,6 +12,20 @@ import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarGuindastes.css';
 import PrecosPorRegiaoModal from '../../components/PrecosPorRegiaoModal';
 
+const normalizarArray = (valor) => {
+  if (Array.isArray(valor)) return valor;
+  if (!valor) return [];
+  if (typeof valor === 'string') {
+    try {
+      const parsed = JSON.parse(valor);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return valor.trim() ? [valor] : [];
+    }
+  }
+  return [];
+};
+
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
   const { user } = useOutletContext(); // Pega o usuário do AdminLayout
@@ -61,6 +75,7 @@ const GerenciarGuindastes = () => {
   const [hasInitializedFiltro, setHasInitializedFiltro] = useState(false);
   const [selectedModeloGrupo, setSelectedModeloGrupo] = useState(null);
   const [busca, setBusca] = useState('');
+  const [novaImagemAdicionalUrl, setNovaImagemAdicionalUrl] = useState('');
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [guindasteToDelete, setGuindasteToDelete] = useState(null);
@@ -123,22 +138,11 @@ const GerenciarGuindastes = () => {
     setFormData(prev => ({ ...prev, imagem_url: imageUrl }));
   };
 
-  const handleImagensAdicionaisChange = async (e) => {
-    const files = Array.from(e.target.files || []);
-    if (files.length === 0) return;
-
-    try {
-      const uploadedUrls = [];
-      for (const file of files) {
-        const fileName = `guindaste_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${file.name.split('.').pop()}`;
-        const imageUrl = await db.uploadImagemGuindaste(file, fileName);
-        uploadedUrls.push(imageUrl);
-      }
-      setFormData(prev => ({ ...prev, imagens_adicionais: [...(prev.imagens_adicionais || []), ...uploadedUrls] }));
-    } catch (error) {
-      console.error('Erro ao fazer upload das imagens:', error);
-      alert('Erro ao fazer upload das imagens. Tente novamente.');
-    }
+  const handleAdicionarImagemAdicional = () => {
+    const url = novaImagemAdicionalUrl.trim();
+    if (!url) return;
+    setFormData(prev => ({ ...prev, imagens_adicionais: [...normalizarArray(prev.imagens_adicionais), url] }));
+    setNovaImagemAdicionalUrl('');
   };
 
   const extractCapacidade = (g) => {
@@ -229,7 +233,7 @@ const GerenciarGuindastes = () => {
   }, [user, isAdminConcessionaria]);
 
   const removeImagemAdicional = (index) => {
-    setFormData(prev => ({ ...prev, imagens_adicionais: prev.imagens_adicionais.filter((_, i) => i !== index) }));
+    setFormData(prev => ({ ...prev, imagens_adicionais: normalizarArray(prev.imagens_adicionais).filter((_, i) => i !== index) }));
   };
 
   const handleEdit = async (item) => {
@@ -260,7 +264,7 @@ const GerenciarGuindastes = () => {
         imagem_url: guindasteData.imagem_url || '',
         descricao: guindasteData.descricao || '',
         nao_incluido: guindasteData.nao_incluido || '',
-        imagens_adicionais: guindasteData.imagens_adicionais || [],
+        imagens_adicionais: normalizarArray(guindasteData.imagens_adicionais),
         finame: guindasteData.finame || '',
         ncm: guindasteData.ncm || '',
         codigo_referencia: guindasteData.codigo_referencia || '',
@@ -1000,16 +1004,31 @@ const GerenciarGuindastes = () => {
 
                 <div className="modern-form-group">
                   <label style={{ fontSize: '14px', color: '#334155', fontWeight: '600' }}>Imagens Adicionais</label>
-                  <input
-                    type="file"
-                    multiple
-                    onChange={handleImagensAdicionaisChange}
-                    accept="image/*"
-                    className="modern-file-input"
-                  />
-                  {formData.imagens_adicionais && formData.imagens_adicionais.length > 0 && (
+                  <span style={{ fontSize: '12px', color: '#94a3b8', display: 'block', marginBottom: '8px' }}>
+                    Upload ainda não migrado. Cole a URL da imagem.
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                    <input
+                      type="text"
+                      value={novaImagemAdicionalUrl}
+                      onChange={(e) => setNovaImagemAdicionalUrl(e.target.value)}
+                      placeholder="https://... (URL da imagem)"
+                      className="modern-input"
+                      style={{ flex: 1 }}
+                      onKeyDown={(e) => { if (e.key === 'Enter') handleAdicionarImagemAdicional(); }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAdicionarImagemAdicional}
+                      className="modern-btn-secondary"
+                      style={{ padding: '10px 16px', background: '#111827', color: '#fff', borderRadius: '8px', border: 'none', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+                    >
+                      + Adicionar
+                    </button>
+                  </div>
+                  {normalizarArray(formData.imagens_adicionais).length > 0 && (
                     <div className="modern-imagens-grid">
-                      {formData.imagens_adicionais.map((imgUrl, index) => (
+                      {normalizarArray(formData.imagens_adicionais).map((imgUrl, index) =>(
                         <div key={index} className="modern-imagem-item">
                           <img src={imgUrl} alt={`Adicional ${index + 1}`} />
                           <button type="button" onClick={() => removeImagemAdicional(index)} className="modern-remove-img">✕</button>
