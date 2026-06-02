@@ -41,11 +41,11 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
       });
       setPreview(base64Preview);
 
-      // Bloqueio: não tentar upload se backend ainda não migrado
+      // Quando upload para backend está desativado, usar base64 diretamente
       if (disableUpload) {
+        setPreview(base64Preview);
+        onImageUpload(base64Preview);
         setUploading(false);
-        setShowUrlInput(true);
-        alert('Upload de imagem ainda não migrado para o backend.\n\nCole a URL da imagem no campo abaixo ou use uma URL existente (ex: CDN, imgur, etc).');
         return;
       }
 
