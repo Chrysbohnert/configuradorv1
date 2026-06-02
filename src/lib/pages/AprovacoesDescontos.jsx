@@ -56,7 +56,7 @@ export default function AprovacoesDescontos() {
       const desconto = descontoSelecionado[solicitacao.id];
       
       if (!desconto) {
-        alert('⚠️ Selecione o percentual de desconto antes de aprovar!');
+        alert('⚠️ Informe o valor final aprovado antes de continuar!');
         return;
       }
 
@@ -71,11 +71,18 @@ export default function AprovacoesDescontos() {
       // Arredondar para 2 casas decimais
       const descontoFinal = Math.round(descontoNumerico * 100) / 100;
 
-      const confirmar = window.confirm(
-        `Aprovar desconto de ${descontoFinal}% para ${solicitacao.vendedor_nome}?\n\n` +
-        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
-        `Valor: ${formatCurrency(solicitacao.valor_base) || 'Não informado'}`
-      );
+      const valorFinalConfirm = parseFloat(valorFinalAprovado[solicitacao.id]);
+      const baseConfirm = Number(solicitacao.valor_base) || 0;
+      const mensagemConfirm = (!isNaN(valorFinalConfirm) && valorFinalConfirm > 0)
+        ? `Aprovar valor final de ${formatCurrency(valorFinalConfirm)} para ${solicitacao.vendedor_nome}?\n\n` +
+          `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+          `Valor base: ${formatCurrency(baseConfirm)}\n` +
+          `Desconto aplicado: ${descontoFinal}%`
+        : `Aprovar desconto de ${descontoFinal}% para ${solicitacao.vendedor_nome}?\n\n` +
+          `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+          `Valor base: ${formatCurrency(baseConfirm) || 'Não informado'}`;
+
+      const confirmar = window.confirm(mensagemConfirm);
 
       if (!confirmar) return;
 
@@ -94,20 +101,30 @@ export default function AprovacoesDescontos() {
       );
 
       // Feedback ao usuário
-      const mensagemSucesso = `✅ Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
-        `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
-      
+      const valorFinalMsg = parseFloat(valorFinalAprovado[solicitacao.id]);
+      const mensagemSucesso = (!isNaN(valorFinalMsg) && valorFinalMsg > 0)
+        ? `✅ Valor final de ${formatCurrency(valorFinalMsg)} aprovado com sucesso!\n\n` +
+          `Desconto calculado: ${descontoFinal}%\n` +
+          `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`
+        : `✅ Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
+          `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
+
       alert(mensagemSucesso);
       
       // Recarregar lista
       await carregarSolicitacoes();
-      
+
       // Limpar estados
       setDescontoSelecionado(prev => ({
         ...prev,
         [solicitacao.id]: undefined
       }));
-      
+
+      setValorFinalAprovado(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
+
       setObservacoes(prev => ({
         ...prev,
         [solicitacao.id]: undefined
@@ -162,13 +179,18 @@ export default function AprovacoesDescontos() {
       
       // Recarregar lista
       await carregarSolicitacoes();
-      
+
       // Limpar estados
       setDescontoSelecionado(prev => ({
         ...prev,
         [solicitacao.id]: undefined
       }));
-      
+
+      setValorFinalAprovado(prev => ({
+        ...prev,
+        [solicitacao.id]: undefined
+      }));
+
       setObservacoes(prev => ({
         ...prev,
         [solicitacao.id]: undefined
@@ -375,55 +397,9 @@ export default function AprovacoesDescontos() {
 
                 {/* Ações */}
                 <div className="card-actions">
-                  {/* Input de Desconto / Valor Final */}
+                  {/* Input principal: Valor Final Aprovado */}
                   <div className="form-group">
-                    <label>Desconto a conceder (%):</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Ex: 10.5"
-                      min="0"
-                      step="0.01"
-                      value={descontoSelecionado[solicitacao.id] || ''}
-                      onChange={(e) => setDescontoSelecionado(prev => ({
-                        ...prev,
-                        [solicitacao.id]: e.target.value
-                      }))}
-                      disabled={processando === solicitacao.id}
-                    />
-
-                    {/* Botão rápido: aprovar percentual solicitado */}
-                    {(() => {
-                      const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
-                      if (!pctMatch) return null;
-                      const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
-                      if (descontoSelecionado[solicitacao.id]) return null;
-                      return (
-                        <button
-                          type="button"
-                          onClick={() => setDescontoSelecionado(prev => ({
-                            ...prev,
-                            [solicitacao.id]: String(pctSolicitado)
-                          }))}
-                          style={{
-                            marginTop: '6px',
-                            padding: '5px 12px',
-                            fontSize: '12px',
-                            background: '#f0fdf4',
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '6px',
-                            color: '#166534',
-                            cursor: 'pointer',
-                            fontWeight: 500
-                          }}
-                        >
-                          Aprovar {pctSolicitado}% (solicitado)
-                        </button>
-                      );
-                    })()}
-
-                    {/* Valor final aprovado */}
-                    <label style={{ marginTop: '10px', display: 'block' }}>Ou informe valor final aprovado (R$):</label>
+                    <label style={{ fontWeight: 700, color: '#0f172a' }}>Valor final aprovado (R$):</label>
                     <input
                       type="number"
                       className="form-control"
@@ -439,38 +415,107 @@ export default function AprovacoesDescontos() {
                         }));
                         const valorFinal = parseFloat(val);
                         const base = Number(solicitacao.valor_base) || 0;
-                        if (!isNaN(valorFinal) && base > 0 && valorFinal >= 0) {
-                          const pct = ((base - valorFinal) / base) * 100;
-                          setDescontoSelecionado(prev => ({
-                            ...prev,
-                            [solicitacao.id]: String(Math.round(pct * 100) / 100)
-                          }));
+                        if (!isNaN(valorFinal) && base > 0) {
+                          if (valorFinal > base) {
+                            // Se valor final maior que base, zera desconto (acréscimo não é desconto)
+                            setDescontoSelecionado(prev => ({
+                              ...prev,
+                              [solicitacao.id]: '0'
+                            }));
+                          } else if (valorFinal >= 0) {
+                            const pct = ((base - valorFinal) / base) * 100;
+                            setDescontoSelecionado(prev => ({
+                              ...prev,
+                              [solicitacao.id]: String(Math.round(pct * 100) / 100)
+                            }));
+                          }
                         }
                       }}
                       disabled={processando === solicitacao.id}
+                      style={{ fontSize: '16px', fontWeight: 600 }}
+                    />
+
+                    {/* Botão rápido: aprovar percentual solicitado (preenche valor final) */}
+                    {(() => {
+                      const pctMatch = solicitacao.justificativa?.match(/Percentual:\s*([\d.,]+)%/);
+                      if (!pctMatch) return null;
+                      const pctSolicitado = parseFloat(pctMatch[1].replace(',', '.'));
+                      if (valorFinalAprovado[solicitacao.id]) return null;
+                      const base = Number(solicitacao.valor_base) || 0;
+                      const valorFinalSolicitado = base > 0 ? Math.round((base - (base * pctSolicitado / 100)) * 100) / 100 : 0;
+                      return (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const base2 = Number(solicitacao.valor_base) || 0;
+                            const vFinal = base2 > 0 ? Math.round((base2 - (base2 * pctSolicitado / 100)) * 100) / 100 : 0;
+                            setValorFinalAprovado(prev => ({
+                              ...prev,
+                              [solicitacao.id]: String(vFinal)
+                            }));
+                            setDescontoSelecionado(prev => ({
+                              ...prev,
+                              [solicitacao.id]: String(pctSolicitado)
+                            }));
+                          }}
+                          style={{
+                            marginTop: '6px',
+                            padding: '5px 12px',
+                            fontSize: '12px',
+                            background: '#f0fdf4',
+                            border: '1px solid #bbf7d0',
+                            borderRadius: '6px',
+                            color: '#166534',
+                            cursor: 'pointer',
+                            fontWeight: 500
+                          }}
+                        >
+                          Aprovar {pctSolicitado}% ({formatCurrency(valorFinalSolicitado)})
+                        </button>
+                      );
+                    })()}
+
+                    {/* Percentual calculado (informação secundária) */}
+                    <label style={{ marginTop: '12px', display: 'block', color: '#475569', fontSize: '13px' }}>
+                      Percentual calculado (%):
+                    </label>
+                    <input
+                      type="text"
+                      className="form-control"
+                      readOnly
+                      value={descontoSelecionado[solicitacao.id] ? `${descontoSelecionado[solicitacao.id]}%` : '—'}
+                      disabled={processando === solicitacao.id}
+                      style={{
+                        background: '#f8fafc',
+                        color: '#64748b',
+                        fontSize: '13px',
+                        fontWeight: 500
+                      }}
                     />
 
                     {/* Simulador */}
-                    {descontoSelecionado[solicitacao.id] && parseFloat(descontoSelecionado[solicitacao.id]) > 0 && (
+                    {(descontoSelecionado[solicitacao.id] || valorFinalAprovado[solicitacao.id]) && (
                       <div style={{
                         background: '#f0f9ff',
                         border: '1px solid #bae6fd',
                         borderRadius: '6px',
                         padding: '10px 12px',
-                        marginTop: '8px',
+                        marginTop: '10px',
                         fontSize: '13px'
                       }}>
-                        <p style={{ fontWeight: 600, color: '#0c4a6e', marginBottom: '4px' }}>
-                          💰 Com {parseFloat(descontoSelecionado[solicitacao.id])}%:
+                        <p style={{ fontWeight: 700, color: '#0c4a6e', marginBottom: '4px', fontSize: '14px' }}>
+                          💰 Valor final aprovado
                         </p>
-                        <p>
-                          Valor final: <strong style={{ color: '#0369a1' }}>
-                            {formatCurrency(solicitacao.valor_base - (solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100))}
-                          </strong>
+                        <p style={{ fontSize: '18px', fontWeight: 800, color: '#0369a1', marginBottom: '6px' }}>
+                          {formatCurrency(parseFloat(valorFinalAprovado[solicitacao.id]) || (solicitacao.valor_base - (solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100)))}
                         </p>
-                        <p style={{ fontSize: '11px', color: '#6b7280' }}>
-                          Desconto de {formatCurrency(solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100)} sobre o valor base
-                        </p>
+                        {parseFloat(descontoSelecionado[solicitacao.id]) > 0 && (
+                          <p style={{ fontSize: '12px', color: '#475569' }}>
+                            Desconto de <strong>{descontoSelecionado[solicitacao.id]}%</strong> (
+                            {formatCurrency(solicitacao.valor_base * parseFloat(descontoSelecionado[solicitacao.id]) / 100)}
+                            ) sobre o valor base
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
