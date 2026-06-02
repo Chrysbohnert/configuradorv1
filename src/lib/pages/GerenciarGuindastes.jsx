@@ -443,7 +443,6 @@ const GerenciarGuindastes = () => {
         { field: 'codigo_referencia', name: 'Código de Referência' },
         { field: 'peso_kg', name: 'configuracao de Lanças' },
         { field: 'configuracao', name: 'configuracao Completa' },
-        { field: 'imagem_url', name: 'Imagem Principal' },
         { field: 'descricao', name: 'Descrição Técnica' },
         { field: 'nao_incluido', name: 'O que NÃO está incluído' },
         { field: 'finame', name: 'Código FINAME' },
@@ -456,6 +455,14 @@ const GerenciarGuindastes = () => {
 
       if (missingFields.length > 0) {
         alert(`Por favor, preencha todos os campos obrigatórios:\n\n• ${missingFields.join('\n• ')}`);
+        return;
+      }
+
+      // Validação da imagem principal: aceita URL manual ou mantém imagem existente
+      const imagemOriginal = editingGuindaste?.imagem_url;
+      const imagemAtual = formData.imagem_url?.trim();
+      if (!imagemOriginal && !imagemAtual) {
+        alert('Informe uma URL de imagem ou mantenha uma imagem existente.');
         return;
       }
 
@@ -830,6 +837,18 @@ const GerenciarGuindastes = () => {
                         <img src={formData.imagem_url} alt="Principal" />
                       </div>
                     )}
+                    <div className="modern-form-group" style={{ marginTop: '10px' }}>
+                      <label style={{ fontSize: '13px', color: '#475569', fontWeight: '600' }}>
+                        URL da Imagem (fallback)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.imagem_url || ''}
+                        onChange={e => handleInputChange('imagem_url', e.target.value)}
+                        placeholder="https://... (cole a URL da imagem)"
+                        className="modern-input"
+                      />
+                    </div>
                   </div>
                 </div>
 
