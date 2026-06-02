@@ -56,10 +56,13 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
   const fetchPrecos = async () => {
     setLoading(true);
     try {
+      console.log('[PrecosPorRegiaoModal] Carregando preços para guindasteId:', guindasteId);
       const [dataStark, dataCompra] = await Promise.all([
         fetchPrecosPorRegiao(guindasteId),
         fetchPrecosCompraPorRegiao(guindasteId),
       ]);
+      console.log('[PrecosPorRegiaoModal] Preços Stark recebidos:', dataStark);
+      console.log('[PrecosPorRegiaoModal] Preços Compra recebidos:', dataCompra);
       setPrecos(dataStark || []);
       setPrecosCompra(dataCompra || []);
 
@@ -136,10 +139,15 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
         }
       }
       
+      console.log('[PrecosPorRegiaoModal] Salvando preços para guindasteId:', guindasteId);
+      console.log('[PrecosPorRegiaoModal] Preços Stark a salvar:', precosParaSalvar);
+      console.log('[PrecosPorRegiaoModal] Preços Compra a salvar:', precosCompraParaSalvar);
+      
       await Promise.all([
         savePrecosPorRegiao(guindasteId, precosParaSalvar),
         savePrecosCompraPorRegiao(guindasteId, precosCompraParaSalvar),
       ]);
+      console.log('[PrecosPorRegiaoModal] Preços salvos com sucesso');
       alert('Preços salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar preços:', error);

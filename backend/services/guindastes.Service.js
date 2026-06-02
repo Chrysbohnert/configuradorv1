@@ -159,26 +159,31 @@ async function findPrecoCompraPorRegiao(guindasteId, regiao) {
 
 async function findAllPrecosPorRegiao(guindasteId) {
   const id = Number(guindasteId);
+  console.log('[findAllPrecosPorRegiao] guindasteId:', guindasteId, '-> id:', id);
   if (Number.isNaN(id)) return [];
   const { rows } = await query(
     `SELECT regiao, preco FROM precos_guindaste_regiao WHERE guindaste_id = $1`,
     [id]
   );
+  console.log('[findAllPrecosPorRegiao] rows:', rows);
   return rows || [];
 }
 
 async function findAllPrecosCompraPorRegiao(guindasteId) {
   const id = Number(guindasteId);
+  console.log('[findAllPrecosCompraPorRegiao] guindasteId:', guindasteId, '-> id:', id);
   if (Number.isNaN(id)) return [];
   const { rows } = await query(
     `SELECT regiao, preco FROM precos_compra_concessionaria_por_regiao WHERE guindaste_id = $1`,
     [id]
   );
+  console.log('[findAllPrecosCompraPorRegiao] rows:', rows);
   return rows || [];
 }
 
 async function savePrecosPorRegiao(guindasteId, precos) {
   const id = Number(guindasteId);
+  console.log('[savePrecosPorRegiao] guindasteId:', guindasteId, '-> id:', id, 'precos:', precos);
   if (Number.isNaN(id)) throw new Error('guindaste_id inválido');
 
   const client = await require('../db/pool').getClient();
@@ -194,8 +199,10 @@ async function savePrecosPorRegiao(guindasteId, precos) {
       }
     }
     await client.query('COMMIT');
+    console.log('[savePrecosPorRegiao] sucesso');
   } catch (e) {
     await client.query('ROLLBACK');
+    console.error('[savePrecosPorRegiao] erro:', e);
     throw e;
   } finally {
     client.release();
@@ -204,6 +211,7 @@ async function savePrecosPorRegiao(guindasteId, precos) {
 
 async function savePrecosCompraPorRegiao(guindasteId, precos) {
   const id = Number(guindasteId);
+  console.log('[savePrecosCompraPorRegiao] guindasteId:', guindasteId, '-> id:', id, 'precos:', precos);
   if (Number.isNaN(id)) throw new Error('guindaste_id inválido');
 
   const client = await require('../db/pool').getClient();
@@ -219,8 +227,10 @@ async function savePrecosCompraPorRegiao(guindasteId, precos) {
       }
     }
     await client.query('COMMIT');
+    console.log('[savePrecosCompraPorRegiao] sucesso');
   } catch (e) {
     await client.query('ROLLBACK');
+    console.error('[savePrecosCompraPorRegiao] erro:', e);
     throw e;
   } finally {
     client.release();
