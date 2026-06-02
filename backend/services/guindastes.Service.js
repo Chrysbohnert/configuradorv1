@@ -157,6 +157,56 @@ async function findPrecoCompraPorRegiao(guindasteId, regiao) {
   return 0;
 }
 
+async function savePrecosPorRegiao(guindasteId, precos) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) throw new Error('guindaste_id inválido');
+
+  const client = await require('../db/pool').getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM precos_guindaste_regiao WHERE guindaste_id = $1', [id]);
+    for (const p of (precos || [])) {
+      if (p.preco != null && p.regiao) {
+        await client.query(
+          'INSERT INTO precos_guindaste_regiao (guindaste_id, regiao, preco) VALUES ($1, $2, $3)',
+          [id, p.regiao, p.preco]
+        );
+      }
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function savePrecosCompraPorRegiao(guindasteId, precos) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) throw new Error('guindaste_id inválido');
+
+  const client = await require('../db/pool').getClient();
+  try {
+    await client.query('BEGIN');
+    await client.query('DELETE FROM precos_compra_concessionaria_por_regiao WHERE guindaste_id = $1', [id]);
+    for (const p of (precos || [])) {
+      if (p.preco != null && p.regiao) {
+        await client.query(
+          'INSERT INTO precos_compra_concessionaria_por_regiao (guindaste_id, regiao, preco) VALUES ($1, $2, $3)',
+          [id, p.regiao, p.preco]
+        );
+      }
+    }
+    await client.query('COMMIT');
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   findAll,
   count,
@@ -167,4 +217,6 @@ module.exports = {
   remove,
   findPrecoPorRegiao,
   findPrecoCompraPorRegiao,
+  savePrecosPorRegiao,
+  savePrecosCompraPorRegiao,
 };

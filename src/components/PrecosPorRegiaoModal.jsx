@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { db } from '../config/supabase';
+import { savePrecosPorRegiao, savePrecosCompraPorRegiao } from '../api/guindastes';
 
 const regioes = [
   { id: 'norte-nordeste', nome: 'Norte-Nordeste', descricao: 'Estados do Norte e Nordeste' },
@@ -132,8 +133,8 @@ const PrecosPorRegiaoModal = ({ guindasteId, open, onClose }) => {
       }
       
       await Promise.all([
-        db.salvarPrecosPorRegiao(guindasteId, precosParaSalvar),
-        db.salvarPrecosCompraPorRegiao(guindasteId, precosCompraParaSalvar),
+        savePrecosPorRegiao(guindasteId, precosParaSalvar),
+        savePrecosCompraPorRegiao(guindasteId, precosCompraParaSalvar),
       ]);
       alert('Preços salvos com sucesso!');
     } catch (error) {

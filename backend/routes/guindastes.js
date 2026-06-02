@@ -38,6 +38,22 @@ router.get('/:id/preco-compra', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, { preco });
 }));
 
+router.post('/:id/precos', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { precos } = req.body;
+  if (!Array.isArray(precos)) return res_.badRequest(res, 'precos deve ser um array');
+
+  await svc.savePrecosPorRegiao(req.params.id, precos);
+  return res_.ok(res, { message: 'Preços salvos com sucesso' });
+}));
+
+router.post('/:id/precos-compra', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { precos } = req.body;
+  if (!Array.isArray(precos)) return res_.badRequest(res, 'precos deve ser um array');
+
+  await svc.savePrecosCompraPorRegiao(req.params.id, precos);
+  return res_.ok(res, { message: 'Preços de compra salvos com sucesso' });
+}));
+
 router.get('/:id/imagem', requireAuth, asyncHandler(async (req, res) => {
   const data = await svc.findImagemById(req.params.id);
   if (!data) return res_.notFound(res, 'Guindaste não encontrado');
