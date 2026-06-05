@@ -2905,6 +2905,7 @@ return (
               {pagamentoData.prazoPagamento === '90_dias_cnpj' && '90 dias'}
               {pagamentoData.prazoPagamento === 'mais_120_dias' && '+120 dias (+2%/mês)'}
               {pagamentoData.prazoPagamento === 'mais_90_dias' && '+90 dias (+2%/mês)'}
+              {pagamentoData.prazoPagamento === 'Condição Exclusiva' && 'Condição Exclusiva'}
               {!pagamentoData.prazoPagamento && '—'}
             </span>
           </div>
@@ -2974,6 +2975,14 @@ return (
               </span>
             </div>
           </div>
+          {/* Condição Exclusiva */}
+          {pagamentoData.condicaoExclusiva && (
+            <div className="resumo-field" style={{ background: '#fffbf0', border: '1px solid #ffd700', borderRadius: '6px', padding: '10px' }}>
+              <span className="resumo-label" style={{ color: '#b45309', fontWeight: 700 }}>Condição Exclusiva</span>
+              <span className="resumo-value" style={{ color: '#111', whiteSpace: 'pre-wrap', fontSize: '13px' }}>{pagamentoData.condicaoExclusivaObs}</span>
+            </div>
+          )}
+
           {/* Entrada */}
           {pagamentoData.tipoCliente === 'cliente' && pagamentoData.percentualEntrada > 0 && (
             <>

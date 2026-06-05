@@ -26,6 +26,11 @@ const getUsers = asyncHandler(async (req, res) => {
   const filter = {};
   if (typeof ativo !== 'undefined') filter.ativo = ativo === 'true';
 
+  // Admin Concessionária vê apenas usuários da própria concessionária
+  if (req.user?.tipo === 'admin_concessionaria') {
+    filter.concessionaria_id = req.user.concessionaria_id;
+  }
+
   const users = await svc.findAll(filter);
   return res_.ok(res, users, { count: users.length });
 });
@@ -90,7 +95,7 @@ const login = async (req, res) => {
 
     const secret = process.env.JWT_SECRET || 'stark-dev-secret-fallback';
     const token = jwt.sign(
-      { id: user.id, email: user.email, tipo: user.tipo, nome: user.nome },
+      { id: user.id, email: user.email, tipo: user.tipo, nome: user.nome, concessionaria_id: user.concessionaria_id },
       secret,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );

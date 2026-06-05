@@ -9,9 +9,19 @@ const { normalizarUsuario } = require('../utils/normalizadores');
 
 const COLS_PUBLIC = `id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao`;
 
-async function findAll() {
+async function findAll(filter = {}) {
+  const conditions = [];
+  const params = [];
+
+  if (filter.concessionaria_id) {
+    params.push(filter.concessionaria_id);
+    conditions.push(`concessionaria_id = $${params.length}`);
+  }
+
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await query(
-    `SELECT ${COLS_PUBLIC} FROM app_users ORDER BY nome ASC`
+    `SELECT ${COLS_PUBLIC} FROM app_users ${where} ORDER BY nome ASC`,
+    params
   );
   return rows.map(normalizarUsuario);
 }

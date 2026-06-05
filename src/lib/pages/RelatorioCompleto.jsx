@@ -2,7 +2,8 @@
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
-import { getPropostas, deletePropostaPermanente } from '../../api/propostas';
+import { getPropostas, deletePropostaPermanente, getPropostaById } from '../../api/propostas';
+import LazyPDFGenerator from '../../components/LazyPDFGenerator';
 import { formatCurrency } from '../../utils/formatters';
 import jsPDF from 'jspdf';
 import '../../styles/Dashboard.css';
@@ -18,6 +19,8 @@ const RelatorioCompleto = () => {
   const [filtroMes, setFiltroMes] = useState('');
   const [busca, setBusca] = useState('');
   const [excluindo, setExcluindo] = useState(null);
+  const [pdfPedidoData, setPdfPedidoData] = useState(null);
+  const [pdfLoadingId, setPdfLoadingId] = useState(null);
 
   const csvEscape = (value) => {
     const str = String(value ?? '');
@@ -35,6 +38,21 @@ const RelatorioCompleto = () => {
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
+  };
+
+  const formatarDataProposta = (p) => {
+    const raw = p.data || p.created_at;
+    if (!raw) return 'Data não informada';
+    const d = new Date(raw);
+    if (isNaN(d.getTime()) || d.getFullYear() < 2000) return 'Data não informada';
+    return d.toLocaleDateString('pt-BR');
+  };
+
+  const getDataObj = (p) => {
+    const raw = p.data || p.created_at;
+    if (!raw) return null;
+    const d = new Date(raw);
+    return isNaN(d.getTime()) || d.getFullYear() < 2000 ? null : d;
   };
 
   const extractEquipamentos = (proposta) => {
@@ -56,8 +74,36 @@ const RelatorioCompleto = () => {
     return nomes.join(' + ');
   };
 
-  const handleGerarPDF = (id) => {
-    window.open(`/proposta/${id}`, '_blank');
+  const handleGerarPDF = async (id) => {
+    console.log('📄 [RelatorioCompleto] Baixando PDF da proposta id:', id);
+    setPdfLoadingId(id);
+    try {
+      const proposta = await getPropostaById(id);
+      console.log('📄 [RelatorioCompleto] Proposta carregada:', proposta?.numero_proposta);
+
+      let dados = proposta?.dados_serializados || {};
+      if (typeof dados === 'string') {
+        try { dados = JSON.parse(dados); } catch (e) { dados = {}; }
+      }
+      console.log('📄 [RelatorioCompleto] dados_serializados existe:', !!dados, '| carrinho:', dados?.carrinho?.length, '| clienteData:', !!dados?.clienteData, '| caminhaoData:', !!dados?.caminhaoData, '| pagamentoData:', !!dados?.pagamentoData);
+
+      const pedidoData = {
+        carrinho: dados.carrinho || [],
+        clienteData: dados.clienteData || {},
+        caminhaoData: dados.caminhaoData || {},
+        pagamentoData: dados.pagamentoData || {},
+        guindastes: dados.guindastes || [],
+        vendedor: proposta.vendedor_nome || 'Vendedor',
+        numeroProposta: proposta.numero_proposta,
+      };
+
+      setPdfPedidoData(pedidoData);
+    } catch (err) {
+      console.error('❌ [RelatorioCompleto] Erro ao carregar proposta para PDF:', err);
+      alert('Erro ao carregar proposta para gerar PDF.');
+    } finally {
+      setPdfLoadingId(null);
+    }
   };
 
   const handleExcluir = async (id, numeroProposta) => {
@@ -121,8 +167,8 @@ const RelatorioCompleto = () => {
     if (filtroMes) {
       const [ano, mes] = filtroMes.split('-').map(Number);
       lista = lista.filter(p => {
-        const d = new Date(p.created_at);
-        return d.getFullYear() === ano && d.getMonth() + 1 === mes;
+        const d = getDataObj(p);
+        return d && d.getFullYear() === ano && d.getMonth() + 1 === mes;
       });
     }
 
@@ -544,7 +590,7 @@ const RelatorioCompleto = () => {
                     onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
                   >
                     <td style={{ padding: '11px 16px', fontSize: '13px', color: '#000', whiteSpace: 'nowrap' }}>
-                      {new Date(p.created_at).toLocaleDateString('pt-BR')}
+                      {formatarDataProposta(p)}
                     </td>
                     <td style={{ padding: '11px 16px', fontSize: '13px', color: '#000' }}>
                       {p.vendedor_nome || vendedoresMap.get(String(p.vendedor_id)) || p.vendedor?.nome || '-'}
@@ -565,9 +611,10 @@ const RelatorioCompleto = () => {
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                         <button
                           onClick={() => handleGerarPDF(p.id)}
-                          style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          disabled={pdfLoadingId === p.id}
+                          style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: pdfLoadingId === p.id ? 'not-allowed' : 'pointer', whiteSpace: 'nowrap', opacity: pdfLoadingId === p.id ? 0.6 : 1 }}
                           title="Visualizar proposta em PDF"
-                        >PDF</button>
+                        >{pdfLoadingId === p.id ? '...' : 'PDF'}</button>
                         <button
                           onClick={() => handleExcluir(p.id, p.numero_proposta)}
                           disabled={excluindo === p.id}
@@ -600,6 +647,18 @@ const RelatorioCompleto = () => {
         </div>
 
       </div>
+
+      {/* Gerador de PDF invisível para proposta individual */}
+      {pdfPedidoData && (
+        <div style={{ position: 'absolute', left: '-9999px', top: 0, width: 0, height: 0, overflow: 'hidden' }}>
+          <LazyPDFGenerator
+            pedidoData={pdfPedidoData}
+            numeroProposta={pdfPedidoData.numeroProposta}
+            autoGenerate
+            onGenerate={() => setPdfPedidoData(null)}
+          />
+        </div>
+      )}
     </>
   );
 };

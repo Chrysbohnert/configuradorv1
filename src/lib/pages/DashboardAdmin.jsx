@@ -136,6 +136,8 @@ const DashboardAdmin = () => {
         const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
         const concessionariaId = user?.concessionaria_id;
 
+        console.log(`[DashboardAdmin] tipo=${user?.tipo} | concessionaria_id=${concessionariaId} | isAdminConcessionaria=${isAdminConcessionaria}`);
+
         const usersPromise = isAdminConcessionaria
           ? db.getUsers({ concessionaria_id: concessionariaId })
           : db.getUsers();
@@ -155,16 +157,21 @@ const DashboardAdmin = () => {
           .filter((u) => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
           .map((u) => u.id);
 
+        console.log(`[DashboardAdmin] vendedoresCarregados=${usersResp?.length} | idsVendedores=${idsVendedores.length}`);
+
         // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
-        const pedidosResp = await (isAdminConcessionaria
-          ? getPropostas({ vendedor_id: idsVendedores, includeDadosSerializados: true }).catch((err) => {
-              console.error('❌ Erro ao carregar propostas:', err);
-              return [];
-            })
-          : getPropostas({ includeDadosSerializados: true }).catch((err) => {
-              console.error('❌ Erro ao carregar propostas:', err);
-              return [];
-            }));
+        const propostasFilters = isAdminConcessionaria
+          ? { vendedor_id: idsVendedores, concessionaria_id: concessionariaId, includeDadosSerializados: true }
+          : { includeDadosSerializados: true };
+
+        console.log(`[DashboardAdmin] propostasFilters=${JSON.stringify(propostasFilters)}`);
+
+        const pedidosResp = await getPropostas(propostasFilters).catch((err) => {
+          console.error('❌ Erro ao carregar propostas:', err);
+          return [];
+        });
+
+        console.log(`[DashboardAdmin] propostasRetornadas=${pedidosResp?.length}`);
 
         setUsers(usersResp || []);
         setPedidos(pedidosResp || []);

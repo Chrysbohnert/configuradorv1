@@ -162,7 +162,7 @@ export default function PaymentPolicy({
   const [buscaInstalacao, setBuscaInstalacao] = useState('');
 
   // 6) Entrada, plano, financiamento e desconto do vendedor
-  const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50' | 'financiamento'
+  const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50' | 'financiamento' | 'exclusiva' | valor livre
   const [valorSinal, setValorSinal] = useState('');
   const [formaEntrada, setFormaEntrada] = useState('');
   const [observacoesNegociacao, setObservacoesNegociacao] = useState('');
@@ -170,6 +170,12 @@ export default function PaymentPolicy({
   const [extraValor, setExtraValor] = useState('');
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
   const [descontoVendedor, setDescontoVendedor] = useState(0);
+
+  // 6a) Modo de entrada flexível
+  const [modoEntrada, setModoEntrada] = useState(''); // 'percentual' | 'valor' | 'exclusiva'
+  const [entradaPercentualCustom, setEntradaPercentualCustom] = useState('');
+  const [entradaValorCustom, setEntradaValorCustom] = useState('');
+  const [condicaoExclusivaObs, setCondicaoExclusivaObs] = useState('');
 
   // 7) Resumo: calculado a partir das escolhas
   const [resultado, setResultado] = useState(null);
@@ -195,11 +201,28 @@ export default function PaymentPolicy({
     if (initialPaymentData.localInstalacao) setLocalInstalacao(initialPaymentData.localInstalacao);
     if (initialPaymentData.tipoEntrega) setTipoEntrega(initialPaymentData.tipoEntrega);
 
-    // Entrada: verificar se é financiamento ou percentual
-    if (initialPaymentData.financiamentoBancario === 'sim') {
+    // Entrada: verificar se é financiamento, exclusiva ou percentual
+    if (initialPaymentData.condicaoExclusiva) {
+      setModoEntrada('exclusiva');
+      setPercentualEntrada('exclusiva');
+      setCondicaoExclusivaObs(initialPaymentData.condicaoExclusivaObs || '');
+    } else if (initialPaymentData.financiamentoBancario === 'sim') {
+      setModoEntrada('');
       setPercentualEntrada('financiamento');
     } else if (initialPaymentData.percentualEntrada) {
-      setPercentualEntrada(String(initialPaymentData.percentualEntrada));
+      const pct = String(initialPaymentData.percentualEntrada);
+      setPercentualEntrada(pct);
+      if (['30', '50', '100'].includes(pct)) {
+        setModoEntrada('percentual');
+        setEntradaPercentualCustom(pct);
+      } else {
+        setModoEntrada('percentual');
+        setEntradaPercentualCustom(pct);
+      }
+      if (initialPaymentData.entradaValorCustom) {
+        setModoEntrada('valor');
+        setEntradaValorCustom(String(initialPaymentData.entradaValorCustom));
+      }
     }
 
     if (initialPaymentData.valorSinal) setValorSinal(String(initialPaymentData.valorSinal));
@@ -270,11 +293,22 @@ export default function PaymentPolicy({
 
   const percentualEntradaNumCalc = useMemo(() => {
     if (!percentualEntrada) return 0;
-    if (percentualEntrada === 'financiamento') return 0;
+    if (percentualEntrada === 'financiamento' || percentualEntrada === 'exclusiva') return 0;
     const v = parseFloat(percentualEntrada);
     if (Number.isNaN(v) || v < 0) return 0;
     return Math.min(100, v);
   }, [percentualEntrada]);
+
+  // Mapeia percentual livre para regra de plano existente (30%, 50% ou à vista)
+  const entryPercentFiltro = useMemo(() => {
+    if (modoEntrada === 'exclusiva') return null;
+    const p = percentualEntradaNumCalc;
+    if (p <= 0) return null;
+    if (p >= 100) return null; // à vista
+    if (p >= 50) return 0.50;
+    if (p >= 30) return 0.30;
+    return null; // abaixo de 30 não filtra nada
+  }, [modoEntrada, percentualEntradaNumCalc]);
 
   const pontosInstalacaoFiltrados = useMemo(() => {
     const base = Array.isArray(pontosInstalacao) ? pontosInstalacao : [];
@@ -323,6 +357,7 @@ export default function PaymentPolicy({
     percentualEntrada, percentualEntradaNumCalc, extraDescricao,
     formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
     tipoFrete, localInstalacao, tipoEntrega,
+    modoEntrada, condicaoExclusivaObs, entradaPercentualCustom, entradaValorCustom,
   };
 
   // =============== LISTENER REALTIME PARA APROVAÇÃO DE DESCONTO ==
@@ -612,11 +647,15 @@ export default function PaymentPolicy({
       base = base.filter(p => planosLiberados.has(String(p.description).trim()));
     }
 
+    // Condição exclusiva: não exibe planos (vendedor descreve manualmente)
+    if (modoEntrada === 'exclusiva') return [];
+
     // Comércio exterior: filtrar pelos planos da audiência
     if (isComercioExterior) {
       if (!percentualEntrada) return [];
       if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
-      const pNum = percentualEntradaNumCalc / 100;
+      const pNum = entryPercentFiltro;
+      if (pNum == null) return [];
       return base.filter(p => p.entry_percent_required === pNum);
     }
 
@@ -624,9 +663,10 @@ export default function PaymentPolicy({
     if (!percentualEntrada) return [];
     if (percentualEntrada === 'financiamento') return base.filter(p => !p.entry_percent_required);
     if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
-    const pNum = percentualEntradaNumCalc / 100;
+    const pNum = entryPercentFiltro;
+    if (pNum == null) return [];
     return base.filter(p => p.entry_percent_required === pNum);
-  }, [todosPlanos, tipoCliente, percentualEntrada, percentualEntradaNumCalc, planosLiberados, isComercioExterior]);
+  }, [todosPlanos, tipoCliente, percentualEntrada, entryPercentFiltro, planosLiberados, isComercioExterior, modoEntrada]);
 
   // Restaurar planoSelecionado após os planos serem carregados (modo edição)
   useEffect(() => {
@@ -689,8 +729,8 @@ export default function PaymentPolicy({
 
   useEffect(() => {
     if (isRestoringRef.current) return; // Não resetar durante restauração
-    // Mudou entrada/financiamento → limpar plano & sinal quando necessário
-    if (percentualEntrada === 'financiamento') {
+    // Mudou entrada/financiamento/exclusiva → limpar plano & sinal quando necessário
+    if (percentualEntrada === 'financiamento' || percentualEntrada === 'exclusiva') {
       setPlanoSelecionado(null);
       setValorSinal('');
       setFormaEntrada('');
@@ -703,6 +743,69 @@ export default function PaymentPolicy({
     if (!tipoCliente) { setResultado(null); return; }
 
     const cUsd = Number(cotacaoUSD);
+
+    // Condição Exclusiva: não calcula parcelas, salva observação manual
+    if (modoEntrada === 'exclusiva') {
+      const extraValorNum = parseFloat(extraValor) || 0;
+      const descontoExtraValor = precoBase * (descontoVendedorEfetivo / 100);
+      const valorAposExtra = precoBase - descontoExtraValor;
+      const valorFrete = valorFreteCalculado;
+      const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
+      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
+        ? (valorFinal / cUsd)
+        : 0;
+
+      const r = {
+        precoBase,
+        financiamentoBancario: 'nao',
+        tipoCliente,
+        participacaoRevenda,
+        tipoIE,
+        instalacao,
+        tipoFrete,
+        localInstalacao,
+        tipoEntrega,
+        tipoPagamento: tipoCliente,
+        tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : instalacao === 'cliente' ? 'cliente paga direto' : '',
+        revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
+        prazoPagamento: 'Condição Exclusiva',
+        descontoAdicionalValor: descontoExtraValor,
+        valorFinalComDescontoAdicional: valorAposExtra,
+        descontoValor: 0,
+        acrescimoValor: 0,
+        valorAjustado: valorAposExtra,
+        valorFrete,
+        valorInstalacao,
+        valorConversor,
+        entrada: 0,
+        saldo: valorFinal,
+        parcelas: [],
+        total: valorFinal,
+        valorFinal,
+        percentualEntrada: 0,
+        entradaTotal: 0,
+        valorSinal: 0,
+        faltaEntrada: 0,
+        saldoAPagar: valorFinal,
+        formaEntrada: '',
+        observacoesNegociacao: (observacoesNegociacao || '').trim(),
+        extraDescricao: extraDescricao || '',
+        extraValor: extraValorNum,
+        moeda: isComercioExterior ? 'USD' : 'BRL',
+        cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+        valorFinalUSD,
+        desconto: descontoVendedorEfetivo,
+        descontoPrazo: 0,
+        acrescimo: 0,
+        condicaoExclusiva: true,
+        condicaoExclusivaObs: condicaoExclusivaObs.trim(),
+      };
+
+      setResultado(r);
+      onPaymentComputed?.(r);
+      return;
+    }
 
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
@@ -940,6 +1043,8 @@ export default function PaymentPolicy({
     temGSI,
     cotacaoUSD,
     onPaymentComputed,
+    modoEntrada,
+    condicaoExclusivaObs,
   ]);
 
   // =============== UTILS DE NAVEGAÇÃO ============================
@@ -950,7 +1055,9 @@ export default function PaymentPolicy({
   const podeIrEtapa6 = true; // entrada/plano sempre liberados após 5
   const podeIrEtapa7 = isComercioExterior
     ? !!percentualEntrada
-    : (percentualEntrada === 'financiamento' ? true : !!planoSelecionado);
+    : (percentualEntrada === 'financiamento' ? true
+      : modoEntrada === 'exclusiva' ? !!condicaoExclusivaObs.trim()
+      : !!planoSelecionado);
 
   const next = () => setEtapa(e => Math.min(e + 1, 7));
   const prev = () => setEtapa(e => Math.max(e - 1, isComercioExterior ? 3 : 1));
@@ -1458,7 +1565,7 @@ export default function PaymentPolicy({
         <span className="pp-section-label">Forma de Pagamento</span>
 
         <div className="pp-subsection">
-          <span className="pp-section-label">Percentual de Entrada</span>
+          <span className="pp-section-label">Forma de Entrada</span>
           {isComercioExterior ? (
             <div className="pp-tabs">
               <button type="button" className={`pp-tab ${percentualEntrada === '100' ? 'pp-tab-active' : ''}`} onClick={() => setPercentualEntrada('100')}>
@@ -1469,17 +1576,135 @@ export default function PaymentPolicy({
               </button>
             </div>
           ) : (
-            <div className="pp-entrada-btns">
-              {(entradaOpcoes || ['30', '50', '100', 'financiamento'])
-                .filter(v => permiteFinanciamento ? true : v !== 'financiamento')
-                .map(v => (
-                  <button key={v} type="button" className={`pp-entrada-btn ${percentualEntrada === v ? 'selected' : ''}`} onClick={() => setPercentualEntrada(v)}>
-                    {v === 'financiamento' ? (<><strong>Financiamento</strong><small>Bancário</small></>) :
-                     v === '100' ? (<><strong>100%</strong><small>À Vista</small></>) :
-                     (<><strong>{v}%</strong><small>Entrada</small></>)}
-                  </button>
-                ))}
-            </div>
+            <>
+              {/* Tabs de modo de entrada */}
+              <div className="pp-tabs" style={{ marginBottom: '10px' }}>
+                <button
+                  type="button"
+                  className={`pp-tab ${modoEntrada === 'percentual' ? 'pp-tab-active' : ''}`}
+                  onClick={() => { setModoEntrada('percentual'); setPercentualEntrada(''); setEntradaPercentualCustom(''); setPlanoSelecionado(null); }}
+                >Entrada %</button>
+                <button
+                  type="button"
+                  className={`pp-tab ${modoEntrada === 'valor' ? 'pp-tab-active' : ''}`}
+                  onClick={() => { setModoEntrada('valor'); setPercentualEntrada(''); setEntradaValorCustom(''); setPlanoSelecionado(null); }}
+                >Valor R$</button>
+                <button
+                  type="button"
+                  className={`pp-tab ${modoEntrada === 'exclusiva' ? 'pp-tab-active' : ''}`}
+                  onClick={() => { setModoEntrada('exclusiva'); setPercentualEntrada('exclusiva'); setPlanoSelecionado(null); }}
+                >Condição Exclusiva</button>
+                <button
+                  type="button"
+                  className={`pp-tab ${modoEntrada === '' && percentualEntrada === 'financiamento' ? 'pp-tab-active' : ''}`}
+                  onClick={() => { setModoEntrada(''); setPercentualEntrada('financiamento'); setPlanoSelecionado(null); }}
+                >Financiamento</button>
+              </div>
+
+              {/* Percentual customizado */}
+              {modoEntrada === 'percentual' && (
+                <div>
+                  <div className="pp-entrada-btns" style={{ marginBottom: '8px' }}>
+                    {['30', '50', '100'].map(v => (
+                      <button
+                        key={v}
+                        type="button"
+                        className={`pp-entrada-btn ${percentualEntrada === v ? 'selected' : ''}`}
+                        onClick={() => { setPercentualEntrada(v); setEntradaPercentualCustom(v); }}
+                      >
+                        {v === '100' ? (<><strong>100%</strong><small>À Vista</small></>) : (<><strong>{v}%</strong><small>Entrada</small></>)}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="form-group" style={{ maxWidth: '220px' }}>
+                    <label>Outro percentual (mín. 30%)</label>
+                    <input
+                      type="number"
+                      min="30"
+                      max="100"
+                      step="0.01"
+                      value={entradaPercentualCustom}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEntradaPercentualCustom(val);
+                        const num = parseFloat(val);
+                        if (!Number.isNaN(num) && num >= 30 && num <= 100) {
+                          setPercentualEntrada(String(num));
+                        } else {
+                          setPercentualEntrada('');
+                        }
+                      }}
+                      placeholder="Ex: 40"
+                    />
+                    {entradaPercentualCustom && parseFloat(entradaPercentualCustom) < 30 && (
+                      <small className="form-help help-warn" style={{ display: 'block', marginTop: '4px' }}>
+                        Entrada não pode ser menor que 30%
+                      </small>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Valor em reais */}
+              {modoEntrada === 'valor' && (
+                <div>
+                  <div className="form-group" style={{ maxWidth: '260px' }}>
+                    <label>Valor da entrada (R$)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={entradaValorCustom}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setEntradaValorCustom(val);
+                        const num = parseFloat(val) || 0;
+                        const base = Number(precoBaseAjustado) || 0;
+                        if (base > 0 && num > 0) {
+                          const pct = (num / base) * 100;
+                          setPercentualEntrada(String(Math.min(100, Math.round(pct * 100) / 100)));
+                        } else {
+                          setPercentualEntrada('');
+                        }
+                      }}
+                      placeholder="Ex: 40000"
+                    />
+                  </div>
+                  {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== 'exclusiva' && (
+                    <div className="pp-info-note" style={{ marginTop: '6px' }}>
+                      Corresponde a <b>{parseFloat(percentualEntrada).toFixed(2)}%</b> do total.
+                      {parseFloat(percentualEntrada) < 30 && (
+                        <span style={{ color: '#ef4444', marginLeft: '6px' }}>Mínimo permitido: 30%</span>
+                      )}
+                      {parseFloat(percentualEntrada) >= 30 && parseFloat(percentualEntrada) < 50 && (
+                        <span style={{ marginLeft: '6px' }}>→ Usando tabela de <b>30%</b></span>
+                      )}
+                      {parseFloat(percentualEntrada) >= 50 && parseFloat(percentualEntrada) < 100 && (
+                        <span style={{ marginLeft: '6px' }}>→ Usando tabela de <b>50%</b></span>
+                      )}
+                      {parseFloat(percentualEntrada) >= 100 && (
+                        <span style={{ marginLeft: '6px' }}>→ À vista</span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Condição exclusiva */}
+              {modoEntrada === 'exclusiva' && (
+                <div className="form-group">
+                  <label>Descrição da Condição Exclusiva *</label>
+                  <textarea
+                    value={condicaoExclusivaObs}
+                    onChange={e => setCondicaoExclusivaObs(e.target.value)}
+                    placeholder="Descreva a forma de pagamento negociada..."
+                    rows={3}
+                    maxLength={500}
+                    style={{ width: '100%', resize: 'vertical' }}
+                  />
+                </div>
+              )}
+            </>
           )}
         </div>
 

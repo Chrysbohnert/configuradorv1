@@ -72,8 +72,12 @@ async getUsers(filters = {}) {
   try {
     const token = localStorage.getItem('authToken');
 
+    const params = new URLSearchParams();
+    if (filters.concessionaria_id) params.set('concessionaria_id', filters.concessionaria_id);
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+
     const response = await fetch(
-      `${API_URL}/api/users`,
+      `${API_URL}/api/users${queryString}`,
       {
         method: 'GET',
         headers: {
@@ -92,7 +96,7 @@ async getUsers(filters = {}) {
 
     let users = result.data || [];
 
-    // Aplicar filtros localmente
+    // Aplicar filtros localmente (fallback)
     if (filters && Object.keys(filters).length > 0) {
       users = users.filter(user => {
         return Object.entries(filters).every(([key, value]) => {

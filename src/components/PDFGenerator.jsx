@@ -622,6 +622,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
             ${t(lang, 'modalityFinancing')}
           </div>
         ` : ''}
+        ${pagamento.condicaoExclusiva ? `
+          <div style="font-size:3.6mm; font-weight:700; margin-top:2mm; letter-spacing:0.2mm; color:#b45309;">
+            CONDIÇÃO EXCLUSIVA — ${(pagamento.prazoPagamento || '').toUpperCase()}
+          </div>
+        ` : ''}
       </div>
 
       <!-- BLOCO 1: DADOS STARK -->
@@ -1299,8 +1304,20 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
+      <!-- CONDIÇÃO EXCLUSIVA -->
+      ${p.condicaoExclusiva ? `
+        <div style="margin-top:11px; background:#fffbf0; border:2px solid #ffd700; padding:13px 15px; border-radius:3px;">
+          <div style="font-size:13px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#b45309; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #fbbf24;">
+            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
+          </div>
+          <div style="font-size:12px; color:#111; line-height:1.6; white-space:pre-wrap; font-weight:600;">
+            ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
+          </div>
+        </div>
+      ` : ''}
+
       <!-- PRAZO E PARCELAMENTO UNIFICADOS -->
-      ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
+      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
         <div style="margin-top:11px; background:#e8e8e8; border:2px solid #000; padding:13px 15px; border-radius:3px;">
           <div style="font-size:13px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#000; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #aaa;">
             ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
@@ -1803,8 +1820,20 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
+      <!-- CONDIÇÃO EXCLUSIVA -->
+      ${p.condicaoExclusiva ? `
+        <div style="margin-top:12px; padding:14px; background:#fffbf0; border:2px solid #ffd700; border-radius:4px;">
+          <div style="font-weight:800; font-size:17px; color:#b45309; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #fbbf24;">
+            ${percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
+          </div>
+          <div style="font-size:13px; color:#111; line-height:1.6; white-space:pre-wrap; font-weight:600;">
+            ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
+          </div>
+        </div>
+      ` : ''}
+
       <!-- PRAZO E PARCELAMENTO -->
-      ${(parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
+      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
         <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
           <div style="font-weight:800; font-size:17px; color:#000; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #aaa;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
@@ -1993,8 +2022,18 @@ const getGraficoUrls = async (pedidoData) => {
  *  COMPONENTE PRINCIPAL
  * ==========================
  */
-const PDFGenerator = ({ pedidoData, onGenerate }) => {
+const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
   const [isGenerating, setIsGenerating] = React.useState(false);
+  const generateBtnRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (autoGenerate && pedidoData && generateBtnRef.current && !isGenerating) {
+      const timer = setTimeout(() => {
+        if (generateBtnRef.current) generateBtnRef.current.click();
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [autoGenerate, pedidoData, isGenerating]);
   const isVendedorExterior = React.useMemo(() => {
     const moeda = String(pedidoData?.pagamentoData?.moeda || '').toUpperCase();
     if (moeda === 'USD') return true;
@@ -2203,6 +2242,7 @@ const PDFGenerator = ({ pedidoData, onGenerate }) => {
       )}
 
       <button
+        ref={generateBtnRef}
         onClick={generatePDF}
         disabled={isGenerating}
         className="pdf-generator-btn"

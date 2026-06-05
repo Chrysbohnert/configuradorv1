@@ -34,7 +34,12 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     includeDadosSerializados: includeDadosSerializados === 'true',
   };
 
-  console.log(`📋 [GET /propostas] user=${req.user.id} tipo=${req.user.tipo} filtros=${JSON.stringify({ vendedor_id, status, tipo, limit, offset, includeDadosSerializados })}`);
+  // Admin Concessionária: forçar filtro pela própria concessionária
+  if (req.user?.tipo === 'admin_concessionaria') {
+    filters.concessionaria_id = req.user.concessionaria_id;
+  }
+
+  console.log(`📋 [GET /propostas] user=${req.user.id} tipo=${req.user.tipo} filtros=${JSON.stringify({ vendedor_id, status, tipo, limit, offset, includeDadosSerializados, concessionaria_id: filters.concessionaria_id })}`);
 
   const [data, total] = await Promise.all([svc.findAll(filters), svc.count(filters)]);
 

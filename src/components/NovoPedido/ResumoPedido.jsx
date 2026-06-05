@@ -824,9 +824,18 @@ const ResumoPedido = ({
                 ? 'Após 120 dias (+2% a.m)'
                 : pagamentoData.prazoPagamento === 'mais_90_dias'
                 ? 'Após 90 dias (+2% a.m)'
+                : pagamentoData.prazoPagamento === 'Condição Exclusiva'
+                ? 'Condição Exclusiva'
                 : 'Não informado'
             )}
           </div>
+
+          {pagamentoData.condicaoExclusiva && (
+            <div style={{ marginTop: '10px', background: '#fffbf0', border: '1px solid #ffd700', borderRadius: '6px', padding: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#b45309', marginBottom: '6px' }}>Condição Exclusiva</div>
+              <div style={{ fontSize: '13px', color: '#111', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{pagamentoData.condicaoExclusivaObs}</div>
+            </div>
+          )}
 
           {(pagamentoData.desconto > 0 || pagamentoData.acrescimo > 0) && (
             <div

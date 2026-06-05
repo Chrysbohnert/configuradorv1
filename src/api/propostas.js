@@ -16,6 +16,7 @@ export async function getPropostas(filters = {}) {
   if (filters.status)                        params.set('status', filters.status);
   if (filters.tipo)                          params.set('tipo', filters.tipo);
   if (filters.includeDadosSerializados)      params.set('includeDadosSerializados', 'true');
+  if (filters.concessionaria_id)             params.set('concessionaria_id', filters.concessionaria_id);
   if (filters.vendedor_id) {
     if (Array.isArray(filters.vendedor_id)) {
       params.set('vendedor_id', filters.vendedor_id.join(','));
