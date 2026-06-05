@@ -815,6 +815,7 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       ...item,
       ...(banco || {}),
       descricao: banco?.descricao || item?.descricao || '',
+      nao_incluido: banco?.nao_incluido || item?.nao_incluido || '',
       finame: banco?.finame || item?.finame || t(lang, 'notProvided'),
       ncm: banco?.ncm || item?.ncm || t(lang, 'notProvided')
     };
@@ -855,31 +856,33 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
         </div>` : ''}
 
         <!-- DESCRIÇÃO TÉCNICA -->
-        <div style="border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; margin-bottom:11px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">
-            DESCRICAO TECNICA
+        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:11px;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+            DESCRIÇÃO TÉCNICA
           </div>
-          <div style="font-size:11.5px; line-height:1.65; text-transform:uppercase;">
+          <div style="padding:10px 12px; font-size:11.5px; line-height:1.65; text-transform:uppercase; color:#000;">
             ${descLang ? convertHyphensToList(descLang) : t(lang, 'notProvided')}
           </div>
         </div>
 
-        <!-- NAO INCLUIDO -->
-        <div style="border-left:4px solid #dc2626; background:#fef2f2; padding:13px 15px; margin-bottom:11px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#dc2626; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fca5a5;">
+        <!-- NÃO INCLUÍDO -->
+        ${naoIncluidoLang ? `
+        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:11px;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${t(lang, 'notIncluded')}
           </div>
-          <div style="font-size:11.5px; line-height:1.65; text-transform:uppercase; white-space:pre-line;">
-            ${naoIncluidoLang || t(lang, 'notProvided')}
+          <div style="padding:10px 12px; font-size:11.5px; line-height:1.65; text-transform:uppercase; color:#000;">
+            ${convertHyphensToList(naoIncluidoLang)}
           </div>
         </div>
+        ` : ''}
 
         <!-- GARANTIA -->
-        <div style="border-left:4px solid #16a34a; background:#f0fdf4; padding:13px 15px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#16a34a; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #86efac;">
+        <div style="border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${t(lang, 'warrantyProgramTitle')}
           </div>
-          <div style="font-size:11px; line-height:1.65; text-transform:none;">
+          <div style="padding:10px 12px; font-size:11px; line-height:1.65; color:#000;">
             <ul style="margin:0; padding-left:18px; list-style-type:disc;">
               <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet1')}
                 <ul style="margin-top:4px; padding-left:16px; list-style-type:circle;">
@@ -943,49 +946,38 @@ const renderCaminhao = (pedidoData, { inline = false } = {}) => {
   el.innerHTML += `
     <div class="wrap" style="padding:18px;">
       <div class="title" style="font-size:20px;margin-bottom:10px;">${t(lang, 'vehicleDataTitle')}</div>
-      
-      <!-- TABELA EM 2 COLUNAS LADO A LADO -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;margin-top:8px;">
-        <!-- COLUNA 1 -->
-        <table class="table" style="font-size:13px;">
-          <tbody>
+
+      <!-- TABELA FECHADA -->
+      <table class="table" style="font-size:13px; margin-top:8px;">
+        <tbody>
+          <tr>
+            <td style="font-weight:600;width:18%;background:#f5f5f5;">${t(lang, 'type')}</td>
+            <td style="font-weight:700;width:32%;">${v.tipo || t(lang, 'notProvided')}</td>
+            <td style="font-weight:600;width:18%;background:#f5f5f5;">${t(lang, 'year')}</td>
+            <td style="font-weight:700;width:32%;">${v.ano || t(lang, 'notProvided')}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;background:#f5f5f5;">${t(lang, 'brand')}</td>
+            <td style="font-weight:700;">${v.marca || t(lang, 'notProvided')}</td>
+            <td style="font-weight:600;background:#f5f5f5;">${t(lang, 'voltage')}</td>
+            <td style="font-weight:700;">${v.voltagem || t(lang, 'notProvided')}</td>
+          </tr>
+          <tr>
+            <td style="font-weight:600;background:#f5f5f5;">MODELO</td>
+            <td style="font-weight:700;">${v.modelo || t(lang, 'notProvided')}</td>
+            <td style="font-weight:600;background:#f5f5f5;">PLACA</td>
+            <td style="font-weight:700;">${v.placa || t(lang, 'notProvided')}</td>
+          </tr>
+          ${v.observacoes ? `
             <tr>
-              <td style="font-weight:600;width:35%;">${t(lang, 'type')}</td>
-              <td style="font-weight:700;">${v.tipo || t(lang, 'notProvided')}</td>
+              <td colspan="4" style="font-weight:600;background:#f5f5f5;padding:8px 12px;">
+                <div style="font-size:11px;color:#333;margin-bottom:3px;">${t(lang, 'observations')}:</div>
+                <div style="font-size:12px;font-weight:700;">${v.observacoes}</div>
+              </td>
             </tr>
-            <tr>
-              <td style="font-weight:600;">${t(lang, 'brand')}</td>
-              <td style="font-weight:700;">${v.marca || t(lang, 'notProvided')}</td>
-            </tr>
-            <tr>
-              <td style="font-weight:600;">MODELO</td>
-              <td style="font-weight:700;">${v.modelo || t(lang, 'notProvided')}</td>
-            </tr>
-          </tbody>
-        </table>
-        
-        <!-- COLUNA 2 -->
-        <table class="table" style="font-size:13px;">
-          <tbody>
-            <tr>
-              <td style="font-weight:600;width:35%;">${t(lang, 'year')}</td>
-              <td style="font-weight:700;">${v.ano || t(lang, 'notProvided')}</td>
-            </tr>
-            <tr>
-              <td style="font-weight:600;">${t(lang, 'voltage')}</td>
-              <td style="font-weight:700;">${v.voltagem || t(lang, 'notProvided')}</td>
-            </tr>
-            ${v.observacoes ? `
-              <tr>
-                <td colspan="2" style="font-weight:600;background:#f9f9f9;padding:8px;border-left:3px solid #333334ff;">
-                  <div style="font-size:11px;color:#666;margin-bottom:3px;">${t(lang, 'observations')}:</div>
-                  <div style="font-size:12px;">${v.observacoes}</div>
-                </td>
-              </tr>
-            ` : ''}
-          </tbody>
-        </table>
-      </div>
+          ` : ''}
+        </tbody>
+      </table>
     </div>
   `;
   return el;
@@ -1012,50 +1004,50 @@ const renderEstudoVeicular = (pedidoData, { inline = false } = {}) => {
             <table class="table" style="font-size:13px;">
               <thead>
                 <tr>
-                  <th style="width:65%;text-align:left;background:#f5f5f5;font-size:12px;">${t(lang, 'measure')}</th>
-                  <th style="width:35%;text-align:center;background:#f5f5f5;font-size:12px;">${t(lang, 'value')}</th>
+                  <th style="width:65%;text-align:left;background:#e5e5e5;font-size:12px;border:1px solid #333;">${t(lang, 'measure')}</th>
+                  <th style="width:35%;text-align:center;background:#e5e5e5;font-size:12px;border:1px solid #333;">${t(lang, 'value')}</th>
                 </tr>
               </thead>
               <tbody>
                 ${v.medidaA ? `
                   <tr>
-                    <td style="font-weight:600;font-size:12px;">A (Chassi ao Assoalho)</td>
-                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.medidaA}cm</td>
+                    <td style="font-weight:600;font-size:12px;border:1px solid #333;">A (Chassi ao Assoalho)</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;border:1px solid #333;">${v.medidaA}cm</td>
                   </tr>
                 ` : ''}
                 ${v.medidaB ? `
                   <tr>
-                    <td style="font-weight:600;font-size:12px;">B (Chassi)</td>
-                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.medidaB}cm</td>
+                    <td style="font-weight:600;font-size:12px;border:1px solid #333;">B (Chassi)</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;border:1px solid #333;">${v.medidaB}cm</td>
                   </tr>
                 ` : ''}
                 ${v.medidaC ? `
                   <tr>
-                    <td style="font-weight:600;font-size:12px;">C (Solo ao Chassi)</td>
-                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.medidaC}cm</td>
+                    <td style="font-weight:600;font-size:12px;border:1px solid #333;">C (Solo ao Chassi)</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;border:1px solid #333;">${v.medidaC}cm</td>
                   </tr>
                 ` : ''}
                 ${v.medidaD ? `
                   <tr>
-                    <td style="font-weight:600;font-size:12px;">D (Dist. Entre Eixos)</td>
-                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.medidaD}cm</td>
+                    <td style="font-weight:600;font-size:12px;border:1px solid #333;">D (Dist. Entre Eixos)</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;border:1px solid #333;">${v.medidaD}cm</td>
                   </tr>
                 ` : ''}
                 ${v.comprimentoChassi ? `
                   <tr>
-                    <td style="font-weight:600;font-size:12px;">📏 Comprimento do Chassi</td>
-                    <td style="text-align:center;font-weight:700;font-size:15px;">${v.comprimentoChassi}cm</td>
+                    <td style="font-weight:600;font-size:12px;border:1px solid #333;">Comprimento do Chassi</td>
+                    <td style="text-align:center;font-weight:700;font-size:15px;border:1px solid #333;">${v.comprimentoChassi}cm</td>
                   </tr>
                 ` : ''}
               </tbody>
             </table>
-            
+
             <!-- PATOLAMENTO COMPACTO -->
             ${v.patolamento ? `
-              <div style="padding:15px;background:linear-gradient(135deg, #525255ff 0%, #3d3c35ff 100%);border-radius:6px;text-align:center;border:2px solid #555;display:flex;flex-direction:column;justify-content:center;">
-                <div style="color:white;font-size:12px;font-weight:600;margin-bottom:8px;">⚙️ ${t(lang, 'patolamento')}</div>
-                <div style="color:#ffd700;font-size:36px;font-weight:bold;letter-spacing:2px;line-height:1;">${v.patolamento}</div>
-                <div style="color:white;font-size:11px;opacity:0.9;margin-top:8px;font-weight:500;">
+              <div style="padding:15px;background:#f5f5f5;border:1px solid #333;text-align:center;display:flex;flex-direction:column;justify-content:center;">
+                <div style="font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:#000;margin-bottom:8px;">${t(lang, 'patolamento')}</div>
+                <div style="font-size:32px;font-weight:800;letter-spacing:2px;line-height:1;color:#000;">${v.patolamento}</div>
+                <div style="font-size:11px;color:#555;margin-top:8px;font-weight:600;">
                   ${parseFloat(v.medidaC) >= 70 ? 'C ≥ 70cm' : parseFloat(v.medidaC) >= 60 ? 'C: 60-69cm' : 'C < 60cm'}
                 </div>
               </div>
@@ -1124,8 +1116,8 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
   const sinalPago = p.valorSinal || 0;
   
-  // 5. Saldo a Pagar (o que falta após entrada e sinal)
-  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc - sinalPago;
+  // 5. Saldo a Pagar (o sinal faz parte da entrada, não reduz o saldo diretamente)
+  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
 
   // 6. RECALCULAR PARCELAS com base no saldo correto
   const numParcelas = p.parcelas?.length || 1;
@@ -1160,20 +1152,20 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       ${isUSD ? `
         <div style="margin-bottom:11px; border-left:4px solid #888; background:#f5f5f5; padding:10px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#0284c7; margin-bottom:5px;">USD</div>
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; margin-bottom:5px;">USD</div>
           <div style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'exchangeRateApplied')}: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
         </div>
       ` : ''}
 
       ${p.financiamentoBancario === 'sim' ? `
-        <div style="margin-bottom:11px; border-left:4px solid #888; background:#f5f5f5; padding:10px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#16a34a;">${t(lang, 'financingModeShort')}</div>
+        <div style="margin-bottom:11px; border:1px solid #333; background:#f5f5f5; padding:8px 12px;">
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000;">${t(lang, 'financingModeShort')}</div>
         </div>
       ` : ''}
 
       ${observacoesNegociacao ? `
         <div style="margin-bottom:11px; border-left:4px solid #888; background:#f5f5f5; padding:10px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#475569; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
+          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
           <div style="font-size:12px; color:#000; line-height:1.5; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
@@ -1182,74 +1174,72 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
         
         <!-- COLUNA 1: VALOR BASE -->
-        <div style="border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">${t(lang, 'baseEquipmentValue')}</div>
-          <div style="font-size:22px; font-weight:800; color:#000;">${fmt(convert(totalBase))}</div>
+        <div style="border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'baseEquipmentValue')}</div>
+          <div style="padding:10px 12px; font-size:22px; font-weight:800; color:#000;">${fmt(convert(totalBase))}</div>
         </div>
 
         <!-- COLUNA 2: DESCONTOS -->
         ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
-          <div style="border-left:4px solid #b45309; background:#fffbeb; padding:13px 15px; border-radius:3px;">
-            <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#b45309; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #fde68a;">${t(lang, 'discountsAndAdjustments')}</div>
-            ${p.desconto ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
-                <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
-              </div>
-            ` : ''}
-            ${p.descontoPrazo ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'termDiscount')} (${p.descontoPrazo}%)</span>
-                <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoPrazo))}</span>
-              </div>
-            ` : ''}
-            ${p.acrescimo ? `
-              <div style="display:flex; justify-content:space-between;">
-                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'surcharge')} (${p.acrescimo}%)</span>
-                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorAcrescimo))}</span>
-              </div>
-            ` : ''}
+          <div style="border:1px solid #333; background:#fff; padding:0;">
+            <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'discountsAndAdjustments')}</div>
+            <div style="padding:10px 12px;">
+              ${p.desconto ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                  <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
+                </div>
+              ` : ''}
+              ${p.descontoPrazo ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                  <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'termDiscount')} (${p.descontoPrazo}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoPrazo))}</span>
+                </div>
+              ` : ''}
+              ${p.acrescimo ? `
+                <div style="display:flex; justify-content:space-between;">
+                  <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'surcharge')} (${p.acrescimo}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorAcrescimo))}</span>
+                </div>
+              ` : ''}
+            </div>
           </div>
         ` : '<div></div>'}
       </div>
 
       <!-- FRETE E INSTALAÇÃO -->
       ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
-        <div style="margin-top:11px; border-left:4px solid #888; background:#f5f5f5; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#333; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #ddd;">${t(lang, 'freightAndInstallation')}</div>
-          ${p.tipoFrete ? `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'freight')}: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` - ${t(lang, 'included')}` : ''}</span>
-              ${valorFreteFinal > 0 ? `
-                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorFreteFinal))}</span>
-              ` : `
-                <span style="font-size:12px; color:#64748b;">${t(lang, 'customerPaysDirectly')}</span>
-              `}
-            </div>
-          ` : ''}
-          ${p.tipoInstalacao ? `
-            <div style="display:flex; justify-content:space-between;">
-              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'installation')}: ${p.tipoInstalacao.toUpperCase()}</span>
-              ${valorInstalacaoInformado > 0 ? `
-                <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
-              ` : `
-                <span style="font-size:12px; color:#64748b;">${t(lang, 'customerPaysDirectly')}</span>
-              `}
-            </div>
-          ` : ''}
-          ${p.localInstalacao ? `
-            <div style="margin-top:7px; padding-top:6px; border-top:1px solid #ddd; font-size:12px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'installationLocation')}:</span>
-              <span style="font-weight:700; color:#000; margin-left:5px;">${p.localInstalacao.toUpperCase()}</span>
-            </div>
-          ` : ''}
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'freightAndInstallation')}</div>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <tbody>
+              ${p.tipoFrete ? `
+                <tr style="border-bottom:1px solid #ddd;">
+                  <td style="padding:8px 12px; font-weight:600; color:#000; width:50%;">${t(lang, 'freight')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                </tr>
+              ` : ''}
+              ${p.tipoInstalacao ? `
+                <tr style="border-bottom:1px solid #ddd;">
+                  <td style="padding:8px 12px; font-weight:600; color:#000;">${t(lang, 'installation')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${p.tipoInstalacao.toUpperCase()}${valorInstalacaoInformado > 0 ? ` — ${fmt(convert(valorInstalacaoInformado))}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                </tr>
+              ` : ''}
+              ${p.localInstalacao ? `
+                <tr>
+                  <td style="padding:8px 12px; font-weight:600; color:#000;">${t(lang, 'installationLocation')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${p.localInstalacao.toUpperCase()}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
         </div>
       ` : ''}
 
       ${(extraValor > 0) ? `
-        <div style="margin-top:11px; border-left:4px solid #888; background:#f5f5f5; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#333; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #ddd;">${t(lang, 'extra')}</div>
-          <div style="display:flex; justify-content:space-between;">
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'extra')}</div>
+          <div style="padding:10px 12px; display:flex; justify-content:space-between;">
             <span style="font-size:12px; font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : t(lang, 'commercialAdjustment')}</span>
             <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(extraValor))}</span>
           </div>
@@ -1257,13 +1247,15 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       ${(parseFloat(p.valorConversor || 0) > 0) ? `
-        <div style="margin-top:11px; border-left:4px solid #888; background:#f5f5f5; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#333; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #ddd;">CONVERSOR DE VOLTAGEM</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <span style="font-size:12px; font-weight:600; color:#000;">CAMINHÃO 12V — CONVERSOR DE VOLTAGEM</span>
-            <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">CONVERSOR DE VOLTAGEM</div>
+          <div style="padding:10px 12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">CAMINHÃO 12V — CONVERSOR DE VOLTAGEM</span>
+              <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(parseFloat(p.valorConversor || 0)))}</span>
+            </div>
+            <div style="font-size:11px; color:#555; font-style:italic;">* Caminhão 12V requer conversor de voltagem para compatibilidade com o guindaste</div>
           </div>
-          <div style="font-size:11px; color:#555; font-style:italic;">* Caminhão 12V requer conversor de voltagem para compatibilidade com o guindaste</div>
         </div>
       ` : ''}
 
@@ -1275,42 +1267,45 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       <!-- ENTRADA (se houver) -->
       ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
-        <div style="margin-top:11px; border-left:4px solid #888; background:#f5f5f5; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#333; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #ddd;">④ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-            <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
-            <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
-          </div>
-          ${p.formaEntrada ? `
-            <div style="margin-bottom:6px; padding:7px 10px; background:#fff; border-radius:3px; border:1px solid #ddd;">
-              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')}:</span>
-              <span style="font-weight:700; color:#000; margin-left:5px; font-size:12px;">${p.formaEntrada.toUpperCase()}</span>
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">④ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
+          <div style="padding:10px 12px;">
+            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
+              <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
             </div>
-          ` : ''}
-          
+            ${p.formaEntrada ? `
+              <div style="margin-bottom:6px; padding:7px 10px; background:#fff; border:1px solid #ddd;">
+                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')}:</span>
+                <span style="font-weight:700; color:#000; margin-left:5px; font-size:12px;">${p.formaEntrada.toUpperCase()}</span>
+              </div>
+            ` : ''}
+          </div>
         </div>
 
         <!-- SALDO A PAGAR -->
-        <div style="margin-top:11px; border-left:4px solid #888; background:#f5f5f5; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#333; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #ddd;">⑤ ${t(lang, 'balanceToPay')}</div>
-          <div style="font-size:12px; color:#000; margin-bottom:6px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
-          ${sinalPago > 0 ? `
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
-            <span style="font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
-            <span style="font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">⑤ ${t(lang, 'balanceToPay')}</div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:12px; color:#000; margin-bottom:6px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
+            ${sinalPago > 0 ? `
+            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
+              <span style="font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
+              <span style="font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
+            </div>
+            ` : ''}
+            <div style="font-weight:800; font-size:22px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
           </div>
-          ` : ''}
-          <div style="font-weight:800; font-size:22px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
         </div>
       ` : ''}
 
       <!-- CONDIÇÃO EXCLUSIVA -->
       ${p.condicaoExclusiva ? `
-        <div style="margin-top:11px; background:#fffbf0; border:2px solid #ffd700; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:13px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#b45309; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #fbbf24;">
+        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
           </div>
-          <div style="font-size:12px; color:#111; line-height:1.6; white-space:pre-wrap; font-weight:600;">
+          <div style="padding:10px 12px; font-size:12px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
           </div>
         </div>
@@ -1335,10 +1330,11 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       <!-- DADOS BANCÁRIOS (MESMA PÁGINA) -->
-      <div style="margin-top:11px; border-left:4px solid #1e293b; background:#f8fafc; padding:13px 15px; border-radius:3px;">
-        <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#1e293b; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #cbd5e1;">
+      <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+        <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
           ${usarDadosConcessionaria ? `DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}` : t(lang, 'bankData')}
         </div>
+        <div style="padding:10px 12px;">
         ${usarDadosConcessionaria ? `
           ${concessionariaLogo ? `
             <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:120px; max-height:50px; margin-bottom:9px; display:block;"/>
@@ -1374,6 +1370,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
             </div>
           </div>
         `}
+        </div>
       </div>
     </div>
   `;
@@ -1623,10 +1620,10 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   const divisor = isUSD && Number.isFinite(cotacaoUsd) && cotacaoUsd > 0 ? cotacaoUsd : 1;
   const convert = (v) => (Number(v) || 0) / divisor;
 
-  // Entrada e saldo
+  // Entrada e saldo (o sinal faz parte da entrada, não reduz o saldo diretamente)
   const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
   const sinalPago = p.valorSinal || 0;
-  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc - sinalPago;
+  const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
 
   // Parcelas
   const numParcelas = p.parcelas?.length || 1;
@@ -1737,34 +1734,30 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
 
       <!-- FRETE E INSTALAÇÃO -->
       ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">② FRETE E INSTALAÇÃO</div>
-          ${p.tipoFrete ? `
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-              <span style="font-weight:600; color:#000;">Frete: ${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ' - Incluso' : ''}</span>
-              ${valorFreteFinal > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorFreteFinal))}</span>
-              ` : `
-                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
-              `}
-            </div>
-          ` : ''}
-          ${p.tipoInstalacao ? `
-            <div style="display:flex; justify-content:space-between; font-size:14px;">
-              <span style="font-weight:600; color:#000;">Instalação: ${p.tipoInstalacao.toUpperCase()}</span>
-              ${valorInstalacaoInformado > 0 ? `
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorInstalacaoInformado))}</span>
-              ` : `
-                <span style="color:#555; font-size:12px;">Cliente paga direto</span>
-              `}
-            </div>
-          ` : ''}
-          ${p.localInstalacao ? `
-            <div style="margin-top:5px; padding-top:5px; border-top:1px solid #ddd; font-size:13px;">
-              <span style="font-weight:600; color:#000;">📍 Local de Instalação:</span>
-              <span style="font-weight:700; color:#000; margin-left:5px;">${p.localInstalacao.toUpperCase()}</span>
-            </div>
-          ` : ''}
+        <div style="margin-top:12px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">② ${t(lang, 'freightAndInstallation')}</div>
+          <table style="width:100%; border-collapse:collapse; font-size:12px;">
+            <tbody>
+              ${p.tipoFrete ? `
+                <tr style="border-bottom:1px solid #ddd;">
+                  <td style="padding:8px 12px; font-weight:600; color:#000; width:50%;">${t(lang, 'freight')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                </tr>
+              ` : ''}
+              ${p.tipoInstalacao ? `
+                <tr style="border-bottom:1px solid #ddd;">
+                  <td style="padding:8px 12px; font-weight:600; color:#000;">${t(lang, 'installation')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${p.tipoInstalacao.toUpperCase()}${valorInstalacaoInformado > 0 ? ` — ${fmt(convert(valorInstalacaoInformado))}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                </tr>
+              ` : ''}
+              ${p.localInstalacao ? `
+                <tr>
+                  <td style="padding:8px 12px; font-weight:600; color:#000;">${t(lang, 'installationLocation')}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${p.localInstalacao.toUpperCase()}</td>
+                </tr>
+              ` : ''}
+            </tbody>
+          </table>
         </div>
       ` : ''}
 
@@ -1822,11 +1815,11 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
 
       <!-- CONDIÇÃO EXCLUSIVA -->
       ${p.condicaoExclusiva ? `
-        <div style="margin-top:12px; padding:14px; background:#fffbf0; border:2px solid #ffd700; border-radius:4px;">
-          <div style="font-weight:800; font-size:17px; color:#b45309; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #fbbf24;">
+        <div style="margin-top:12px; border:1px solid #333; background:#fff; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
           </div>
-          <div style="font-size:13px; color:#111; line-height:1.6; white-space:pre-wrap; font-weight:600;">
+          <div style="padding:10px 12px; font-size:13px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
           </div>
         </div>

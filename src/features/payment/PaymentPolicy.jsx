@@ -440,9 +440,8 @@ export default function PaymentPolicy({
             
             const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
             
-            // Saldo a pagar = Total - max(entrada%, sinal)
-            const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
-            const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
+            // Saldo a pagar = Total - entradaTotal (o sinal faz parte da entrada, não reduz o saldo diretamente)
+            const saldoAPagarCalc = Math.max(0, valorFinal - entradaTotalCalc);
 
             // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
             const numParcelas = r.parcelas?.length || 1;
@@ -509,7 +508,8 @@ export default function PaymentPolicy({
                               instalacao === 'cliente' ? 'cliente paga direto' : '',
               revendaTemIE: tipoIE === 'produtor' ? 'sim' : 
                             tipoIE === 'cnpj_cpf' ? 'nao' : '',
-              prazoPagamento: planoSelecionado?.description || '',
+              condicaoExclusivaObs: condicaoExclusivaObs.trim(),
+              prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : (planoSelecionado?.description || ''),
             };
             
             // Atualiza o estado com o novo resultado
@@ -916,10 +916,8 @@ export default function PaymentPolicy({
       
       const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
       
-      // Saldo a pagar = Total - max(entrada%, sinal)
-      // O sinal já foi pago: se não há entrada%, ele é a própria dedução
-      const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
-      const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
+      // Saldo a pagar = Total - entradaTotal (o sinal faz parte da entrada, não reduz o saldo diretamente)
+      const saldoAPagarCalc = Math.max(0, valorFinal - entradaTotalCalc);
 
       // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
       const numParcelas = r.parcelas?.length || 1;
@@ -998,7 +996,8 @@ export default function PaymentPolicy({
             ? 'cliente paga direto'
             : '',
         revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
-        prazoPagamento: planoSelecionado?.description || '',
+        condicaoExclusivaObs: condicaoExclusivaObs.trim(),
+        prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : (planoSelecionado?.description || ''),
       };
 
       // Log diagnóstico do fluxo Nova Proposta
@@ -1166,9 +1165,8 @@ export default function PaymentPolicy({
         
         const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
         
-        // Saldo a pagar = Total - max(entrada%, sinal)
-        const deducaoEntrada = Math.max(entradaTotalCalc, valorSinalNum);
-        const saldoAPagarCalc = Math.max(0, valorFinal - deducaoEntrada);
+        // Saldo a pagar = Total - entradaTotal (o sinal faz parte da entrada, não reduz o saldo diretamente)
+        const saldoAPagarCalc = Math.max(0, valorFinal - entradaTotalCalc);
 
         // CORREÇÃO: Recalcular parcelas com base no SALDO CORRETO
         const numParcelas = r.parcelas?.length || 1;
@@ -1235,7 +1233,8 @@ export default function PaymentPolicy({
                           instalacao === 'cliente' ? 'cliente paga direto' : '',
           revendaTemIE: tipoIE === 'produtor' ? 'sim' : 
                         tipoIE === 'cnpj_cpf' ? 'nao' : '',
-          prazoPagamento: planoSelecionado?.description || '',
+          condicaoExclusivaObs: condicaoExclusivaObs.trim(),
+          prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : (planoSelecionado?.description || ''),
         };
         
         // Atualiza o estado com o novo resultado
@@ -1564,21 +1563,9 @@ export default function PaymentPolicy({
       <section className="pp-section">
         <span className="pp-section-label">Forma de Pagamento</span>
 
-        <div className="pp-subsection">
-          <span className="pp-section-label">Forma de Entrada</span>
-          {isComercioExterior ? (
-            <div className="pp-tabs">
-              <button type="button" className={`pp-tab ${percentualEntrada === '100' ? 'pp-tab-active' : ''}`} onClick={() => setPercentualEntrada('100')}>
-                100% À Vista
-              </button>
-              <button type="button" className={`pp-tab ${percentualEntrada === '50' ? 'pp-tab-active' : ''}`} onClick={() => setPercentualEntrada('50')}>
-                50% + 50%
-              </button>
-            </div>
-          ) : (
-            <>
-              {/* Tabs de modo de entrada */}
-              <div className="pp-tabs" style={{ marginBottom: '10px' }}>
+        {/* Tabs de modo de entrada — sempre visíveis */}
+        {!isComercioExterior && (
+          <div className="pp-tabs" style={{ marginBottom: '10px' }}>
                 <button
                   type="button"
                   className={`pp-tab ${modoEntrada === 'percentual' ? 'pp-tab-active' : ''}`}
@@ -1600,24 +1587,51 @@ export default function PaymentPolicy({
                   onClick={() => { setModoEntrada(''); setPercentualEntrada('financiamento'); setPlanoSelecionado(null); }}
                 >Financiamento</button>
               </div>
+        )}
 
-              {/* Percentual customizado */}
-              {modoEntrada === 'percentual' && (
-                <div>
-                  <div className="pp-entrada-btns" style={{ marginBottom: '8px' }}>
-                    {['30', '50', '100'].map(v => (
-                      <button
-                        key={v}
-                        type="button"
-                        className={`pp-entrada-btn ${percentualEntrada === v ? 'selected' : ''}`}
-                        onClick={() => { setPercentualEntrada(v); setEntradaPercentualCustom(v); }}
-                      >
-                        {v === '100' ? (<><strong>100%</strong><small>À Vista</small></>) : (<><strong>{v}%</strong><small>Entrada</small></>)}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="form-group" style={{ maxWidth: '220px' }}>
-                    <label>Outro percentual (mín. 30%)</label>
+        {/* ─── MODO EXCLUSIVA: simplificado ─── */}
+        {modoEntrada === 'exclusiva' && (
+          <div className="pp-subsection">
+            <div className="pp-info-note" style={{ marginBottom: '10px', background: '#fefce8', borderColor: '#facc15', color: '#854d0e' }}>
+              <strong>Condição Exclusiva</strong> — negociação fora do padrão.
+            </div>
+            <div className="form-group" style={{ marginBottom: '10px' }}>
+              <label>Descrição da Condição Exclusiva *</label>
+              <textarea
+                value={condicaoExclusivaObs}
+                onChange={e => setCondicaoExclusivaObs(e.target.value)}
+                placeholder="Descreva a forma de pagamento negociada..."
+                rows={3}
+                maxLength={500}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+            <div className="form-group">
+              <label>Observações da Negociação (opcional)</label>
+              <textarea
+                value={observacoesNegociacao}
+                onChange={e => setObservacoesNegociacao(e.target.value)}
+                placeholder="Ex: Condição especial, carência, observações..."
+                rows={2}
+                maxLength={500}
+                style={{ width: '100%', resize: 'vertical' }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ─── MODO PADRÃO (não exclusiva) ─── */}
+        {modoEntrada !== 'exclusiva' && (
+          <>
+            <div className="pp-subsection">
+              <span className="pp-section-label">Forma de Entrada</span>
+              {isComercioExterior && (
+                <div className="pp-info-note">Condição de pagamento para Comércio Exterior.</div>
+              )}
+              {!isComercioExterior && modoEntrada === 'percentual' && (
+                <div className="pp-fields-row" style={{ alignItems: 'flex-end' }}>
+                  <div className="form-group" style={{ maxWidth: '160px' }}>
+                    <label>Entrada (%)</label>
                     <input
                       type="number"
                       min="30"
@@ -1634,7 +1648,7 @@ export default function PaymentPolicy({
                           setPercentualEntrada('');
                         }
                       }}
-                      placeholder="Ex: 40"
+                      placeholder="30–100"
                     />
                     {entradaPercentualCustom && parseFloat(entradaPercentualCustom) < 30 && (
                       <small className="form-help help-warn" style={{ display: 'block', marginTop: '4px' }}>
@@ -1642,13 +1656,22 @@ export default function PaymentPolicy({
                       </small>
                     )}
                   </div>
+                  {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== 'exclusiva' && (
+                    <div style={{ paddingBottom: '6px', fontSize: '0.8rem', color: '#555' }}>
+                      {parseFloat(percentualEntrada) >= 100 ? (
+                        <span><strong>À vista</strong> — sem parcelamento</span>
+                      ) : parseFloat(percentualEntrada) >= 50 ? (
+                        <span>→ Tabela de <strong>50%</strong></span>
+                      ) : (
+                        <span>→ Tabela de <strong>30%</strong></span>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* Valor em reais */}
-              {modoEntrada === 'valor' && (
-                <div>
-                  <div className="form-group" style={{ maxWidth: '260px' }}>
+              {!isComercioExterior && modoEntrada === 'valor' && (
+                <div className="pp-fields-row" style={{ alignItems: 'flex-end' }}>
+                  <div className="form-group" style={{ maxWidth: '200px' }}>
                     <label>Valor da entrada (R$)</label>
                     <input
                       type="number"
@@ -1671,44 +1694,31 @@ export default function PaymentPolicy({
                     />
                   </div>
                   {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== 'exclusiva' && (
-                    <div className="pp-info-note" style={{ marginTop: '6px' }}>
-                      Corresponde a <b>{parseFloat(percentualEntrada).toFixed(2)}%</b> do total.
+                    <div style={{ paddingBottom: '6px', fontSize: '0.8rem', color: '#555' }}>
+                      {parseFloat(percentualEntrada) >= 100 ? (
+                        <span><strong>À vista</strong></span>
+                      ) : (
+                        <span>→ {parseFloat(percentualEntrada).toFixed(2)}% do total</span>
+                      )}
                       {parseFloat(percentualEntrada) < 30 && (
-                        <span style={{ color: '#ef4444', marginLeft: '6px' }}>Mínimo permitido: 30%</span>
+                        <span style={{ color: '#ef4444', marginLeft: '6px' }}>Mínimo: 30%</span>
                       )}
                       {parseFloat(percentualEntrada) >= 30 && parseFloat(percentualEntrada) < 50 && (
-                        <span style={{ marginLeft: '6px' }}>→ Usando tabela de <b>30%</b></span>
+                        <span style={{ marginLeft: '6px' }}>→ Tabela de <strong>30%</strong></span>
                       )}
                       {parseFloat(percentualEntrada) >= 50 && parseFloat(percentualEntrada) < 100 && (
-                        <span style={{ marginLeft: '6px' }}>→ Usando tabela de <b>50%</b></span>
-                      )}
-                      {parseFloat(percentualEntrada) >= 100 && (
-                        <span style={{ marginLeft: '6px' }}>→ À vista</span>
+                        <span style={{ marginLeft: '6px' }}>→ Tabela de <strong>50%</strong></span>
                       )}
                     </div>
                   )}
                 </div>
               )}
-
-              {/* Condição exclusiva */}
-              {modoEntrada === 'exclusiva' && (
-                <div className="form-group">
-                  <label>Descrição da Condição Exclusiva *</label>
-                  <textarea
-                    value={condicaoExclusivaObs}
-                    onChange={e => setCondicaoExclusivaObs(e.target.value)}
-                    placeholder="Descreva a forma de pagamento negociada..."
-                    rows={3}
-                    maxLength={500}
-                    style={{ width: '100%', resize: 'vertical' }}
-                  />
-                </div>
+              {!isComercioExterior && modoEntrada === '' && percentualEntrada === 'financiamento' && (
+                <div className="pp-info-note">Financiamento bancário — condições definidas pelo banco.</div>
               )}
-            </>
-          )}
-        </div>
+            </div>
 
-        {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && !isComercioExterior && (
+            {percentualEntrada && percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && !isComercioExterior && (
           <div className="pp-fields-row pp-subsection">
             <div className="form-group">
               <label>Valor do Sinal</label>
@@ -1723,7 +1733,23 @@ export default function PaymentPolicy({
                 <option value="25000">R$ 25.000</option>
                 <option value="outro">Outro valor</option>
               </select>
-              <input type="number" value={valorSinal} onChange={e => setValorSinal(e.target.value)} placeholder="R$" min="0" step="0.01" style={{ marginTop: '4px' }} />
+              <input
+                type="number"
+                value={valorSinal}
+                onChange={e => {
+                  const v = parseFloat(e.target.value) || 0;
+                  const max = resultado?.entradaTotal || 0;
+                  if (max > 0 && v > max) {
+                    setValorSinal(String(max));
+                  } else {
+                    setValorSinal(e.target.value);
+                  }
+                }}
+                placeholder="R$"
+                min="0"
+                step="0.01"
+                style={{ marginTop: '4px' }}
+              />
             </div>
             <div className="form-group">
               <label>Forma de Pagamento da Entrada</label>
@@ -1915,10 +1941,12 @@ export default function PaymentPolicy({
 
         </div>{/* fim pp-inner-2col */}
 
-        {percentualEntrada === 'financiamento' && (
-          <div className="pp-info-note pp-subsection">
-            Financiamento bancário selecionado — condições definidas pelo banco.
-          </div>
+            {percentualEntrada === 'financiamento' && (
+              <div className="pp-info-note pp-subsection">
+                Financiamento bancário selecionado — condições definidas pelo banco.
+              </div>
+            )}
+          </>
         )}
 
       </section>
@@ -1949,7 +1977,7 @@ export default function PaymentPolicy({
       <button
         type="button"
         className="pp-cta-btn"
-        disabled={!resultado || (percentualEntrada !== 'financiamento' && !planoSelecionado)}
+        disabled={!resultado || (modoEntrada === 'exclusiva' ? !condicaoExclusivaObs.trim() : (percentualEntrada !== 'financiamento' && !planoSelecionado))}
         onClick={() => {
           if (onFinish) {
             onFinish(resultado);
