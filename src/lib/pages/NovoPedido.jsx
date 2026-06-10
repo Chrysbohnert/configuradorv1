@@ -83,6 +83,38 @@ const NovoPedido = () => {
     // Modo vendedor: objeto único (compatibilidade)
     return {};
   });
+
+  // Helper: normalizar estudos veiculares para array seguro (modo concessionária)
+  const normalizarEstudosVeiculares = useCallback((valor, carrinhoRef) => {
+    try {
+      let v = valor;
+      if (typeof v === 'string') {
+        try { v = JSON.parse(v); } catch { v = null; }
+      }
+      if (v == null) v = [];
+      if (!Array.isArray(v)) v = [v];
+
+      const guindastes = (carrinhoRef || carrinho || []).filter(i => i?.tipo === 'guindaste');
+      const totalEquip = guindastes.length;
+      if (totalEquip <= 0) return v; // nada para alinhar
+
+      // Ajustar tamanho: cortar excedente ou preencher faltantes
+      let arr = v.slice(0, totalEquip);
+      while (arr.length < totalEquip) arr.push({});
+
+      // Garantir metadados do equipamento (nome/modelo/id) quando possível
+      arr = arr.map((estudo, idx) => ({
+        equipamentoIndex: idx,
+        equipamentoId: guindastes[idx]?.id ?? estudo?.equipamentoId ?? null,
+        equipamentoNome: guindastes[idx]?.nome || guindastes[idx]?.modelo || estudo?.equipamentoNome || `Equipamento ${idx + 1}`,
+        ...estudo,
+      }));
+
+      return arr;
+    } catch {
+      return [];
+    }
+  }, [carrinho]);
   const [pagamentoData, setPagamentoData] = useState(() => {
     if (propostaId || location.state?.fromDetalhes) {
       const saved = localStorage.getItem('novoPedido_pagamentoData');
@@ -152,7 +184,7 @@ const NovoPedido = () => {
       setCarrinho([]);
       setCarrinhoAcumulativo([]);
       setClienteData({});
-      setCaminhaoData({});
+      setCaminhaoData(isModoConcessionaria ? [] : {});
       setPagamentoData({
         tipoPagamento: '',
         prazoPagamento: '',
@@ -274,7 +306,7 @@ const NovoPedido = () => {
       if (!propostaId) {
         // Modo criação: limpar dados
         setClienteData({});
-        setCaminhaoData({});
+        setCaminhaoData(isModoConcessionaria ? [] : {});
         localStorage.removeItem('novoPedido_clienteData');
         localStorage.removeItem('novoPedido_caminhaoData');
         setIsEdicao(false);
@@ -313,8 +345,11 @@ const NovoPedido = () => {
           setClienteData(dados.clienteData);
         }
 
-        // Carregar dados do caminhão
-        if (dados.caminhaoData) {
+        // Carregar dados do caminhão / estudos veiculares
+        if (isModoConcessionaria) {
+          const estudos = normalizarEstudosVeiculares(dados.caminhaoData, dados.carrinho);
+          setCaminhaoData(estudos);
+        } else if (dados.caminhaoData) {
           setCaminhaoData(dados.caminhaoData);
         }
 
@@ -384,7 +419,7 @@ const NovoPedido = () => {
     localStorage.removeItem('novoPedido_pagamentoData');
     localStorage.removeItem('carrinho');
     setClienteData({});
-    setCaminhaoData({});
+    setCaminhaoData(isModoConcessionaria ? [] : {});
     setPagamentoData({
       tipoPagamento: '',
       prazoPagamento: '',
@@ -983,7 +1018,7 @@ const NovoPedido = () => {
       id: Date.now(), // ID único para o pedido
       carrinho: [...carrinho],
       clienteData: { ...clienteData },
-      caminhaoData: { ...caminhaoData },
+      caminhaoData: Array.isArray(caminhaoData) ? caminhaoData.map(e => ({ ...e })) : { ...caminhaoData },
       pagamentoData: { ...pagamentoData },
       regiaoCliente: regiaoClienteSelecionada,
       timestamp: new Date().toISOString()

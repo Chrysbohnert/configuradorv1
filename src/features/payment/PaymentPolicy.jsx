@@ -267,20 +267,31 @@ export default function PaymentPolicy({
 
   // =============== CARREGAR PONTOS (para CIF) ====================
   useEffect(() => {
-    // No modo concessionária, frete é FOB e local é fixo — não precisa buscar pontos
-    if (modoConcessionaria) return;
-    // Carrega uma lista genérica; teu projeto pode filtrar por região/vendedor
+    // Carrega pontos de instalação
     async function load() {
       try {
-        const data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
-        setPontosInstalacao(Array.isArray(data) ? data : []);
+        let data = [];
+        
+        if (modoConcessionaria) {
+          // Modo concessionária: carregar TODOS os pontos (sem filtro de região)
+          // Permite que o usuário selecione qualquer local via filtro de UF
+          console.log('🏢 [PaymentPolicy] Modo concessionária: carregando todos os pontos de instalação');
+          data = await db.getPontosInstalacaoPorRegiao() || [];
+        } else {
+          // Modo vendedor: filtrar por região do vendedor
+          data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
+        }
+        
+        const pontosNormalizados = Array.isArray(data) ? data : [];
+        console.log(`📍 [PaymentPolicy] ${pontosNormalizados.length} pontos de instalação carregados`);
+        setPontosInstalacao(pontosNormalizados);
       } catch (e) {
-        console.error('Erro ao carregar pontos de instalação:', e);
+        console.error('❌ [PaymentPolicy] Erro ao carregar pontos de instalação:', e);
         setPontosInstalacao([]);
       }
     }
     load();
-  }, [modoConcessionaria]);
+  }, [modoConcessionaria, user?.id]);
 
   const ufsDisponiveis = useMemo(() => {
     const set = new Set(
