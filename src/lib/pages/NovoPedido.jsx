@@ -40,8 +40,18 @@ const NovoPedido = () => {
     'RS sem Inscrição Estadual',
     'Comércio Exterior',
   ]), []);
-  const [currentStep, setCurrentStep] = useState(1);
-  const [maxStepReached, setMaxStepReached] = useState(1);
+  const [currentStep, setCurrentStep] = useState(() => {
+    try {
+      const saved = localStorage.getItem('novoPedido_currentStep');
+      return saved ? Number(saved) : 1;
+    } catch { return 1; }
+  });
+  const [maxStepReached, setMaxStepReached] = useState(() => {
+    try {
+      const saved = localStorage.getItem('novoPedido_maxStepReached');
+      return saved ? Number(saved) : 1;
+    } catch { return 1; }
+  });
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
   const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   const [carrinho, setCarrinho] = useState(() => {
@@ -97,6 +107,11 @@ const NovoPedido = () => {
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
 
+  // 🛡️ Proteção contra resets automáticos após avanço manual do usuário
+  const usuarioJaTentouAvancarRef = useRef(false);
+  const bloqueioResetAutomaticoRef = useRef(false);
+  const regiaoRestauradaRef = useRef(false);
+
   // Auto-set região para modo concessionária (usa regiao_preco da concessionária cadastrada)
   React.useEffect(() => {
     if (!isModoConcessionaria || !concessionariaInfo) return;
@@ -104,8 +119,26 @@ const NovoPedido = () => {
     if (regiao) setRegiaoClienteSelecionada(regiao);
   }, [isModoConcessionaria, concessionariaInfo]);
 
+  // ✅ Persistir currentStep e maxStepReached no localStorage
+  useEffect(() => {
+    localStorage.setItem('novoPedido_currentStep', String(currentStep));
+    localStorage.setItem('novoPedido_maxStepReached', String(maxStepReached));
+  }, [currentStep, maxStepReached]);
+
   // ✅ Limpar carrinho e dados ao entrar em novo pedido (não em modo edição)
   React.useEffect(() => {
+    if (bloqueioResetAutomaticoRef.current) {
+      console.warn('[STEP_RESET_IGNORED] reset automático de entrada ignorado — avanço manual já ocorreu');
+      return;
+    }
+    // Se há carrinho no localStorage, significa que o usuário está no meio de um pedido
+    // (possível reload de página) — NÃO limpar
+    const savedCart = localStorage.getItem('carrinho');
+    const hasCartItems = savedCart && JSON.parse(savedCart).length > 0;
+    if (hasCartItems) {
+      console.log('[STEP_PRESERVE] Carrinho encontrado no localStorage — pulando reset automático de entrada');
+      return;
+    }
     if (!propostaId && !location.state?.fromDetalhes && !location.state?.guindasteSelecionado) {
       setCarrinho([]);
       setCarrinhoAcumulativo([]);
@@ -123,18 +156,23 @@ const NovoPedido = () => {
       if (!isModoConcessionaria) setRegiaoClienteSelecionada('');
       setCurrentStep(1);
       setMaxStepReached(1);
+      setGuindastesSelecionados([]);
       localStorage.removeItem('carrinho');
       localStorage.removeItem('novoPedido_pagamentoData');
       localStorage.removeItem('carrinhoAcumulativo');
+      localStorage.removeItem('novoPedido_currentStep');
+      localStorage.removeItem('novoPedido_maxStepReached');
     }
   }, [propostaId, location.state?.fromDetalhes, location.state?.guindasteSelecionado]);
 
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
-    if (location.state?.regiaoClienteSelecionada) {
+    if (location.state?.regiaoClienteSelecionada && !regiaoRestauradaRef.current) {
+      regiaoRestauradaRef.current = true;
       setRegiaoClienteSelecionada(location.state.regiaoClienteSelecionada);
-      // Limpar o state para evitar loops
-      window.history.replaceState({}, document.title);
+      // NÃO usar window.history.replaceState — isso quebra o state do React Router
+      // e pode apagar guindasteSelecionado/step antes que o useEffect de processamento
+      // tenha chance de rodar. Usamos ref para evitar loops.
     }
   }, [location.state?.regiaoClienteSelecionada]);
 
@@ -203,6 +241,23 @@ const NovoPedido = () => {
     loadCotacao();
     return () => { cancelled = true; };
   }, [user]);
+
+  // ✅ Sincronizar guindastesSelecionados com carrinho (crucial após refresh/localStorage)
+  useEffect(() => {
+    if (isModoConcessionaria) return; // concessionária usa carrinho, não guindastesSelecionados
+    if (carrinho.length > 0 && guindastesSelecionados.length === 0) {
+      const guindasteDoCarrinho = carrinho.find(item => item.tipo === 'guindaste');
+      if (guindasteDoCarrinho) {
+        console.log('[STEP_SYNC] Restaurando guindastesSelecionados do carrinho/localStorage:', {
+          id: guindasteDoCarrinho.id,
+          nome: guindasteDoCarrinho.nome,
+          preco: guindasteDoCarrinho.preco,
+        });
+        setGuindastesSelecionados([guindasteDoCarrinho]);
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -501,9 +556,17 @@ const NovoPedido = () => {
     const processarGuindasteSelecionado = async () => {
       if (location.state?.guindasteSelecionado) {
         const guindaste = location.state.guindasteSelecionado;
+        console.log('[STEP_PROCESS] processarGuindasteSelecionado iniciado', {
+          guindasteId: guindaste.id,
+          stepNoState: location.state.step,
+          locationKey: location.key,
+          jaProcessado: processedNavKeyRef.current === location.key,
+          timestamp: new Date().toISOString(),
+        });
 
         // Evitar duplicação: se já processamos esta navegação, apenas limpa o state
         if (processedNavKeyRef.current === location.key) {
+          console.warn('[STEP_PROCESS] navegação já processada anteriormente, limpando state');
           navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
           return;
         }
@@ -569,10 +632,14 @@ const NovoPedido = () => {
         // Definir step correto
         if (isModoConcessionaria) {
           // Concessionária: ficar no step 1 para permitir adicionar mais equipamentos
+          console.log('[STEP_PROCESS] Modo concessionária → mantendo step 1');
           setCurrentStep(1);
           setMaxStepReached(Math.max(maxStepReached, 1));
         } else if (location.state.step) {
+          console.log('[STEP_PROCESS] Avançando para step', location.state.step, 'via location.state');
           setCurrentStep(location.state.step);
+        } else {
+          console.warn('[STEP_PROCESS] location.state.step ausente — currentStep NÃO será alterado automaticamente');
         }
 
         // Limpar o estado da navegação
@@ -592,6 +659,7 @@ const NovoPedido = () => {
     if (isEdicao) return;
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
+      console.log('[STEP_RESET] Resetando pagamentoData ao voltar para Step 1');
       setPagamentoData({
         tipoPagamento: '',
         prazoPagamento: '',
@@ -789,14 +857,18 @@ const NovoPedido = () => {
       logger.log('Navegando para detalhes do guindaste (sem adicionar ao carrinho ainda)');
 
       // 5. Navegar para detalhes com objeto completo
-      navigate('/detalhes-guindaste', {
-        state: {
-          guindaste: { ...guindasteCompleto, preco: precoGuindaste },
-          returnTo: isModoConcessionaria ? '/nova-proposta-concessionaria' : '/novo-pedido',
-          step: 2,
-          regiaoClienteSelecionada: regiaoClienteSelecionada
-        }
+      const navState = {
+        guindaste: { ...guindasteCompleto, preco: precoGuindaste },
+        returnTo: isModoConcessionaria ? '/nova-proposta-concessionaria' : '/novo-pedido',
+        step: 2,
+        regiaoClienteSelecionada: regiaoClienteSelecionada
+      };
+      console.log('[STEP_NAVIGATE] Indo para /detalhes-guindaste com state:', {
+        step: navState.step,
+        guindasteId: navState.guindaste.id,
+        regiaoClienteSelecionada: navState.regiaoClienteSelecionada,
       });
+      navigate('/detalhes-guindaste', { state: navState });
     } catch (error) {
       logger.error('Erro ao buscar dados do guindaste:', error);
       alert('Erro ao buscar dados do equipamento. Tente novamente.');
@@ -931,8 +1003,14 @@ const NovoPedido = () => {
     setRegiaoClienteSelecionada('');
     setCurrentStep(1);
     setMaxStepReached(1);
+    setGuindastesSelecionados([]);
     localStorage.removeItem('carrinho');
     localStorage.removeItem('novoPedido_pagamentoData');
+    localStorage.removeItem('novoPedido_currentStep');
+    localStorage.removeItem('novoPedido_maxStepReached');
+    // Resetar flags de proteção para permitir novo ciclo
+    usuarioJaTentouAvancarRef.current = false;
+    bloqueioResetAutomaticoRef.current = false;
   };
 
   const limparCarrinhoAcumulativo = () => {
@@ -1248,6 +1326,27 @@ const NovoPedido = () => {
     }
   };
 
+  // ========== VALIDAÇÃO CENTRALIZADA ETAPA 1 (DEBUG/SEGURANÇA) ==========
+  function validarEtapaSelecionarGuindaste() {
+    const erros = [];
+    const itemGuindaste = carrinho.find(i => i.tipo === 'guindaste');
+    const guindasteRef = guindastesSelecionados[0] || itemGuindaste || null;
+    const codigoProduto = guindasteRef?.codigo_produto || guindasteRef?.codigo_referencia || '';
+    const precoEquipamento = guindasteRef?.preco || 0;
+
+    if (isModoConcessionaria) {
+      if (!regiaoClienteSelecionada) erros.push('regiaoSelecionada ausente');
+      if (!itemGuindaste) erros.push('nenhum guindaste no carrinho');
+    } else {
+      if (!guindasteRef) erros.push('guindasteSelecionado ausente e carrinho sem guindaste');
+      if (!codigoProduto) erros.push('codigoProduto ausente');
+      if (!precoEquipamento || Number(precoEquipamento) <= 0) erros.push('valorEquipamento inválido');
+      if (guindastesSelecionados.length === 0 && !itemGuindaste) erros.push('nenhum guindaste selecionado');
+    }
+
+    return { erros, guindasteRef, codigoProduto, precoEquipamento };
+  }
+
   function validateStep(step) {
     const errors = {};
     
@@ -1392,22 +1491,59 @@ const NovoPedido = () => {
   };
 
   function handleNext() {
-    
-    // Adicionar log detalhado ANTES da validação
-    if (currentStep === 2) {
+    // 🛡️ Marcar que usuário tentou avançar manualmente (bloqueia resets automáticos)
+    usuarioJaTentouAvancarRef.current = true;
+    bloqueioResetAutomaticoRef.current = true;
+
+    // Log detalhado ANTES da validação (etapa 1 é crítica para o bug)
+    if (currentStep === 1) {
+      const itemGuindaste = carrinho.find(i => i.tipo === 'guindaste');
+      const guindasteRef = guindastesSelecionados[0] || itemGuindaste || null;
+      const { erros } = validarEtapaSelecionarGuindaste();
+      console.log('[STEP_DEBUG] tentativa avanço etapa 1 -> 2', {
+        etapaAtual: currentStep,
+        regiaoSelecionada: regiaoClienteSelecionada,
+        guindasteSelecionado: guindastesSelecionados[0] || null,
+        varianteSelecionada: guindasteRef?.subgrupo || guindasteRef?.nome || '',
+        configuracaoSelecionada: guindasteRef?.configuracao_lancas || '',
+        codigoProduto: guindasteRef?.codigo_produto || guindasteRef?.codigo_referencia || '',
+        precoEquipamento: guindasteRef?.preco || 0,
+        carrinhoLength: carrinho.length,
+        carrinhoTemGuindaste: !!itemGuindaste,
+        guindastesSelecionadosLength: guindastesSelecionados.length,
+        errosValidacao: erros,
+        timestamp: new Date().toISOString()
+      });
     }
-    
+
     const isValid = validateStep(currentStep);
-    
+
     const totalSteps = steps.length;
     if (isValid && currentStep < totalSteps) {
       const nextStep = currentStep + 1;
       setCurrentStep(nextStep);
       setMaxStepReached(Math.max(maxStepReached, nextStep));
       setValidationErrors({}); // Limpar erros ao avançar
+      console.log('[STEP_SUCCESS] avançou da etapa', currentStep, 'para', nextStep);
     } else {
-      console.warn('⚠️ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
-      console.warn('📋 Campos obrigatórios faltando:', Object.keys(validationErrors));
+      console.warn('[STEP_BLOCKED] avanço bloqueado na etapa', currentStep);
+      if (currentStep === 1) {
+        const { erros } = validarEtapaSelecionarGuindaste();
+        console.warn('[STEP_BLOCKED] avanço para pagamento bloqueado', {
+          motivo: erros.length > 0 ? 'validação falhou' : 'validação de outro step falhou',
+          campoAusente: erros,
+          estadoAtualCompleto: {
+            currentStep,
+            regiaoClienteSelecionada,
+            guindastesSelecionadosLength: guindastesSelecionados.length,
+            carrinhoLength: carrinho.length,
+            carrinho: carrinho.map(i => ({ id: i.id, tipo: i.tipo, nome: i.nome, preco: i.preco })),
+          }
+        });
+      } else {
+        console.warn('⚠️ Não pode avançar. isValid:', isValid, 'currentStep:', currentStep);
+        console.warn('📋 Campos obrigatórios faltando:', Object.keys(validationErrors));
+      }
     }
   };
 

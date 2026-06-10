@@ -42,7 +42,7 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 const createUser = asyncHandler(async (req, res) => {
-  const { nome, email, senha, tipo, regiao, regioes_operacao, concessionaria_id } = req.body;
+  const { nome, email, senha, tipo, regiao, regioes_operacao, concessionaria_id, telefone, cpf } = req.body;
 
   if (!nome || !email || !senha) {
     return res_.badRequest(res, 'nome, email e senha são obrigatórios');
@@ -52,7 +52,7 @@ const createUser = asyncHandler(async (req, res) => {
   if (existe) return res_.conflict(res, 'E-mail já cadastrado');
 
   const senhaHash = sha256Hex(senha);
-  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao });
+  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf });
   return res_.created(res, user);
 });
 

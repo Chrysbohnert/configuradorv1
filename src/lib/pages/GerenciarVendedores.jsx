@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -182,14 +182,31 @@ const GerenciarVendedores = () => {
 
   const handleEditVendedor = (vendedor) => {
     setEditingVendedor(vendedor);
+    
+    // Normalizar regioes_operacao para sempre ser array
+    let regioesNormalizadas = [];
+    if (Array.isArray(vendedor.regioes_operacao)) {
+      regioesNormalizadas = vendedor.regioes_operacao;
+    } else if (vendedor.regioes_operacao) {
+      // Tentar parsear se for string
+      try {
+        const parsed = typeof vendedor.regioes_operacao === 'string' 
+          ? JSON.parse(vendedor.regioes_operacao) 
+          : vendedor.regioes_operacao;
+        regioesNormalizadas = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        regioesNormalizadas = [];
+      }
+    }
+    
     setFormData({
-      nome: vendedor.nome,
-      email: vendedor.email,
-      telefone: vendedor.telefone,
-      cpf: vendedor.cpf,
+      nome: vendedor.nome || '',
+      email: vendedor.email || '',
+      telefone: vendedor.telefone || '',
+      cpf: vendedor.cpf || '',
       regiao: vendedor.regiao || '',
-      regioes_operacao: vendedor.regioes_operacao || [],
-      tipo: vendedor.tipo,
+      regioes_operacao: regioesNormalizadas,
+      tipo: vendedor.tipo || 'vendedor',
       senha: '',
     });
     setShowPassword(false);
@@ -464,19 +481,11 @@ const GerenciarVendedores = () => {
                         Performance
                       </h4>
 
-                      <div className="performance-grid">
-                        <div className="performance-item">
-                          <div className="performance-number">{vendedor.vendas || 0}</div>
-                          <div className="performance-label">Vendas</div>
-                        </div>
-
+                      <div className="performance-grid" style={{ justifyContent: 'center' }}>
                         <div className="performance-item performance-item-highlight">
-                          <div className="performance-number">
-                            {formatCurrency(vendedor.valorTotal || 0)}
-                          </div>
-                          <div className="performance-label">faturamento</div>
+                          <div className="performance-number">{vendedor.vendas || 0}</div>
+                          <div className="performance-label">Propostas geradas</div>
                         </div>
-
                       </div>
                     </div>
 

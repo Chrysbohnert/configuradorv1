@@ -1651,8 +1651,8 @@ export default function PaymentPolicy({
                       placeholder="30–100"
                     />
                     {entradaPercentualCustom && parseFloat(entradaPercentualCustom) < 30 && (
-                      <small className="form-help help-warn" style={{ display: 'block', marginTop: '4px' }}>
-                        Entrada não pode ser menor que 30%
+                      <small className="form-help help-warn" style={{ display: 'block', marginTop: '4px', color: '#dc2626', fontWeight: 600 }}>
+                        {modoConcessionaria ? '⚠️ Entrada mínima: 30% (obrigatório para concessionária)' : 'Entrada não pode ser menor que 30%'}
                       </small>
                     )}
                   </div>
@@ -1824,6 +1824,11 @@ export default function PaymentPolicy({
           {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && percentualEntrada && (
             <div className="form-group">
               <label>Plano de Pagamento *</label>
+              {modoConcessionaria && parseFloat(percentualEntrada) < 30 && (
+                <div className="pp-info-note" style={{ background: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b', marginTop: '6px', marginBottom: '8px', fontSize: '12px' }}>
+                  🔒 Bloqueado: Entrada mínima de 30% necessária
+                </div>
+              )}
               <select
                 value={planoSelecionado ? `${planoSelecionado.order}::${planoSelecionado.description}` : ''}
                 onChange={e => {
@@ -1836,6 +1841,8 @@ export default function PaymentPolicy({
                   setPlanoSelecionado(p);
                   onPlanSelected?.(p);
                 }}
+                disabled={modoConcessionaria && parseFloat(percentualEntrada) < 30}
+                style={modoConcessionaria && parseFloat(percentualEntrada) < 30 ? { opacity: 0.5, cursor: 'not-allowed' } : {}}
               >
                 <option value="">Selecione o prazo...</option>
                 {planosFiltrados.map(p => (
@@ -1977,8 +1984,16 @@ export default function PaymentPolicy({
       <button
         type="button"
         className="pp-cta-btn"
-        disabled={!resultado || (modoEntrada === 'exclusiva' ? !condicaoExclusivaObs.trim() : (percentualEntrada !== 'financiamento' && !planoSelecionado))}
+        disabled={
+          !resultado || 
+          (modoEntrada === 'exclusiva' ? !condicaoExclusivaObs.trim() : (percentualEntrada !== 'financiamento' && !planoSelecionado)) ||
+          (modoConcessionaria && parseFloat(percentualEntrada) < 30)
+        }
         onClick={() => {
+          if (modoConcessionaria && parseFloat(percentualEntrada) < 30) {
+            alert('⚠️ Entrada mínima de 30% obrigatória para pedidos de concessionária.');
+            return;
+          }
           if (onFinish) {
             onFinish(resultado);
           } else {

@@ -1523,42 +1523,43 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
 
-      <!-- BLOCO 4: TABELA DE EQUIPAMENTOS -->
+      <!-- BLOCO 4: EQUIPAMENTOS RESUMIDOS -->
       <div style="font-size:4.2mm; line-height:1.45;">
         <div style="font-weight:700; font-size:4.4mm; margin-bottom:3mm;">EQUIPAMENTOS (${guindastes.length})</div>
-        <table style="width:100%; border-collapse:collapse; font-size:3.8mm;">
-          <thead>
-            <tr style="background:#f0f0f0; border-bottom:1px solid #ccc;">
-              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">#</th>
-              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">EQUIPAMENTO</th>
-              <th style="padding:2.5mm 2mm; text-align:left; font-weight:700;">MODELO</th>
-              <th style="padding:2.5mm 2mm; text-align:right; font-weight:700;">VALOR UNIT.</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${guindastes.map((g, idx) => `
-              <tr style="border-bottom:0.5px solid #ddd;">
-                <td style="padding:2mm; font-weight:600;">${idx + 1}</td>
-                <td style="padding:2mm; font-weight:700;">${g.nome || 'Guindaste'}</td>
-                <td style="padding:2mm;">${g.modelo || '-'}</td>
-                <td style="padding:2mm; text-align:right; font-weight:700;">${formatCurrency((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1))}</td>
-              </tr>
+        ${guindastes.map((g, idx) => {
+          const opcionaisSelecionados = opcionais.map(o => o.nome);
+          const codigo = g.codigo_produto || g.codigo_referencia || generateCodigoProduto(g.modelo || g.nome, opcionaisSelecionados) || '-';
+          const descricao = (g.descricao || '').substring(0, 200);
+          return `
+            <div style="margin-bottom:4mm; padding:3mm; background:#f8f8f8; border-left:3px solid #333; border-radius:2mm;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:2mm;">
+                <div style="font-weight:800; font-size:4.5mm;">${idx + 1}. ${(g.nome || g.modelo || 'GUINDASTE').toUpperCase()}</div>
+                <div style="font-weight:800; font-size:4.5mm;">${formatCurrency((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1))}</div>
+              </div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:2mm; font-size:3.5mm; margin-bottom:1.5mm;">
+                <div><b>MODELO:</b> ${g.modelo || '-'}</div>
+                <div><b>CÓDIGO:</b> ${codigo}</div>
+                <div><b>NCM:</b> ${g.ncm || 'Não informado'}</div>
+                <div><b>FINAME:</b> ${g.finame || 'Não informado'}</div>
+              </div>
+              ${descricao ? `<div style="font-size:3.2mm; color:#333; line-height:1.3; margin-top:1.5mm;"><b>DESCRIÇÃO:</b> ${descricao}${(g.descricao || '').length > 200 ? '...' : ''}</div>` : ''}
+            </div>
+          `;
+        }).join('')}
+        ${opcionais.length > 0 ? `
+          <div style="margin-top:3mm; padding:2.5mm; background:#fafafa; border:1px solid #ddd; border-radius:2mm;">
+            <div style="font-weight:700; font-size:3.8mm; margin-bottom:1.5mm;">OPCIONAIS</div>
+            ${opcionais.map(op => `
+              <div style="font-size:3.5mm; padding:1mm 0; border-bottom:0.5px solid #eee;">
+                ↳ ${op.nome}${op.descricao ? ` — ${op.descricao}` : ''} <span style="float:right; font-weight:700;">${formatCurrency((parseFloat(op.preco) || 0) * (parseInt(op.quantidade, 10) || 1))}</span>
+              </div>
             `).join('')}
-            ${opcionais.length > 0 ? opcionais.map(op => `
-              <tr style="border-bottom:0.5px solid #eee; background:#fafafa;">
-                <td style="padding:2mm;"></td>
-                <td colspan="2" style="padding:2mm; font-style:italic; font-size:3.5mm;">↳ ${op.nome}${op.descricao ? ` — ${op.descricao}` : ''}</td>
-                <td style="padding:2mm; text-align:right; font-size:3.5mm;">${formatCurrency((parseFloat(op.preco) || 0) * (parseInt(op.quantidade, 10) || 1))}</td>
-              </tr>
-            `).join('') : ''}
-          </tbody>
-          <tfoot>
-            <tr style="border-top:2px solid #333; background:#f8f8f8;">
-              <td colspan="3" style="padding:3mm 2mm; font-weight:800; font-size:4.2mm;">TOTAL DOS EQUIPAMENTOS</td>
-              <td style="padding:3mm 2mm; text-align:right; font-weight:800; font-size:4.5mm;">${formatCurrency(totalEquipamentos + totalOpcionais)}</td>
-            </tr>
-          </tfoot>
-        </table>
+          </div>
+        ` : ''}
+        <div style="margin-top:3mm; padding:3mm; background:#333; color:#fff; border-radius:2mm; display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-weight:800; font-size:4.5mm;">TOTAL DOS EQUIPAMENTOS</div>
+          <div style="font-weight:800; font-size:5mm;">${formatCurrency(totalEquipamentos + totalOpcionais)}</div>
+        </div>
       </div>
 
       <!-- Proposta info -->
@@ -1577,6 +1578,46 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
           <div style="font-weight:600; font-size:4.5mm; margin-top:1mm;">10 DIAS</div>
         </div>
       </div>
+
+      <!-- BLOCO 5: FORMA DE PAGAMENTO -->
+      ${(() => {
+        const p = pedidoData.pagamentoData || {};
+        const percentualEntrada = parseFloat(p.percentualEntrada || 0);
+        const entradaTotal = p.entradaTotal || 0;
+        const saldoAPagar = p.saldoAPagar || p.saldo || 0;
+        const prazoPagamento = p.prazoPagamento || 'Não informado';
+        const numParcelas = p.parcelas?.length || 0;
+        
+        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado') {
+          return `
+            <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
+            <div style="font-size:4.2mm; line-height:1.45;">
+              <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">CONDIÇÕES DE PAGAMENTO</div>
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:3mm;">
+                ${percentualEntrada > 0 ? `
+                  <div style="padding:2mm; background:#e8f5e9; border-radius:2mm;">
+                    <div style="font-weight:600; font-size:3.5mm; color:#2e7d32;">ENTRADA (${percentualEntrada}%)</div>
+                    <div style="font-weight:800; font-size:4.5mm; margin-top:1mm;">${formatCurrency(entradaTotal)}</div>
+                  </div>
+                ` : ''}
+                ${saldoAPagar > 0 ? `
+                  <div style="padding:2mm; background:#e3f2fd; border-radius:2mm;">
+                    <div style="font-weight:600; font-size:3.5mm; color:#1565c0;">SALDO A PAGAR</div>
+                    <div style="font-weight:800; font-size:4.5mm; margin-top:1mm;">${formatCurrency(saldoAPagar)}</div>
+                  </div>
+                ` : ''}
+              </div>
+              ${prazoPagamento !== 'Não informado' ? `
+                <div style="margin-top:2mm; padding:2mm; background:#fff3e0; border-radius:2mm;">
+                  <div style="font-weight:600; font-size:3.5mm; color:#e65100;">PRAZO: ${prazoPagamento}</div>
+                  ${numParcelas > 0 ? `<div style="font-size:3.2mm; margin-top:0.5mm; color:#555;">${numParcelas}x parcelas</div>` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }
+        return '';
+      })()}
     </div>
   `;
 
@@ -2071,40 +2112,45 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
         //  PDF SIMPLIFICADO — PEDIDO DE COMPRA CONCESSIONÁRIA
         // =====================================================
 
-        // 1. CAPA: Stark + Concessionária + Tabela de equipamentos
+        // 1. CAPA: Stark + Concessionária + Equipamentos resumidos + Forma de pagamento
         {
           const el = renderCapaCompraConcessionaria(pedidoDataLang, numeroProposta, { inline: false });
           const cv = await htmlToCanvas(el);
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }
 
-        // 2. POR EQUIPAMENTO: descrição técnica individual
+        // 2. ESTUDOS VEICULARES: Uma página individual por equipamento (apenas se houver dados)
         const guindastesList = (pedidoDataLang.carrinho || []).filter(i => i.tipo === 'guindaste');
-        for (let i = 0; i < guindastesList.length; i++) {
-          const el = renderEquipamentoIndividualCompra(pedidoDataLang, guindastesList[i], i, guindastesList.length, { inline: false });
-          const cv = await htmlToCanvas(el);
-          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-        }
-
-        // 3. ESTUDO VEICULAR (se houver dados de caminhão preenchidos)
         const v = pedidoDataLang.caminhaoData || {};
         const temDadosVeiculo = v.tipo && v.tipo !== 'PREENCHER' && v.marca && v.marca !== 'PREENCHER';
-        if (temDadosVeiculo) {
-          const root = createContainer('page-estudo-compra', { inline: true });
-          root.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
-          root.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
-          const cv = await htmlToCanvas(root);
-          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        
+        if (temDadosVeiculo && guindastesList.length > 0) {
+          // Gerar uma página de estudo veicular por equipamento
+          for (let i = 0; i < guindastesList.length; i++) {
+            const guindasteAtual = guindastesList[i];
+            const el = createContainer(`page-estudo-${i}`, { inline: false });
+            
+            // Título do estudo veicular para este equipamento
+            const tituloDiv = document.createElement('div');
+            tituloDiv.innerHTML = `
+              <div class="wrap" style="padding:18px;">
+                <div class="title" style="font-size:22px; margin-bottom:12px; text-align:center;">
+                  ESTUDO VEICULAR — ${(guindasteAtual.nome || guindasteAtual.modelo || 'EQUIPAMENTO').toUpperCase()} (${i + 1}/${guindastesList.length})
+                </div>
+              </div>
+            `;
+            el.appendChild(tituloDiv);
+            
+            // Dados do caminhão e estudo veicular
+            el.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
+            el.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
+            
+            const cv = await htmlToCanvas(el);
+            addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+          }
         }
 
-        // 4. CONDIÇÕES DE PAGAMENTO (completas + breakdown por equipamento)
-        {
-          const el = await renderFinanceiroCompra(pedidoDataLang, { inline: false });
-          const cv = await htmlToCanvas(el);
-          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
-        }
-
-        // 5. CLÁUSULAS + ASSINATURAS
+        // 3. CLÁUSULAS + ASSINATURAS
         {
           const root = createContainer('page-clausulas-compra', { inline: true });
           root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
