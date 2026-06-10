@@ -33,17 +33,16 @@ async function create(data) {
     desconto_base = null,
     desconto_compra = null,
     ativo = true,
-    logo_url = null,
     dados_bancarios = null,
     uf = null,
   } = data;
 
   const { rows } = await query(
     `INSERT INTO concessionarias
-       (nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo, logo_url, dados_bancarios, uf)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+       (nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo, dados_bancarios, uf)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
      RETURNING *`,
-    [nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo, logo_url, dados_bancarios, uf]
+    [nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo, dados_bancarios, uf]
   );
   return rows[0];
 }
@@ -52,7 +51,7 @@ async function update(id, fields) {
   // Construir SET dinâmico apenas com campos informados
   const allowed = [
     'nome', 'regiao_preco', 'cnpj', 'telefone', 'email', 'endereco',
-    'desconto_base', 'desconto_compra', 'ativo', 'logo_url', 'dados_bancarios', 'uf',
+    'desconto_base', 'desconto_compra', 'ativo', 'dados_bancarios', 'uf',
   ];
 
   const sets = [];

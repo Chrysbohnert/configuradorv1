@@ -1,8 +1,9 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getPropostas } from '../../api/propostas';
+import { getMetasAnoVendedor } from '../../api/metas';
 import { formatCurrency } from '../../utils/formatters';
 import '../../styles/DashboardVendedor.css';
 import '../../styles/Dashboard.css';
@@ -18,23 +19,65 @@ const DashboardVendedor = () => {
 
   useEffect(() => {
     if (!user) return;
-    const hoje = new Date();
-    db.getMetaVendedor(user.id, hoje.getFullYear(), hoje.getMonth() + 1)
-      .then((m) => { if (m) setMetaMes({ meta_propostas: m.meta_propostas || 0, meta_valor: m.meta_valor || 0 }); })
-      .catch(() => {});
+    
+    const loadMetas = async () => {
+      try {
+        const hoje = new Date();
+        const ano = hoje.getFullYear();
+        const mesAtual = hoje.getMonth() + 1;
+        
+        console.log('🎯 [DashboardVendedor] Carregando metas:', { vendedorId: user.id, ano, mes: mesAtual });
+        
+        const metas = await getMetasAnoVendedor(user.id, ano);
+        const metaDoMes = metas.find(m => m.mes === mesAtual);
+        
+        if (metaDoMes) {
+          console.log('✅ [DashboardVendedor] Meta encontrada:', metaDoMes);
+          setMetaMes({
+            meta_propostas: parseInt(metaDoMes.meta_propostas, 10) || 0,
+            meta_valor: parseFloat(metaDoMes.meta_valor) || 0
+          });
+        } else {
+          console.log('⚠️ [DashboardVendedor] Nenhuma meta definida para o mês atual');
+          setMetaMes({ meta_propostas: 0, meta_valor: 0 });
+        }
+      } catch (error) {
+        console.error('❌ [DashboardVendedor] Erro ao carregar metas:', error);
+        setMetaMes({ meta_propostas: 0, meta_valor: 0 });
+      }
+    };
+    
+    loadMetas();
   }, [user]);
 
   // Fetch apenas quando user muda — não refaz requisição ao banco por mudança de período
   useEffect(() => {
-    if (!user) return;
+    if (!user || !user.id) {
+      console.warn('⚠️ [DashboardVendedor] Usuário não autenticado ou sem ID');
+      return;
+    }
 
     const loadDashboardData = async () => {
       setIsLoading(true);
       try {
-        const propostasResp = await getPropostas({ vendedor_id: user?.id });
+        console.log('📊 [DashboardVendedor] Carregando propostas do vendedor:', user.id);
+        
+        const propostasResp = await getPropostas({ vendedor_id: user.id });
+        
+        console.log('✅ [DashboardVendedor] Propostas carregadas:', {
+          total: propostasResp?.length || 0,
+          vendedorId: user.id,
+          primeiras3: propostasResp?.slice(0, 3).map(p => ({
+            id: p.id,
+            cliente: p.cliente_nome,
+            valor: p.valor_total,
+            vendedor_id: p.vendedor_id
+          }))
+        });
+        
         setPropostas(Array.isArray(propostasResp) ? propostasResp : []);
       } catch (error) {
-        console.error('Erro ao carregar dados do dashboard:', error);
+        console.error('❌ [DashboardVendedor] Erro ao carregar propostas:', error);
         setPropostas([]);
       } finally {
         setIsLoading(false);
@@ -61,7 +104,7 @@ const DashboardVendedor = () => {
     const vendasEfetivadas = propostasFiltradas.filter(
       (p) => p.resultado_venda === 'efetivada' || p.status === 'finalizado'
     );
-    const valorVendas = vendasEfetivadas.reduce((acc, p) => acc + (p.valor_total || 0), 0);
+    const valorVendas = vendasEfetivadas.reduce((acc, p) => acc + (parseFloat(p.valor_total) || 0), 0);
     const propostasGanhas = propostasFiltradas.filter((p) => p.resultado_venda === 'efetivada').length;
     const propostasComResultado = propostasFiltradas.filter(
       (p) => p.resultado_venda === 'efetivada' || p.resultado_venda === 'perdida'
@@ -71,13 +114,22 @@ const DashboardVendedor = () => {
       .slice(0, 6)
       .map((p) => {
         const cliente = p.cliente_nome || p.nome_cliente || 'Cliente';
-        const valor = formatCurrency(p.valor_total || 0);
+        const valor = formatCurrency(parseFloat(p.valor_total) || 0);
         const status = p.resultado_venda ? p.resultado_venda : p.status || 'em andamento';
         return {
           texto: `Proposta para ${cliente} (${valor}) está ${status}.`,
           tipo: p.resultado_venda === 'efetivada' ? 'success' : p.resultado_venda === 'perdida' ? 'danger' : 'info',
         };
       });
+    
+    console.log('📈 [DashboardVendedor] Stats calculadas:', {
+      totalPropostasFiltradas: propostasFiltradas.length,
+      vendasEfetivadas: vendasEfetivadas.length,
+      valorVendas,
+      propostasEnviadas: propostasFiltradas.length,
+      taxaConversao: propostasComResultado > 0 ? Math.round((propostasGanhas / propostasComResultado) * 100) : 0
+    });
+    
     return {
       vendasMes: valorVendas,
       propostasEnviadas: propostasFiltradas.length,
@@ -86,11 +138,13 @@ const DashboardVendedor = () => {
     };
   }, [propostasFiltradas, propostas]);
 
-  const progressoValor = metaMes.meta_valor > 0 ? Math.min((stats.vendasMes / metaMes.meta_valor) * 100, 100) : 0;
-  const progressoPropostas = metaMes.meta_propostas > 0 ? Math.min((stats.propostasEnviadas / metaMes.meta_propostas) * 100, 100) : 0;
+  const progressoValor = metaMes.meta_valor > 0 ? Math.min(((parseFloat(stats.vendasMes) || 0) / (parseFloat(metaMes.meta_valor) || 1)) * 100, 100) : 0;
+  const progressoPropostas = metaMes.meta_propostas > 0 ? Math.min(((parseInt(stats.propostasEnviadas, 10) || 0) / (parseInt(metaMes.meta_propostas, 10) || 1)) * 100, 100) : 0;
 
   const ticketMedio = useMemo(() => {
-    return stats.propostasEnviadas > 0 ? stats.vendasMes / stats.propostasEnviadas : 0;
+    const propostas = parseInt(stats.propostasEnviadas, 10) || 0;
+    const vendas = parseFloat(stats.vendasMes) || 0;
+    return propostas > 0 ? vendas / propostas : 0;
   }, [stats.propostasEnviadas, stats.vendasMes]);
 
   const emNegociacao = useMemo(() => {
@@ -162,25 +216,25 @@ const DashboardVendedor = () => {
     {
       label: 'Em Negociação',
       count: emNegociacao.length,
-      value: emNegociacao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      value: emNegociacao.reduce((acc, p) => acc + (parseFloat(p.valor_total) || 0), 0),
       tone: 'warning',
     },
     {
       label: 'Aguardando Decisão',
       count: aguardandoDecisao.length,
-      value: aguardandoDecisao.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      value: aguardandoDecisao.reduce((acc, p) => acc + (parseFloat(p.valor_total) || 0), 0),
       tone: 'info',
     },
     {
       label: 'Ganhos Recentes',
       count: ganhosRecentes.length,
-      value: ganhosRecentes.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      value: ganhosRecentes.reduce((acc, p) => acc + (parseFloat(p.valor_total) || 0), 0),
       tone: 'success',
     },
     {
       label: 'Perdidas',
       count: perdidas.length,
-      value: perdidas.reduce((acc, p) => acc + (p.valor_total || 0), 0),
+      value: perdidas.reduce((acc, p) => acc + (parseFloat(p.valor_total) || 0), 0),
       tone: 'danger',
     },
   ], [emNegociacao, aguardandoDecisao, ganhosRecentes, perdidas]);

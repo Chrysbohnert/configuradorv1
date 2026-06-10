@@ -305,8 +305,15 @@ export default function PaymentPolicy({
     const p = percentualEntradaNumCalc;
     if (p <= 0) return null;
     if (p >= 100) return null; // à vista
-    if (p >= 50) return 0.50;
-    if (p >= 30) return 0.30;
+    if (p >= 50) {
+      console.log('📊 [PaymentPolicy] Tabela selecionada: 50% (entrada >= 50%)');
+      return 0.50;
+    }
+    if (p >= 30) {
+      console.log('📊 [PaymentPolicy] Tabela selecionada: 30% (entrada >= 30%)');
+      return 0.30;
+    }
+    console.log('⚠️ [PaymentPolicy] Entrada < 30%: Bloqueado');
     return null; // abaixo de 30 não filtra nada
   }, [modoEntrada, percentualEntradaNumCalc]);
 
@@ -681,6 +688,19 @@ export default function PaymentPolicy({
       setPlanoSelecionado(planoSalvo);
     }
   }, [initialPaymentData, todosPlanos, planosFiltrados, planoSelecionado]);
+
+  // =============== LIMPAR PLANO QUANDO TABELA MUDAR (CONCESSIONÁRIA) ==========
+  useEffect(() => {
+    if (!modoConcessionaria) return;
+    if (isRestoringRef.current) return;
+    
+    // Limpar plano selecionado quando a tabela de entrada mudar
+    if (planoSelecionado) {
+      console.log('🔄 [PaymentPolicy] Limpando plano selecionado - tabela de entrada mudou');
+      setPlanoSelecionado(null);
+      onPlanSelected?.(null);
+    }
+  }, [entryPercentFiltro, modoConcessionaria]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
   useEffect(() => {
@@ -1682,10 +1702,21 @@ export default function PaymentPolicy({
                         const val = e.target.value;
                         setEntradaValorCustom(val);
                         const num = parseFloat(val) || 0;
-                        const base = Number(precoBaseAjustado) || 0;
-                        if (base > 0 && num > 0) {
-                          const pct = (num / base) * 100;
-                          setPercentualEntrada(String(Math.min(100, Math.round(pct * 100) / 100)));
+                        
+                        // CORREÇÃO: Calcular percentual sobre o VALOR TOTAL FINAL (com frete e instalação)
+                        const valorTotalAtual = resultado?.valorFinal || resultado?.total || Number(precoBaseAjustado) || 0;
+                        
+                        if (valorTotalAtual > 0 && num > 0) {
+                          const pct = (num / valorTotalAtual) * 100;
+                          const pctArredondado = Math.min(100, Math.round(pct * 100) / 100);
+                          setPercentualEntrada(String(pctArredondado));
+                          
+                          console.log('📊 [PaymentPolicy] Entrada valor alterado:', {
+                            valorEntrada: num,
+                            valorTotal: valorTotalAtual,
+                            percentualCalculado: pctArredondado,
+                            tabelaAplicavel: pctArredondado >= 50 ? '50%' : pctArredondado >= 30 ? '30%' : 'Bloqueado (<30%)'
+                          });
                         } else {
                           setPercentualEntrada('');
                         }
@@ -1729,8 +1760,6 @@ export default function PaymentPolicy({
                 <option value="">Selecione</option>
                 <option value="10000">R$ 10.000</option>
                 <option value="15000">R$ 15.000</option>
-                <option value="20000">R$ 20.000</option>
-                <option value="25000">R$ 25.000</option>
                 <option value="outro">Outro valor</option>
               </select>
               <input

@@ -2119,31 +2119,42 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }
 
-        // 2. ESTUDOS VEICULARES: Uma página individual por equipamento (apenas se houver dados)
+        // 2. ESTUDOS VEICULARES: Uma página individual por equipamento
         const guindastesList = (pedidoDataLang.carrinho || []).filter(i => i.tipo === 'guindaste');
-        const v = pedidoDataLang.caminhaoData || {};
-        const temDadosVeiculo = v.tipo && v.tipo !== 'PREENCHER' && v.marca && v.marca !== 'PREENCHER';
+        const estudosVeiculares = Array.isArray(pedidoDataLang.caminhaoData) 
+          ? pedidoDataLang.caminhaoData 
+          : [pedidoDataLang.caminhaoData];
         
-        if (temDadosVeiculo && guindastesList.length > 0) {
-          // Gerar uma página de estudo veicular por equipamento
-          for (let i = 0; i < guindastesList.length; i++) {
-            const guindasteAtual = guindastesList[i];
+        // Gerar uma página de estudo veicular por equipamento
+        for (let i = 0; i < guindastesList.length; i++) {
+          const guindasteAtual = guindastesList[i];
+          const estudoAtual = estudosVeiculares[i] || {};
+          
+          // Verificar se há dados do veículo para este equipamento
+          const temDadosVeiculo = estudoAtual.tipo && estudoAtual.tipo !== 'PREENCHER' && 
+                                  estudoAtual.marca && estudoAtual.marca !== 'PREENCHER';
+          
+          if (temDadosVeiculo) {
             const el = createContainer(`page-estudo-${i}`, { inline: false });
             
             // Título do estudo veicular para este equipamento
             const tituloDiv = document.createElement('div');
             tituloDiv.innerHTML = `
               <div class="wrap" style="padding:18px;">
-                <div class="title" style="font-size:22px; margin-bottom:12px; text-align:center;">
-                  ESTUDO VEICULAR — ${(guindasteAtual.nome || guindasteAtual.modelo || 'EQUIPAMENTO').toUpperCase()} (${i + 1}/${guindastesList.length})
+                <div class="title" style="font-size:22px; margin-bottom:12px; text-align:center; color:#1f2937;">
+                  ESTUDO VEICULAR — EQUIPAMENTO ${i + 1}/${guindastesList.length}
+                </div>
+                <div style="font-size:18px; font-weight:700; text-align:center; color:#6d6e6f; margin-bottom:16px;">
+                  ${(guindasteAtual.nome || guindasteAtual.modelo || 'EQUIPAMENTO').toUpperCase()}
                 </div>
               </div>
             `;
             el.appendChild(tituloDiv);
             
-            // Dados do caminhão e estudo veicular
-            el.appendChild(renderCaminhao(pedidoDataLang, { inline: true }));
-            el.appendChild(renderEstudoVeicular(pedidoDataLang, { inline: true }));
+            // Dados do caminhão específico deste equipamento
+            const pedidoComEstudoAtual = { ...pedidoDataLang, caminhaoData: estudoAtual };
+            el.appendChild(renderCaminhao(pedidoComEstudoAtual, { inline: true }));
+            el.appendChild(renderEstudoVeicular(pedidoComEstudoAtual, { inline: true }));
             
             const cv = await htmlToCanvas(el);
             addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
@@ -2214,7 +2225,8 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
         : `Proposta_Stark_${nomeSanitizado}.pdf`;
 
       // ==== ANEXAR GRÁFICOS DE CARGA (PDFs) via pdf-lib
-      const graficoUrls = await getGraficoUrls(pedidoData);
+      // NOTA: Gráficos de carga NÃO são incluídos no PDF da concessionária
+      const graficoUrls = isCompra ? [] : await getGraficoUrls(pedidoData);
       if (graficoUrls.length > 0) {
         try {
           const { PDFDocument } = await import('pdf-lib');

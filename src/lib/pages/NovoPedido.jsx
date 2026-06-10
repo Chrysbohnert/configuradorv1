@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
@@ -6,6 +6,7 @@ import PaymentPolicy from '../../features/payment/PaymentPolicy';
 import GuindasteConfigurador from '../../components/NovoPedido/GuindasteConfigurador';
 import SeletorRegiaoCliente from '../../components/SeletorRegiaoCliente';
 import LazyGuindasteImage from '../../components/LazyGuindasteImage';
+import EstudosVeicularesMultiplos from '../../components/NovoPedido/EstudosVeicularesMultiplos';
 
 import { db } from '../../config/supabase';
 import { getGuindastesLite } from '../../api/guindastes';
@@ -73,7 +74,15 @@ const NovoPedido = () => {
   });
   const [pedidoAtual, setPedidoAtual] = useState(null);
   const [clienteData, setClienteData] = useState({});
-  const [caminhaoData, setCaminhaoData] = useState({});
+  // MODIFICADO: caminhaoData agora é um array de estudos veiculares (um por equipamento)
+  const [caminhaoData, setCaminhaoData] = useState(() => {
+    if (isModoConcessionaria) {
+      // Modo concessionária: array de estudos
+      return [];
+    }
+    // Modo vendedor: objeto único (compatibilidade)
+    return {};
+  });
   const [pagamentoData, setPagamentoData] = useState(() => {
     if (propostaId || location.state?.fromDetalhes) {
       const saved = localStorage.getItem('novoPedido_pagamentoData');
@@ -1192,21 +1201,15 @@ const NovoPedido = () => {
         return (
           <div className="step-content">
             {isModoConcessionaria ? (
-              /* Estudo Veicular para Concessionária */
-              <div className="step-content">
-                <div className="step-header">
-                  <h2>🚛 Estudo Veicular</h2>
-                  <p>Configure o veículo para instalação do guindaste</p>
-                </div>
-                <EstudoVeicular
-                  caminhaoData={caminhaoData}
-                  setCaminhaoData={setCaminhaoData}
-                  carrinho={carrinho}
-                  onNext={handleNext}
-                  onPrev={handlePrevious}
-                  errors={validationErrors}
-                />
-              </div>
+              /* Estudo Veicular para Concessionária - Múltiplos Equipamentos */
+              <EstudosVeicularesMultiplos
+                carrinho={carrinho}
+                estudosVeiculares={caminhaoData}
+                setEstudosVeiculares={setCaminhaoData}
+                onNext={handleNext}
+                onPrev={handlePrevious}
+                errors={validationErrors}
+              />
             ) : (
               <>
                 <div className="step-header-with-nav">
@@ -1436,7 +1439,13 @@ const NovoPedido = () => {
         case 2:
           return !!pagamentoData.tipoFrete;
         case 3:
-          return true; // Step 3 é o resumo, sempre pode finalizar
+          // Validar que todos os equipamentos tenham estudo veicular preenchido
+          const guindastes = carrinho.filter(item => item.tipo === 'guindaste');
+          if (Array.isArray(caminhaoData)) {
+            return caminhaoData.length === guindastes.length && 
+                   caminhaoData.every(estudo => estudo.tipo && estudo.marca && estudo.modelo && estudo.voltagem);
+          }
+          return false;
         default:
           return false;
       }
