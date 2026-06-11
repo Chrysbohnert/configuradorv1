@@ -11,20 +11,24 @@ import React, { useState, useEffect } from 'react';
 const CaminhaoForm = React.memo(({ 
   caminhaoData, 
   onCaminhaoDataChange, 
+  formData: formDataProp,
+  setFormData: setFormDataProp,
   errors, 
   onErrorsChange 
 }) => {
-  const [formData, setFormData] = useState(caminhaoData);
+  const externalData = formDataProp ?? caminhaoData ?? {};
+  const onDataChange = setFormDataProp ?? onCaminhaoDataChange;
+  const [formData, setFormData] = useState(externalData);
 
   // Sincronizar com dados externos
   useEffect(() => {
-    setFormData(caminhaoData);
-  }, [caminhaoData]);
+    setFormData(formDataProp ?? caminhaoData ?? {});
+  }, [formDataProp, caminhaoData]);
 
   const handleInputChange = (field, value) => {
-    const newData = { ...formData, [field]: value };
+    const newData = { ...(formData || {}), [field]: value };
     setFormData(newData);
-    onCaminhaoDataChange(newData);
+    onDataChange?.(newData);
 
     // Limpar erro do campo quando usuário digita
     if (errors[field]) {

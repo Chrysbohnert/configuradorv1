@@ -2609,9 +2609,9 @@ const ClienteForm = ({ formData, setFormData, errors = {}, user }) => {
 };
 
 // Componente Form do Caminhão
-const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => {
+const CaminhaoForm = ({ formData = {}, setFormData, errors = {}, carrinho = [] }) => {
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => ({ ...(prev || {}), [field]: value }));
   };
   
   // Função para calcular o patolamento baseado na medida C
@@ -2626,13 +2626,14 @@ const CaminhaoForm = ({ formData, setFormData, errors = {}, carrinho = [] }) => 
     return '390mm';
   };
   
+  const itensCarrinhoValidos = (carrinho || []).filter(Boolean);
   const temGSI = React.useMemo(() =>
-    carrinho.some(item => item.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSI')),
-    [carrinho]
+    itensCarrinhoValidos.some(item => item?.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSI')),
+    [itensCarrinhoValidos]
   );
   const temGSE = React.useMemo(() =>
-    carrinho.some(item => item.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSE')),
-    [carrinho]
+    itensCarrinhoValidos.some(item => item?.tipo === 'guindaste' && item.modelo?.toUpperCase().includes('GSE')),
+    [itensCarrinhoValidos]
   );
   const noDetection = !temGSI && !temGSE;
   const showMedidaA = noDetection || temGSI;

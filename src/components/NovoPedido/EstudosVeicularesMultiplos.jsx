@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import CaminhaoForm from './CaminhaoForm';
+import CaminhaoFormDetalhado from './CaminhaoFormDetalhado';
 import './EstudosVeicularesMultiplos.css';
 
 /**
@@ -38,17 +38,16 @@ const EstudosVeicularesMultiplos = ({
     }
   }, [guindastes.length]);
 
-  // Atualizar estudo do equipamento atual
-  const handleEstudoChange = (novoEstudo) => {
+  // Atualizar estudo do equipamento atual (suporta objeto ou updater function)
+  const handleEstudoChange = (update) => {
     if (!Array.isArray(estudosVeiculares)) {
       console.error('❌ [EstudosVeiculares] estudosVeiculares não é um array:', estudosVeiculares);
       return;
     }
     const novosEstudos = [...estudosVeiculares];
-    novosEstudos[equipamentoAtivo] = {
-      ...novosEstudos[equipamentoAtivo],
-      ...novoEstudo
-    };
+    const atual = novosEstudos[equipamentoAtivo] || {};
+    const atualizado = typeof update === 'function' ? update(atual) : { ...atual, ...update };
+    novosEstudos[equipamentoAtivo] = atualizado;
     setEstudosVeiculares(novosEstudos);
   };
 
@@ -159,11 +158,10 @@ const EstudosVeicularesMultiplos = ({
       </div>
 
       {/* Formulário do estudo atual */}
-      <CaminhaoForm
+      <CaminhaoFormDetalhado
         formData={estudoAtual}
         setFormData={handleEstudoChange}
         errors={errors}
-        carrinho={[guindasteAtual]}
       />
 
       {/* Navegação entre equipamentos */}

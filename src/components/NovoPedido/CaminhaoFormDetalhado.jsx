@@ -7,7 +7,7 @@ import React from 'react';
  * @param {Function} props.setFormData - Função para atualizar dados
  * @param {Object} props.errors - Erros de validação
  */
-const CaminhaoFormDetalhado = ({ formData, setFormData, errors = {} }) => {
+const CaminhaoFormDetalhado = ({ formData = {}, setFormData, errors = {} }) => {
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
