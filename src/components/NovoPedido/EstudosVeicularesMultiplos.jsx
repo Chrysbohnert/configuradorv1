@@ -39,6 +39,10 @@ const EstudosVeicularesMultiplos = ({
 
   // Atualizar estudo do equipamento atual
   const handleEstudoChange = (novoEstudo) => {
+    if (!Array.isArray(estudosVeiculares)) {
+      console.error('❌ [EstudosVeiculares] estudosVeiculares não é um array:', estudosVeiculares);
+      return;
+    }
     const novosEstudos = [...estudosVeiculares];
     novosEstudos[equipamentoAtivo] = {
       ...novosEstudos[equipamentoAtivo],
@@ -48,12 +52,15 @@ const EstudosVeicularesMultiplos = ({
   };
 
   // Verificar se todos os estudos estão preenchidos
-  const todosEstudosPreenchidos = estudosVeiculares.every(estudo => 
-    estudo.tipo && estudo.marca && estudo.modelo && estudo.voltagem
-  );
+  const todosEstudosPreenchidos = Array.isArray(estudosVeiculares) && 
+    estudosVeiculares.length > 0 &&
+    estudosVeiculares.every(estudo => 
+      estudo && estudo.tipo && estudo.marca && estudo.modelo && estudo.voltagem
+    );
 
   // Verificar se o estudo atual está preenchido
-  const estudoAtualPreenchido = estudosVeiculares[equipamentoAtivo] && 
+  const estudoAtualPreenchido = Array.isArray(estudosVeiculares) &&
+    estudosVeiculares[equipamentoAtivo] && 
     estudosVeiculares[equipamentoAtivo].tipo &&
     estudosVeiculares[equipamentoAtivo].marca &&
     estudosVeiculares[equipamentoAtivo].modelo &&
@@ -87,7 +94,7 @@ const EstudosVeicularesMultiplos = ({
   }
 
   const guindasteAtual = guindastes[equipamentoAtivo];
-  const estudoAtual = estudosVeiculares[equipamentoAtivo] || {};
+  const estudoAtual = (Array.isArray(estudosVeiculares) && estudosVeiculares[equipamentoAtivo]) || {};
 
   return (
     <div className="estudos-veiculares-container">
@@ -102,7 +109,7 @@ const EstudosVeicularesMultiplos = ({
       {/* Abas de equipamentos */}
       <div className="equipamentos-tabs">
         {guindastes.map((guindaste, index) => {
-          const estudo = estudosVeiculares[index];
+          const estudo = Array.isArray(estudosVeiculares) ? estudosVeiculares[index] : null;
           const preenchido = estudo && estudo.tipo && estudo.marca && estudo.modelo && estudo.voltagem;
           
           return (
@@ -171,7 +178,9 @@ const EstudosVeicularesMultiplos = ({
         <div className="alert alert-info">
           ⚠️ Preencha o estudo veicular para todos os equipamentos antes de continuar.
           <div className="estudos-progress">
-            {estudosVeiculares.filter(e => e.tipo && e.marca && e.modelo && e.voltagem).length} de {guindastes.length} completos
+            {Array.isArray(estudosVeiculares) 
+              ? estudosVeiculares.filter(e => e && e.tipo && e.marca && e.modelo && e.voltagem).length 
+              : 0} de {guindastes.length} completos
           </div>
         </div>
       )}
