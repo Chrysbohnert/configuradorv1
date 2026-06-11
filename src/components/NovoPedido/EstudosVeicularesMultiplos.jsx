@@ -14,7 +14,8 @@ const EstudosVeicularesMultiplos = ({
   onPrev,
   errors = {}
 }) => {
-  const guindastes = carrinho.filter(item => item.tipo === 'guindaste');
+  const itensValidos = (carrinho || []).filter(Boolean);
+  const guindastes = itensValidos.filter(item => item?.tipo === 'guindaste');
   const [equipamentoAtivo, setEquipamentoAtivo] = useState(0);
 
   // Inicializar estudos vazios para cada equipamento
@@ -61,10 +62,10 @@ const EstudosVeicularesMultiplos = ({
   // Verificar se o estudo atual está preenchido
   const estudoAtualPreenchido = Array.isArray(estudosVeiculares) &&
     estudosVeiculares[equipamentoAtivo] && 
-    estudosVeiculares[equipamentoAtivo].tipo &&
-    estudosVeiculares[equipamentoAtivo].marca &&
-    estudosVeiculares[equipamentoAtivo].modelo &&
-    estudosVeiculares[equipamentoAtivo].voltagem;
+    estudosVeiculares[equipamentoAtivo]?.tipo &&
+    estudosVeiculares[equipamentoAtivo]?.marca &&
+    estudosVeiculares[equipamentoAtivo]?.modelo &&
+    estudosVeiculares[equipamentoAtivo]?.voltagem;
 
   const handleProximoEquipamento = () => {
     if (equipamentoAtivo < guindastes.length - 1) {
@@ -93,8 +94,23 @@ const EstudosVeicularesMultiplos = ({
     );
   }
 
-  const guindasteAtual = guindastes[equipamentoAtivo];
+  const guindasteAtual = guindastes[equipamentoAtivo] || null;
   const estudoAtual = (Array.isArray(estudosVeiculares) && estudosVeiculares[equipamentoAtivo]) || {};
+
+  if (!guindasteAtual) {
+    return (
+      <div className="estudos-veiculares-container">
+        <div className="alert alert-warning">
+          Equipamento não encontrado. Volte e verifique os itens do carrinho.
+        </div>
+        <div className="form-actions">
+          <button className="btn-back-secondary" onClick={onPrev}>
+            Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="estudos-veiculares-container">

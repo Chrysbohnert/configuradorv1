@@ -95,7 +95,7 @@ const NovoPedido = () => {
       if (v == null) v = [];
       if (!Array.isArray(v)) v = [v];
 
-      const guindastes = (carrinhoRef || carrinho || []).filter(i => i?.tipo === 'guindaste');
+      const guindastes = (carrinhoRef || carrinho || []).filter(Boolean).filter(i => i?.tipo === 'guindaste');
       const totalEquip = guindastes.length;
       if (totalEquip <= 0) return v; // nada para alinhar
 
@@ -363,7 +363,7 @@ const NovoPedido = () => {
     if (!isModoConcessionaria) return;
     if (carrinho.length === 0) return;
     
-    const guindastes = carrinho.filter(i => i?.tipo === 'guindaste');
+    const guindastes = (carrinho || []).filter(Boolean).filter(i => i?.tipo === 'guindaste');
     if (guindastes.length === 0) return;
     
     // Se caminhaoData não é array ou tem tamanho diferente do carrinho, normalizar
@@ -1275,7 +1275,7 @@ const NovoPedido = () => {
                 <div style={{ fontWeight: 800, fontSize: '0.8125rem', color: '#1f2937', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   Equipamentos no carrinho
                 </div>
-                {carrinho.map((item, idx) => item.tipo === 'guindaste' ? (
+                {(carrinho || []).filter(Boolean).map((item, idx) => item?.tipo === 'guindaste' ? (
                   <div
                     key={item.cartItemId || idx}
                     style={{
@@ -1317,7 +1317,7 @@ const NovoPedido = () => {
                   </div>
                 ) : null)}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', borderRadius: '10px', background: 'rgba(102, 126, 234, 0.12)', border: '1px solid rgba(102, 126, 234, 0.35)', marginTop: '4px', marginBottom: '14px' }}>
-                  <span style={{ fontWeight: 800, color: '#1f2937', fontSize: '0.875rem' }}>Total ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)</span>
+                  <span style={{ fontWeight: 800, color: '#1f2937', fontSize: '0.875rem' }}>Total ({(carrinho || []).filter(Boolean).filter(i => i?.tipo === 'guindaste').length} equip.)</span>
                   <span style={{ fontWeight: 800, color: '#111827' }}>{formatCurrency(getTotalCarrinho())}</span>
                 </div>
                 <div style={{ display: 'flex' }}>
@@ -1345,7 +1345,7 @@ const NovoPedido = () => {
                       e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.12)';
                     }}
                   >
-                    Continuar para Pagamento ({carrinho.filter(i => i.tipo === 'guindaste').length} equip.)
+                    Continuar para Pagamento ({(carrinho || []).filter(Boolean).filter(i => i?.tipo === 'guindaste').length} equip.)
                   </button>
                 </div>
               </div>
@@ -1388,8 +1388,8 @@ const NovoPedido = () => {
             {isModoConcessionaria ? (
               /* Estudo Veicular para Concessionária - Múltiplos Equipamentos */
               <EstudosVeicularesMultiplos
-                carrinho={carrinho}
-                estudosVeiculares={Array.isArray(caminhaoData) ? caminhaoData : []}
+                carrinho={(carrinho || []).filter(Boolean)}
+                estudosVeiculares={Array.isArray(caminhaoData) ? caminhaoData.filter(Boolean) : []}
                 setEstudosVeiculares={setCaminhaoData}
                 onNext={handleNext}
                 onPrev={handlePrevious}
@@ -1550,14 +1550,14 @@ const NovoPedido = () => {
       }
       if (step === 3) {
         // Validar estudos veiculares - um para cada equipamento
-        const guindastes = carrinho.filter(item => item?.tipo === 'guindaste');
+        const guindastes = (carrinho || []).filter(Boolean).filter(item => item?.tipo === 'guindaste');
         if (!Array.isArray(caminhaoData)) {
           errors.estudos = 'Dados de estudo veicular inválidos';
-        } else if (caminhaoData.length !== guindastes.length) {
+        } else if (caminhaoData.filter(Boolean).length !== guindastes.length) {
           errors.estudos = `Preencha o estudo veicular para todos os ${guindastes.length} equipamentos`;
         } else {
           // Verificar se todos os estudos estão preenchidos
-          caminhaoData.forEach((estudo, idx) => {
+          caminhaoData.filter(Boolean).forEach((estudo, idx) => {
             if (!estudo?.tipo) errors[`estudo_${idx}_tipo`] = `Equipamento ${idx + 1}: Tipo do veículo é obrigatório`;
             if (!estudo?.marca) errors[`estudo_${idx}_marca`] = `Equipamento ${idx + 1}: Marca é obrigatória`;
             if (!estudo?.modelo) errors[`estudo_${idx}_modelo`] = `Equipamento ${idx + 1}: Modelo é obrigatório`;
@@ -1643,10 +1643,11 @@ const NovoPedido = () => {
           return !!pagamentoData.tipoFrete;
         case 3:
           // Validar que todos os equipamentos tenham estudo veicular preenchido
-          const guindastes = carrinho.filter(item => item.tipo === 'guindaste');
+          const guindastes = (carrinho || []).filter(Boolean).filter(item => item?.tipo === 'guindaste');
           if (Array.isArray(caminhaoData)) {
-            return caminhaoData.length === guindastes.length && 
-                   caminhaoData.every(estudo => estudo.tipo && estudo.marca && estudo.modelo && estudo.voltagem);
+            const estudosValidos = caminhaoData.filter(Boolean);
+            return estudosValidos.length === guindastes.length && 
+                   estudosValidos.every(estudo => estudo?.tipo && estudo?.marca && estudo?.modelo && estudo?.voltagem);
           }
           return false;
         default:
@@ -1728,6 +1729,23 @@ const NovoPedido = () => {
       });
     }
 
+    if (isModoConcessionaria && currentStep === 2) {
+      const itensValidos = (carrinho || []).filter(Boolean);
+      const itensInvalidos = (carrinho || [])
+        .map((item, idx) => (!item ? idx : null))
+        .filter(idx => idx !== null);
+      const guindastesParaEstudo = itensValidos.filter(item => item?.tipo === 'guindaste');
+      console.log('[MODO_CONCESSIONARIA] carrinho antes de avançar para estudo veicular:', carrinho);
+      console.log('[MODO_CONCESSIONARIA] itens inválidos encontrados:', itensInvalidos);
+      console.log('[MODO_CONCESSIONARIA] guindastesParaEstudo:', guindastesParaEstudo);
+      console.log('[MODO_CONCESSIONARIA] índice atual do estudo veicular:', 0);
+      console.log('[MODO_CONCESSIONARIA] equipamento atual do estudo:', guindastesParaEstudo[0] || null);
+      if (guindastesParaEstudo.length > 0) {
+        const estudosNormalizados = normalizarEstudosVeiculares(caminhaoData, itensValidos);
+        setCaminhaoData(estudosNormalizados);
+      }
+    }
+
     const isValid = validateStep(currentStep);
 
     const totalSteps = steps.length;
@@ -1749,7 +1767,7 @@ const NovoPedido = () => {
             regiaoClienteSelecionada,
             guindastesSelecionadosLength: guindastesSelecionados.length,
             carrinhoLength: carrinho.length,
-            carrinho: carrinho.map(i => ({ id: i.id, tipo: i.tipo, nome: i.nome, preco: i.preco })),
+            carrinho: (carrinho || []).filter(Boolean).map(i => ({ id: i?.id, tipo: i?.tipo, nome: i?.nome, preco: i?.preco })),
           }
         });
       } else {
