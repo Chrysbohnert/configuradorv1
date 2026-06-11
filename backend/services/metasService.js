@@ -6,13 +6,28 @@
 const { query } = require('../db/pool');
 
 async function findByVendedorAno(vendedorId, ano) {
-  const { rows } = await query(
-    `SELECT * FROM metas_vendedores
-     WHERE vendedor_id = $1 AND ano = $2
-     ORDER BY mes ASC`,
-    [vendedorId, parseInt(ano, 10)]
-  );
-  return rows;
+  try {
+    const { rows } = await query(
+      `SELECT * FROM metas_vendedores
+       WHERE vendedor_id = $1 AND ano = $2
+       ORDER BY mes ASC`,
+      [vendedorId, parseInt(ano, 10)]
+    );
+    return rows;
+  } catch (error) {
+    // Se erro de permissão ou tabela não existe, retornar array vazio
+    if (error.code === '42501' || error.message?.includes('permission denied')) {
+      console.warn(`⚠️ [metasService] Sem permissão para acessar metas_vendedores: ${error.message}`);
+      return [];
+    }
+    if (error.code === '42P01' || error.message?.includes('does not exist')) {
+      console.warn(`⚠️ [metasService] Tabela metas_vendedores não existe: ${error.message}`);
+      return [];
+    }
+    // Outros erros: retornar array vazio e logar
+    console.error('❌ [metasService] Erro ao buscar metas:', error);
+    return [];
+  }
 }
 
 async function upsertAno(vendedorId, ano, metas) {

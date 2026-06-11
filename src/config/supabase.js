@@ -2752,18 +2752,19 @@ if (typeof window !== 'undefined') {
             observacoes: 'Teste de status'
           };
           
-          const { data, error } = await supabase
-            .from('pedidos')
-            .insert([testData])
-            .select()
-            .single();
-          
-          if (error) {
-          } else {
-            
-            // Limpar o registro de teste
-            await supabase.from('pedidos').delete().eq('id', data.id);
-          }
+          // REMOVIDO: Chamada direta ao Supabase (usar API interna se necessário)
+          console.warn('⚠️ [testPedidosTable] Função de teste desabilitada - use API interna');
+          // const { data, error } = await supabase
+          //   .from('pedidos')
+          //   .insert([testData])
+          //   .select()
+          //   .single();
+          // 
+          // if (error) {
+          // } else {
+          //   // Limpar o registro de teste
+          //   await supabase.from('pedidos').delete().eq('id', data.id);
+          // }
         } catch (error) {
         }
       }
@@ -2788,33 +2789,35 @@ if (typeof window !== 'undefined') {
       };
       
       
-      const { data, error } = await supabase
-        .from('caminhoes')
-        .insert([testData])
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('❌ Erro no teste:', error);
-        console.error('📋 Detalhes:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
-        
-        // Se for erro de constraint, mostrar sugestões
-        if (error.message.includes('foreign key')) {
-        }
-        if (error.message.includes('not-null')) {
-        }
-        if (error.message.includes('duplicate')) {
-        }
-      } else {
-        
-        // Limpar o registro de teste
-        await supabase.from('caminhoes').delete().eq('id', data.id);
-      }
+      // REMOVIDO: Chamada direta ao Supabase (usar API interna se necessário)
+      console.warn('⚠️ [testCaminhoesTable] Função de teste desabilitada - use API interna');
+      // const { data, error } = await supabase
+      //   .from('caminhoes')
+      //   .insert([testData])
+      //   .select()
+      //   .single();
+      // 
+      // if (error) {
+      //   console.error('❌ Erro no teste:', error);
+      //   console.error('📋 Detalhes:', {
+      //     message: error.message,
+      //     code: error.code,
+      //     details: error.details,
+      //     hint: error.hint
+      //   });
+      //   
+      //   // Se for erro de constraint, mostrar sugestões
+      //   if (error.message.includes('foreign key')) {
+      //   }
+      //   if (error.message.includes('not-null')) {
+      //   }
+      //   if (error.message.includes('duplicate')) {
+      //   }
+      // } else {
+      //   
+      //   // Limpar o registro de teste
+      //   await supabase.from('caminhoes').delete().eq('id', data.id);
+      // }
       
     } catch (error) {
       console.error('❌ Erro no teste:', error);

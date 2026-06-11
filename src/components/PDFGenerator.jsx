@@ -1078,10 +1078,9 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   // 1. Aplicar descontos SOBRE O VALOR BASE (não sobre subtotal)
   const valorDescontoVendedor = p.desconto ? (totalBase * p.desconto / 100) : 0;
   const valorDescontoPrazo = p.descontoPrazo ? (totalBase * p.descontoPrazo / 100) : 0;
-  const valorAcrescimo = p.acrescimo ? (totalBase * p.acrescimo / 100) : 0;
   
-  // 2. Base com descontos aplicados
-  const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
+  // 2. Base com descontos aplicados (SEM acréscimo ainda)
+  const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo;
 
   // Fonte de verdade (quando existir): valor final calculado na política
   const valorFinalPolitica = parseFloat(p.valorFinal || p.total || 0) || 0;
@@ -1118,6 +1117,9 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   
   // 5. Saldo a Pagar (o sinal faz parte da entrada, não reduz o saldo diretamente)
   const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
+
+  // 6. Acréscimo: aplicado APENAS sobre o saldo parcelado (não sobre entrada)
+  const valorAcrescimo = p.acrescimo ? (saldoAPagarCalc * p.acrescimo / 100) : 0;
 
   // 6. RECALCULAR PARCELAS com base no saldo correto
   const numParcelas = p.parcelas?.length || 1;
@@ -1643,8 +1645,7 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   // 1. Descontos sobre o valor base
   const valorDescontoVendedor = p.desconto ? (totalBase * p.desconto / 100) : 0;
   const valorDescontoPrazo = p.descontoPrazo ? (totalBase * p.descontoPrazo / 100) : 0;
-  const valorAcrescimo = p.acrescimo ? (totalBase * p.acrescimo / 100) : 0;
-  const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo + valorAcrescimo;
+  const baseComDescontos = totalBase - valorDescontoVendedor - valorDescontoPrazo;
 
   const valorFinalPolitica = parseFloat(p.valorFinal || p.total || 0) || 0;
   const valorFreteInformado = parseFloat(p.valorFrete || 0) || 0;
@@ -1670,6 +1671,9 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   const entradaTotalCalc = p.entradaTotal || (p.percentualEntrada ? (valorTotalFinal * p.percentualEntrada / 100) : 0);
   const sinalPago = p.valorSinal || 0;
   const saldoAPagarCalc = valorTotalFinal - entradaTotalCalc;
+
+  // Acréscimo: aplicado APENAS sobre o saldo parcelado (não sobre entrada)
+  const valorAcrescimo = p.acrescimo ? (saldoAPagarCalc * p.acrescimo / 100) : 0;
 
   // Parcelas
   const numParcelas = p.parcelas?.length || 1;

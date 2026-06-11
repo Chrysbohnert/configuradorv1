@@ -86,28 +86,31 @@ export function calcularPagamento({ precoBase, plan, dataEmissaoNF = new Date() 
     );
   }
 
-  // 1. Aplicar desconto e acréscimo
+  // 1. Aplicar desconto (sobre o valor total)
   const descontoPercent = plan.discount_percent || 0;
   const acrescimoPercent = plan.surcharge_percent || 0;
   
-  
   const descontoValor = round2(precoBase * descontoPercent);
-  const acrescimoValor = round2(precoBase * acrescimoPercent);
-  
-  
-  const valorAjustado = round2(precoBase - descontoValor + acrescimoValor);
+  const valorComDesconto = round2(precoBase - descontoValor);
   
 
   // 2. Calcular entrada (se houver)
   let entrada = 0;
   if (plan.entry_percent || plan.entry_min) {
-    const entradaPercent = plan.entry_percent ? valorAjustado * plan.entry_percent : 0;
+    const entradaPercent = plan.entry_percent ? valorComDesconto * plan.entry_percent : 0;
     const entradaMin = plan.entry_min || 0;
     entrada = round2(Math.max(entradaPercent, entradaMin));
   }
 
-  // 3. Calcular saldo a parcelar
-  const saldo = round2(valorAjustado - entrada);
+  // 3. Calcular saldo a parcelar (ANTES do acréscimo)
+  const saldoSemAcrescimo = round2(valorComDesconto - entrada);
+  
+  // 4. Aplicar acréscimo APENAS sobre o saldo parcelado
+  const acrescimoValor = round2(saldoSemAcrescimo * acrescimoPercent);
+  const saldo = round2(saldoSemAcrescimo + acrescimoValor);
+  
+  // Valor ajustado = valor com desconto + acréscimo (para compatibilidade)
+  const valorAjustado = round2(entrada + saldo);
 
   // 4. Gerar parcelas
   const parcelas = [];

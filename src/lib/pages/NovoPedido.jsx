@@ -18,6 +18,7 @@ import { maskCPF, maskCNPJ } from '../../utils/masks';
 import { createLogger } from '../../utils/productionLogger';
 import { createDealInSalesIfNotExists } from '../../utils/bitrixClient';
 import ResumoPedidoExterno from '../../components/NovoPedido/ResumoPedido';
+import { isConcessionariaInterna } from '../../config/concessionariasInternas';
 import '../../styles/NovoPedido.css';
 
 // ⚡ Logger otimizado
@@ -209,12 +210,24 @@ const NovoPedido = () => {
     // Se há carrinho no localStorage, significa que o usuário está no meio de um pedido
     // (possível reload de página) — NÃO limpar
     const savedCart = localStorage.getItem('carrinho');
-    const hasCartItems = savedCart && JSON.parse(savedCart).length > 0;
+    let hasCartItems = false;
+    try {
+      const parsed = savedCart ? JSON.parse(savedCart) : [];
+      hasCartItems = Array.isArray(parsed) && parsed.length > 0;
+    } catch (e) {
+      console.warn('[STEP_PRESERVE] Erro ao parsear carrinho do localStorage:', e);
+    }
     if (hasCartItems) {
       console.log('[STEP_PRESERVE] Carrinho encontrado no localStorage — pulando reset automático de entrada');
       return;
     }
+    // ⚠️ PROTEÇÃO: Não resetar se já estamos em uma etapa avançada (evita voltar para step 1 indevidamente)
+    if (currentStep > 1 && carrinho.length > 0) {
+      console.log('[STEP_PRESERVE] Etapa avançada detectada — pulando reset para evitar perda de progresso');
+      return;
+    }
     if (!propostaId && !location.state?.fromDetalhes && !location.state?.guindasteSelecionado) {
+      console.log('[STEP_RESET] Executando reset inicial (novo pedido)');
       setCarrinho([]);
       setCarrinhoAcumulativo([]);
       setClienteData({});
@@ -238,7 +251,7 @@ const NovoPedido = () => {
       localStorage.removeItem('novoPedido_currentStep');
       localStorage.removeItem('novoPedido_maxStepReached');
     }
-  }, [propostaId, location.state?.fromDetalhes, location.state?.guindasteSelecionado]);
+  }, [propostaId, location.state?.fromDetalhes, location.state?.guindasteSelecionado, isModoConcessionaria]);
 
   // ✅ NOVO: Restaurar região quando voltar de DetalhesGuindaste
   React.useEffect(() => {
@@ -268,7 +281,7 @@ const NovoPedido = () => {
         setConcessionariaInfo(c);
         
         // ✅ Verificar se pode escolher concessionária (uso interno Stark)
-        const podeEscolher = c?.uso_interno_stark === true;
+        const podeEscolher = isConcessionariaInterna(c);
         setPodeEscolherConcessionaria(podeEscolher);
         
         // Se pode escolher, carregar lista de concessionárias
@@ -516,8 +529,8 @@ const NovoPedido = () => {
 
   // ← NOVO: Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
-    // Só executa se houver itens e região escolhida manualmente pelo vendedor
-    if (carrinho.length === 0 || !(regiaoClienteSelecionada || '').trim()) {
+    // ⚠️ PROTEÇÃO: Validar carrinho como array válido
+    if (!Array.isArray(carrinho) || carrinho.length === 0 || !(regiaoClienteSelecionada || '').trim()) {
       return;
     }
 
@@ -541,6 +554,12 @@ const NovoPedido = () => {
     const carrinhoAtualizado = [];
 
     for (const item of carrinho) {
+      // ⚠️ PROTEÇÃO: Validar item antes de processar
+      if (!item || typeof item !== 'object') {
+        console.warn('[recalcularPrecosCarrinho] Item inválido no carrinho, pulando:', item);
+        continue;
+      }
+
       if (item.tipo === 'guindaste') {
         try {
           let novoPreco = 0;
@@ -557,7 +576,7 @@ const NovoPedido = () => {
             preco: isExteriorRecalc ? (novoPreco || 0) : (novoPreco || item.preco || 0)
           });
         } catch (error) {
-          console.error(` [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item.nome}:`, error);
+          console.error(` [recalcularPrecosCarrinho] Erro ao recalcular preço para ${item?.nome || 'item sem nome'}:`, error);
           carrinhoAtualizado.push(item);
         }
       } else {
@@ -567,9 +586,9 @@ const NovoPedido = () => {
 
 
     // Verificar se houve mudança real nos preços antes de atualizar
-    const houveAlteracao = carrinhoAtualizado.some((itemNovo, index) => {
+    const houveAlteracao = Array.isArray(carrinhoAtualizado) && carrinhoAtualizado.some((itemNovo, index) => {
       const itemAntigo = carrinho[index];
-      return itemAntigo && itemNovo.preco !== itemAntigo.preco;
+      return itemAntigo && itemNovo?.preco !== itemAntigo?.preco;
     });
 
     if (houveAlteracao) {
@@ -580,9 +599,17 @@ const NovoPedido = () => {
 
   // Recalcular preços quando contexto de pagamento mudar OU quando região selecionada mudar
   useEffect(() => {
-    if (carrinho.length > 0 && regiaoClienteSelecionada) {
-      recalcularPrecosCarrinho();
+    // ⚠️ PROTEÇÃO: Só recalcular se houver carrinho válido e região
+    if (!Array.isArray(carrinho) || carrinho.length === 0 || !regiaoClienteSelecionada) {
+      return;
     }
+    // ⚠️ PROTEÇÃO: Não recalcular durante processamento de guindaste selecionado (evita race condition)
+    if (location.state?.guindasteSelecionado) {
+      console.log('[RECALC_SKIP] Pulando recálculo durante processamento de guindaste selecionado');
+      return;
+    }
+    console.log('[RECALC_TRIGGER] Recalculando preços do carrinho');
+    recalcularPrecosCarrinho();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pagamentoData?.tipoPagamento || '', pagamentoData?.participacaoRevenda || '', pagamentoData?.revendaTemIE || '', clienteTemIE, regiaoClienteSelecionada]);
 
@@ -624,14 +651,18 @@ const NovoPedido = () => {
     try {
       setIsLoading(true);
       const result = await getGuindastesLite(1, 100, true);
-      const all = result?.data || [];
+      // ⚠️ PROTEÇÃO: Garantir que result.data é um array
+      const all = Array.isArray(result?.data) ? result.data : [];
 
-      const isVendedorCE = normalizarArray(user?.regioes_operacao).some(r => {
+      const regioesOp = normalizarArray(user?.regioes_operacao);
+      const isVendedorCE = Array.isArray(regioesOp) && regioesOp.some(r => {
         const rLower = (r || '').toLowerCase().trim();
         return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
       });
 
-      const filtrados = (all || []).filter(g => {
+      // ⚠️ PROTEÇÃO: Garantir que all é array antes de filtrar
+      const filtrados = Array.isArray(all) ? all.filter(g => {
+        if (!g || typeof g !== 'object') return false;
         if (g?.is_prototipo && !isAdminStark) return false;
 
         if (g?.is_comercio_exterior) {
@@ -639,12 +670,13 @@ const NovoPedido = () => {
         }
 
         return true;
-      });
+      }) : [];
 
       setGuindastes(filtrados);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar dados. Verifique a conexão com o banco.');
+      setGuindastes([]); // ⚠️ PROTEÇÃO: Garantir array vazio em caso de erro
     } finally {
       setIsLoading(false);
     }
