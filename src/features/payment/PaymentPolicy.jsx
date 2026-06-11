@@ -9,6 +9,24 @@ import { getPaymentPlans, getPlanLabel } from '../../services/paymentPlans';
 import SolicitarDescontoModal from '../../components/SolicitarDescontoModal';
 import './PaymentPolicy.css';
 
+/** Compara entry_percent_required tolerando string/number do Supabase */
+function matchEntryPercentRequired(plan, target) {
+  if (target == null) {
+    const entry = plan?.entry_percent_required;
+    return entry == null || entry === '';
+  }
+  const entry = plan?.entry_percent_required;
+  if (entry == null || entry === '') return false;
+  return Number(entry) === Number(target);
+}
+
+/** Plano à vista — sem entrada mínima ou descrição "À Vista" */
+function isPlanoAVista(plan) {
+  const entry = plan?.entry_percent_required;
+  if (entry == null || entry === '') return true;
+  return /vista/i.test(String(plan?.description || ''));
+}
+
 const formatCurrencyUSD = (value) => {
   const v = Number(value) || 0;
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(v);
@@ -371,9 +389,21 @@ export default function PaymentPolicy({
 
   const planoEfetivo = useMemo(() => {
     if (!planoSelecionado) return null;
-    if (!bloquearDesconto) return planoSelecionado;
-    return { ...planoSelecionado, discount_percent: 0 };
-  }, [planoSelecionado, bloquearDesconto]);
+    if (bloquearDesconto) {
+      return { ...planoSelecionado, discount_percent: 0 };
+    }
+    // Modo concessionária + entrada 100%: sem desconto automático do plano (só via botão 3%)
+    if (modoConcessionaria && percentualEntrada === '100') {
+      if (planoSelecionado.discount_percent) {
+        console.log('⚠️ [PaymentPolicy][modoConcessionaria] Desconto automático do plano à vista neutralizado', {
+          plano: planoSelecionado.description,
+          discount_percent_plano: planoSelecionado.discount_percent,
+        });
+      }
+      return { ...planoSelecionado, discount_percent: 0 };
+    }
+    return planoSelecionado;
+  }, [planoSelecionado, bloquearDesconto, modoConcessionaria, percentualEntrada]);
 
   // ⚡ Ref atualizado a cada render — garante valores frescos no callback Realtime
   // sem recriar o canal WebSocket a cada mudança de estado
@@ -639,11 +669,40 @@ export default function PaymentPolicy({
         });
 
         const publishedActive = (published || []).filter(p => p.active);
+        const resolveFallbackPlanos = () => {
+          if (modoConcessionaria) {
+            // JSON fallback de concessionaria_compra usa revenda sem entry_percent_required; cliente tem tabelas 30/50
+            const cliente = getPaymentPlans('cliente');
+            if (cliente.length > 0) return cliente;
+          }
+          if (scope === 'concessionaria') return [];
+          return getPaymentPlans(audience);
+        };
+
         if (!cancelled) {
-          if (publishedActive.length > 0) {
-            setTodosPlanos(publishedActive);
-          } else {
-            setTodosPlanos(scope === 'concessionaria' ? [] : getPaymentPlans(audience));
+          let planosFinais = publishedActive.length > 0 ? publishedActive : resolveFallbackPlanos();
+          if (modoConcessionaria && publishedActive.length > 0) {
+            const temTabelaEntry = planosFinais.some(
+              p => p.entry_percent_required != null && p.entry_percent_required !== ''
+            );
+            if (!temTabelaEntry) {
+              const clienteFallback = getPaymentPlans('cliente');
+              if (clienteFallback.length > 0) {
+                console.warn('⚠️ [PaymentPolicy][modoConcessionaria] Published sem entry_percent_required — fallback cliente');
+                planosFinais = clienteFallback;
+              }
+            }
+          }
+          setTodosPlanos(planosFinais);
+          if (modoConcessionaria) {
+            console.log('📦 [PaymentPolicy][modoConcessionaria] Planos carregados:', {
+              scope,
+              audience,
+              publishedActiveCount: publishedActive.length,
+              todosPlanosLength: planosFinais.length,
+              entryPercentRequiredList: planosFinais.map(p => p.entry_percent_required ?? null),
+              fonte: publishedActive.length > 0 ? 'publishedActive' : 'fallback',
+            });
           }
         }
       } catch (e) {
@@ -651,7 +710,20 @@ export default function PaymentPolicy({
           console.warn('⚠️ [PaymentPolicy] Falha ao carregar planos publicados, usando fallback JSON:', e);
           plansWarnedRef.current = true;
         }
-        if (!cancelled) setTodosPlanos(scope === 'concessionaria' ? [] : getPaymentPlans(audience));
+        if (!cancelled) {
+          const fallback = modoConcessionaria
+            ? (getPaymentPlans('cliente').length > 0 ? getPaymentPlans('cliente') : getPaymentPlans(audience))
+            : (scope === 'concessionaria' ? [] : getPaymentPlans(audience));
+          setTodosPlanos(fallback);
+          if (modoConcessionaria) {
+            console.log('📦 [PaymentPolicy][modoConcessionaria] Planos carregados (fallback erro):', {
+              scope,
+              audience,
+              todosPlanosLength: fallback.length,
+              entryPercentRequiredList: fallback.map(p => p.entry_percent_required ?? null),
+            });
+          }
+        }
       }
     };
 
@@ -682,19 +754,18 @@ export default function PaymentPolicy({
     if (modoConcessionaria) {
       if (!percentualEntrada) return [];
       if (percentualEntrada === 'financiamento') return base.filter(p => !p.entry_percent_required);
-      if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
+      if (percentualEntrada === '100') return base.filter(p => isPlanoAVista(p));
       const pNum = entryPercentFiltro;
       if (pNum == null) return [];
-      const filtered = base.filter(p => p.entry_percent_required === pNum);
+      const filtered = base.filter(p => matchEntryPercentRequired(p, pNum));
       console.log('📋 [PaymentPolicy][modoConcessionaria] Planos filtrados por entry_percent_required:', {
         percentualEntrada,
         entryPercentFiltro: pNum,
-        planosPorEntry: base.reduce((acc, p) => {
-          const k = p.entry_percent_required ?? 'avista';
-          acc[k] = (acc[k] || 0) + 1;
-          return acc;
-        }, {}),
-        planosFiltrados: filtered.length,
+        todosPlanosLength: base.length,
+        planosFiltradosLength: filtered.length,
+        audience,
+        scope: 'stark',
+        entryPercentRequiredList: base.map(p => p.entry_percent_required ?? null),
         planos: filtered.map(p => ({ desc: p.description, entry: p.entry_percent_required })),
       });
       return filtered;
@@ -771,15 +842,21 @@ export default function PaymentPolicy({
   // Logs temporários — somente modoConcessionaria
   useEffect(() => {
     if (!modoConcessionaria) return;
-    console.log('🔍 [PaymentPolicy][modoConcessionaria] Estado entrada:', {
+    console.log('🔍 [PaymentPolicy][modoConcessionaria] Estado entrada/planos:', {
       percentualEntrada,
       modoEntrada,
       entradaPercentualCustom,
       entradaValorCustom,
       percentualEntradaNumCalc,
       entryPercentFiltro,
+      audience,
+      scope: 'stark',
+      todosPlanosLength: todosPlanos.length,
+      planosFiltradosLength: planosFiltrados.length,
+      entryPercentRequiredList: todosPlanos.map(p => p.entry_percent_required ?? null),
+      descontoVendedor,
     });
-  }, [modoConcessionaria, percentualEntrada, modoEntrada, entradaPercentualCustom, entradaValorCustom, percentualEntradaNumCalc, entryPercentFiltro]);
+  }, [modoConcessionaria, percentualEntrada, modoEntrada, entradaPercentualCustom, entradaValorCustom, percentualEntradaNumCalc, entryPercentFiltro, todosPlanos, planosFiltrados, audience, descontoVendedor]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
   useEffect(() => {
@@ -909,8 +986,11 @@ export default function PaymentPolicy({
     // Financiamento Bancário: notifica sem cálculo de parcelas internas
     if (percentualEntrada === 'financiamento') {
       const extraValorNum = parseFloat(extraValor) || 0;
-      const descontoExtraValor = precoBase * (descontoVendedorEfetivo / 100);
-      const valorAposExtra = precoBase - descontoExtraValor;
+      const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
+      const descontoExtraValor = descontoVendedorEfetivo > 0
+        ? baseEquipamentos * (descontoVendedorEfetivo / 100)
+        : 0;
+      const valorAposExtra = baseEquipamentos - descontoExtraValor;
 
       // Frete pode ser incluso no pedido (CIF) mesmo em financiamento.
       // Quando FOB, o cliente paga direto e o valor fica 0.
@@ -990,8 +1070,9 @@ export default function PaymentPolicy({
         dataEmissaoNF: new Date(),
       });
 
-      // aplica desconto do vendedor (sobre o PREÇO AJUSTADO POR REGIÃO)
-      const descontoExtraValor = precoBaseAjustado * (descontoVendedorEfetivo / 100);
+      const descontoExtraValor = descontoVendedorEfetivo > 0
+        ? precoBaseAjustado * (descontoVendedorEfetivo / 100)
+        : 0;
       const valorAposExtra = r.valorAjustado - descontoExtraValor;
 
       // frete: somente se frete incluso + selecionado tipo de entrega e local
@@ -1367,6 +1448,10 @@ export default function PaymentPolicy({
 
   // =============== CALCULAR VALOR FLUTUANTE EM TEMPO REAL ========
   const valorFlutuante = useMemo(() => {
+    if (modoConcessionaria && resultado?.valorFinal != null) {
+      return resultado.valorFinal;
+    }
+
     let valor = precoBase;
     const extraValorNum = parseFloat(extraValor) || 0;
 
@@ -1401,7 +1486,7 @@ export default function PaymentPolicy({
     }
 
     return valor;
-  }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, instalacaoInclusoValor, bloquearDesconto, tipoCliente]);
+  }, [precoBase, resultado, descontoVendedor, extraValor, valorFreteCalculado, instalacao, instalacaoInclusoValor, bloquearDesconto, tipoCliente, modoConcessionaria]);
 
   const moedaResumo = useMemo(() => {
     if (!isComercioExterior) return 'BRL';
@@ -1444,12 +1529,14 @@ export default function PaymentPolicy({
   // Auto-selecionar plano À Vista quando percentual de entrada for 100% (exterior ou não)
   useEffect(() => {
     if (percentualEntrada !== '100') return;
-    const aVistaPlano = todosPlanos.find(p => !p.entry_percent_required);
+    const aVistaPlano = modoConcessionaria
+      ? todosPlanos.find(p => isPlanoAVista(p))
+      : todosPlanos.find(p => !p.entry_percent_required);
     if (aVistaPlano) {
       setPlanoSelecionado(aVistaPlano);
       onPlanSelected?.(aVistaPlano);
     }
-  }, [percentualEntrada, todosPlanos]);
+  }, [percentualEntrada, todosPlanos, modoConcessionaria, onPlanSelected]);
 
   useEffect(() => {
     if (!modoConcessionaria) return;
