@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db, supabase } from '../../config/supabase';
@@ -32,8 +32,7 @@ const Configuracoes = () => {
   const [photoPreview, setPhotoPreview] = useState(null);
   const [photoFile, setPhotoFile] = useState(null);
   const [concessionariaData, setConcessionariaData] = useState({
-    logo_url: '',
-    dados_bancarios: ''
+    logo_url: ''
   });
   const [concessionariaLogoPreview, setConcessionariaLogoPreview] = useState('');
   const [concessionariaLogoFile, setConcessionariaLogoFile] = useState(null);
@@ -71,8 +70,7 @@ const Configuracoes = () => {
       try {
         const c = await db.getConcessionariaById(contextUser.concessionaria_id);
         setConcessionariaData({
-          logo_url: c?.logo_url || '',
-          dados_bancarios: c?.dados_bancarios || ''
+          logo_url: c?.logo_url || ''
         });
         setConcessionariaLogoPreview(c?.logo_url || '');
       } catch (error) {
@@ -143,8 +141,7 @@ const Configuracoes = () => {
       }
 
       await db.updateConcessionaria(contextUser.concessionaria_id, {
-        logo_url: logoUrl || null,
-        dados_bancarios: concessionariaData.dados_bancarios?.trim() || null
+        logo_url: logoUrl || null
       });
 
       setConcessionariaData(prev => ({
@@ -450,16 +447,6 @@ const Configuracoes = () => {
                         />
                       </div>
                     )}
-                  </div>
-
-                  <div className="form-group">
-                    <label>Dados Bancários (texto livre)</label>
-                    <textarea
-                      value={concessionariaData.dados_bancarios}
-                      onChange={(e) => handleConcessionariaChange('dados_bancarios', e.target.value)}
-                      rows={5}
-                      placeholder="Banco X\nAgência: 0001\nConta: 00000-0\nPix: ..."
-                    />
                   </div>
 
                   <button

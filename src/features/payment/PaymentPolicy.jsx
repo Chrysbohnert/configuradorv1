@@ -312,21 +312,30 @@ export default function PaymentPolicy({
 
   // Mapeia percentual livre para regra de plano existente (30%, 50% ou à vista)
   const entryPercentFiltro = useMemo(() => {
-    if (modoEntrada === 'exclusiva') return null;
+    if (modoEntrada === 'exclusiva') {
+      console.log('📊 [PaymentPolicy] Modo exclusiva - sem filtro de planos');
+      return null;
+    }
     const p = percentualEntradaNumCalc;
-    if (p <= 0) return null;
-    if (p >= 100) return null; // à vista
+    if (p <= 0) {
+      console.log('📊 [PaymentPolicy] Entrada <= 0 - sem filtro');
+      return null;
+    }
+    if (p >= 100) {
+      console.log('📊 [PaymentPolicy] Entrada >= 100% (à vista) - sem filtro de entrada');
+      return null; // à vista
+    }
     if (p >= 50) {
-      console.log('📊 [PaymentPolicy] Tabela selecionada: 50% (entrada >= 50%)');
+      console.log('📊 [PaymentPolicy] Tabela selecionada: 50% (entrada >= 50%)', { percentualEntrada, percentualEntradaNumCalc: p });
       return 0.50;
     }
     if (p >= 30) {
-      console.log('📊 [PaymentPolicy] Tabela selecionada: 30% (entrada >= 30%)');
+      console.log('📊 [PaymentPolicy] Tabela selecionada: 30% (entrada >= 30%)', { percentualEntrada, percentualEntradaNumCalc: p });
       return 0.30;
     }
-    console.log('⚠️ [PaymentPolicy] Entrada < 30%: Bloqueado');
+    console.log('⚠️ [PaymentPolicy] Entrada < 30%: Bloqueado', { percentualEntrada, percentualEntradaNumCalc: p });
     return null; // abaixo de 30 não filtra nada
-  }, [modoEntrada, percentualEntradaNumCalc]);
+  }, [modoEntrada, percentualEntradaNumCalc, percentualEntrada]);
 
   const pontosInstalacaoFiltrados = useMemo(() => {
     const base = Array.isArray(pontosInstalacao) ? pontosInstalacao : [];
@@ -682,8 +691,18 @@ export default function PaymentPolicy({
     if (percentualEntrada === 'financiamento') return base.filter(p => !p.entry_percent_required);
     if (percentualEntrada === '100') return base.filter(p => !p.entry_percent_required);
     const pNum = entryPercentFiltro;
-    if (pNum == null) return [];
-    return base.filter(p => p.entry_percent_required === pNum);
+    if (pNum == null) {
+      console.log('⚠️ [PaymentPolicy] entryPercentFiltro é null - nenhum plano será exibido');
+      return [];
+    }
+    const filtered = base.filter(p => p.entry_percent_required === pNum);
+    console.log('📋 [PaymentPolicy] Planos filtrados:', {
+      entryPercentFiltro: pNum,
+      totalPlanos: base.length,
+      planosFiltrados: filtered.length,
+      planos: filtered.map(p => ({ desc: p.description, entry: p.entry_percent_required }))
+    });
+    return filtered;
   }, [todosPlanos, tipoCliente, percentualEntrada, entryPercentFiltro, planosLiberados, isComercioExterior, modoEntrada]);
 
   // Restaurar planoSelecionado após os planos serem carregados (modo edição)
@@ -707,11 +726,15 @@ export default function PaymentPolicy({
     
     // Limpar plano selecionado quando a tabela de entrada mudar
     if (planoSelecionado) {
-      console.log('🔄 [PaymentPolicy] Limpando plano selecionado - tabela de entrada mudou');
+      console.log('🔄 [PaymentPolicy] Limpando plano selecionado - tabela de entrada mudou', {
+        entryPercentFiltro,
+        percentualEntrada,
+        planoAtual: planoSelecionado?.description
+      });
       setPlanoSelecionado(null);
       onPlanSelected?.(null);
     }
-  }, [entryPercentFiltro, modoConcessionaria]);
+  }, [entryPercentFiltro, modoConcessionaria, planoSelecionado, onPlanSelected, percentualEntrada]);
 
   // =============== REGRAS DE RESET (evitar estado sujo) ==========
   useEffect(() => {

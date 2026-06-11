@@ -107,6 +107,14 @@ const NovoPedido = () => {
         equipamentoIndex: idx,
         equipamentoId: guindastes[idx]?.id ?? estudo?.equipamentoId ?? null,
         equipamentoNome: guindastes[idx]?.nome || guindastes[idx]?.modelo || estudo?.equipamentoNome || `Equipamento ${idx + 1}`,
+        tipo: estudo?.tipo || '',
+        marca: estudo?.marca || '',
+        modelo: estudo?.modelo || '',
+        ano: estudo?.ano || '',
+        voltagem: estudo?.voltagem || '',
+        comprimentoChassi: estudo?.comprimentoChassi || '',
+        patolamento: estudo?.patolamento || '',
+        observacoes: estudo?.observacoes || '',
         ...estudo,
       }));
 
@@ -147,6 +155,11 @@ const NovoPedido = () => {
   const [concessionariaInfo, setConcessionariaInfo] = useState(null);
   const [descontoConcessionaria, setDescontoConcessionaria] = useState(0);
   const [cotacaoUSD, setCotacaoUSD] = useState(null);
+  
+  // ✅ NOVO: Seletor de concessionária para uso interno da Stark
+  const [concessionariasDisponiveis, setConcessionariasDisponiveis] = useState([]);
+  const [concessionariaSelecionadaParaPedido, setConcessionariaSelecionadaParaPedido] = useState(null);
+  const [podeEscolherConcessionaria, setPodeEscolherConcessionaria] = useState(false);
 
   // 🛡️ Proteção contra resets automáticos após avanço manual do usuário
   const usuarioJaTentouAvancarRef = useRef(false);
@@ -159,6 +172,27 @@ const NovoPedido = () => {
     const regiao = concessionariaInfo.regiao_preco || '';
     if (regiao) setRegiaoClienteSelecionada(regiao);
   }, [isModoConcessionaria, concessionariaInfo]);
+
+  // ✅ NOVO: Atualizar região quando concessionária selecionada muda (uso interno Stark)
+  React.useEffect(() => {
+    if (!isModoConcessionaria || !podeEscolherConcessionaria) return;
+    
+    // Se uma concessionária diferente foi selecionada, usar a região dela
+    if (concessionariaSelecionadaParaPedido) {
+      const regiaoSelecionada = concessionariaSelecionadaParaPedido.regiao_preco || '';
+      if (regiaoSelecionada && regiaoSelecionada !== regiaoClienteSelecionada) {
+        console.log('🔄 [Uso Interno Stark] Mudando região para:', regiaoSelecionada, 'da concessionária:', concessionariaSelecionadaParaPedido.nome);
+        setRegiaoClienteSelecionada(regiaoSelecionada);
+      }
+    } else {
+      // Se nenhuma concessionária foi selecionada, voltar para a região da concessionária logada
+      const regiaoOriginal = concessionariaInfo?.regiao_preco || '';
+      if (regiaoOriginal && regiaoOriginal !== regiaoClienteSelecionada) {
+        console.log('🔄 [Uso Interno Stark] Voltando para região original:', regiaoOriginal);
+        setRegiaoClienteSelecionada(regiaoOriginal);
+      }
+    }
+  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria]);
 
   // ✅ Persistir currentStep e maxStepReached no localStorage
   useEffect(() => {
@@ -232,6 +266,17 @@ const NovoPedido = () => {
       try {
         const c = await db.getConcessionariaById(user.concessionaria_id);
         setConcessionariaInfo(c);
+        
+        // ✅ Verificar se pode escolher concessionária (uso interno Stark)
+        const podeEscolher = c?.uso_interno_stark === true;
+        setPodeEscolherConcessionaria(podeEscolher);
+        
+        // Se pode escolher, carregar lista de concessionárias
+        if (podeEscolher) {
+          const todasConcessionarias = await db.getConcessionarias(false); // apenas ativas
+          setConcessionariasDisponiveis(todasConcessionarias || []);
+        }
+        
         setClienteData({
           nome: c?.nome || 'Concessionária',
           telefone: c?.telefone || '',
@@ -299,6 +344,25 @@ const NovoPedido = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ✅ Normalizar estudos veiculares quando carrinho mudar (modo concessionária)
+  useEffect(() => {
+    if (!isModoConcessionaria) return;
+    if (carrinho.length === 0) return;
+    
+    const guindastes = carrinho.filter(i => i?.tipo === 'guindaste');
+    if (guindastes.length === 0) return;
+    
+    // Se caminhaoData não é array ou tem tamanho diferente do carrinho, normalizar
+    if (!Array.isArray(caminhaoData) || caminhaoData.length !== guindastes.length) {
+      console.log('🔧 [NovoPedido] Normalizando estudos veiculares:', {
+        guindastes: guindastes.length,
+        estudosAtuais: Array.isArray(caminhaoData) ? caminhaoData.length : 'não é array'
+      });
+      const estudosNormalizados = normalizarEstudosVeiculares(caminhaoData, carrinho);
+      setCaminhaoData(estudosNormalizados);
+    }
+  }, [carrinho, isModoConcessionaria, caminhaoData, normalizarEstudosVeiculares]);
 
   // Carregar proposta para edição (se houver propostaId na URL)
   React.useEffect(() => {
@@ -463,7 +527,9 @@ const NovoPedido = () => {
       tipoUsuario: user?.tipo,
       regioes_operacao: regioes,
       regiaoSelecionada: regiaoClienteSelecionada,
-      origemRegiao: 'regiaoClienteSelecionada',
+      origemRegiao: concessionariaSelecionadaParaPedido 
+        ? `concessionária selecionada: ${concessionariaSelecionadaParaPedido.nome}` 
+        : 'regiaoClienteSelecionada',
       isConcessionaria: isConcessionariaUser,
       isModoConcessionaria,
       carrinhoItems: carrinho.length,
@@ -1089,9 +1155,61 @@ const NovoPedido = () => {
           <div className="step-content">
             <>
               {isModoConcessionaria ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
-                  <span>Região de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
-                </div>
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
+                    <span>Região de compra: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
+                    {concessionariaSelecionadaParaPedido && (
+                      <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#0369a1', fontWeight: '600' }}>
+                        (região de {concessionariaSelecionadaParaPedido.nome})
+                      </span>
+                    )}
+                  </div>
+                  
+                  {/* ✅ NOVO: Seletor de concessionária para uso interno Stark */}
+                  {podeEscolherConcessionaria && concessionariasDisponiveis.length > 0 && (
+                    <div style={{ marginBottom: '16px' }}>
+                      <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '6px' }}>
+                        Pedido realizado para:
+                      </label>
+                      <select
+                        value={concessionariaSelecionadaParaPedido?.id || ''}
+                        onChange={(e) => {
+                          const id = e.target.value;
+                          if (!id) {
+                            setConcessionariaSelecionadaParaPedido(null);
+                          } else {
+                            const conc = concessionariasDisponiveis.find(c => c.id === parseInt(id));
+                            setConcessionariaSelecionadaParaPedido(conc || null);
+                          }
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '10px 12px',
+                          fontSize: '0.875rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '8px',
+                          background: 'white',
+                          color: '#111827',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="">Usar minha concessionária ({concessionariaInfo?.nome})</option>
+                        {concessionariasDisponiveis
+                          .filter(c => c.id !== user?.concessionaria_id) // Não mostrar a própria
+                          .map(c => (
+                            <option key={c.id} value={c.id}>
+                              {c.nome}
+                            </option>
+                          ))}
+                      </select>
+                      {concessionariaSelecionadaParaPedido && (
+                        <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#6b7280' }}>
+                          ℹ️ Este pedido será registrado em nome de <strong>{concessionariaSelecionadaParaPedido.nome}</strong>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
               ) : (
                 <SeletorRegiaoCliente
                   regiaoSelecionada={regiaoClienteSelecionada}
@@ -1239,7 +1357,7 @@ const NovoPedido = () => {
               /* Estudo Veicular para Concessionária - Múltiplos Equipamentos */
               <EstudosVeicularesMultiplos
                 carrinho={carrinho}
-                estudosVeiculares={caminhaoData}
+                estudosVeiculares={Array.isArray(caminhaoData) ? caminhaoData : []}
                 setEstudosVeiculares={setCaminhaoData}
                 onNext={handleNext}
                 onPrev={handlePrevious}
@@ -1312,6 +1430,7 @@ const NovoPedido = () => {
                   concessionariaInfo={concessionariaInfo}
                   regiaoCompraSelecionada={regiaoClienteSelecionada}
                   regiaoClienteSelecionada={regiaoClienteSelecionada}
+                  concessionariaSelecionadaParaPedido={concessionariaSelecionadaParaPedido}
                 />
               </div>
             ) : (
@@ -1396,6 +1515,23 @@ const NovoPedido = () => {
       }
       if (step === 2) {
         if (!pagamentoData.tipoFrete) errors.tipoFrete = 'Selecione o tipo de frete';
+      }
+      if (step === 3) {
+        // Validar estudos veiculares - um para cada equipamento
+        const guindastes = carrinho.filter(item => item?.tipo === 'guindaste');
+        if (!Array.isArray(caminhaoData)) {
+          errors.estudos = 'Dados de estudo veicular inválidos';
+        } else if (caminhaoData.length !== guindastes.length) {
+          errors.estudos = `Preencha o estudo veicular para todos os ${guindastes.length} equipamentos`;
+        } else {
+          // Verificar se todos os estudos estão preenchidos
+          caminhaoData.forEach((estudo, idx) => {
+            if (!estudo?.tipo) errors[`estudo_${idx}_tipo`] = `Equipamento ${idx + 1}: Tipo do veículo é obrigatório`;
+            if (!estudo?.marca) errors[`estudo_${idx}_marca`] = `Equipamento ${idx + 1}: Marca é obrigatória`;
+            if (!estudo?.modelo) errors[`estudo_${idx}_modelo`] = `Equipamento ${idx + 1}: Modelo é obrigatório`;
+            if (!estudo?.voltagem) errors[`estudo_${idx}_voltagem`] = `Equipamento ${idx + 1}: Voltagem é obrigatória`;
+          });
+        }
       }
       setValidationErrors(errors);
       return Object.keys(errors).length === 0;

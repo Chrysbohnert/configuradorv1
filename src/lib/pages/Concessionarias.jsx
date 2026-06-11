@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
@@ -95,8 +95,6 @@ const Concessionarias = () => {
       endereco: '',
       desconto_base: '',
       desconto_compra: '',
-      logo_url: '',
-      dados_bancarios: '',
       admin_nome: '',
       admin_email: '',
       admin_senha: ''

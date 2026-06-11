@@ -1136,9 +1136,9 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   }) || [];
 
   const concessionariaLogo = pedidoData?.concessionariaLogoUrl || '';
-  const dadosBancariosConcessionaria = (pedidoData?.concessionariaDadosBancarios || '').trim();
+
   const concessionariaNome = (pedidoData?.concessionariaNome || '').trim();
-  const usarDadosConcessionaria = Boolean(dadosBancariosConcessionaria || concessionariaLogo);
+  const usarDadosConcessionaria = Boolean(concessionariaLogo);
 
   // Carregar logos dos bancos como base64
   const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
@@ -1340,7 +1340,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
             <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:120px; max-height:50px; margin-bottom:9px; display:block;"/>
           ` : ''}
           <div style="font-size:12px; line-height:1.6; white-space:pre-line; font-weight:600; color:#000;">
-            ${dadosBancariosConcessionaria || 'Dados bancários não informados.'}
+            <!-- Dados bancários removidos -->
           </div>
         ` : `
           <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5; margin-bottom:9px;">
@@ -1510,6 +1510,11 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
         <div><b>CNPJ/CPF:</b> ${c.documento || 'Não informado'}</div>
         ${c.telefone ? `<div><b>TELEFONE:</b> ${c.telefone}</div>` : ''}
         ${c.email ? `<div><b>E-MAIL:</b> ${c.email}</div>` : ''}
+        ${pedidoData.concessionariaPedidoNome ? `
+          <div style="margin-top:2mm; padding:2mm; background:#e8f4f8; border-left:3px solid #0ea5e9; border-radius:1mm;">
+            <div style="font-size:3.5mm; color:#0369a1;"><b>📋 PEDIDO REALIZADO PARA:</b> ${pedidoData.concessionariaPedidoNome}</div>
+          </div>
+        ` : ''}
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>

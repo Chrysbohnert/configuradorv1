@@ -22,7 +22,8 @@ const ResumoPedido = ({
   onAdicionarAoCarrinho,
   onLimparPedidoAtual,
   onLimparCarrinhoAcumulativo,
-  onRemoverDoCarrinhoAcumulativo
+  onRemoverDoCarrinhoAcumulativo,
+  concessionariaSelecionadaParaPedido = null
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
 
@@ -192,7 +193,10 @@ const ResumoPedido = ({
             regiaoClienteSelecionada: regiaoCompraSelecionada || regiaoClienteSelecionada || null,
             concessionaria_id: user?.concessionaria_id || null,
             concessionariaInfo: concessionariaInfo || null,
-            guindasteId
+            guindasteId,
+            // ✅ NOVO: Concessionária selecionada para pedido (uso interno Stark)
+            concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null,
+            concessionariaPedidoNome: concessionariaSelecionadaParaPedido?.nome || null
           }
         };
 
@@ -335,10 +339,12 @@ const ResumoPedido = ({
     vendedorTelefone: user?.telefone || '',
     isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
     concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
-    concessionariaDadosBancarios: concessionariaInfo?.dados_bancarios || '',
     concessionariaNome: concessionariaInfo?.nome || '',
     regiaoCompraSelecionada: regiaoCompraSelecionada || '',
-    guindastes: guindastesCompletos
+    guindastes: guindastesCompletos,
+    // ✅ NOVO: Concessionária selecionada para pedido (uso interno Stark)
+    concessionariaPedidoNome: concessionariaSelecionadaParaPedido?.nome || null,
+    concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null
   };
 
   const totalItens = carrinho.reduce((total, item) => total + (item.preco || 0), 0);
