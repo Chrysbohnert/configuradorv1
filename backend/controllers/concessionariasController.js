@@ -21,11 +21,24 @@ const getConcessionariaById = asyncHandler(async (req, res) => {
 });
 
 const createConcessionaria = asyncHandler(async (req, res) => {
-  const { nome } = req.body;
-  if (!nome || !nome.trim()) {
-    return res_.badRequest(res, 'nome é obrigatório');
+  const payload = req.body || {};
+  const requiredFields = ['nome', 'regiao_preco'];
+
+  // [DEBUG TEMP] Cadastro de concessionária — remover após validar em produção
+  console.log('[POST /concessionarias] payload recebido:', JSON.stringify(payload));
+  console.log('[POST /concessionarias] campos obrigatórios esperados:', requiredFields);
+
+  const missingFields = requiredFields.filter((field) => {
+    const value = payload[field];
+    return value === undefined || value === null || (typeof value === 'string' && !value.trim());
+  });
+
+  if (missingFields.length) {
+    console.warn('[POST /concessionarias] campo(s) faltante(s):', missingFields);
+    return res_.badRequest(res, `Campo(s) obrigatório(s) ausente(s): ${missingFields.join(', ')}`);
   }
-  const created = await svc.create(req.body);
+
+  const created = await svc.create(payload);
   return res_.created(res, created);
 });
 

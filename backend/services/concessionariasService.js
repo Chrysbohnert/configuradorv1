@@ -5,12 +5,15 @@
  */
 
 const { query } = require('../db/pool');
+const crypto = require('crypto');
 
 async function findAll(includeInactive = false) {
   const where = includeInactive ? '' : 'WHERE ativo = true';
+
   const { rows } = await query(
     `SELECT * FROM concessionarias ${where} ORDER BY nome ASC`
   );
+
   return rows;
 }
 
@@ -19,6 +22,7 @@ async function findById(id) {
     `SELECT * FROM concessionarias WHERE id = $1`,
     [id]
   );
+
   return rows[0] || null;
 }
 
@@ -35,21 +39,65 @@ async function create(data) {
     ativo = true,
   } = data;
 
+  const id = crypto.randomUUID();
+
+  const insertFields = [
+    'id',
+    'nome',
+    'regiao_preco',
+    'cnpj',
+    'telefone',
+    'email',
+    'endereco',
+    'desconto_base',
+    'desconto_compra',
+    'ativo',
+  ];
+
+  const insertValues = [
+    id,
+    nome,
+    regiao_preco,
+    cnpj,
+    telefone,
+    email,
+    endereco,
+    desconto_base,
+    desconto_compra,
+    ativo,
+  ];
+
+  console.log('[concessionariasService.create] Criando concessionária:', {
+    id,
+    nome,
+    regiao_preco,
+  });
+
+  const placeholders = insertValues
+    .map((_, i) => `$${i + 1}`)
+    .join(',');
+
   const { rows } = await query(
-    `INSERT INTO concessionarias
-       (nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+    `INSERT INTO concessionarias (${insertFields.join(', ')})
+     VALUES (${placeholders})
      RETURNING *`,
-    [nome, regiao_preco, cnpj, telefone, email, endereco, desconto_base, desconto_compra, ativo]
+    insertValues
   );
+
   return rows[0];
 }
 
 async function update(id, fields) {
-  // Construir SET dinâmico apenas com campos informados
   const allowed = [
-    'nome', 'regiao_preco', 'cnpj', 'telefone', 'email', 'endereco',
-    'desconto_base', 'desconto_compra', 'ativo',
+    'nome',
+    'regiao_preco',
+    'cnpj',
+    'telefone',
+    'email',
+    'endereco',
+    'desconto_base',
+    'desconto_compra',
+    'ativo',
   ];
 
   const sets = [];
@@ -62,13 +110,20 @@ async function update(id, fields) {
     }
   });
 
-  if (sets.length === 0) throw new Error('Nenhum campo para atualizar');
+  if (sets.length === 0) {
+    throw new Error('Nenhum campo para atualizar');
+  }
 
   params.push(id);
+
   const { rows } = await query(
-    `UPDATE concessionarias SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    `UPDATE concessionarias
+     SET ${sets.join(', ')}
+     WHERE id = $${params.length}
+     RETURNING *`,
     params
   );
+
   return rows[0] || null;
 }
 
@@ -77,7 +132,14 @@ async function remove(id) {
     `DELETE FROM concessionarias WHERE id = $1`,
     [id]
   );
+
   return rowCount > 0;
 }
 
-module.exports = { findAll, findById, create, update, remove };
+module.exports = {
+  findAll,
+  findById,
+  create,
+  update,
+  remove,
+};

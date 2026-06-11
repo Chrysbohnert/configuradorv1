@@ -491,8 +491,3 @@ const Configuracoes = () => {
 };
 
 export default Configuracoes;
-
-
-
-
-

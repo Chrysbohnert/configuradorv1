@@ -10,12 +10,18 @@ const PG_ERRORS = {
 function errorHandler(err, req, res, _next) {
   const pgErr = PG_ERRORS[err.code];
   if (pgErr) {
+    const detailMsg = err.detail ? ` — ${err.detail}` : '';
     console.error('❌ ERRO COMPLETO POSTGRESQL:');
     console.error(err);
+    if (err.code === '23502') {
+      console.error(`[PG 23502] Campo NOT NULL violado: ${err.column || 'desconhecido'}${detailMsg}`);
+    }
     return res.status(pgErr.status).json({
       success: false,
-      error: pgErr.message,
-      ...(process.env.NODE_ENV === 'development' && { detail: err.detail }),
+      error: err.code === '23502' && err.column
+        ? `${pgErr.message}: ${err.column}`
+        : pgErr.message,
+      ...(process.env.NODE_ENV === 'development' && { detail: err.detail, column: err.column }),
     });
   }
 
