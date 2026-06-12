@@ -629,23 +629,34 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
         ` : ''}
       </div>
 
-      <!-- BLOCO 1: DADOS STARK -->
+      <!-- BLOCO 1: DADOS DO EMITENTE -->
       <div style="margin-top:10mm; font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK GUINDASTES LTDA</div>
-        <div><b>${t(lang, 'corporateName')}:</b> STARK GUINDASTES LTDA</div>
-        <div><b>CNPJ:</b> 33.228.312/0001-06</div>
-        <div><b>${t(lang, 'address')}:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
-        <div><b>${t(lang, 'contact')}:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
+        ${usarDadosConcessionaria ? `
+          <!-- DADOS DA CONCESSIONÁRIA (EMITENTE) -->
+          <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${concessionariaNome || 'CONCESSIONÁRIA'}</div>
+          <div><b>${t(lang, 'corporateName')}:</b> ${concessionariaNome || 'Não informado'}</div>
+          ${pedidoData.concessionariaCnpj ? `<div><b>CNPJ:</b> ${pedidoData.concessionariaCnpj}</div>` : ''}
+          ${pedidoData.concessionariaEndereco ? `<div><b>${t(lang, 'address')}:</b> ${pedidoData.concessionariaEndereco}</div>` : ''}
+          ${pedidoData.concessionariaTelefone ? `<div><b>${t(lang, 'contact')}:</b> ${pedidoData.concessionariaTelefone}</div>` : ''}
+          ${pedidoData.concessionariaEmail ? `<div><b>E-mail:</b> ${pedidoData.concessionariaEmail}</div>` : ''}
+        ` : `
+          <!-- DADOS STARK (EMITENTE) -->
+          <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">STARK GUINDASTES LTDA</div>
+          <div><b>${t(lang, 'corporateName')}:</b> STARK GUINDASTES LTDA</div>
+          <div><b>CNPJ:</b> 33.228.312/0001-06</div>
+          <div><b>${t(lang, 'address')}:</b> Rodovia RS-344, S/N – Santa Rosa/RS</div>
+          <div><b>${t(lang, 'contact')}:</b> (55) 2120-9961 / comercial@starkindustrial.com</div>
+        `}
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
 
       <!-- BLOCO 2: REPRESENTANTE -->
       <div style="font-size:4.2mm; line-height:1.45; letter-spacing:0.05mm;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${t(lang, 'starkRepresentative')}</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${usarDadosConcessionaria ? 'REPRESENTANTE DA CONCESSIONÁRIA' : t(lang, 'starkRepresentative')}</div>
         <div><b>${t(lang, 'nameLabel')}:</b> ${vendedor}</div>
         ${vendedorTelefone ? `<div><b>${t(lang, 'phone')}:</b> ${vendedorTelefone}</div>` : ''}
-        <div><b>${t(lang, 'company')}:</b> STARK GUINDASTES LTDA</div>
+        <div><b>${t(lang, 'company')}:</b> ${usarDadosConcessionaria ? (concessionariaNome || 'CONCESSIONÁRIA') : 'STARK GUINDASTES LTDA'}</div>
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:5mm 0;"></div>
@@ -1391,17 +1402,19 @@ const renderClausulas = (pedidoData, { inline = false } = {}) => {
     'O embarque do equipamento está condicionado ao pagamento de 100% do valor acordado e contrato de reserva de domínio assinado e com firma reconhecida para os casos de financiamento fábrica.',
     'As condições deste pedido são válidas somente para os produtos e quantidades constantes no mesmo.',
     'O atendimento deste pedido está sujeito a análise cadastral e de crédito, quando a condição de pagamento for a prazo.',
-    'É obrigatório informar placa, chassi e modelo de caminhão para confecção do Contrato de Reserva de Domínio.',
+    'É obrigatório informar placa, chassi e modelo de caminhão para confecção do Contrato de Reserva de Domínio, ficando desde já autorizada a inclusão do equipamento no documento do veículo quando aplicável.',
     'Se houver diferença de alíquota de ICMS, a mesma será de responsabilidade do comprador, conforme legislação vigente em seu estado de origem.',
     'Quando a retirada for por conta do cliente, o motorista transportador deverá estar devidamente autorizado e com carteira de motorista válida.',
-    'O atraso na definição do veículo ou no encaminhamento para montagem prorroga automaticamente o prazo de entrega em dias úteis equivalentes.',
+    'O atraso na definição do veículo, marca/modelo da caixa de câmbio ou no encaminhamento para montagem prorroga automaticamente o prazo de entrega em dias úteis equivalentes.',
     'Em vendas a prazo, a inadimplência suspende a garantia contratual do equipamento no período, com multa de 2% e juros de 0,33% ao dia.',
     'É obrigatório o estudo de integração veicular para a montagem do equipamento; sem o estudo, a STARK não se responsabiliza pela montagem.',
     'A STARK Guindastes não se responsabiliza por despesas extras com o caminhão (ex.: deslocamento de arla, aumento de entre-eixo, reforço de molas, parametrizações etc.).',
     'No faturamento, o preço do equipamento será atualizado conforme a tabela vigente, condicionando o embarque ao pagamento da diferença.',
     'As assinaturas abaixo formalizam o presente pedido e a concordância com os termos e condições.',
-    'Refere-se Instalação do Guindaste no Caminhão do cliente Comprador apenas a Implementação do Guindaste no Caminhão, demais alterações Provenientes em Virtude para Permitir a Implementação, não Estão Previstas nos Custos desta Proposta, que devem Obrigatoriamente serem Alinhados e Estritamente Concensado entre Instalador e Cliente Comprador, sem Qualquer Onus Financeiro a Stark.'
-
+    'Refere-se Instalação do Guindaste no Caminhão do cliente Comprador apenas a Implementação do Guindaste no Caminhão, demais alterações Provenientes em Virtude para Permitir a Implementação, não Estão Previstas nos Custos desta Proposta, que devem Obrigatoriamente serem Alinhados e Estritamente Concensado entre Instalador e Cliente Comprador, sem Qualquer Onus Financeiro a Stark.',
+    'O valor pago a título de sinal ou entrada possui natureza de arras confirmatórias e, em caso de desistência do comprador, não será passível de devolução.',
+    'O inadimplemento das obrigações financeiras poderá ensejar a suspensão da entrega, garantia e demais obrigações da STARK, bem como a adoção das medidas cabíveis previstas em lei e no Contrato de Reserva de Domínio.',
+    
   ];
 
   const clausulasEs = [
@@ -1586,41 +1599,112 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
         </div>
       </div>
 
-      <!-- BLOCO 5: FORMA DE PAGAMENTO -->
+      <!-- BLOCO 5: CONDIÇÕES DE PAGAMENTO DETALHADAS -->
       ${(() => {
         const p = pedidoData.pagamentoData || {};
         const percentualEntrada = parseFloat(p.percentualEntrada || 0);
         const entradaTotal = p.entradaTotal || 0;
+        const valorSinal = p.valorSinal || 0;
         const saldoAPagar = p.saldoAPagar || p.saldo || 0;
         const prazoPagamento = p.prazoPagamento || 'Não informado';
-        const numParcelas = p.parcelas?.length || 0;
+        const parcelas = p.parcelas || [];
+        const numParcelas = parcelas.length;
+        const descontoVendedor = parseFloat(p.desconto || 0);
+        const descontoPrazo = parseFloat(p.descontoPrazo || 0);
+        const acrescimo = parseFloat(p.acrescimo || 0);
+        const valorTotal = p.valorFinal || 0;
         
-        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado') {
+        // Calcular falta pagar da entrada
+        const faltaPagarEntrada = Math.max(0, entradaTotal - valorSinal);
+        
+        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado' || descontoVendedor > 0 || acrescimo > 0) {
           return `
             <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
             <div style="font-size:4.2mm; line-height:1.45;">
               <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">CONDIÇÕES DE PAGAMENTO</div>
-              <div style="display:grid; grid-template-columns:1fr 1fr; gap:3mm;">
-                ${percentualEntrada > 0 ? `
-                  <div style="padding:2mm; background:#e8f5e9; border-radius:2mm;">
-                    <div style="font-weight:600; font-size:3.5mm; color:#2e7d32;">ENTRADA (${percentualEntrada}%)</div>
-                    <div style="font-weight:800; font-size:4.5mm; margin-top:1mm;">${formatCurrency(entradaTotal)}</div>
+              
+              <!-- ENTRADA DETALHADA -->
+              ${percentualEntrada > 0 ? `
+                <div style="margin-bottom:2mm; padding:2.5mm; background:#e8f5e9; border-radius:2mm; border-left:3px solid #2e7d32;">
+                  <div style="font-weight:700; font-size:3.8mm; color:#2e7d32; margin-bottom:1.5mm;">ENTRADA (${percentualEntrada}% do valor total)</div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:2mm; font-size:3.5mm;">
+                    <div>
+                      <div style="color:#555;">Valor Total da Entrada:</div>
+                      <div style="font-weight:800; font-size:4.2mm; color:#2e7d32;">${formatCurrency(entradaTotal)}</div>
+                    </div>
+                    ${valorSinal > 0 ? `
+                      <div>
+                        <div style="color:#555;">Sinal Já Pago:</div>
+                        <div style="font-weight:700; font-size:3.8mm; color:#d32f2f;">- ${formatCurrency(valorSinal)}</div>
+                      </div>
+                    ` : ''}
+                    ${faltaPagarEntrada > 0 ? `
+                      <div style="${valorSinal > 0 ? 'grid-column: span 2;' : ''}">
+                        <div style="color:#555;">Falta Pagar da Entrada:</div>
+                        <div style="font-weight:800; font-size:4.2mm; color:#2e7d32;">${formatCurrency(faltaPagarEntrada)}</div>
+                      </div>
+                    ` : ''}
                   </div>
-                ` : ''}
-                ${saldoAPagar > 0 ? `
-                  <div style="padding:2mm; background:#e3f2fd; border-radius:2mm;">
-                    <div style="font-weight:600; font-size:3.5mm; color:#1565c0;">SALDO A PAGAR</div>
-                    <div style="font-weight:800; font-size:4.5mm; margin-top:1mm;">${formatCurrency(saldoAPagar)}</div>
-                  </div>
-                ` : ''}
-              </div>
-              ${prazoPagamento !== 'Não informado' ? `
-                <div style="margin-top:2mm; padding:2mm; background:#fff3e0; border-radius:2mm;">
-                  <div style="font-weight:600; font-size:3.5mm; color:#e65100;">PRAZO: ${prazoPagamento}</div>
-                  ${numParcelas > 0 ? `<div style="font-size:3.2mm; margin-top:0.5mm; color:#555;">${numParcelas}x parcelas</div>` : ''}
                 </div>
               ` : ''}
-            </div>
+              
+              <!-- SALDO FINANCIADO -->
+              ${saldoAPagar > 0 ? `
+                <div style="margin-bottom:2mm; padding:2.5mm; background:#e3f2fd; border-radius:2mm; border-left:3px solid #1565c0;">
+                  <div style="font-weight:700; font-size:3.8mm; color:#1565c0; margin-bottom:1.5mm;">SALDO FINANCIADO (${(100 - percentualEntrada).toFixed(0)}%)</div>
+                  <div style="font-size:3.5mm; color:#555; margin-bottom:1mm;">Valor a ser financiado após a entrada:</div>
+                  <div style="font-weight:800; font-size:4.5mm; color:#1565c0;">${formatCurrency(saldoAPagar)}</div>
+                </div>
+              ` : ''}
+              
+              <!-- DESCONTOS E ACRÉSCIMOS -->
+              ${(descontoVendedor > 0 || descontoPrazo > 0 || acrescimo > 0) ? `
+                <div style="margin-bottom:2mm; padding:2mm; background:#fafafa; border-radius:2mm; border:1px solid #ddd;">
+                  <div style="font-weight:700; font-size:3.6mm; margin-bottom:1mm;">AJUSTES FINANCEIROS</div>
+                  ${descontoVendedor > 0 ? `
+                    <div style="display:flex; justify-content:space-between; font-size:3.5mm; margin-bottom:0.5mm;">
+                      <span style="color:#2e7d32;">Desconto Vendedor (${descontoVendedor}%):</span>
+                      <span style="font-weight:700; color:#2e7d32;">- ${formatCurrency((valorTotal * descontoVendedor / 100))}</span>
+                    </div>
+                  ` : ''}
+                  ${descontoPrazo > 0 ? `
+                    <div style="display:flex; justify-content:space-between; font-size:3.5mm; margin-bottom:0.5mm;">
+                      <span style="color:#2e7d32;">Desconto Prazo (${descontoPrazo}%):</span>
+                      <span style="font-weight:700; color:#2e7d32;">- ${formatCurrency((valorTotal * descontoPrazo / 100))}</span>
+                    </div>
+                  ` : ''}
+                  ${acrescimo > 0 ? `
+                    <div style="display:flex; justify-content:space-between; font-size:3.5mm;">
+                      <span style="color:#e65100;">Acréscimo (${acrescimo}%):</span>
+                      <span style="font-weight:700; color:#e65100;">+ ${formatCurrency((valorTotal * acrescimo / 100))}</span>
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
+              
+              <!-- DETALHAMENTO DAS PARCELAS -->
+              ${numParcelas > 0 && prazoPagamento !== 'Não informado' && prazoPagamento !== 'à vista' ? `
+                <div style="padding:2.5mm; background:#fff3e0; border-radius:2mm; border-left:3px solid #e65100;">
+                  <div style="font-weight:700; font-size:3.8mm; color:#e65100; margin-bottom:1.5mm;">PAGAMENTO DO SALDO</div>
+                  <div style="font-size:3.5mm; color:#555; margin-bottom:1.5mm;">Prazo: ${prazoPagamento} (${numParcelas} parcelas)</div>
+                  <div style="display:grid; grid-template-columns:repeat(${Math.min(numParcelas, 4)}, 1fr); gap:1.5mm;">
+                    ${parcelas.map((parcela, idx) => {
+                      const prazo = parcela.prazo || parcela.numero || (idx + 1);
+                      return `
+                        <div style="padding:1.5mm; background:#fff; border:1px solid #ffcc02; border-radius:1.5mm; text-align:center;">
+                          <div style="font-size:3mm; color:#e65100; font-weight:700; margin-bottom:0.5mm;">${prazo} DD</div>
+                          <div style="font-size:3.2mm; font-weight:800; color:#333;">${formatCurrency(parcela.valor || 0)}</div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                  ${numParcelas > 4 ? `
+                    <div style="font-size:3mm; color:#666; margin-top:1mm; text-align:center; font-style:italic;">
+                      ${numParcelas} parcelas de ${formatCurrency(saldoAPagar / numParcelas)} cada
+                    </div>
+                  ` : ''}
+                </div>
+              ` : ''}
           `;
         }
         return '';

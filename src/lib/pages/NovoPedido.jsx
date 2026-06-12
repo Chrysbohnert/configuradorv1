@@ -1394,6 +1394,14 @@ const NovoPedido = () => {
                 onNext={handleNext}
                 onPrev={handlePrevious}
                 errors={validationErrors}
+                onPropostaRapida={() => {
+                  const totalSteps = steps.length;
+                  if (currentStep < totalSteps) {
+                    setCurrentStep(currentStep + 1);
+                    setMaxStepReached(Math.max(maxStepReached, currentStep + 1));
+                    setValidationErrors({});
+                  }
+                }}
               />
             ) : (
               <>

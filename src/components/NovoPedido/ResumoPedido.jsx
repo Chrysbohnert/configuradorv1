@@ -340,6 +340,11 @@ const ResumoPedido = ({
     isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
     concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
     concessionariaNome: concessionariaInfo?.nome || '',
+    // Dados completos da concessionária para o PDF
+    concessionariaCnpj: concessionariaInfo?.cnpj || '',
+    concessionariaEndereco: concessionariaInfo?.endereco || '',
+    concessionariaTelefone: concessionariaInfo?.telefone || '',
+    concessionariaEmail: concessionariaInfo?.email || '',
     regiaoCompraSelecionada: regiaoCompraSelecionada || '',
     guindastes: guindastesCompletos,
     // ✅ NOVO: Concessionária selecionada para pedido (uso interno Stark)

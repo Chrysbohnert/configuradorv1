@@ -12,7 +12,8 @@ const EstudosVeicularesMultiplos = ({
   setEstudosVeiculares,
   onNext,
   onPrev,
-  errors = {}
+  errors = {},
+  onPropostaRapida
 }) => {
   const itensValidos = (carrinho || []).filter(Boolean);
   const guindastes = itensValidos.filter(item => item?.tipo === 'guindaste');
@@ -155,6 +156,32 @@ const EstudosVeicularesMultiplos = ({
             <span>Estudo preenchido</span>
           </div>
         )}
+      </div>
+
+      {/* Aviso Proposta Rápida */}
+      <div className="proposta-rapida-hint">
+        <span>Não tem os dados do veículo agora?</span>
+        <button
+          className="btn-proposta-rapida"
+          onClick={() => {
+            handleEstudoChange({
+              tipo: 'PREENCHER',
+              marca: 'PREENCHER',
+              modelo: 'PREENCHER',
+              ano: '',
+              voltagem: 'PREENCHER',
+              comprimentoChassi: 'PREENCHER',
+              patolamento: '',
+              observacoes: `PROPOSTA PRELIMINAR - Dados do veículo a confirmar com o cliente (Equipamento ${equipamentoAtivo + 1})`
+            });
+            if (onPropostaRapida) { 
+              onPropostaRapida(); 
+            }
+          }}
+        >
+          Gerar proposta rápida
+        </button>
+        <span className="proposta-rapida-hint-note">(campos marcados como "A PREENCHER")</span>
       </div>
 
       {/* Formulário do estudo atual */}
