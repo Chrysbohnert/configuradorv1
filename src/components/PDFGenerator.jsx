@@ -603,6 +603,16 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
     return `${ruaNumero}${bairro}${cidadeUf}${cep}`.trim() || c.endereco || t(lang, 'notProvided');
   })();
 
+  // Determinar se deve usar dados da concessionária ou da Stark
+  const concessionariaNome = (pedidoData?.concessionariaNome || '').trim();
+  const usarDadosConcessionaria = Boolean(
+    pedidoData?.concessionariaData ||
+    pedidoData?.concessionaria ||
+    pedidoData?.concessionaria_id ||
+    pedidoData?.concessionariaLogoUrl ||
+    concessionariaNome
+  );
+
   el.innerHTML += `
     <div class="wrap" style="padding:14px 5mm 14px 12mm; width:250mm; margin:0;">
 
