@@ -527,6 +527,17 @@ const NovoPedido = () => {
     return principal ? [principal] : [];
   }, [user?.regioes_operacao, user?.regiao, isModoConcessionaria]);
 
+  // ✅ AUTO-SELEÇÃO: Quando vendedor Stark tem apenas 1 região, seleciona automaticamente
+  React.useEffect(() => {
+    if (isModoConcessionaria) return;
+    if (regiaoClienteSelecionada) return;
+    if (regioesParaSeletor.length === 1) {
+      const unicaRegiao = regioesParaSeletor[0];
+      console.log('[AUTO-SELEÇÃO] Vendedor tem apenas 1 região. Selecionando automaticamente:', unicaRegiao);
+      setRegiaoClienteSelecionada(unicaRegiao);
+    }
+  }, [regioesParaSeletor, isModoConcessionaria, regiaoClienteSelecionada]);
+
   // ← NOVO: Função para recalcular preços quando o contexto muda
   const recalcularPrecosCarrinho = async () => {
     // ⚠️ PROTEÇÃO: Validar carrinho como array válido
