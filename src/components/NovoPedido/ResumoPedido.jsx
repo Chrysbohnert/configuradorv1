@@ -845,6 +845,37 @@ const ResumoPedido = ({
             <div style={{ marginTop: '10px', background: '#fffbf0', border: '1px solid #ffd700', borderRadius: '6px', padding: '10px' }}>
               <div style={{ fontSize: '12px', fontWeight: 700, color: '#b45309', marginBottom: '6px' }}>Condição Exclusiva</div>
               <div style={{ fontSize: '13px', color: '#111', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>{pagamentoData.condicaoExclusivaObs}</div>
+              {(pagamentoData.valorSinalManual || 0) > 0 && (
+                <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #ffd700' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600 }}>💰 Sinal informado:</span>
+                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626' }}>- {formatCurrency(pagamentoData.valorSinalManual)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: '#16a34a' }}>Saldo restante:</span>
+                    <span style={{ fontSize: '16px', fontWeight: 800, color: '#16a34a' }}>
+                      {formatCurrency(Math.max(0, (pagamentoData.total || pagamentoData.valorFinal || 0) - pagamentoData.valorSinalManual))}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Sinal para Financiamento Bancário */}
+          {pagamentoData.financiamentoBancario === 'sim' && (pagamentoData.valorSinalManual || 0) > 0 && (
+            <div style={{ marginTop: '10px', background: '#eff6ff', border: '1px solid #3b82f6', borderRadius: '6px', padding: '10px' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', marginBottom: '6px' }}>Financiamento Bancário</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600 }}>💰 Sinal informado:</span>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: '#dc2626' }}>- {formatCurrency(pagamentoData.valorSinalManual)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: '#16a34a' }}>Valor a financiar:</span>
+                <span style={{ fontSize: '16px', fontWeight: 800, color: '#16a34a' }}>
+                  {formatCurrency(Math.max(0, (pagamentoData.total || pagamentoData.valorFinal || 0) - pagamentoData.valorSinalManual))}
+                </span>
+              </div>
             </div>
           )}
 

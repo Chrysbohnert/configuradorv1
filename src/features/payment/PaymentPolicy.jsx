@@ -183,6 +183,7 @@ export default function PaymentPolicy({
   // 6) Entrada, plano, financiamento e desconto do vendedor
   const [percentualEntrada, setPercentualEntrada] = useState(''); // '30' | '50' | 'financiamento' | 'exclusiva' | valor livre
   const [valorSinal, setValorSinal] = useState('');
+  const [valorSinalManual, setValorSinalManual] = useState(''); // Sinal para financiamento/condição exclusiva
   const [formaEntrada, setFormaEntrada] = useState('');
   const [observacoesNegociacao, setObservacoesNegociacao] = useState('');
   const [extraDescricao, setExtraDescricao] = useState('');
@@ -245,6 +246,7 @@ export default function PaymentPolicy({
     }
 
     if (initialPaymentData.valorSinal) setValorSinal(String(initialPaymentData.valorSinal));
+    if (initialPaymentData.valorSinalManual) setValorSinalManual(String(initialPaymentData.valorSinalManual));
     if (initialPaymentData.formaEntrada) setFormaEntrada(initialPaymentData.formaEntrada);
     if (initialPaymentData.observacoesNegociacao) setObservacoesNegociacao(initialPaymentData.observacoesNegociacao);
     if (initialPaymentData.extraDescricao) setExtraDescricao(initialPaymentData.extraDescricao);
@@ -411,7 +413,7 @@ export default function PaymentPolicy({
   _rtVals.current = {
     extraValor, planoSelecionado, precoBase, planoEfetivo,
     valorFreteCalculado, instalacao, instalacaoInclusoValor,
-    isComercioExterior, cotacaoUSD, valorSinal,
+    isComercioExterior, cotacaoUSD, valorSinal, valorSinalManual,
     percentualEntrada, percentualEntradaNumCalc, extraDescricao,
     formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
     tipoFrete, localInstalacao, tipoEntrega,
@@ -440,7 +442,7 @@ export default function PaymentPolicy({
           const {
             extraValor, planoSelecionado, precoBase, planoEfetivo,
             valorFreteCalculado, instalacao, instalacaoInclusoValor,
-            isComercioExterior, cotacaoUSD, valorSinal,
+            isComercioExterior, cotacaoUSD, valorSinal, valorSinalManual,
             percentualEntrada, percentualEntradaNumCalc, extraDescricao,
             formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
             tipoFrete, localInstalacao, tipoEntrega,
@@ -452,8 +454,11 @@ export default function PaymentPolicy({
             // Atualiza o estado local com o desconto aprovado
             setDescontoVendedor(descontoAprovado);
             
+            // Verifica se é financiamento bancário ou condição exclusiva (não precisa de plano)
+            const isFinanciamentoOuExclusiva = percentualEntrada === 'financiamento' || modoEntrada === 'exclusiva';
+            
             // Força o recálculo do pagamento com o novo desconto
-            if (!planoSelecionado) {
+            if (!planoSelecionado && !isFinanciamentoOuExclusiva) {
               console.warn('⚠️ [PaymentPolicy] Plano não selecionado, não é possível recalcular');
               // Mesmo sem plano, o desconto já fica salvo no estado e será aplicado
               // assim que o usuário selecionar o plano.
@@ -466,6 +471,87 @@ export default function PaymentPolicy({
               return;
             }
 
+            // Cálculo para financiamento bancário ou condição exclusiva (sem plano)
+            if (isFinanciamentoOuExclusiva) {
+              const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
+              const descontoExtraValor = descontoAprovado > 0
+                ? baseEquipamentos * (descontoAprovado / 100)
+                : 0;
+              const valorAposExtra = baseEquipamentos - descontoExtraValor;
+
+              // Frete e instalação
+              const valorFrete = valorFreteCalculado;
+              const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
+
+              const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+              
+              // Sinal manual (se houver)
+              const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
+              const valorSinalValidado = Math.min(valorSinalManualNum, valorTotal);
+              const saldoRestante = Math.max(0, valorTotal - valorSinalValidado);
+
+              const cUsd = Number(cotacaoUSD);
+              const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
+                ? (valorTotal / cUsd)
+                : 0;
+
+              const novoResultado = {
+                precoBase,
+                financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
+                tipoCliente,
+                participacaoRevenda,
+                tipoIE,
+                instalacao,
+                tipoFrete,
+                localInstalacao,
+                tipoEntrega,
+                tipoPagamento: tipoCliente,
+                tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : instalacao === 'cliente' ? 'cliente paga direto' : '',
+                revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
+                prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : 'Financiamento Bancário',
+                descontoAdicionalValor: descontoExtraValor,
+                valorFinalComDescontoAdicional: valorAposExtra,
+                descontoValor: 0,
+                acrescimoValor: 0,
+                valorAjustado: valorAposExtra,
+                valorFrete,
+                valorInstalacao,
+                valorConversor,
+                entrada: 0,
+                saldo: saldoRestante,
+                parcelas: [],
+                total: valorTotal,
+                valorFinal: valorTotal,
+                percentualEntrada: 0,
+                entradaTotal: 0,
+                valorSinal: 0,
+                valorSinalManual: valorSinalValidado,
+                faltaEntrada: 0,
+                saldoAPagar: saldoRestante,
+                formaEntrada: '',
+                observacoesNegociacao: (observacoesNegociacao || '').trim(),
+                extraDescricao: extraDescricao || '',
+                extraValor: extraValorNum,
+                moeda: isComercioExterior ? 'USD' : 'BRL',
+                cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+                valorFinalUSD,
+                desconto: descontoAprovado,
+                descontoPrazo: 0,
+                acrescimo: 0,
+                condicaoExclusiva: modoEntrada === 'exclusiva',
+                condicaoExclusivaObs: modoEntrada === 'exclusiva' ? condicaoExclusivaObs.trim() : '',
+              };
+
+              setResultado(novoResultado);
+              setModalSolicitacaoOpen(false);
+              setAguardandoAprovacao(false);
+              setSolicitacaoId(null);
+              forceUpdate();
+              alert(`✅ Desconto aprovado por ${aprovadorNome}!\n\nValor atualizado com sucesso.`);
+              return;
+            }
+
+            // Cálculo normal com plano selecionado
             const r = calcularPagamento({
               precoBase: precoBase,
               plan: planoEfetivo,
@@ -927,9 +1013,15 @@ export default function PaymentPolicy({
       const valorAposExtra = precoBase - descontoExtraValor;
       const valorFrete = valorFreteCalculado;
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
-      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      
+      // Valor do sinal manual (opcional) - desconta do valor total
+      const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
+      const valorSinalValidado = Math.min(valorSinalManualNum, valorTotal); // Não pode ultrapassar o total
+      const saldoRestante = Math.max(0, valorTotal - valorSinalValidado);
+      
       const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
-        ? (valorFinal / cUsd)
+        ? (valorTotal / cUsd)
         : 0;
 
       const r = {
@@ -955,15 +1047,16 @@ export default function PaymentPolicy({
         valorInstalacao,
         valorConversor,
         entrada: 0,
-        saldo: valorFinal,
+        saldo: saldoRestante,
         parcelas: [],
-        total: valorFinal,
-        valorFinal,
+        total: valorTotal,
+        valorFinal: valorTotal,
         percentualEntrada: 0,
         entradaTotal: 0,
-        valorSinal: 0,
+        valorSinal: 0, // Sinal de entrada (não usado em exclusiva)
+        valorSinalManual: valorSinalValidado, // Sinal manual para descontar do total
         faltaEntrada: 0,
-        saldoAPagar: valorFinal,
+        saldoAPagar: saldoRestante,
         formaEntrada: '',
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
         extraDescricao: extraDescricao || '',
@@ -999,9 +1092,15 @@ export default function PaymentPolicy({
       // Instalação pode ser inclusa na proposta (opcional) também para revenda
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-      const valorFinalFinanciamento = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      
+      // Valor do sinal manual (opcional) - desconta do valor total para financiamento
+      const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
+      const valorSinalValidado = Math.min(valorSinalManualNum, valorTotal); // Não pode ultrapassar o total
+      const saldoRestante = Math.max(0, valorTotal - valorSinalValidado);
+      
       const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
-        ? (valorFinalFinanciamento / cUsd)
+        ? (valorTotal / cUsd)
         : 0;
       const r = {
         precoBase,
@@ -1029,10 +1128,10 @@ export default function PaymentPolicy({
         valorInstalacao,
         valorConversor, // Conversor de voltagem (Caminhão 12V = R$ 450)
         entrada: 0,
-        saldo: valorFinalFinanciamento,
+        saldo: saldoRestante,
         parcelas: [],
-        total: valorFinalFinanciamento,
-        valorFinal: valorFinalFinanciamento, // Adicionar para compatibilidade com PDF
+        total: valorTotal,
+        valorFinal: valorTotal, // Adicionar para compatibilidade com PDF
         // Campos em percentual para o PDF
         desconto: descontoVendedorEfetivo,
         descontoPrazo: 0,
@@ -1040,9 +1139,10 @@ export default function PaymentPolicy({
         // Campos de entrada (zerados para financiamento)
         percentualEntrada: 0,
         entradaTotal: 0,
-        valorSinal: 0,
+        valorSinal: 0, // Sinal de entrada padrão (não usado em financiamento)
+        valorSinalManual: valorSinalValidado, // Sinal manual para descontar do total
         faltaEntrada: 0,
-        saldoAPagar: valorFinalFinanciamento,
+        saldoAPagar: saldoRestante,
         formaEntrada: '',
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
         extraDescricao: extraDescricao || '',
@@ -1307,13 +1407,97 @@ export default function PaymentPolicy({
         // Atualiza o estado local com o desconto aprovado
         setDescontoVendedor(solicitacao.desconto_aprovado);
         
+        // Verifica se é financiamento bancário ou condição exclusiva (não precisa de plano)
+        const isFinanciamentoOuExclusiva = percentualEntrada === 'financiamento' || modoEntrada === 'exclusiva';
+        
         // Força o recálculo do pagamento com o novo desconto
-        if (!planoSelecionado) {
+        if (!planoSelecionado && !isFinanciamentoOuExclusiva) {
           console.warn('⚠️ [PaymentPolicy] Plano não selecionado, não é possível recalcular');
           alert('⚠️ Por favor, selecione um plano de pagamento antes de aplicar o desconto.');
           return;
         }
 
+        // Cálculo para financiamento bancário ou condição exclusiva (sem plano)
+        if (isFinanciamentoOuExclusiva) {
+          const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
+          const descontoExtraValor = solicitacao.desconto_aprovado > 0
+            ? baseEquipamentos * (solicitacao.desconto_aprovado / 100)
+            : 0;
+          const valorAposExtra = baseEquipamentos - descontoExtraValor;
+
+          // Frete e instalação
+          const valorFrete = valorFreteCalculado;
+          const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
+
+          const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+          
+          // Sinal manual (se houver)
+          const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
+          const valorSinalValidado = Math.min(valorSinalManualNum, valorTotal);
+          const saldoRestante = Math.max(0, valorTotal - valorSinalValidado);
+
+          const cUsd = Number(cotacaoUSD);
+          const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
+            ? (valorTotal / cUsd)
+            : 0;
+
+          const novoResultado = {
+            precoBase,
+            financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
+            tipoCliente,
+            participacaoRevenda,
+            tipoIE,
+            instalacao,
+            tipoFrete,
+            localInstalacao,
+            tipoEntrega,
+            tipoPagamento: tipoCliente,
+            tipoInstalacao: instalacao === 'incluso' ? 'Incluso no pedido' : instalacao === 'cliente' ? 'cliente paga direto' : '',
+            revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
+            prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : 'Financiamento Bancário',
+            descontoAdicionalValor: descontoExtraValor,
+            valorFinalComDescontoAdicional: valorAposExtra,
+            descontoValor: 0,
+            acrescimoValor: 0,
+            valorAjustado: valorAposExtra,
+            valorFrete,
+            valorInstalacao,
+            valorConversor,
+            entrada: 0,
+            saldo: saldoRestante,
+            parcelas: [],
+            total: valorTotal,
+            valorFinal: valorTotal,
+            percentualEntrada: 0,
+            entradaTotal: 0,
+            valorSinal: 0,
+            valorSinalManual: valorSinalValidado,
+            faltaEntrada: 0,
+            saldoAPagar: saldoRestante,
+            formaEntrada: '',
+            observacoesNegociacao: (observacoesNegociacao || '').trim(),
+            extraDescricao: extraDescricao || '',
+            extraValor: extraValorNum,
+            moeda: isComercioExterior ? 'USD' : 'BRL',
+            cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
+            valorFinalUSD,
+            desconto: solicitacao.desconto_aprovado,
+            descontoPrazo: 0,
+            acrescimo: 0,
+            condicaoExclusiva: modoEntrada === 'exclusiva',
+            condicaoExclusivaObs: modoEntrada === 'exclusiva' ? condicaoExclusivaObs.trim() : '',
+          };
+
+          setResultado(novoResultado);
+          setModalSolicitacaoOpen(false);
+          setAguardandoAprovacao(false);
+          setSolicitacaoId(null);
+          forceUpdate();
+          alert(`✅ Desconto aprovado!\n\nValor atualizado com sucesso.`);
+          return;
+        }
+
+        // Cálculo normal com plano selecionado
         const r = calcularPagamento({
           precoBase: precoBaseAjustado,
           plan: planoEfetivo,
@@ -1809,6 +1993,34 @@ export default function PaymentPolicy({
                 style={{ width: '100%', resize: 'vertical' }}
               />
             </div>
+            {/* Valor do Sinal para Condição Exclusiva */}
+            <div className="form-group" style={{ marginBottom: '10px' }}>
+              <label>Valor do Sinal (opcional)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={valorSinalManual}
+                onChange={e => {
+                  const v = parseFloat(e.target.value) || 0;
+                  const max = resultado?.total || precoBase || 0;
+                  if (max > 0 && v > max) {
+                    setValorSinalManual(String(max));
+                  } else {
+                    setValorSinalManual(e.target.value);
+                  }
+                }}
+                placeholder="R$ 0,00"
+              />
+              <small className="form-help help-info" style={{ display: 'block', marginTop: '4px' }}>
+                Se informado, será abatido do valor total da proposta
+              </small>
+              {parseFloat(valorSinalManual) > 0 && resultado?.total > 0 && (
+                <div style={{ marginTop: '8px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '6px', fontSize: '13px' }}>
+                  <strong>Saldo restante:</strong> {formatCurrency(Math.max(0, resultado.total - parseFloat(valorSinalManual || 0)))}
+                </div>
+              )}
+            </div>
             <div className="form-group">
               <label>Observações da Negociação (opcional)</label>
               <textarea
@@ -1928,7 +2140,39 @@ export default function PaymentPolicy({
                 </div>
               )}
               {!isComercioExterior && modoEntrada === '' && percentualEntrada === 'financiamento' && (
-                <div className="pp-info-note">Financiamento bancário — condições definidas pelo banco.</div>
+                <div className="pp-subsection">
+                  <div className="pp-info-note" style={{ marginBottom: '10px' }}>
+                    Financiamento bancário — condições definidas pelo banco.
+                  </div>
+                  {/* Valor do Sinal para Financiamento */}
+                  <div className="form-group" style={{ marginBottom: '10px' }}>
+                    <label>Valor do Sinal (opcional)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={valorSinalManual}
+                      onChange={e => {
+                        const v = parseFloat(e.target.value) || 0;
+                        const max = resultado?.total || precoBase || 0;
+                        if (max > 0 && v > max) {
+                          setValorSinalManual(String(max));
+                        } else {
+                          setValorSinalManual(e.target.value);
+                        }
+                      }}
+                      placeholder="R$ 0,00"
+                    />
+                    <small className="form-help help-info" style={{ display: 'block', marginTop: '4px' }}>
+                      Se informado, será abatido do valor total para financiamento
+                    </small>
+                    {parseFloat(valorSinalManual) > 0 && resultado?.total > 0 && (
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: '#eff6ff', borderRadius: '6px', fontSize: '13px' }}>
+                        <strong>Valor a financiar:</strong> {formatCurrency(Math.max(0, resultado.total - parseFloat(valorSinalManual || 0)))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               )}
             </div>
 
@@ -2172,6 +2416,12 @@ export default function PaymentPolicy({
             {percentualEntrada === 'financiamento' && (
               <div className="pp-info-note pp-subsection">
                 Financiamento bancário selecionado — condições definidas pelo banco.
+                {parseFloat(valorSinalManual) > 0 && resultado?.total > 0 && (
+                  <div style={{ marginTop: '8px', fontWeight: 500 }}>
+                    💰 Sinal informado: {formatCurrency(parseFloat(valorSinalManual || 0))} | 
+                    Valor a financiar: {formatCurrency(Math.max(0, resultado.total - parseFloat(valorSinalManual || 0)))}
+                  </div>
+                )}
               </div>
             )}
 

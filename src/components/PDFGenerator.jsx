@@ -1183,6 +1183,16 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ${p.financiamentoBancario === 'sim' ? `
         <div style="margin-bottom:11px; border:1px solid #333; background:#f5f5f5; padding:8px 12px;">
           <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000;">${t(lang, 'financingModeShort')}</div>
+          ${(p.valorSinalManual || 0) > 0 ? `
+            <div style="margin-top:8px; padding-top:8px; border-top:1px solid #ccc; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:600; color:#000;">💰 Sinal informado:</span>
+              <span style="font-size:14px; font-weight:700; color:#d32f2f;">- ${fmt(convert(p.valorSinalManual))}</span>
+            </div>
+            <div style="margin-top:6px; display:flex; justify-content:space-between; align-items:center;">
+              <span style="font-size:12px; font-weight:600; color:#2e7d32;">Valor a financiar:</span>
+              <span style="font-size:16px; font-weight:800; color:#2e7d32;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
@@ -1331,6 +1341,18 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
           <div style="padding:10px 12px; font-size:12px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
           </div>
+          ${(p.valorSinalManual || 0) > 0 ? `
+            <div style="padding:10px 12px; border-top:1px solid #ccc; background:#f9fafb;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:12px; font-weight:600; color:#000;">💰 Sinal informado:</span>
+                <span style="font-size:14px; font-weight:700; color:#d32f2f;">- ${fmt(convert(p.valorSinalManual))}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:12px; font-weight:600; color:#2e7d32;">Saldo restante:</span>
+                <span style="font-size:16px; font-weight:800; color:#2e7d32;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
@@ -1966,6 +1988,18 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
           <div style="padding:10px 12px; font-size:13px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
           </div>
+          ${(p.valorSinalManual || 0) > 0 ? `
+            <div style="padding:10px 12px; border-top:1px solid #ccc; background:#f9fafb;">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <span style="font-size:13px; font-weight:600; color:#000;">💰 Sinal informado:</span>
+                <span style="font-size:15px; font-weight:700; color:#d32f2f;">- ${fmt(convert(p.valorSinalManual))}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-size:13px; font-weight:600; color:#2e7d32;">Saldo restante:</span>
+                <span style="font-size:18px; font-weight:800; color:#2e7d32;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
+              </div>
+            </div>
+          ` : ''}
         </div>
       ` : ''}
 
