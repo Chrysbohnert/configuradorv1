@@ -474,16 +474,18 @@ export default function PaymentPolicy({
             // Cálculo para financiamento bancário ou condição exclusiva (sem plano)
             if (isFinanciamentoOuExclusiva) {
               const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
-              const descontoExtraValor = descontoAprovado > 0
-                ? baseEquipamentos * (descontoAprovado / 100)
-                : 0;
-              const valorAposExtra = baseEquipamentos - descontoExtraValor;
 
               // Frete e instalação
               const valorFrete = valorFreteCalculado;
               const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-              const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+              const valorBaseTotalRT = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+              const descontoExtraValor = descontoAprovado > 0
+                ? valorBaseTotalRT * (descontoAprovado / 100)
+                : 0;
+              const valorAposExtra = valorBaseTotalRT - descontoExtraValor;
+
+              const valorTotal = valorAposExtra;
               
               // Sinal manual (se houver)
               const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
@@ -558,17 +560,18 @@ export default function PaymentPolicy({
               dataEmissaoNF: new Date(),
             });
 
-            // Aplica desconto do vendedor aprovado
-            const descontoExtraValor = precoBase * (descontoAprovado / 100);
-            const valorAposExtra = r.valorAjustado - descontoExtraValor;
-
             // Calcula frete (mesma regra do cálculo principal)
             const valorFrete = valorFreteCalculado;
 
             // Calcula instalação
             const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-            const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+            const valorSemDescGestorRT = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao;
+            // Aplica desconto do gestor sobre o valorFinal (depois de todos os cálculos)
+            const descontoExtraValor = descontoAprovado > 0 ? valorSemDescGestorRT * (descontoAprovado / 100) : 0;
+            const valorAposExtra = valorSemDescGestorRT - descontoExtraValor;
+
+            const valorFinal = valorAposExtra;
 
             const cUsd = Number(cotacaoUSD);
             const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
@@ -1009,11 +1012,12 @@ export default function PaymentPolicy({
     // Condição Exclusiva: não calcula parcelas, salva observação manual
     if (modoEntrada === 'exclusiva') {
       const extraValorNum = parseFloat(extraValor) || 0;
-      const descontoExtraValor = precoBase * (descontoVendedorEfetivo / 100);
-      const valorAposExtra = precoBase - descontoExtraValor;
       const valorFrete = valorFreteCalculado;
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
-      const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorBaseTotal = precoBase + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const descontoExtraValor = descontoVendedorEfetivo > 0 ? (valorBaseTotal * descontoVendedorEfetivo / 100) : 0;
+      const valorAposExtra = valorBaseTotal - descontoExtraValor;
+      const valorTotal = valorAposExtra;
       
       // Valor do sinal manual (opcional) - desconta do valor total
       const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
@@ -1080,10 +1084,6 @@ export default function PaymentPolicy({
     if (percentualEntrada === 'financiamento') {
       const extraValorNum = parseFloat(extraValor) || 0;
       const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
-      const descontoExtraValor = descontoVendedorEfetivo > 0
-        ? baseEquipamentos * (descontoVendedorEfetivo / 100)
-        : 0;
-      const valorAposExtra = baseEquipamentos - descontoExtraValor;
 
       // Frete pode ser incluso no pedido (CIF) mesmo em financiamento.
       // Quando FOB, o cliente paga direto e o valor fica 0.
@@ -1092,7 +1092,13 @@ export default function PaymentPolicy({
       // Instalação pode ser inclusa na proposta (opcional) também para revenda
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-      const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorBaseTotalFin = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const descontoExtraValor = descontoVendedorEfetivo > 0
+        ? valorBaseTotalFin * (descontoVendedorEfetivo / 100)
+        : 0;
+      const valorAposExtra = valorBaseTotalFin - descontoExtraValor;
+
+      const valorTotal = valorAposExtra;
       
       // Valor do sinal manual (opcional) - desconta do valor total para financiamento
       const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
@@ -1170,18 +1176,19 @@ export default function PaymentPolicy({
         dataEmissaoNF: new Date(),
       });
 
-      const descontoExtraValor = descontoVendedorEfetivo > 0
-        ? precoBaseAjustado * (descontoVendedorEfetivo / 100)
-        : 0;
-      const valorAposExtra = r.valorAjustado - descontoExtraValor;
-
       // frete: somente se frete incluso + selecionado tipo de entrega e local
       const valorFrete = valorFreteCalculado;
 
       // instalação: apenas para CLIENTE, revenda não tem instalação
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-      const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const valorSemDescGestor = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+      const descontoExtraValor = descontoVendedorEfetivo > 0
+        ? valorSemDescGestor * (descontoVendedorEfetivo / 100)
+        : 0;
+      const valorAposExtra = valorSemDescGestor - descontoExtraValor;
+
+      const valorFinal = valorAposExtra;
 
       const valorFinalUSD = (isComercioExterior && Number.isFinite(cUsd) && cUsd > 0)
         ? (valorFinal / cUsd)
@@ -1420,16 +1427,18 @@ export default function PaymentPolicy({
         // Cálculo para financiamento bancário ou condição exclusiva (sem plano)
         if (isFinanciamentoOuExclusiva) {
           const baseEquipamentos = modoConcessionaria ? precoBaseAjustado : precoBase;
-          const descontoExtraValor = solicitacao.desconto_aprovado > 0
-            ? baseEquipamentos * (solicitacao.desconto_aprovado / 100)
-            : 0;
-          const valorAposExtra = baseEquipamentos - descontoExtraValor;
 
           // Frete e instalação
           const valorFrete = valorFreteCalculado;
           const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-          const valorTotal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+          const valorBaseTotalHV = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+          const descontoExtraValor = solicitacao.desconto_aprovado > 0
+            ? valorBaseTotalHV * (solicitacao.desconto_aprovado / 100)
+            : 0;
+          const valorAposExtra = valorBaseTotalHV - descontoExtraValor;
+
+          const valorTotal = valorAposExtra;
           
           // Sinal manual (se houver)
           const valorSinalManualNum = parseFloat(valorSinalManual) || 0;
@@ -1504,10 +1513,6 @@ export default function PaymentPolicy({
           dataEmissaoNF: new Date(),
         });
 
-        // Aplica desconto do vendedor aprovado
-        const descontoExtraValor = precoBaseAjustado * (solicitacao.desconto_aprovado / 100);
-        const valorAposExtra = r.valorAjustado - descontoExtraValor;
-
         // Calcula frete
         const valorFrete = tipoFrete === 'CIF' && dadosFreteAtual && tipoEntrega
           ? (tipoEntrega === 'prioridade'
@@ -1518,7 +1523,12 @@ export default function PaymentPolicy({
         // Calcula instalação
         const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-        const valorFinal = valorAposExtra + extraValorNum + valorFrete + valorInstalacao;
+        const valorSemDescGestorHV = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao;
+        // Aplica desconto do gestor sobre o valorFinal (depois de todos os cálculos)
+        const descontoExtraValor = solicitacao.desconto_aprovado > 0 ? valorSemDescGestorHV * (solicitacao.desconto_aprovado / 100) : 0;
+        const valorAposExtra = valorSemDescGestorHV - descontoExtraValor;
+
+        const valorFinal = valorAposExtra;
 
         // Calcular campos de entrada para o PDF
         const valorSinalNum = parseFloat(valorSinal) || 0;

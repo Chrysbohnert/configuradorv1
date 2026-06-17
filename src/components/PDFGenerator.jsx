@@ -637,6 +637,11 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
             CONDIÇÃO EXCLUSIVA — ${(pagamento.prazoPagamento || '').toUpperCase()}
           </div>
         ` : ''}
+        ${usarDadosConcessionaria && !pedidoData.isConcessionariaCompra ? `
+          <div style="font-size:3.3mm; font-weight:600; margin-top:2.5mm; padding:1.5mm 3mm; border:0.3mm solid #444; display:inline-block; letter-spacing:0.1mm; color:#222;">
+            Proposta comercial emitida pela ${concessionariaNome || 'Concessionária'}, representante autorizada Stark Guindastes
+          </div>
+        ` : ''}
       </div>
 
       <!-- BLOCO 1: DADOS DO EMITENTE -->
@@ -1303,13 +1308,25 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">④ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
           <div style="padding:10px 12px;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')}</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')} (${percentualEntradaNum}%)</span>
               <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
             </div>
+            ${sinalPago > 0 ? `
+              <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <span style="font-size:12px; font-weight:600; color:#000;">Sinal já pago / sinal no pedido</span>
+                  <span style="font-size:13px; font-weight:700; color:#c00;">- ${fmt(convert(sinalPago))}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <span style="font-size:12px; font-weight:600; color:#000;">Saldo restante da entrada</span>
+                  <span style="font-size:15px; font-weight:800; color:#000;">${fmt(convert(Math.max(0, entradaTotalCalc - sinalPago)))}</span>
+                </div>
+              </div>
+            ` : ''}
             ${p.formaEntrada ? `
-              <div style="margin-bottom:6px; padding:7px 10px; background:#fff; border:1px solid #ddd;">
-                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')}:</span>
+              <div style="margin-top:5px; padding:6px 10px; background:#f5f5f5; border:1px solid #ddd;">
+                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')} do saldo da entrada:</span>
                 <span style="font-weight:700; color:#000; margin-left:5px; font-size:12px;">${p.formaEntrada.toUpperCase()}</span>
               </div>
             ` : ''}
@@ -1318,16 +1335,11 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
         <!-- SALDO A PAGAR -->
         <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">⑤ ${t(lang, 'balanceToPay')}</div>
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">⑤ ${t(lang, 'balanceToPay')} (após entrada)</div>
           <div style="padding:10px 12px;">
-            <div style="font-size:12px; color:#000; margin-bottom:6px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
-            ${sinalPago > 0 ? `
-            <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:12px;">
-              <span style="font-weight:600; color:#000;">${t(lang, 'downPaymentPaid')}</span>
-              <span style="font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
-            </div>
-            ` : ''}
+            <div style="font-size:11px; color:#555; margin-bottom:6px;">${fmt(convert(valorTotalFinal))} − ${fmt(convert(entradaTotalCalc))} = saldo a pagar</div>
             <div style="font-weight:800; font-size:22px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
+            <div style="font-size:11px; color:#555; margin-top:4px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
           </div>
         </div>
       ` : ''}
@@ -1495,6 +1507,10 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
   } catch {}
   if (!vendedor) vendedor = t(lang, 'notProvided');
 
+  const concessionariaNomeSig = (!pedidoData.isConcessionariaCompra && pedidoData.concessionariaNome)
+    ? (pedidoData.concessionariaNome || '').trim()
+    : '';
+
   const cliente = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : t(lang, 'notProvided');
 
   const el = createContainer('pdf-assinaturas', { inline });
@@ -1508,7 +1524,7 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
         </div>
         <div class="center">
           <div style="height: 56px;"></div>
-          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">${t(lang, 'signatureSeller')}: ${vendedor.toUpperCase()}</div>
+          <div style="border-top: 1px solid #000; padding-top: 6px; font-size: 14px;">${t(lang, 'signatureSeller')}: ${vendedor.toUpperCase()}${concessionariaNomeSig ? ` — ${concessionariaNomeSig.toUpperCase()}` : ''}</div>
         </div>
       </div>
     </div>
