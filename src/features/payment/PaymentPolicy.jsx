@@ -451,8 +451,8 @@ export default function PaymentPolicy({
           try {
             const extraValorNum = parseFloat(extraValor) || 0;
 
-            // Atualiza o estado local com o desconto aprovado
-            setDescontoVendedor(descontoAprovado);
+            // descontoAprovado agora é VALOR FINAL DESEJADO em R$ — não atualizar descontoVendedor (percentual)
+            // O valor final será aplicado diretamente no resultado abaixo
             
             // Verifica se é financiamento bancário ou condição exclusiva (não precisa de plano)
             const isFinanciamentoOuExclusiva = percentualEntrada === 'financiamento' || modoEntrada === 'exclusiva';
@@ -480,10 +480,9 @@ export default function PaymentPolicy({
               const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
               const valorBaseTotalRT = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
-              const descontoExtraValor = descontoAprovado > 0
-                ? valorBaseTotalRT * (descontoAprovado / 100)
-                : 0;
-              const valorAposExtra = valorBaseTotalRT - descontoExtraValor;
+              // desconto_aprovado agora é o VALOR FINAL DESEJADO em R$
+              const valorAposExtra = descontoAprovado > 0 ? descontoAprovado : valorBaseTotalRT;
+              const descontoExtraValor = valorBaseTotalRT - valorAposExtra;
 
               const valorTotal = valorAposExtra;
               
@@ -537,7 +536,7 @@ export default function PaymentPolicy({
                 moeda: isComercioExterior ? 'USD' : 'BRL',
                 cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
                 valorFinalUSD,
-                desconto: descontoAprovado,
+                desconto: 0,
                 descontoPrazo: 0,
                 acrescimo: 0,
                 condicaoExclusiva: modoEntrada === 'exclusiva',
@@ -566,10 +565,10 @@ export default function PaymentPolicy({
             // Calcula instalação
             const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-            const valorSemDescGestorRT = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao;
-            // Aplica desconto do gestor sobre o valorFinal (depois de todos os cálculos)
-            const descontoExtraValor = descontoAprovado > 0 ? valorSemDescGestorRT * (descontoAprovado / 100) : 0;
-            const valorAposExtra = valorSemDescGestorRT - descontoExtraValor;
+            const valorSemDescGestorRT = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+            // desconto_aprovado é o VALOR FINAL DESEJADO em R$ — aplica diretamente
+            const valorAposExtra = descontoAprovado > 0 ? descontoAprovado : valorSemDescGestorRT;
+            const descontoExtraValor = valorSemDescGestorRT - valorAposExtra;
 
             const valorFinal = valorAposExtra;
 
@@ -627,8 +626,8 @@ export default function PaymentPolicy({
               cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
               valorFinalUSD,
               
-              // Campos em percentual para o PDF
-              desconto: descontoAprovado, // % do desconto aprovado
+              // Campos em percentual para o PDF (mantém desconto do vendedor/plano, não o desconto adicional em R$)
+              desconto: r.desconto ?? 0,
               acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
               
               // Campos de entrada
@@ -1411,8 +1410,8 @@ export default function PaymentPolicy({
 
         const extraValorNum = parseFloat(extraValor) || 0;
         
-        // Atualiza o estado local com o desconto aprovado
-        setDescontoVendedor(solicitacao.desconto_aprovado);
+        // desconto_aprovado agora é VALOR FINAL DESEJADO em R$ — não atualizar descontoVendedor (percentual)
+        // O valor final será aplicado diretamente no resultado abaixo
         
         // Verifica se é financiamento bancário ou condição exclusiva (não precisa de plano)
         const isFinanciamentoOuExclusiva = percentualEntrada === 'financiamento' || modoEntrada === 'exclusiva';
@@ -1433,10 +1432,9 @@ export default function PaymentPolicy({
           const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
           const valorBaseTotalHV = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
-          const descontoExtraValor = solicitacao.desconto_aprovado > 0
-            ? valorBaseTotalHV * (solicitacao.desconto_aprovado / 100)
-            : 0;
-          const valorAposExtra = valorBaseTotalHV - descontoExtraValor;
+          // desconto_aprovado é o VALOR FINAL DESEJADO em R$
+          const valorAposExtra = solicitacao.desconto_aprovado > 0 ? solicitacao.desconto_aprovado : valorBaseTotalHV;
+          const descontoExtraValor = valorBaseTotalHV - valorAposExtra;
 
           const valorTotal = valorAposExtra;
           
@@ -1490,7 +1488,7 @@ export default function PaymentPolicy({
             moeda: isComercioExterior ? 'USD' : 'BRL',
             cotacao_usd: isComercioExterior ? (Number.isFinite(cUsd) && cUsd > 0 ? cUsd : null) : null,
             valorFinalUSD,
-            desconto: solicitacao.desconto_aprovado,
+            desconto: 0,
             descontoPrazo: 0,
             acrescimo: 0,
             condicaoExclusiva: modoEntrada === 'exclusiva',
@@ -1523,10 +1521,10 @@ export default function PaymentPolicy({
         // Calcula instalação
         const valorInstalacao = tipoCliente === 'cliente' && instalacao === 'incluso' ? instalacaoInclusoValor : 0;
 
-        const valorSemDescGestorHV = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao;
-        // Aplica desconto do gestor sobre o valorFinal (depois de todos os cálculos)
-        const descontoExtraValor = solicitacao.desconto_aprovado > 0 ? valorSemDescGestorHV * (solicitacao.desconto_aprovado / 100) : 0;
-        const valorAposExtra = valorSemDescGestorHV - descontoExtraValor;
+        const valorSemDescGestorHV = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao + valorConversor;
+        // desconto_aprovado é o VALOR FINAL DESEJADO em R$ — aplica diretamente
+        const valorAposExtra = solicitacao.desconto_aprovado > 0 ? solicitacao.desconto_aprovado : valorSemDescGestorHV;
+        const descontoExtraValor = valorSemDescGestorHV - valorAposExtra;
 
         const valorFinal = valorAposExtra;
 
@@ -1579,8 +1577,8 @@ export default function PaymentPolicy({
           valorFinal, // Adicionar também como valorFinal
           financiamentoBancario: percentualEntrada === 'financiamento' ? 'sim' : 'nao',
           
-          // Campos em percentual para o PDF
-          desconto: solicitacao.desconto_aprovado, // % do desconto aprovado
+          // Campos em percentual para o PDF (mantém desconto do vendedor/plano, não o desconto adicional em R$)
+          desconto: r.desconto ?? 0,
           acrescimo: (planoSelecionado?.surcharge_percent || 0) * 100,
           
           // Campos de entrada

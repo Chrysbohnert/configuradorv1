@@ -53,34 +53,34 @@ export default function AprovacoesDescontos() {
 
   const handleAprovar = async (solicitacao) => {
     try {
-      const desconto = descontoSelecionado[solicitacao.id];
+      const valorFinalStr = valorFinalAprovado[solicitacao.id];
       
-      if (!desconto) {
+      if (!valorFinalStr) {
         alert('⚠️ Informe o valor final aprovado antes de continuar!');
         return;
       }
 
-      // Converter para número para garantir o tipo correto
-      const descontoNumerico = parseFloat(desconto);
+      // O valor aprovado é o VALOR FINAL DESEJADO em R$ (não percentual)
+      const valorFinalNum = parseFloat(valorFinalStr);
+      const baseConfirm = Number(solicitacao.valor_base) || 0;
       
-      if (isNaN(descontoNumerico) || descontoNumerico < 0) {
-        alert('⚠️ O desconto deve ser um número maior ou igual a 0%!');
+      if (isNaN(valorFinalNum) || valorFinalNum <= 0) {
+        alert('⚠️ Informe um valor final válido (maior que zero)!');
+        return;
+      }
+
+      if (baseConfirm > 0 && valorFinalNum >= baseConfirm) {
+        alert('⚠️ O valor final aprovado deve ser menor que o valor atual da proposta!');
         return;
       }
 
       // Arredondar para 2 casas decimais
-      const descontoFinal = Math.round(descontoNumerico * 100) / 100;
+      const valorFinalAprovadoFinal = Math.round(valorFinalNum * 100) / 100;
 
-      const valorFinalConfirm = parseFloat(valorFinalAprovado[solicitacao.id]);
-      const baseConfirm = Number(solicitacao.valor_base) || 0;
-      const mensagemConfirm = (!isNaN(valorFinalConfirm) && valorFinalConfirm > 0)
-        ? `Aprovar valor final de ${formatCurrency(valorFinalConfirm)} para ${solicitacao.vendedor_nome}?\n\n` +
-          `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
-          `Valor base: ${formatCurrency(baseConfirm)}\n` +
-          `Desconto aplicado: ${descontoFinal}%`
-        : `Aprovar desconto de ${descontoFinal}% para ${solicitacao.vendedor_nome}?\n\n` +
-          `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
-          `Valor base: ${formatCurrency(baseConfirm) || 'Não informado'}`;
+      const mensagemConfirm = `Aprovar valor final de ${formatCurrency(valorFinalAprovadoFinal)} para ${solicitacao.vendedor_nome}?\n\n` +
+        `Equipamento: ${solicitacao.equipamento_descricao || 'Não informado'}\n` +
+        `Valor atual da proposta: ${formatCurrency(baseConfirm)}\n` +
+        `Desconto em R$: ${formatCurrency(baseConfirm - valorFinalAprovadoFinal)}`;
 
       const confirmar = window.confirm(mensagemConfirm);
 
@@ -93,21 +93,15 @@ export default function AprovacoesDescontos() {
         throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
       }
 
-      // Chamar API REST de aprovação
+      // Envia o VALOR FINAL APROVADO em R$ no campo desconto_aprovado
       await aprovarSolicitacao(
         solicitacao.id,
-        descontoFinal,
+        valorFinalAprovadoFinal,
         observacoes[solicitacao.id] || null
       );
 
-      // Feedback ao usuário
-      const valorFinalMsg = parseFloat(valorFinalAprovado[solicitacao.id]);
-      const mensagemSucesso = (!isNaN(valorFinalMsg) && valorFinalMsg > 0)
-        ? `✅ Valor final de ${formatCurrency(valorFinalMsg)} aprovado com sucesso!\n\n` +
-          `Desconto calculado: ${descontoFinal}%\n` +
-          `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`
-        : `✅ Desconto de ${descontoFinal}% aprovado com sucesso!\n\n` +
-          `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
+      const mensagemSucesso = `✅ Valor final de ${formatCurrency(valorFinalAprovadoFinal)} aprovado com sucesso!\n\n` +
+        `O vendedor ${solicitacao.vendedor_nome} será notificado automaticamente.`;
 
       alert(mensagemSucesso);
       
@@ -563,7 +557,7 @@ export default function AprovacoesDescontos() {
                     <button
                       className="btn btn-success"
                       onClick={() => handleAprovar(solicitacao)}
-                      disabled={processando === solicitacao.id || !descontoSelecionado[solicitacao.id]}
+                      disabled={processando === solicitacao.id || !valorFinalAprovado[solicitacao.id]}
                     >
                       {processando === solicitacao.id ? '⏳ Processando...' : '✅ Aprovar'}
                     </button>
