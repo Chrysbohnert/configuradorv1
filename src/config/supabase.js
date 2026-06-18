@@ -2341,7 +2341,7 @@ async getUserById(id) {
   /**
    * Aprovar solicitação de desconto (apenas gestor)
    * @param {string} solicitacaoId - ID da solicitação
-   * @param {number} descontoAprovado - Percentual aprovado (mínimo 8%)
+   * @param {number} descontoAprovado - Valor final aprovado em R$ (não percentual)
    * @param {string} aprovadorId - ID do gestor
    * @param {string} aprovadorNome - Nome do gestor
    * @param {string} observacao - Observação opcional
@@ -2354,10 +2354,10 @@ async getUserById(id) {
       if (!aprovadorId) throw new Error('ID do aprovador é obrigatório');
       if (!aprovadorNome) throw new Error('Nome do aprovador é obrigatório');
       
-      // Validar e converter desconto para número
+      // Validar e converter valor final para número
       const descontoNumerico = Number(descontoAprovado);
       if (isNaN(descontoNumerico) || descontoNumerico < 0) {
-        throw new Error('Desconto deve ser um número maior ou igual a 0');
+        throw new Error('Valor final aprovado deve ser um número maior que 0');
       }
       
       // Fazer a atualização

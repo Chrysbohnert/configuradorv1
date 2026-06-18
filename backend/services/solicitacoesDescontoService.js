@@ -94,6 +94,7 @@ async function buscarPorVendedor(vendedorId) {
 }
 
 async function aprovar(id, descontoAprovado, aprovadorId, aprovadorNome, observacao) {
+  // descontoAprovado = valor final aprovado em R$ (não percentual)
   const { rows } = await query(
     `UPDATE solicitacoes_desconto
      SET status = 'aprovado',

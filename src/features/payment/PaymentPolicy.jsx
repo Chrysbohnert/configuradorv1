@@ -1348,7 +1348,7 @@ export default function PaymentPolicy({
   const prev = () => setEtapa(e => Math.max(e - 1, isComercioExterior ? 3 : 1));
 
   // =============== SOLICITAR DESCONTO ADICIONAL AO GESTOR ========
-  const handleSolicitarDesconto = async (justificativa, descontoDesejado, valorFinalDesejado) => {
+  const handleSolicitarDesconto = async (justificativa, _ignorado, valorFinalDesejado) => {
     try {
       setAguardandoAprovacao(true);
 
@@ -1364,15 +1364,18 @@ export default function PaymentPolicy({
         ? `${equipamento.subgrupo || ''} ${equipamento.modelo || ''}`.trim()
         : 'Equipamento não identificado';
 
-      // Criar solicitação no banco
+      // valorBase = total atual da proposta (inclui frete, instalação, extras, descontos já aplicados)
+      const valorBaseProposta = resultado?.valorFinal || resultado?.total || 0;
+
+      // Criar solicitação no banco — envia apenas valorFinalDesejado em R$, nunca percentual
       const solicitacao = await db.criarSolicitacaoDesconto({
         vendedorId: user.id,
         vendedorNome: user.nome,
         vendedorEmail: user.email,
         equipamentoDescricao,
-        valorBase: resultado?.total || precoBase,
+        valorBase: valorBaseProposta,
         descontoAtual: typeof descontoVendedor === 'number' ? descontoVendedor : 0,
-        descontoDesejado: descontoDesejado || null,
+        descontoDesejado: null,
         valorFinalDesejado: valorFinalDesejado || null,
         tipoSolicitante: modoConcessionaria ? 'admin_concessionaria' : 'vendedor',
         justificativa
