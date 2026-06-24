@@ -1752,6 +1752,25 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
         }
         return '';
       })()}
+
+      <!-- BLOCO 6: OBSERVAÇÕES DO PEDIDO -->
+      ${(() => {
+        const obsRaw = (pedidoData.pagamentoData?.observacaoPedidoCompra || '').trim();
+        if (!obsRaw) return '';
+        const obs = obsRaw
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+        return `
+          <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
+          <div style="font-size:4.2mm; line-height:1.45;">
+            <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">OBSERVAÇÕES DO PEDIDO</div>
+            <div style="padding:3mm; background:#fff8e1; border-left:3px solid #f59e0b; border-radius:2mm; font-size:3.8mm; color:#333; line-height:1.5; white-space:pre-line;">${obs}</div>
+          </div>
+        `;
+      })()}
     </div>
   `;
 

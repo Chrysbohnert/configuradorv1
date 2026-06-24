@@ -967,6 +967,25 @@ const ResumoPedido = ({
             </div>
           )}
 
+          {isConcessionariaCompra && pagamentoData.observacaoPedidoCompra && (
+            <div
+              style={{
+                marginTop: '14px',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '12px',
+                padding: '12px 14px'
+              }}
+            >
+              <div style={{ color: '#64748b', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '6px' }}>
+                Observações do Pedido
+              </div>
+              <div style={{ color: '#334155', fontSize: '13px', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                {pagamentoData.observacaoPedidoCompra}
+              </div>
+            </div>
+          )}
+
           {pagamentoData.tipoCliente === 'cliente' && (
             <div
               style={{

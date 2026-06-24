@@ -195,6 +195,29 @@ const NovoPedido = () => {
     }
   }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria]);
 
+  // ✅ NOVO: Atualizar clienteData quando concessionária de destino muda (uso interno Stark)
+  React.useEffect(() => {
+    if (!isModoConcessionaria || !podeEscolherConcessionaria) return;
+    if (concessionariaSelecionadaParaPedido) {
+      const dest = concessionariaSelecionadaParaPedido;
+      setClienteData({
+        nome: dest.nome || 'Concessionária',
+        telefone: dest.telefone || '',
+        email: dest.email || '',
+        documento: dest.cnpj || '',
+        endereco: dest.endereco || ''
+      });
+    } else if (concessionariaInfo) {
+      setClienteData({
+        nome: concessionariaInfo.nome || 'Concessionária',
+        telefone: concessionariaInfo.telefone || '',
+        email: concessionariaInfo.email || '',
+        documento: concessionariaInfo.cnpj || '',
+        endereco: concessionariaInfo.endereco || ''
+      });
+    }
+  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria, concessionariaInfo]);
+
   // ✅ Persistir currentStep e maxStepReached no localStorage
   useEffect(() => {
     localStorage.setItem('novoPedido_currentStep', String(currentStep));

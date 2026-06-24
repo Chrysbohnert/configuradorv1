@@ -186,6 +186,7 @@ export default function PaymentPolicy({
   const [valorSinalManual, setValorSinalManual] = useState(''); // Sinal para financiamento/condição exclusiva
   const [formaEntrada, setFormaEntrada] = useState('');
   const [observacoesNegociacao, setObservacoesNegociacao] = useState('');
+  const [observacaoPedidoCompra, setObservacaoPedidoCompra] = useState('');
   const [extraDescricao, setExtraDescricao] = useState('');
   const [extraValor, setExtraValor] = useState('');
   const [planoSelecionado, setPlanoSelecionado] = useState(null);
@@ -249,6 +250,7 @@ export default function PaymentPolicy({
     if (initialPaymentData.valorSinalManual) setValorSinalManual(String(initialPaymentData.valorSinalManual));
     if (initialPaymentData.formaEntrada) setFormaEntrada(initialPaymentData.formaEntrada);
     if (initialPaymentData.observacoesNegociacao) setObservacoesNegociacao(initialPaymentData.observacoesNegociacao);
+    if (initialPaymentData.observacaoPedidoCompra) setObservacaoPedidoCompra(initialPaymentData.observacaoPedidoCompra);
     if (initialPaymentData.extraDescricao) setExtraDescricao(initialPaymentData.extraDescricao);
     if (initialPaymentData.extraValor) setExtraValor(String(initialPaymentData.extraValor));
 
@@ -531,6 +533,7 @@ export default function PaymentPolicy({
                 saldoAPagar: saldoRestante,
                 formaEntrada: '',
                 observacoesNegociacao: (observacoesNegociacao || '').trim(),
+                observacaoPedidoCompra: (observacaoPedidoCompra || '').trim(),
                 extraDescricao: extraDescricao || '',
                 extraValor: extraValorNum,
                 moeda: isComercioExterior ? 'USD' : 'BRL',
@@ -1062,6 +1065,7 @@ export default function PaymentPolicy({
         saldoAPagar: saldoRestante,
         formaEntrada: '',
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
+        observacaoPedidoCompra: (observacaoPedidoCompra || '').trim(),
         extraDescricao: extraDescricao || '',
         extraValor: extraValorNum,
         moeda: isComercioExterior ? 'USD' : 'BRL',
@@ -1150,6 +1154,7 @@ export default function PaymentPolicy({
         saldoAPagar: saldoRestante,
         formaEntrada: '',
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
+        observacaoPedidoCompra: (observacaoPedidoCompra || '').trim(),
         extraDescricao: extraDescricao || '',
         extraValor: extraValorNum,
 
@@ -1235,6 +1240,7 @@ export default function PaymentPolicy({
         descontoAdicionalValor: descontoExtraValor,
         valorFinalComDescontoAdicional: valorAposExtra,
         observacoesNegociacao: (observacoesNegociacao || '').trim(),
+        observacaoPedidoCompra: (observacaoPedidoCompra || '').trim(),
         extraDescricao: extraDescricao || '',
         extraValor: extraValorNum,
         valorFrete,
@@ -1486,6 +1492,7 @@ export default function PaymentPolicy({
             saldoAPagar: saldoRestante,
             formaEntrada: '',
             observacoesNegociacao: (observacoesNegociacao || '').trim(),
+            observacaoPedidoCompra: (observacaoPedidoCompra || '').trim(),
             extraDescricao: extraDescricao || '',
             extraValor: extraValorNum,
             moeda: isComercioExterior ? 'USD' : 'BRL',
@@ -1955,6 +1962,24 @@ export default function PaymentPolicy({
 
       </div>
     ) : null}
+
+    {/* SEÇÃO 4b — Observações do Pedido de Compra (somente modoConcessionaria) */}
+    {modoConcessionaria && (
+      <section className="pp-section">
+        <span className="pp-section-label">Observações do Pedido de Compra</span>
+        <div className="form-group">
+          <textarea
+            value={observacaoPedidoCompra}
+            onChange={e => setObservacaoPedidoCompra(e.target.value)}
+            placeholder="Ex: Cor, acessórios extras, prazo de entrega, instruções especiais..."
+            rows={3}
+            maxLength={500}
+            style={{ width: '100%', resize: 'vertical' }}
+          />
+          <small className="form-help help-info">💡 Opcional — informações adicionais para este pedido de compra</small>
+        </div>
+      </section>
+    )}
 
     {/* SEÇÃO 5 — Financeiro */}
     {podeIrEtapa5 && (
