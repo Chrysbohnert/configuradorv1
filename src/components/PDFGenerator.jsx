@@ -1506,7 +1506,11 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
     ? (pedidoData.concessionariaNome || '').trim()
     : '';
 
-  const cliente = (pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : t(lang, 'notProvided');
+  // Para pedido de compra, usar a concessionária compradora (destino selecionado ou logada)
+  // Para proposta comercial normal, usar clienteData.nome
+  const cliente = pedidoData.isConcessionariaCompra
+    ? (pedidoData.concessionariaCompradoraNome || pedidoData.clienteData?.nome || t(lang, 'notProvided'))
+    : ((pedidoData.clienteData && pedidoData.clienteData.nome) ? pedidoData.clienteData.nome : t(lang, 'notProvided'));
 
   const el = createContainer('pdf-assinaturas', { inline });
   el.innerHTML += `
@@ -1535,7 +1539,14 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
 const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = false } = {}) => {
   const el = createContainer('pdf-capa-compra', { inline });
   const data = new Date().toLocaleDateString('pt-BR');
-  const c = pedidoData.clienteData || {};
+  // Concessionária compradora: destino selecionado ou fallback para a logada
+  const cc = {
+    nome:     pedidoData.concessionariaCompradoraNome     || pedidoData.clienteData?.nome     || 'Não informado',
+    cnpj:     pedidoData.concessionariaCompradoraCnpj     || pedidoData.clienteData?.documento || '',
+    telefone: pedidoData.concessionariaCompradoraTelefone || pedidoData.clienteData?.telefone  || '',
+    email:    pedidoData.concessionariaCompradoraEmail    || pedidoData.clienteData?.email     || '',
+    endereco: pedidoData.concessionariaCompradoraEndereco || pedidoData.clienteData?.endereco  || ''
+  };
   const vendedor = pedidoData.vendedor || 'Não informado';
   const vendedorTelefone = pedidoData.vendedorTelefone || '';
   const guindastes = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
@@ -1564,15 +1575,11 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
       <!-- BLOCO 2: CONCESSIONÁRIA -->
       <div style="font-size:4.2mm; line-height:1.45;">
         <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">CONCESSIONÁRIA</div>
-        <div><b>NOME:</b> ${c.nome || 'Não informado'}</div>
-        <div><b>CNPJ/CPF:</b> ${c.documento || 'Não informado'}</div>
-        ${c.telefone ? `<div><b>TELEFONE:</b> ${c.telefone}</div>` : ''}
-        ${c.email ? `<div><b>E-MAIL:</b> ${c.email}</div>` : ''}
-        ${pedidoData.concessionariaPedidoNome ? `
-          <div style="margin-top:2mm; padding:2mm; background:#e8f4f8; border-left:3px solid #0ea5e9; border-radius:1mm;">
-            <div style="font-size:3.5mm; color:#0369a1;"><b>📋 PEDIDO REALIZADO PARA:</b> ${pedidoData.concessionariaPedidoNome}</div>
-          </div>
-        ` : ''}
+        <div><b>NOME:</b> ${cc.nome}</div>
+        <div><b>CNPJ/CPF:</b> ${cc.cnpj || 'Não informado'}</div>
+        ${cc.telefone ? `<div><b>TELEFONE:</b> ${cc.telefone}</div>` : ''}
+        ${cc.email ? `<div><b>E-MAIL:</b> ${cc.email}</div>` : ''}
+        ${cc.endereco ? `<div><b>ENDEREÇO:</b> ${cc.endereco}</div>` : ''}
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>

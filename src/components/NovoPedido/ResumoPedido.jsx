@@ -330,6 +330,10 @@ const ResumoPedido = ({
     carregarConcessionaria();
   }, [user?.concessionaria_id, concessionariaInfoProp]);
 
+  // Quando há concessionária de destino selecionada (Stark operando em nome de outra),
+  // o PDF deve mostrar os dados dela — não da Stark logada.
+  const concessionariaCompradora = concessionariaSelecionadaParaPedido || concessionariaInfo;
+
   const pedidoData = {
     carrinho,
     clienteData,
@@ -347,9 +351,14 @@ const ResumoPedido = ({
     concessionariaEmail: concessionariaInfo?.email || '',
     regiaoCompraSelecionada: regiaoCompraSelecionada || '',
     guindastes: guindastesCompletos,
-    // ✅ NOVO: Concessionária selecionada para pedido (uso interno Stark)
     concessionariaPedidoNome: concessionariaSelecionadaParaPedido?.nome || null,
-    concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null
+    concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null,
+    // ✅ Concessionária compradora: destino selecionado ou fallback para logada
+    concessionariaCompradoraNome: concessionariaCompradora?.nome || '',
+    concessionariaCompradoraCnpj: concessionariaCompradora?.cnpj || '',
+    concessionariaCompradoraTelefone: concessionariaCompradora?.telefone || '',
+    concessionariaCompradoraEmail: concessionariaCompradora?.email || '',
+    concessionariaCompradoraEndereco: concessionariaCompradora?.endereco || ''
   };
 
   const totalItens = carrinho.reduce((total, item) => total + (item.preco || 0), 0);
