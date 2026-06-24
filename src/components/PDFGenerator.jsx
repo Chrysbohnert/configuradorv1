@@ -1656,15 +1656,25 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
         const descontoPrazo = parseFloat(p.descontoPrazo || 0);
         const acrescimo = parseFloat(p.acrescimo || 0);
         const valorTotal = p.valorFinal || 0;
+        const valorFrete = parseFloat(p.valorFrete || 0);
+        const tipoFrete = (p.tipoFrete || '').toUpperCase();
         
         // Calcular falta pagar da entrada
         const faltaPagarEntrada = Math.max(0, entradaTotal - valorSinal);
         
-        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado' || descontoVendedor > 0 || acrescimo > 0) {
+        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado' || descontoVendedor > 0 || acrescimo > 0 || valorFrete > 0 || tipoFrete) {
           return `
             <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
             <div style="font-size:4.2mm; line-height:1.45;">
               <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">CONDIÇÕES DE PAGAMENTO</div>
+              
+              <!-- FRETE -->
+              ${tipoFrete ? `
+                <div style="margin-bottom:2mm; padding:2mm 2.5mm; background:#f1f5f9; border-radius:2mm; border-left:3px solid #475569; display:flex; justify-content:space-between; align-items:center; font-size:3.8mm;">
+                  <span style="font-weight:700; color:#334155;">FRETE (${tipoFrete}):</span>
+                  <span style="font-weight:800; color:#1e293b;">${valorFrete > 0 ? formatCurrency(valorFrete) : tipoFrete === 'FOB' ? 'Por conta do comprador' : 'Incluso'}</span>
+                </div>
+              ` : ''}
               
               <!-- ENTRADA DETALHADA -->
               ${percentualEntrada > 0 ? `
@@ -1765,7 +1775,7 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
           .replace(/'/g, '&#39;');
         return `
           <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
-          <div style="font-size:4.2mm; line-height:1.45;">
+          <div style="page-break-inside:avoid; font-size:4.2mm; line-height:1.45;">
             <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">OBSERVAÇÕES DO PEDIDO</div>
             <div style="padding:3mm; background:#fff8e1; border-left:3px solid #f59e0b; border-radius:2mm; font-size:3.8mm; color:#333; line-height:1.5; white-space:pre-line;">${obs}</div>
           </div>

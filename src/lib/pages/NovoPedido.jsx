@@ -195,9 +195,14 @@ const NovoPedido = () => {
     }
   }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria]);
 
-  // ✅ NOVO: Atualizar clienteData quando concessionária de destino muda (uso interno Stark)
+  // ✅ Ref para acessar concessionariaInfo sem criar dependência que causa re-run
+  const concessionariaInfoRef = React.useRef(concessionariaInfo);
+  React.useEffect(() => { concessionariaInfoRef.current = concessionariaInfo; }, [concessionariaInfo]);
+
+  // ✅ Atualizar clienteData quando concessionária de destino muda (uso interno Stark)
+  // Não depende de podeEscolherConcessionaria para evitar race condition com o async de carregamento
   React.useEffect(() => {
-    if (!isModoConcessionaria || !podeEscolherConcessionaria) return;
+    if (!isModoConcessionaria) return;
     if (concessionariaSelecionadaParaPedido) {
       const dest = concessionariaSelecionadaParaPedido;
       setClienteData({
@@ -207,16 +212,20 @@ const NovoPedido = () => {
         documento: dest.cnpj || '',
         endereco: dest.endereco || ''
       });
-    } else if (concessionariaInfo) {
-      setClienteData({
-        nome: concessionariaInfo.nome || 'Concessionária',
-        telefone: concessionariaInfo.telefone || '',
-        email: concessionariaInfo.email || '',
-        documento: concessionariaInfo.cnpj || '',
-        endereco: concessionariaInfo.endereco || ''
-      });
+    } else {
+      // Quando desmarca a seleção, voltar para a concessionária logada (via ref para não criar dependência circular)
+      const ci = concessionariaInfoRef.current;
+      if (ci) {
+        setClienteData({
+          nome: ci.nome || 'Concessionária',
+          telefone: ci.telefone || '',
+          email: ci.email || '',
+          documento: ci.cnpj || '',
+          endereco: ci.endereco || ''
+        });
+      }
     }
-  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria, concessionariaInfo]);
+  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria]);
 
   // ✅ Persistir currentStep e maxStepReached no localStorage
   useEffect(() => {
