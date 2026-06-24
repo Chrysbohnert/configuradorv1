@@ -288,7 +288,14 @@ const ResumoPedido = ({
           caminhaoData: caminhao,
           pagamentoData,
           regiaoClienteSelecionada: regiaoClienteSelecionada || regiaoCompraSelecionada || null,
-          concessionaria_id: user?.concessionaria_id || null
+          concessionaria_id: user?.concessionaria_id || null,
+          // Concessionária de destino (quando Stark opera em nome de outra)
+          concessionariaDestinoId: concessionariaSelecionadaParaPedido?.id || null,
+          concessionariaDestinoNome: concessionariaSelecionadaParaPedido?.nome || null,
+          concessionariaDestinoCnpj: concessionariaSelecionadaParaPedido?.cnpj || null,
+          concessionariaDestinoTelefone: concessionariaSelecionadaParaPedido?.telefone || null,
+          concessionariaDestinoEmail: concessionariaSelecionadaParaPedido?.email || null,
+          concessionariaDestinoRegiao: concessionariaSelecionadaParaPedido?.regiao_preco || null
         }
       };
 

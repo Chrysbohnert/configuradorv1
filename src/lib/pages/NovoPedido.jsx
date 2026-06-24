@@ -168,32 +168,32 @@ const NovoPedido = () => {
   const regiaoRestauradaRef = useRef(false);
 
   // Auto-set região para modo concessionária (usa regiao_preco da concessionária cadastrada)
+  // Só aplica se não há concessionária de destino selecionada (para não sobrescrever a região dela)
   React.useEffect(() => {
     if (!isModoConcessionaria || !concessionariaInfo) return;
+    if (concessionariaSelecionadaParaPedido) return; // destino já selecionado, não sobrescrever
     const regiao = concessionariaInfo.regiao_preco || '';
     if (regiao) setRegiaoClienteSelecionada(regiao);
-  }, [isModoConcessionaria, concessionariaInfo]);
+  }, [isModoConcessionaria, concessionariaInfo, concessionariaSelecionadaParaPedido]);
 
   // ✅ NOVO: Atualizar região quando concessionária selecionada muda (uso interno Stark)
   React.useEffect(() => {
-    if (!isModoConcessionaria || !podeEscolherConcessionaria) return;
+    if (!isModoConcessionaria) return;
     
     // Se uma concessionária diferente foi selecionada, usar a região dela
     if (concessionariaSelecionadaParaPedido) {
       const regiaoSelecionada = concessionariaSelecionadaParaPedido.regiao_preco || '';
       if (regiaoSelecionada && regiaoSelecionada !== regiaoClienteSelecionada) {
-        console.log('🔄 [Uso Interno Stark] Mudando região para:', regiaoSelecionada, 'da concessionária:', concessionariaSelecionadaParaPedido.nome);
         setRegiaoClienteSelecionada(regiaoSelecionada);
       }
-    } else {
-      // Se nenhuma concessionária foi selecionada, voltar para a região da concessionária logada
-      const regiaoOriginal = concessionariaInfo?.regiao_preco || '';
-      if (regiaoOriginal && regiaoOriginal !== regiaoClienteSelecionada) {
-        console.log('🔄 [Uso Interno Stark] Voltando para região original:', regiaoOriginal);
+    } else if (concessionariaInfo?.regiao_preco) {
+      // Desmarcou a seleção: voltar para a região da concessionária logada
+      const regiaoOriginal = concessionariaInfo.regiao_preco;
+      if (regiaoOriginal !== regiaoClienteSelecionada) {
         setRegiaoClienteSelecionada(regiaoOriginal);
       }
     }
-  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, podeEscolherConcessionaria]);
+  }, [concessionariaSelecionadaParaPedido, isModoConcessionaria, concessionariaInfo]);
 
   // ✅ Ref para acessar concessionariaInfo sem criar dependência que causa re-run
   const concessionariaInfoRef = React.useRef(concessionariaInfo);
@@ -312,8 +312,9 @@ const NovoPedido = () => {
         const c = await db.getConcessionariaById(user.concessionaria_id);
         setConcessionariaInfo(c);
         
-        // ✅ Verificar se pode escolher concessionária (uso interno Stark)
-        const podeEscolher = isConcessionariaInterna(c);
+        // ✅ Todo admin_concessionaria pode escolher a concessionária de destino do pedido
+        // (isConcessionariaInterna é fallback para casos sem a coluna uso_interno_stark)
+        const podeEscolher = isAdminConcessionaria || isConcessionariaInterna(c);
         setPodeEscolherConcessionaria(podeEscolher);
         
         // Se pode escolher, carregar lista de concessionárias
@@ -1253,7 +1254,7 @@ const NovoPedido = () => {
                           if (!id) {
                             setConcessionariaSelecionadaParaPedido(null);
                           } else {
-                            const conc = concessionariasDisponiveis.find(c => c.id === parseInt(id));
+                            const conc = concessionariasDisponiveis.find(c => String(c.id) === String(id));
                             setConcessionariaSelecionadaParaPedido(conc || null);
                           }
                         }}
@@ -1270,7 +1271,7 @@ const NovoPedido = () => {
                       >
                         <option value="">Usar minha concessionária ({concessionariaInfo?.nome})</option>
                         {concessionariasDisponiveis
-                          .filter(c => c.id !== user?.concessionaria_id) // Não mostrar a própria
+                          .filter(c => String(c.id) !== String(user?.concessionaria_id)) // Não mostrar a própria
                           .map(c => (
                             <option key={c.id} value={c.id}>
                               {c.nome}
