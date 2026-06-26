@@ -2057,17 +2057,6 @@ export default function PaymentPolicy({
                 </div>
               )}
             </div>
-            <div className="form-group">
-              <label>Observações da Negociação (opcional)</label>
-              <textarea
-                value={observacoesNegociacao}
-                onChange={e => setObservacoesNegociacao(e.target.value)}
-                placeholder="Ex: Condição especial, carência, observações..."
-                rows={2}
-                maxLength={500}
-                style={{ width: '100%', resize: 'vertical' }}
-              />
-            </div>
           </div>
         )}
 
@@ -2304,11 +2293,14 @@ export default function PaymentPolicy({
           <textarea
             value={observacoesNegociacao}
             onChange={e => setObservacoesNegociacao(e.target.value)}
-            placeholder="Ex: Condição especial, carência, observações sobre financiamento..."
-            rows={2}
-            maxLength={500}
-            style={{ width: '100%', resize: 'vertical' }}
+            placeholder="Ex: Condição especial, carência, prazo de entrega, observações sobre financiamento..."
+            rows={4}
+            maxLength={800}
+            style={{ width: '100%', resize: 'vertical', fontSize: '14px', lineHeight: '1.5' }}
           />
+          <small className="form-help" style={{ display: 'block', marginTop: '4px', color: '#555' }}>
+            Estas observações serão exibidas no final da página de condições financeiras do PDF.
+          </small>
         </div>
 
         <div className="pp-inner-2col pp-subsection">

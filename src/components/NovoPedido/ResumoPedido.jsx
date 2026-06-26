@@ -144,13 +144,17 @@ const ResumoPedido = ({
         const valorTotal = pagamentoData.valorFinal ||
           carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0);
 
+        // Concessionária oficial do pedido: destino selecionado (Stark operando em nome de outra)
+        // ou fallback para a concessionária do usuário logado
+        const concessionariaOficial = concessionariaSelecionadaParaPedido || concessionariaInfo;
+
         const clienteDocumentoDB = (
-          String(concessionariaInfo?.cnpj || clienteData?.documento || '')
+          String(concessionariaOficial?.cnpj || clienteData?.documento || '')
             .replace(/\D/g, '')
             .slice(0, 14)
         ) || null;
 
-        const ufConc = (concessionariaInfo?.uf || '').toUpperCase();
+        const ufConc = (concessionariaOficial?.uf || '').toUpperCase();
         const paisesInternacionais = ['PY', 'AR', 'UY', 'BO', 'CL', 'PE', 'CO', 'VE', 'EC', 'GY', 'SR'];
         const canalVendaConcessionaria = paisesInternacionais.includes(ufConc)
           ? 'Concessionária Internacional'
@@ -173,16 +177,18 @@ const ResumoPedido = ({
           data: new Date().toISOString(),
           vendedor_id: user.id,
           vendedor_nome: user.nome || 'Não informado',
-          cliente_nome: concessionariaInfo?.nome || clienteData?.nome || 'Concessionária',
+          // Registra nome da concessionária oficial do pedido
+          cliente_nome: concessionariaOficial?.nome || clienteData?.nome || 'Concessionária',
           cliente_documento: clienteDocumentoDB,
           valor_total: valorTotal,
           tipo: 'proposta',
           status: 'finalizado',
-          concessionaria_id: user?.concessionaria_id || null,
+          // concessionaria_id aponta para a concessionária oficial do pedido
+          concessionaria_id: concessionariaOficial?.id || user?.concessionaria_id || null,
           canal_venda: canalVendaConcessionaria,
           segmento_cliente: clienteData?.segmento_cliente || null,
-          cliente_uf: concessionariaInfo?.uf || clienteData?.uf || null,
-          cliente_cidade: concessionariaInfo?.cidade || clienteData?.cidade || null,
+          cliente_uf: concessionariaOficial?.uf || clienteData?.uf || null,
+          cliente_cidade: concessionariaOficial?.cidade || clienteData?.cidade || null,
           produto_principal: produtoPrincipal,
           linha_produto: linhaCarrinho,
           dados_serializados: {
@@ -191,12 +197,17 @@ const ResumoPedido = ({
             pagamentoData,
             regiaoCompraSelecionada: regiaoCompraSelecionada || regiaoClienteSelecionada || null,
             regiaoClienteSelecionada: regiaoCompraSelecionada || regiaoClienteSelecionada || null,
-            concessionaria_id: user?.concessionaria_id || null,
+            // ID da concessionária oficial do pedido
+            concessionaria_id: concessionariaOficial?.id || user?.concessionaria_id || null,
+            // Dados completos da concessionária logada (quem operacionalizou)
             concessionariaInfo: concessionariaInfo || null,
-            guindasteId,
-            // ✅ NOVO: Concessionária selecionada para pedido (uso interno Stark)
-            concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null,
-            concessionariaPedidoNome: concessionariaSelecionadaParaPedido?.nome || null
+            // Dados completos da concessionária oficial (destino selecionado ou a própria logada)
+            concessionariaOficial: concessionariaOficial || null,
+            // ID do usuário que operacionalizou (Stark / admin que gerou em nome de outra)
+            operadoPor_userId: user.id,
+            operadoPor_nome: user.nome || null,
+            operadoPor_concessionaria_id: user?.concessionaria_id || null,
+            guindasteId
           }
         };
 
@@ -349,9 +360,9 @@ const ResumoPedido = ({
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',
     isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
+    // concessionariaNome/Logo/Cnpj — usados em propostas comerciais normais (emitente = concessionária logada)
     concessionariaLogoUrl: concessionariaInfo?.logo_url || '',
     concessionariaNome: concessionariaInfo?.nome || '',
-    // Dados completos da concessionária para o PDF
     concessionariaCnpj: concessionariaInfo?.cnpj || '',
     concessionariaEndereco: concessionariaInfo?.endereco || '',
     concessionariaTelefone: concessionariaInfo?.telefone || '',
@@ -360,12 +371,21 @@ const ResumoPedido = ({
     guindastes: guindastesCompletos,
     concessionariaPedidoNome: concessionariaSelecionadaParaPedido?.nome || null,
     concessionariaPedidoId: concessionariaSelecionadaParaPedido?.id || null,
-    // ✅ Concessionária compradora: destino selecionado ou fallback para logada
-    concessionariaCompradoraNome: concessionariaCompradora?.nome || '',
-    concessionariaCompradoraCnpj: concessionariaCompradora?.cnpj || '',
+    // Concessionária compradora: destino selecionado (Stark operando em nome de outra) ou logada
+    // Estes campos são usados em TODOS os lugares do PDF de pedido de compra
+    concessionariaCompradoraNome:     concessionariaCompradora?.nome     || '',
+    concessionariaCompradoraCnpj:     concessionariaCompradora?.cnpj     || '',
     concessionariaCompradoraTelefone: concessionariaCompradora?.telefone || '',
-    concessionariaCompradoraEmail: concessionariaCompradora?.email || '',
-    concessionariaCompradoraEndereco: concessionariaCompradora?.endereco || ''
+    concessionariaCompradoraEmail:    concessionariaCompradora?.email    || '',
+    concessionariaCompradoraEndereco: concessionariaCompradora?.endereco || '',
+    concessionariaCompradoraLogoUrl:  concessionariaCompradora?.logo_url || '',
+    concessionariaCompradoraUf:       concessionariaCompradora?.uf       || '',
+    concessionariaCompradoraCidade:   concessionariaCompradora?.cidade   || '',
+    concessionariaCompradoraRegiao:   concessionariaCompradora?.regiao_preco || '',
+    // Flag: pedido foi gerado em nome de outra concessionária (não a logada)
+    pedidoEmNomeDeOutra: !!concessionariaSelecionadaParaPedido,
+    // Quem operacionalizou (pode aparecer como info secundária no PDF)
+    operadoPorNome: concessionariaSelecionadaParaPedido ? (user?.nome || '') : ''
   };
 
   const totalItens = carrinho.reduce((total, item) => total + (item.preco || 0), 0);

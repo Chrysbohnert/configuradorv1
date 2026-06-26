@@ -1096,7 +1096,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
   const extraValor = parseFloat(p.extraValor || 0);
   const extraDescricao = (p.extraDescricao || '').trim();
-  const observacoesNegociacao = (p.observacoesNegociacao || '').trim();
+  const observacoesNegociacao = (p.observacoesNegociacao || p.observacaoPagamento || p.observacoes || '').trim();
   const tipoClienteCalc = (p.tipoCliente || p.tipoPagamento || '').toString().toLowerCase();
   const percentualEntradaNum = parseFloat(p.percentualEntrada || 0) || 0;
   
@@ -1163,10 +1163,12 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
     };
   }) || [];
 
-  const concessionariaLogo = pedidoData?.concessionariaLogoUrl || '';
-
-  const concessionariaNome = (pedidoData?.concessionariaNome || '').trim();
-  const usarDadosConcessionaria = Boolean(concessionariaLogo);
+  // Para pedido de compra, usar a concessionária compradora (destino selecionado ou logada)
+  const concessionariaLogo = pedidoData?.concessionariaCompradoraLogoUrl || pedidoData?.concessionariaLogoUrl || '';
+  const concessionariaNome = (
+    (pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '')
+  ).trim();
+  const usarDadosConcessionaria = Boolean(concessionariaLogo || concessionariaNome);
 
   // Carregar logos dos bancos como base64
   const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
@@ -1198,13 +1200,6 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
               <span style="font-size:16px; font-weight:800; color:#2e7d32;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
             </div>
           ` : ''}
-        </div>
-      ` : ''}
-
-      ${observacoesNegociacao ? `
-        <div style="margin-bottom:11px; border-left:4px solid #888; background:#f5f5f5; padding:10px 15px; border-radius:3px;">
-          <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; margin-bottom:6px;">${t(lang, 'negotiationNotes')}</div>
-          <div style="font-size:12px; color:#000; line-height:1.5; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
 
@@ -1364,25 +1359,41 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       <!-- PRAZO E PARCELAMENTO UNIFICADOS -->
-      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
-        <div style="margin-top:11px; background:#e8e8e8; border:2px solid #000; padding:13px 15px; border-radius:3px;">
-          <div style="font-size:13px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#000; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #aaa;">
+      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? (() => {
+        const n = parcelasCorrigidas.length;
+        const cols = n <= 2 ? 2 : n <= 4 ? 4 : n <= 6 ? 3 : n <= 12 ? 4 : n <= 18 ? 6 : 6;
+        const cardPad = n > 8 ? '5px 4px' : n > 4 ? '7px 6px' : '10px 8px';
+        const labelSize = n > 8 ? '9px' : '10px';
+        const valueSize = n > 8 ? '11px' : n > 4 ? '13px' : '15px';
+        const gridGap = n > 8 ? '4px' : '6px';
+        return `
+        <div style="margin-top:11px; background:#e8e8e8; border:2px solid #000; padding:11px 13px; border-radius:3px;">
+          <div style="font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#000; margin-bottom:8px; padding-bottom:6px; border-bottom:2px solid #aaa;">
             ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:12px; color:#333; margin-bottom:10px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${parcelasCorrigidas.length} ${t(lang, 'installments')}:</div>
-          <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
+          <div style="font-size:11px; color:#333; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${n} ${t(lang, 'installments')}:</div>
+          <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
             ${parcelasCorrigidas.map((parcela, idx) => `
-              <div style="background:#fff; padding:10px; border-radius:3px; text-align:center; border:2px solid #999;">
-                <div style="font-size:11px; color:#333; margin-bottom:4px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:800; color:#000; font-size:16px;">${fmt(convert(parcela.valor || 0))}</div>
+              <div style="background:#fff; padding:${cardPad}; border-radius:3px; text-align:center; border:1px solid #aaa;">
+                <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
               </div>
             `).join('')}
           </div>
         </div>
+        `;
+      })() : ''}
+
+      <!-- OBSERVAÇÕES DA NEGOCIAÇÃO -->
+      ${observacoesNegociacao ? `
+        <div style="margin-top:14px; border:2px solid #333; background:#fffbeb; border-radius:4px; overflow:hidden;">
+          <div style="background:#333; padding:9px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">${t(lang, 'negotiationNotes')}</div>
+          <div style="padding:14px 16px; font-size:13px; color:#000; line-height:1.7; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word;">${observacoesNegociacao}</div>
+        </div>
       ` : ''}
 
       <!-- DADOS BANCÁRIOS (MESMA PÁGINA) -->
-      <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
+      <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0; page-break-inside:avoid;">
         <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
           ${usarDadosConcessionaria ? `DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}` : t(lang, 'bankData')}
         </div>
@@ -1545,10 +1556,15 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
     cnpj:     pedidoData.concessionariaCompradoraCnpj     || pedidoData.clienteData?.documento || '',
     telefone: pedidoData.concessionariaCompradoraTelefone || pedidoData.clienteData?.telefone  || '',
     email:    pedidoData.concessionariaCompradoraEmail    || pedidoData.clienteData?.email     || '',
-    endereco: pedidoData.concessionariaCompradoraEndereco || pedidoData.clienteData?.endereco  || ''
+    endereco: pedidoData.concessionariaCompradoraEndereco || pedidoData.clienteData?.endereco  || '',
+    uf:       pedidoData.concessionariaCompradoraUf       || '',
+    cidade:   pedidoData.concessionariaCompradoraCidade   || '',
+    regiao:   pedidoData.concessionariaCompradoraRegiao   || ''
   };
   const vendedor = pedidoData.vendedor || 'Não informado';
   const vendedorTelefone = pedidoData.vendedorTelefone || '';
+  const pedidoEmNomeDeOutra = !!pedidoData.pedidoEmNomeDeOutra;
+  const operadoPorNome = pedidoData.operadoPorNome || '';
   const guindastes = (pedidoData.carrinho || []).filter(i => i.tipo === 'guindaste');
   const opcionais = (pedidoData.carrinho || []).filter(i => i.tipo === 'opcional');
   const totalEquipamentos = guindastes.reduce((acc, g) => acc + ((parseFloat(g.preco) || 0) * (parseInt(g.quantidade, 10) || 1)), 0);
@@ -1572,23 +1588,26 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
 
-      <!-- BLOCO 2: CONCESSIONÁRIA -->
+      <!-- BLOCO 2: CONCESSIONÁRIA (COMPRADORA / OFICIAL DO PEDIDO) -->
       <div style="font-size:4.2mm; line-height:1.45;">
         <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">CONCESSIONÁRIA</div>
         <div><b>NOME:</b> ${cc.nome}</div>
         <div><b>CNPJ/CPF:</b> ${cc.cnpj || 'Não informado'}</div>
+        ${cc.cidade || cc.uf ? `<div><b>LOCALIDADE:</b> ${[cc.cidade, cc.uf].filter(Boolean).join(' / ')}</div>` : ''}
         ${cc.telefone ? `<div><b>TELEFONE:</b> ${cc.telefone}</div>` : ''}
         ${cc.email ? `<div><b>E-MAIL:</b> ${cc.email}</div>` : ''}
         ${cc.endereco ? `<div><b>ENDEREÇO:</b> ${cc.endereco}</div>` : ''}
+        ${cc.regiao ? `<div><b>REGIÃO / TABELA:</b> ${cc.regiao}</div>` : ''}
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
 
-      <!-- BLOCO 3: REPRESENTANTE / ADMIN -->
+      <!-- BLOCO 3: QUEM OPERACIONALIZOU O PEDIDO -->
       <div style="font-size:4.2mm; line-height:1.45;">
-        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">ADMIN CONCESSIONÁRIA</div>
+        <div style="font-weight:700; font-size:4.4mm; margin-bottom:1mm;">${pedidoEmNomeDeOutra ? 'PEDIDO GERADO POR' : 'RESPONSÁVEL / ADMIN'}</div>
         <div><b>NOME:</b> ${vendedor}</div>
         ${vendedorTelefone ? `<div><b>TELEFONE:</b> ${vendedorTelefone}</div>` : ''}
+        ${pedidoEmNomeDeOutra ? `<div style="margin-top:1mm; font-size:3.5mm; color:#555; font-style:italic;">Pedido registrado em nome de <b>${cc.nome}</b></div>` : ''}
       </div>
 
       <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
@@ -1743,28 +1762,31 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
               ` : ''}
               
               <!-- DETALHAMENTO DAS PARCELAS -->
-              ${numParcelas > 0 && prazoPagamento !== 'Não informado' && prazoPagamento !== 'à vista' ? `
+              ${numParcelas > 0 && prazoPagamento !== 'Não informado' && prazoPagamento !== 'à vista' ? (() => {
+                const nc = numParcelas;
+                const cols = nc <= 2 ? 2 : nc <= 4 ? 4 : nc <= 6 ? 3 : nc <= 12 ? 4 : nc <= 18 ? 6 : 6;
+                const cardPadMm = nc > 8 ? '1mm' : '1.5mm';
+                const labelMm = nc > 8 ? '2.6mm' : '3mm';
+                const valueMm = nc > 8 ? '3mm' : nc > 4 ? '3.2mm' : '3.8mm';
+                const gapMm = nc > 8 ? '1mm' : '1.5mm';
+                return `
                 <div style="padding:2.5mm; background:#fff3e0; border-radius:2mm; border-left:3px solid #e65100;">
                   <div style="font-weight:700; font-size:3.8mm; color:#e65100; margin-bottom:1.5mm;">PAGAMENTO DO SALDO</div>
-                  <div style="font-size:3.5mm; color:#555; margin-bottom:1.5mm;">Prazo: ${prazoPagamento} (${numParcelas} parcelas)</div>
-                  <div style="display:grid; grid-template-columns:repeat(${Math.min(numParcelas, 4)}, 1fr); gap:1.5mm;">
+                  <div style="font-size:3.5mm; color:#555; margin-bottom:1.5mm;">Prazo: ${prazoPagamento} (${nc} parcelas)</div>
+                  <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gapMm};">
                     ${parcelas.map((parcela, idx) => {
                       const prazo = parcela.prazo || parcela.numero || (idx + 1);
                       return `
-                        <div style="padding:1.5mm; background:#fff; border:1px solid #ffcc02; border-radius:1.5mm; text-align:center;">
-                          <div style="font-size:3mm; color:#e65100; font-weight:700; margin-bottom:0.5mm;">${prazo} DD</div>
-                          <div style="font-size:3.2mm; font-weight:800; color:#333;">${formatCurrency(parcela.valor || 0)}</div>
+                        <div style="padding:${cardPadMm}; background:#fff; border:1px solid #ffcc02; border-radius:1.5mm; text-align:center;">
+                          <div style="font-size:${labelMm}; color:#e65100; font-weight:700; margin-bottom:0.3mm;">${prazo} DD</div>
+                          <div style="font-size:${valueMm}; font-weight:800; color:#333; white-space:nowrap;">${formatCurrency(parcela.valor || 0)}</div>
                         </div>
                       `;
                     }).join('')}
                   </div>
-                  ${numParcelas > 4 ? `
-                    <div style="font-size:3mm; color:#666; margin-top:1mm; text-align:center; font-style:italic;">
-                      ${numParcelas} parcelas de ${formatCurrency(saldoAPagar / numParcelas)} cada
-                    </div>
-                  ` : ''}
                 </div>
-              ` : ''}
+                `;
+              })() : ''}
           `;
         }
         return '';
@@ -1772,7 +1794,12 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
 
       <!-- BLOCO 6: OBSERVAÇÕES DO PEDIDO -->
       ${(() => {
-        const obsRaw = (pedidoData.pagamentoData?.observacaoPedidoCompra || '').trim();
+        const obsRaw = (
+          pedidoData.pagamentoData?.observacaoPedidoCompra ||
+          pedidoData.pagamentoData?.observacoesNegociacao ||
+          pedidoData.pagamentoData?.observacoes ||
+          ''
+        ).trim();
         if (!obsRaw) return '';
         const obs = obsRaw
           .replace(/&/g, '&amp;')
@@ -1802,7 +1829,13 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
   const extraValor = parseFloat(p.extraValor || 0);
   const extraDescricao = (p.extraDescricao || '').trim();
-  const observacoesNegociacao = (p.observacoesNegociacao || '').trim();
+  const observacoesNegociacao = (
+    p.observacaoPedidoCompra ||
+    p.observacoesNegociacao ||
+    p.observacaoPagamento ||
+    p.observacoes ||
+    ''
+  ).trim();
   const percentualEntradaNum = parseFloat(p.percentualEntrada || 0) || 0;
 
   // 1. Descontos sobre o valor base
@@ -1903,13 +1936,6 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
         <div style="margin-top:-4px; margin-bottom:10px; padding:8px 10px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
           <div style="font-weight:800; font-size:14px; margin-bottom:4px;">USD</div>
           <div style="font-weight:600; font-size:12px;">Cotação aplicada: 1 USD = ${formatCurrency(cotacaoUsd || 0)}</div>
-        </div>
-      ` : ''}
-
-      ${observacoesNegociacao ? `
-        <div style="margin-top:10px; padding:10px 12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:14px; color:#333; margin-bottom:6px;">Observações de Negociação</div>
-          <div style="font-size:13px; color:#000; line-height:1.4; white-space:pre-line; font-weight:600;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
 
@@ -2051,28 +2077,44 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       <!-- PRAZO E PARCELAMENTO -->
-      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? `
-        <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
-          <div style="font-weight:800; font-size:17px; color:#000; margin-bottom:10px; padding-bottom:8px; border-bottom:2px solid #aaa;">
+      ${(!p.condicaoExclusiva && parcelasCorrigidas && parcelasCorrigidas.length > 0 && p.prazoPagamento && p.prazoPagamento.toLowerCase() !== 'à vista') ? (() => {
+        const n = parcelasCorrigidas.length;
+        const cols = n <= 2 ? 2 : n <= 4 ? 4 : n <= 6 ? 3 : n <= 12 ? 4 : n <= 18 ? 6 : 6;
+        const cardPad = n > 8 ? '5px 4px' : n > 4 ? '7px 6px' : '10px 8px';
+        const labelSize = n > 8 ? '9px' : '10px';
+        const valueSize = n > 8 ? '11px' : n > 4 ? '13px' : '15px';
+        const gridGap = n > 8 ? '4px' : '6px';
+        return `
+        <div style="margin-top:12px; background:#e8e8e8; border:2px solid #000; padding:11px 13px; border-radius:4px;">
+          <div style="font-weight:800; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; color:#000; margin-bottom:8px; padding-bottom:6px; border-bottom:2px solid #aaa;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:13px; color:#333; margin-bottom:10px; font-weight:600;">Saldo de ${fmt(convert(saldoAPagarCalc))} dividido em ${parcelasCorrigidas.length} parcelas:</div>
-          <div style="display:grid; grid-template-columns:repeat(${parcelasCorrigidas.length > 3 ? '4' : parcelasCorrigidas.length > 2 ? '3' : '2'}, 1fr); gap:8px;">
+          <div style="font-size:11px; color:#333; margin-bottom:8px; font-weight:600;">Saldo de ${fmt(convert(saldoAPagarCalc))} dividido em ${n} parcelas:</div>
+          <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
             ${parcelasCorrigidas.map((parcela, idx) => `
-              <div style="background:#fff; padding:10px; border-radius:4px; text-align:center; border:2px solid #999;">
-                <div style="font-size:12px; color:#333; margin-bottom:4px; font-weight:700; text-transform:uppercase;">Parcela ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:800; color:#000; font-size:18px;">${fmt(convert(parcela.valor || 0))}</div>
+              <div style="background:#fff; padding:${cardPad}; border-radius:3px; text-align:center; border:1px solid #aaa;">
+                <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">Parcela ${parcela.numero || idx + 1}</div>
+                <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
               </div>
             `).join('')}
           </div>
         </div>
-      ` : (p.prazoPagamento ? `
-        <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
-          <div style="font-weight:800; font-size:17px; color:#000;">
+        `;
+      })() : (p.prazoPagamento ? `
+        <div style="margin-top:12px; padding:11px 13px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
+          <div style="font-weight:800; font-size:13px; text-transform:uppercase; color:#000;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
         </div>
       ` : '')}
+
+      <!-- OBSERVAÇÕES DA NEGOCIAçÃO -->
+      ${observacoesNegociacao ? `
+        <div style="margin-top:16px; border:2px solid #333; background:#fffbeb; border-radius:4px; overflow:hidden;">
+          <div style="background:#333; padding:9px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">OBSERVAÇÕES DA NEGOCIAÇÃO</div>
+          <div style="padding:14px 16px; font-size:13px; color:#000; line-height:1.7; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word;">${observacoesNegociacao}</div>
+        </div>
+      ` : ''}
 
       <!-- DADOS BANCÁRIOS -->
       <div style="margin-top:16px; padding-top:12px; border-top:2px solid #ddd;">
