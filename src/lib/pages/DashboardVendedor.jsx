@@ -91,8 +91,10 @@ const DashboardVendedor = () => {
     return propostas.filter((p) => {
       if (periodo === 'all') return true;
       const dias = parseInt(periodo, 10);
-      const dataProposta = p?.created_at ? new Date(p.created_at) : null;
-      if (!dataProposta) return false;
+      const rawDate = p?.created_at || p?.data;
+      if (!rawDate) return true;
+      const dataProposta = new Date(rawDate);
+      if (isNaN(dataProposta.getTime())) return true;
       const dataLimite = new Date();
       dataLimite.setDate(dataLimite.getDate() - dias);
       return dataProposta >= dataLimite;

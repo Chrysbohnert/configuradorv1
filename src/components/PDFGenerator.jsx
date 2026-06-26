@@ -1163,17 +1163,16 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
     };
   }) || [];
 
-  // Para pedido de compra, usar a concessionária compradora (destino selecionado ou logada)
-  const concessionariaLogo = pedidoData?.concessionariaCompradoraLogoUrl || pedidoData?.concessionariaLogoUrl || '';
+  // Nota: dados bancários removidos deste bloco — renderizados em página separada via renderDadosBancarios
+  // Exibir nota de proposta emitida por concessionária (bloco informativo, não bancário)
   const concessionariaNome = (
     (pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '')
   ).trim();
-  const usarDadosConcessionaria = Boolean(concessionariaLogo || concessionariaNome);
-
-  // Carregar logos dos bancos como base64
-  const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
-  const logoSicredi = await renderImageToDataURL('/sicredi.png');
-  const logoSicoob = await renderImageToDataURL('/sicoob.png');
+  const usarDadosConcessionaria = Boolean(
+    pedidoData?.concessionariaCompradoraLogoUrl ||
+    pedidoData?.concessionariaLogoUrl ||
+    concessionariaNome
+  );
 
   const el = createContainer('pdf-financeiro', { inline });
   el.innerHTML += `
@@ -1288,48 +1287,48 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       <!-- VALOR TOTAL -->
-      <div style="margin-top:11px; background:#e8e8e8; border:2px solid #000; padding:13px 15px; border-radius:3px;">
-        <div style="font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; margin-bottom:9px; padding-bottom:6px; border-bottom:1px solid #aaa;">${t(lang, 'totalProposal')}</div>
-        <div style="font-size:24px; font-weight:800; color:#000;">${fmt(convert(valorTotalFinal))}</div>
+      <div style="margin-top:10px; border:2px solid #000; background:#e8e8e8; padding:0;">
+        <div style="background:#333; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; border-bottom:2px solid #000;">${t(lang, 'totalProposal')}</div>
+        <div style="padding:10px 12px; font-size:24px; font-weight:800; color:#000;">${fmt(convert(valorTotalFinal))}</div>
       </div>
 
       <!-- ENTRADA (se houver) -->
       ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
-        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">④ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">⑤ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
           <div style="padding:10px 12px;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'entryValue')} (${percentualEntradaNum}%)</span>
+              <span style="font-size:13px; font-weight:600; color:#000;">${t(lang, 'entryValue')} (${percentualEntradaNum}%)</span>
               <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
             </div>
             ${sinalPago > 0 ? `
               <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                  <span style="font-size:12px; font-weight:600; color:#000;">Sinal já pago / sinal no pedido</span>
-                  <span style="font-size:13px; font-weight:700; color:#c00;">- ${fmt(convert(sinalPago))}</span>
+                  <span style="font-size:13px; font-weight:600; color:#000;">Sinal já pago</span>
+                  <span style="font-size:13px; font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
                 </div>
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
-                  <span style="font-size:12px; font-weight:600; color:#000;">Saldo restante da entrada</span>
+                  <span style="font-size:13px; font-weight:600; color:#000;">Saldo restante da entrada</span>
                   <span style="font-size:15px; font-weight:800; color:#000;">${fmt(convert(Math.max(0, entradaTotalCalc - sinalPago)))}</span>
                 </div>
               </div>
             ` : ''}
             ${p.formaEntrada ? `
-              <div style="margin-top:5px; padding:6px 10px; background:#f5f5f5; border:1px solid #ddd;">
-                <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')} do saldo da entrada:</span>
-                <span style="font-weight:700; color:#000; margin-left:5px; font-size:12px;">${p.formaEntrada.toUpperCase()}</span>
+              <div style="margin-top:5px; padding:6px 10px; background:#ebebeb; border:1px solid #ccc;">
+                <span style="font-size:13px; font-weight:600; color:#000;">${t(lang, 'paymentMethod')} da entrada:</span>
+                <span style="font-weight:700; color:#000; margin-left:5px; font-size:13px;">${p.formaEntrada.toUpperCase()}</span>
               </div>
             ` : ''}
           </div>
         </div>
 
         <!-- SALDO A PAGAR -->
-        <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">⑤ ${t(lang, 'balanceToPay')} (após entrada)</div>
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">⑥ ${t(lang, 'balanceToPay')} (após entrada)</div>
           <div style="padding:10px 12px;">
-            <div style="font-size:11px; color:#555; margin-bottom:6px;">${fmt(convert(valorTotalFinal))} − ${fmt(convert(entradaTotalCalc))} = saldo a pagar</div>
+            <div style="font-size:12px; color:#555; margin-bottom:6px;">${fmt(convert(valorTotalFinal))} − ${fmt(convert(entradaTotalCalc))} = saldo a pagar</div>
             <div style="font-weight:800; font-size:22px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
-            <div style="font-size:11px; color:#555; margin-top:4px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
+            <div style="font-size:12px; color:#555; margin-top:4px; font-weight:500;">${t(lang, 'thisAmountWillBeInstallments')}</div>
           </div>
         </div>
       ` : ''}
@@ -1367,18 +1366,20 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         const valueSize = n > 8 ? '11px' : n > 4 ? '13px' : '15px';
         const gridGap = n > 8 ? '4px' : '6px';
         return `
-        <div style="margin-top:11px; background:#e8e8e8; border:2px solid #000; padding:11px 13px; border-radius:3px;">
-          <div style="font-size:12px; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#000; margin-bottom:8px; padding-bottom:6px; border-bottom:2px solid #aaa;">
-            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc; margin-bottom:0;">
+            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑦' : '⑤'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:11px; color:#333; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${n} ${t(lang, 'installments')}:</div>
-          <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
-            ${parcelasCorrigidas.map((parcela, idx) => `
-              <div style="background:#fff; padding:${cardPad}; border-radius:3px; text-align:center; border:1px solid #aaa;">
-                <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
-              </div>
-            `).join('')}
+          <div style="padding:10px 12px;">
+            <div style="font-size:12px; color:#444; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${n} ${t(lang, 'installments')}:</div>
+            <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
+              ${parcelasCorrigidas.map((parcela, idx) => `
+                <div style="background:#fff; padding:${cardPad}; border-radius:2px; text-align:center; border:1px solid #ccc;">
+                  <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">${t(lang, 'installment')} ${parcela.numero || idx + 1}</div>
+                  <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
         `;
@@ -1386,49 +1387,66 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
 
       <!-- OBSERVAÇÕES DA NEGOCIAÇÃO -->
       ${observacoesNegociacao ? `
-        <div style="margin-top:14px; border:2px solid #333; background:#fffbeb; border-radius:4px; overflow:hidden;">
-          <div style="background:#333; padding:9px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">${t(lang, 'negotiationNotes')}</div>
-          <div style="padding:14px 16px; font-size:13px; color:#000; line-height:1.7; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word;">${observacoesNegociacao}</div>
+        <div style="margin-top:16px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#333; padding:10px 16px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">${t(lang, 'negotiationNotes')}</div>
+          <div style="padding:18px 20px; font-size:15px; color:#000; line-height:1.8; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word; min-height:60px;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
+    </div>
+  `;
+  return el;
+};
 
-      <!-- DADOS BANCÁRIOS (MESMA PÁGINA) -->
-      <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0; page-break-inside:avoid;">
-        <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+// DADOS BANCÁRIOS — renderizado em página separada após a página de condições financeiras
+const renderDadosBancarios = async (pedidoData, { inline = false } = {}) => {
+  const lang = getLang(pedidoData);
+  const concessionariaLogo = pedidoData?.concessionariaCompradoraLogoUrl || pedidoData?.concessionariaLogoUrl || '';
+  const concessionariaNome = ((pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '')).trim();
+  const usarDadosConcessionaria = Boolean(concessionariaLogo || concessionariaNome);
+
+  const logoBB = await renderImageToDataURL('/banco do brasil.jfif');
+  const logoSicredi = await renderImageToDataURL('/sicredi.png');
+  const logoSicoob = await renderImageToDataURL('/sicoob.png');
+
+  const el = createContainer('pdf-dados-bancarios', { inline });
+  el.innerHTML = `
+    <div class="wrap" style="padding:18px 10px;">
+      <div style="border:1px solid #333; background:#fff; padding:0;">
+        <div style="background:#e5e5e5; padding:10px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
           ${usarDadosConcessionaria ? `DADOS BANCÁRIOS – ${concessionariaNome || 'CONCESSIONÁRIA'}` : t(lang, 'bankData')}
         </div>
-        <div style="padding:10px 12px;">
+        <div style="padding:16px 18px;">
         ${usarDadosConcessionaria ? `
           ${concessionariaLogo ? `
-            <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:120px; max-height:50px; margin-bottom:9px; display:block;"/>
+            <img src="${concessionariaLogo}" alt="Logo Concessionária" style="max-width:140px; max-height:60px; margin-bottom:12px; display:block;"/>
           ` : ''}
-          <div style="font-size:12px; line-height:1.6; white-space:pre-line; font-weight:600; color:#000;">
-            <!-- Dados bancários removidos -->
+          <div style="font-size:13px; line-height:1.7; white-space:pre-line; font-weight:600; color:#000;">
+            <!-- Dados bancários da concessionária não configurados -->
           </div>
         ` : `
-          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5; margin-bottom:9px;">
+          <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; font-size:13px; line-height:1.6; margin-bottom:14px;">
             <div>
-              <img src="${logoBB}" alt="Banco do Brasil" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:12px; color:#000;">Banco do Brasil (001)</div>
+              <img src="${logoBB}" alt="Banco do Brasil" style="width:70px; height:auto; margin-bottom:6px; display:block;"/>
+              <div style="font-weight:700; font-size:13px; color:#000;">Banco do Brasil (001)</div>
               <div style="font-weight:600; color:#000;">Ag: 0339-5</div>
               <div style="font-weight:600; color:#000;">CC: 60548-4</div>
             </div>
             <div>
-              <img src="${logoSicredi}" alt="Sicredi" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:12px; color:#000;">Sicredi (748)</div>
+              <img src="${logoSicredi}" alt="Sicredi" style="width:70px; height:auto; margin-bottom:6px; display:block;"/>
+              <div style="font-weight:700; font-size:13px; color:#000;">Sicredi (748)</div>
               <div style="font-weight:600; color:#000;">Ag: 0307</div>
               <div style="font-weight:600; color:#000;">CC: 40771-1</div>
             </div>
             <div>
-              <img src="${logoSicoob}" alt="Sicoob" style="width:60px; height:auto; margin-bottom:5px; display:block;"/>
-              <div style="font-weight:700; font-size:12px; color:#000;">Sicoob (756)</div>
+              <img src="${logoSicoob}" alt="Sicoob" style="width:70px; height:auto; margin-bottom:6px; display:block;"/>
+              <div style="font-weight:700; font-size:13px; color:#000;">Sicoob (756)</div>
               <div style="font-weight:600; color:#000;">Ag: 3072-4</div>
               <div style="font-weight:600; color:#000;">CC: 33276-3</div>
             </div>
           </div>
-          <div style="padding-top:8px; border-top:1px solid #cbd5e1; font-size:12px; line-height:1.6;">
-            <div style="font-weight:700; color:#000;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
-            <div style="margin-top:4px; font-weight:600; color:#000;">
+          <div style="padding-top:10px; border-top:1px solid #cbd5e1; font-size:13px; line-height:1.7;">
+            <div style="font-weight:700; color:#000;">Stark Guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
+            <div style="margin-top:5px; font-weight:600; color:#000;">
               Pix CNPJ: <b>33228312000106</b> (Sicredi) | Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
             </div>
           </div>
@@ -1667,154 +1685,6 @@ const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = f
           <div style="font-weight:600; font-size:4.5mm; margin-top:1mm;">10 DIAS</div>
         </div>
       </div>
-
-      <!-- BLOCO 5: CONDIÇÕES DE PAGAMENTO DETALHADAS -->
-      ${(() => {
-        const p = pedidoData.pagamentoData || {};
-        const percentualEntrada = parseFloat(p.percentualEntrada || 0);
-        const entradaTotal = p.entradaTotal || 0;
-        const valorSinal = p.valorSinal || 0;
-        const saldoAPagar = p.saldoAPagar || p.saldo || 0;
-        const prazoPagamento = p.prazoPagamento || 'Não informado';
-        const parcelas = p.parcelas || [];
-        const numParcelas = parcelas.length;
-        const descontoVendedor = parseFloat(p.desconto || 0);
-        const descontoPrazo = parseFloat(p.descontoPrazo || 0);
-        const acrescimo = parseFloat(p.acrescimo || 0);
-        const valorTotal = p.valorFinal || 0;
-        const valorFrete = parseFloat(p.valorFrete || 0);
-        const tipoFrete = (p.tipoFrete || '').toUpperCase();
-        
-        // Calcular falta pagar da entrada
-        const faltaPagarEntrada = Math.max(0, entradaTotal - valorSinal);
-        
-        if (percentualEntrada > 0 || prazoPagamento !== 'Não informado' || descontoVendedor > 0 || acrescimo > 0 || valorFrete > 0 || tipoFrete) {
-          return `
-            <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
-            <div style="font-size:4.2mm; line-height:1.45;">
-              <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">CONDIÇÕES DE PAGAMENTO</div>
-              
-              <!-- FRETE -->
-              ${tipoFrete ? `
-                <div style="margin-bottom:2mm; padding:2mm 2.5mm; background:#f1f5f9; border-radius:2mm; border-left:3px solid #475569; display:flex; justify-content:space-between; align-items:center; font-size:3.8mm;">
-                  <span style="font-weight:700; color:#334155;">FRETE (${tipoFrete}):</span>
-                  <span style="font-weight:800; color:#1e293b;">${valorFrete > 0 ? formatCurrency(valorFrete) : tipoFrete === 'FOB' ? 'Por conta do comprador' : 'Incluso'}</span>
-                </div>
-              ` : ''}
-              
-              <!-- ENTRADA DETALHADA -->
-              ${percentualEntrada > 0 ? `
-                <div style="margin-bottom:2mm; padding:2.5mm; background:#e8f5e9; border-radius:2mm; border-left:3px solid #2e7d32;">
-                  <div style="font-weight:700; font-size:3.8mm; color:#2e7d32; margin-bottom:1.5mm;">ENTRADA (${percentualEntrada}% do valor total)</div>
-                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:2mm; font-size:3.5mm;">
-                    <div>
-                      <div style="color:#555;">Valor Total da Entrada:</div>
-                      <div style="font-weight:800; font-size:4.2mm; color:#2e7d32;">${formatCurrency(entradaTotal)}</div>
-                    </div>
-                    ${valorSinal > 0 ? `
-                      <div>
-                        <div style="color:#555;">Sinal Já Pago:</div>
-                        <div style="font-weight:700; font-size:3.8mm; color:#d32f2f;">- ${formatCurrency(valorSinal)}</div>
-                      </div>
-                    ` : ''}
-                    ${faltaPagarEntrada > 0 ? `
-                      <div style="${valorSinal > 0 ? 'grid-column: span 2;' : ''}">
-                        <div style="color:#555;">Falta Pagar da Entrada:</div>
-                        <div style="font-weight:800; font-size:4.2mm; color:#2e7d32;">${formatCurrency(faltaPagarEntrada)}</div>
-                      </div>
-                    ` : ''}
-                  </div>
-                </div>
-              ` : ''}
-              
-              <!-- SALDO FINANCIADO -->
-              ${saldoAPagar > 0 ? `
-                <div style="margin-bottom:2mm; padding:2.5mm; background:#e3f2fd; border-radius:2mm; border-left:3px solid #1565c0;">
-                  <div style="font-weight:700; font-size:3.8mm; color:#1565c0; margin-bottom:1.5mm;">SALDO FINANCIADO (${(100 - percentualEntrada).toFixed(0)}%)</div>
-                  <div style="font-size:3.5mm; color:#555; margin-bottom:1mm;">Valor a ser financiado após a entrada:</div>
-                  <div style="font-weight:800; font-size:4.5mm; color:#1565c0;">${formatCurrency(saldoAPagar)}</div>
-                </div>
-              ` : ''}
-              
-              <!-- DESCONTOS E ACRÉSCIMOS -->
-              ${(descontoVendedor > 0 || descontoPrazo > 0 || acrescimo > 0) ? `
-                <div style="margin-bottom:2mm; padding:2mm; background:#fafafa; border-radius:2mm; border:1px solid #ddd;">
-                  <div style="font-weight:700; font-size:3.6mm; margin-bottom:1mm;">AJUSTES FINANCEIROS</div>
-                  ${descontoVendedor > 0 ? `
-                    <div style="display:flex; justify-content:space-between; font-size:3.5mm; margin-bottom:0.5mm;">
-                      <span style="color:#2e7d32;">Desconto Vendedor (${descontoVendedor}%):</span>
-                      <span style="font-weight:700; color:#2e7d32;">- ${formatCurrency((valorTotal * descontoVendedor / 100))}</span>
-                    </div>
-                  ` : ''}
-                  ${descontoPrazo > 0 ? `
-                    <div style="display:flex; justify-content:space-between; font-size:3.5mm; margin-bottom:0.5mm;">
-                      <span style="color:#2e7d32;">Desconto Prazo (${descontoPrazo}%):</span>
-                      <span style="font-weight:700; color:#2e7d32;">- ${formatCurrency((valorTotal * descontoPrazo / 100))}</span>
-                    </div>
-                  ` : ''}
-                  ${acrescimo > 0 ? `
-                    <div style="display:flex; justify-content:space-between; font-size:3.5mm;">
-                      <span style="color:#e65100;">Acréscimo (${acrescimo}%):</span>
-                      <span style="font-weight:700; color:#e65100;">+ ${formatCurrency((valorTotal * acrescimo / 100))}</span>
-                    </div>
-                  ` : ''}
-                </div>
-              ` : ''}
-              
-              <!-- DETALHAMENTO DAS PARCELAS -->
-              ${numParcelas > 0 && prazoPagamento !== 'Não informado' && prazoPagamento !== 'à vista' ? (() => {
-                const nc = numParcelas;
-                const cols = nc <= 2 ? 2 : nc <= 4 ? 4 : nc <= 6 ? 3 : nc <= 12 ? 4 : nc <= 18 ? 6 : 6;
-                const cardPadMm = nc > 8 ? '1mm' : '1.5mm';
-                const labelMm = nc > 8 ? '2.6mm' : '3mm';
-                const valueMm = nc > 8 ? '3mm' : nc > 4 ? '3.2mm' : '3.8mm';
-                const gapMm = nc > 8 ? '1mm' : '1.5mm';
-                return `
-                <div style="padding:2.5mm; background:#fff3e0; border-radius:2mm; border-left:3px solid #e65100;">
-                  <div style="font-weight:700; font-size:3.8mm; color:#e65100; margin-bottom:1.5mm;">PAGAMENTO DO SALDO</div>
-                  <div style="font-size:3.5mm; color:#555; margin-bottom:1.5mm;">Prazo: ${prazoPagamento} (${nc} parcelas)</div>
-                  <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gapMm};">
-                    ${parcelas.map((parcela, idx) => {
-                      const prazo = parcela.prazo || parcela.numero || (idx + 1);
-                      return `
-                        <div style="padding:${cardPadMm}; background:#fff; border:1px solid #ffcc02; border-radius:1.5mm; text-align:center;">
-                          <div style="font-size:${labelMm}; color:#e65100; font-weight:700; margin-bottom:0.3mm;">${prazo} DD</div>
-                          <div style="font-size:${valueMm}; font-weight:800; color:#333; white-space:nowrap;">${formatCurrency(parcela.valor || 0)}</div>
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                </div>
-                `;
-              })() : ''}
-          `;
-        }
-        return '';
-      })()}
-
-      <!-- BLOCO 6: OBSERVAÇÕES DO PEDIDO -->
-      ${(() => {
-        const obsRaw = (
-          pedidoData.pagamentoData?.observacaoPedidoCompra ||
-          pedidoData.pagamentoData?.observacoesNegociacao ||
-          pedidoData.pagamentoData?.observacoes ||
-          ''
-        ).trim();
-        if (!obsRaw) return '';
-        const obs = obsRaw
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#39;');
-        return `
-          <div style="height:0.3mm; background:#555; opacity:0.4; margin:4mm 0;"></div>
-          <div style="page-break-inside:avoid; font-size:4.2mm; line-height:1.45;">
-            <div style="font-weight:700; font-size:4.4mm; margin-bottom:2mm;">OBSERVAÇÕES DO PEDIDO</div>
-            <div style="padding:3mm; background:#fff8e1; border-left:3px solid #f59e0b; border-radius:2mm; font-size:3.8mm; color:#333; line-height:1.5; white-space:pre-line;">${obs}</div>
-          </div>
-        `;
-      })()}
     </div>
   `;
 
@@ -1896,8 +1766,9 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   let breakdownHtml = '';
   if (mostrarBreakdown) {
     breakdownHtml = `
-      <div style="margin-top:12px; padding:12px; background:#f8f9fa; border-left:4px solid #6d6e6fff; border-radius:4px;">
-        <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:10px;">DETALHAMENTO POR EQUIPAMENTO</div>
+      <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+        <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">DETALHAMENTO POR EQUIPAMENTO</div>
+        <div style="padding:10px 12px;">
         ${guindastes.map((g, idx) => {
           const precoUnit = parseFloat(g.preco) || 0;
           const entradaUnit = percentualEntradaNum > 0 ? (precoUnit * percentualEntradaNum / 100) : 0;
@@ -1923,6 +1794,7 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
             </div>
           `;
         }).join('')}
+        </div>
       </div>
     `;
   }
@@ -1941,50 +1813,52 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
 
       <!-- LAYOUT 2 COLUNAS: VALOR BASE + DESCONTOS -->
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px;">
-        <div style="padding:12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">① VALOR BASE DO EQUIPAMENTO</div>
-          <div style="font-size:24px; font-weight:700; color:#000;">${fmt(convert(totalBase))}</div>
+        <div style="border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">① VALOR BASE DO EQUIPAMENTO</div>
+          <div style="padding:10px 12px; font-size:24px; font-weight:800; color:#000;">${fmt(convert(totalBase))}</div>
         </div>
 
         ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
-          <div style="padding:12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-            <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">③ DESCONTOS E AJUSTES</div>
-            ${p.desconto ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Desconto Vendedor (${p.desconto}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoVendedor))}</span>
-              </div>
-            ` : ''}
-            ${p.descontoPrazo ? `
-              <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Desconto Prazo (${p.descontoPrazo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">- ${fmt(convert(valorDescontoPrazo))}</span>
-              </div>
-            ` : ''}
-            ${p.acrescimo ? `
-              <div style="display:flex; justify-content:space-between; font-size:14px;">
-                <span style="font-weight:600; color:#000;">Acréscimo (${p.acrescimo}%)</span>
-                <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(valorAcrescimo))}</span>
-              </div>
-            ` : ''}
+          <div style="border:1px solid #ccc; background:#f8f8f8; padding:0;">
+            <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">④ DESCONTOS E AJUSTES</div>
+            <div style="padding:10px 12px;">
+              ${p.desconto ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px;">
+                  <span style="font-weight:600; color:#000;">Desconto Vendedor (${p.desconto}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
+                </div>
+              ` : ''}
+              ${p.descontoPrazo ? `
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px;">
+                  <span style="font-weight:600; color:#000;">Desconto Prazo (${p.descontoPrazo}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoPrazo))}</span>
+                </div>
+              ` : ''}
+              ${p.acrescimo ? `
+                <div style="display:flex; justify-content:space-between; font-size:13px;">
+                  <span style="font-weight:600; color:#000;">Acréscimo (${p.acrescimo}%)</span>
+                  <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(valorAcrescimo))}</span>
+                </div>
+              ` : ''}
+            </div>
           </div>
         ` : '<div></div>'}
       </div>
 
       <!-- FRETE E INSTALAÇÃO -->
       ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
-        <div style="margin-top:12px; border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">② ${t(lang, 'freightAndInstallation')}</div>
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">② ${t(lang, 'freightAndInstallation')}</div>
           <table style="width:100%; border-collapse:collapse; font-size:12px;">
             <tbody>
               ${p.tipoFrete ? `
-                <tr style="border-bottom:1px solid #ddd;">
+                <tr style="border-bottom:1px solid #e0e0e0;">
                   <td style="padding:8px 12px; font-weight:600; color:#000; width:50%;">${t(lang, 'freight')}</td>
-                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')} — ${fmt(convert(valorFreteFinal))}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
                 </tr>
               ` : ''}
               ${p.tipoInstalacao ? `
-                <tr style="border-bottom:1px solid #ddd;">
+                <tr style="border-bottom:1px solid #e0e0e0;">
                   <td style="padding:8px 12px; font-weight:600; color:#000;">${t(lang, 'installation')}</td>
                   <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${p.tipoInstalacao.toUpperCase()}${valorInstalacaoInformado > 0 ? ` — ${fmt(convert(valorInstalacaoInformado))}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
                 </tr>
@@ -2001,21 +1875,19 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
       ` : ''}
 
       ${(extraValor > 0) ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">EXTRA</div>
-          <div style="display:flex; justify-content:space-between; font-size:14px;">
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">EXTRA</div>
+          <div style="padding:10px 12px; display:flex; justify-content:space-between; font-size:13px;">
             <span style="font-weight:600; color:#000;">${extraDescricao ? extraDescricao.toUpperCase() : 'AJUSTE COMERCIAL'}</span>
-            <span style="color:#000; font-weight:700; font-size:16px;">+ ${fmt(convert(extraValor))}</span>
+            <span style="font-weight:700; font-size:14px; color:#000;">+ ${fmt(convert(extraValor))}</span>
           </div>
         </div>
       ` : ''}
 
       <!-- VALOR TOTAL -->
-      <div style="margin-top:12px; padding:14px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:800; font-size:18px; color:#000;">VALOR TOTAL DA PROPOSTA</span>
-          <span style="font-weight:800; font-size:26px; color:#000;">${fmt(convert(valorTotalFinal))}</span>
-        </div>
+      <div style="margin-top:10px; border:2px solid #000; background:#e8e8e8; padding:0;">
+        <div style="background:#333; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; border-bottom:2px solid #000;">③ VALOR TOTAL DA PROPOSTA</div>
+        <div style="padding:10px 12px; font-size:26px; font-weight:800; color:#000;">${fmt(convert(valorTotalFinal))}</div>
       </div>
 
       <!-- BREAKDOWN POR EQUIPAMENTO (quando múltiplos guindastes) -->
@@ -2023,53 +1895,59 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
 
       <!-- ENTRADA (sempre mostra quando percentualEntrada > 0) -->
       ${percentualEntradaNum > 0 ? `
-        <div style="margin-top:12px; padding:12px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:8px;">④ ENTRADA (${percentualEntradaNum}% do valor total)</div>
-          <div style="display:flex; justify-content:space-between; margin-bottom:6px; font-size:14px;">
-            <span style="font-weight:600; color:#000;">Valor da entrada</span>
-            <span style="font-weight:700; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
-          </div>
-          ${p.formaEntrada ? `
-            <div style="margin-bottom:6px; padding:8px; background:#fff; border-radius:4px; border:1px solid #ddd;">
-              <span style="font-weight:600; color:#000; font-size:13px;">💳 Forma de Pagamento:</span>
-              <span style="font-weight:700; color:#000; margin-left:5px; font-size:14px;">${p.formaEntrada.toUpperCase()}</span>
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">⑤ ENTRADA (${percentualEntradaNum}%)</div>
+          <div style="padding:10px 12px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-size:13px; font-weight:600; color:#000;">Valor da entrada (${percentualEntradaNum}%)</span>
+              <span style="font-weight:800; font-size:20px; color:#000;">${fmt(convert(entradaTotalCalc))}</span>
             </div>
-          ` : ''}
-          
+            ${sinalPago > 0 ? `
+              <div style="border-top:1px solid #ddd; padding-top:6px; margin-top:4px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                  <span style="font-size:13px; font-weight:600; color:#000;">Sinal já pago</span>
+                  <span style="font-size:13px; font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
+                </div>
+              </div>
+            ` : ''}
+            ${p.formaEntrada ? `
+              <div style="margin-top:5px; padding:6px 10px; background:#ebebeb; border:1px solid #ccc;">
+                <span style="font-size:13px; font-weight:600; color:#000;">Forma de pagamento da entrada:</span>
+                <span style="font-weight:700; color:#000; margin-left:5px; font-size:13px;">${p.formaEntrada.toUpperCase()}</span>
+              </div>
+            ` : ''}
+          </div>
         </div>
 
         <!-- SALDO A PAGAR -->
-        <div style="margin-top:12px; padding:14px; background:#f5f5f5; border-left:4px solid #888; border-radius:4px;">
-          <div style="font-weight:700; font-size:15px; color:#000; margin-bottom:6px;">⑤ SALDO A PAGAR (APÓS FATURAMENTO)</div>
-          <div style="font-size:13px; color:#000; margin-bottom:6px;">Este valor será parcelado</div>
-          ${sinalPago > 0 ? `
-          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:13px;">
-            <span style="font-weight:600; color:#000;">Sinal já pago</span>
-            <span style="font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">⑥ SALDO A PAGAR (APÓS FATURAMENTO)</div>
+          <div style="padding:10px 12px;">
+            <div style="font-size:12px; color:#555; margin-bottom:6px;">${fmt(convert(valorTotalFinal))} − ${fmt(convert(entradaTotalCalc))} = saldo a pagar</div>
+            <div style="font-weight:800; font-size:24px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
+            <div style="font-size:12px; color:#555; margin-top:4px;">Este valor será parcelado</div>
           </div>
-          ` : ''}
-          <div style="font-weight:800; font-size:24px; color:#000;">${fmt(convert(saldoAPagarCalc))}</div>
         </div>
       ` : ''}
 
       <!-- CONDIÇÃO EXCLUSIVA -->
       ${p.condicaoExclusiva ? `
-        <div style="margin-top:12px; border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
           </div>
           <div style="padding:10px 12px; font-size:13px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
           </div>
           ${(p.valorSinalManual || 0) > 0 ? `
-            <div style="padding:10px 12px; border-top:1px solid #ccc; background:#f9fafb;">
+            <div style="padding:10px 12px; border-top:1px solid #ccc; background:#ebebeb;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                <span style="font-size:13px; font-weight:600; color:#000;">💰 Sinal informado:</span>
-                <span style="font-size:15px; font-weight:700; color:#d32f2f;">- ${fmt(convert(p.valorSinalManual))}</span>
+                <span style="font-size:13px; font-weight:600; color:#000;">Sinal informado:</span>
+                <span style="font-size:15px; font-weight:700; color:#000;">- ${fmt(convert(p.valorSinalManual))}</span>
               </div>
               <div style="display:flex; justify-content:space-between; align-items:center;">
-                <span style="font-size:13px; font-weight:600; color:#2e7d32;">Saldo restante:</span>
-                <span style="font-size:18px; font-weight:800; color:#2e7d32;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
+                <span style="font-size:13px; font-weight:600; color:#000;">Saldo restante:</span>
+                <span style="font-size:18px; font-weight:800; color:#000;">${fmt(convert(Math.max(0, (p.total || p.valorFinal || 0) - p.valorSinalManual)))}</span>
               </div>
             </div>
           ` : ''}
@@ -2085,40 +1963,43 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
         const valueSize = n > 8 ? '11px' : n > 4 ? '13px' : '15px';
         const gridGap = n > 8 ? '4px' : '6px';
         return `
-        <div style="margin-top:12px; background:#e8e8e8; border:2px solid #000; padding:11px 13px; border-radius:4px;">
-          <div style="font-weight:800; font-size:13px; letter-spacing:0.5px; text-transform:uppercase; color:#000; margin-bottom:8px; padding-bottom:6px; border-bottom:2px solid #aaa;">
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
-          <div style="font-size:11px; color:#333; margin-bottom:8px; font-weight:600;">Saldo de ${fmt(convert(saldoAPagarCalc))} dividido em ${n} parcelas:</div>
-          <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
-            ${parcelasCorrigidas.map((parcela, idx) => `
-              <div style="background:#fff; padding:${cardPad}; border-radius:3px; text-align:center; border:1px solid #aaa;">
-                <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">Parcela ${parcela.numero || idx + 1}</div>
-                <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
-              </div>
-            `).join('')}
+          <div style="padding:10px 12px;">
+            <div style="font-size:12px; color:#444; margin-bottom:8px; font-weight:600;">Saldo de ${fmt(convert(saldoAPagarCalc))} dividido em ${n} parcelas:</div>
+            <div style="display:grid; grid-template-columns:repeat(${cols}, 1fr); gap:${gridGap};">
+              ${parcelasCorrigidas.map((parcela, idx) => `
+                <div style="background:#fff; padding:${cardPad}; border-radius:2px; text-align:center; border:1px solid #ccc;">
+                  <div style="font-size:${labelSize}; color:#555; margin-bottom:2px; font-weight:700; text-transform:uppercase; letter-spacing:0.3px;">Parcela ${parcela.numero || idx + 1}</div>
+                  <div style="font-weight:800; color:#000; font-size:${valueSize}; white-space:nowrap;">${fmt(convert(parcela.valor || 0))}</div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
         `;
       })() : (p.prazoPagamento ? `
-        <div style="margin-top:12px; padding:11px 13px; background:#e8e8e8; border:2px solid #000; border-radius:4px;">
-          <div style="font-weight:800; font-size:13px; text-transform:uppercase; color:#000;">
+        <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000;">
             ${percentualEntradaNum > 0 ? '⑥' : '④'} PRAZO: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
         </div>
       ` : '')}
 
-      <!-- OBSERVAÇÕES DA NEGOCIAçÃO -->
+      <!-- OBSERVAÇÕES DA NEGOCIAÇÃO -->
       ${observacoesNegociacao ? `
-        <div style="margin-top:16px; border:2px solid #333; background:#fffbeb; border-radius:4px; overflow:hidden;">
-          <div style="background:#333; padding:9px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">OBSERVAÇÕES DA NEGOCIAÇÃO</div>
-          <div style="padding:14px 16px; font-size:13px; color:#000; line-height:1.7; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word;">${observacoesNegociacao}</div>
+        <div style="margin-top:16px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#333; padding:10px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">OBSERVAÇÕES DA NEGOCIAÇÃO</div>
+          <div style="padding:16px 18px; font-size:14px; color:#000; line-height:1.8; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word; min-height:50px;">${observacoesNegociacao}</div>
         </div>
       ` : ''}
 
       <!-- DADOS BANCÁRIOS -->
-      <div style="margin-top:16px; padding-top:12px; border-top:2px solid #ddd;">
-        <div style="font-weight:700; font-size:16px; text-transform:uppercase; margin-bottom:10px; color:#000;">DADOS BANCÁRIOS – STARK GUINDASTES LTDA</div>
+      <div style="margin-top:16px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+        <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc; margin-bottom:0;">DADOS BANCÁRIOS – STARK GUINDASTES LTDA</div>
+      <div style="padding:12px 14px;">
         <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; font-size:12px; line-height:1.5;">
           <div>
             <img src="${logoBB}" alt="Banco do Brasil" style="width:65px; height:auto; margin-bottom:5px; display:block;"/>
@@ -2140,12 +2021,13 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
           </div>
         </div>
         <div style="margin-top:10px; font-size:12px; line-height:1.6;">
-          <div style="font-weight:700;">Stark guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
+          <div style="font-weight:700;">Stark Guindastes Ltda | CNPJ: 33.228.312/0001-06</div>
           <div style="margin-top:5px; font-weight:600;">
             Pix CNPJ: <b>33228312000106</b> (Sicredi) |
             Pix e-mail: <b>financeiro@starkindustrial.ind.br</b> (BB)
           </div>
         </div>
+      </div>
       </div>
     </div>
   `;
@@ -2394,7 +2276,14 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
           }
         }
 
-        // 3. CLÁUSULAS + ASSINATURAS
+        // 3. CONDIÇÕES FINANCEIRAS (sempre em página separada após a capa)
+        {
+          const el = await renderFinanceiroCompra(pedidoDataLang, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // 4. CLÁUSULAS + ASSINATURAS
         {
           const root = createContainer('page-clausulas-compra', { inline: true });
           root.appendChild(renderClausulas(pedidoDataLang, { inline: true }));
@@ -2431,9 +2320,16 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }
 
-        // ==== FINANCEIRO
+        // ==== FINANCEIRO (condições + parcelas + observações — SEM dados bancários)
         {
           const el = await renderFinanceiro(pedidoDataLang, { inline: false });
+          const cv = await htmlToCanvas(el);
+          addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
+        }
+
+        // ==== DADOS BANCÁRIOS (sempre em nova página, nunca aproveita espaço do financeiro)
+        {
+          const el = await renderDadosBancarios(pedidoDataLang, { inline: false });
           const cv = await htmlToCanvas(el);
           addSectionCanvasPaginated(pdf, cv, headerDataURL, footerDataURL, ts);
         }

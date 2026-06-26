@@ -29,7 +29,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     vendedor_id,
     status:    status    || undefined,
     tipo:      tipo      || undefined,
-    limit:     parseInt(limit)  || 100,
+    limit:     limit !== undefined ? (parseInt(limit) || 0) : 0,
     offset:    parseInt(offset) || 0,
     includeDadosSerializados: includeDadosSerializados === 'true',
   };

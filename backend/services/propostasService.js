@@ -43,16 +43,20 @@ function buildConditions(filters) {
   return { conditions, params };
 }
 
-async function findAll({ vendedor_id, status, tipo, concessionaria_id, limit = 100, offset = 0, includeDadosSerializados = false } = {}) {
+async function findAll({ vendedor_id, status, tipo, concessionaria_id, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
   const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const selectCols = includeDadosSerializados ? '*' : COLS_RESUMO.join(', ');
 
-  params.push(limit, offset);
-  const { rows } = await query(
-    `SELECT ${selectCols} FROM propostas ${where} ORDER BY data DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  );
+  let queryStr;
+  if (limit && limit > 0) {
+    params.push(limit, offset);
+    queryStr = `SELECT ${selectCols} FROM propostas ${where} ORDER BY COALESCE(created_at, data) DESC LIMIT $${params.length - 1} OFFSET $${params.length}`;
+  } else {
+    queryStr = `SELECT ${selectCols} FROM propostas ${where} ORDER BY COALESCE(created_at, data) DESC`;
+  }
+
+  const { rows } = await query(queryStr, params);
   return rows;
 }
 

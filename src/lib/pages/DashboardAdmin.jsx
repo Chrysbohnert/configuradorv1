@@ -216,8 +216,11 @@ const DashboardAdmin = () => {
     }
 
     return fonte.filter((p) => {
-      const d = p.created_at ? new Date(p.created_at) : null;
-      return d ? d >= limite : true;
+      const rawDate = p.created_at || p.data;
+      if (!rawDate) return true;
+      const d = new Date(rawDate);
+      if (isNaN(d.getTime())) return true;
+      return d >= limite;
     });
   }, [pedidos, periodo, visaoConversao]);
 
