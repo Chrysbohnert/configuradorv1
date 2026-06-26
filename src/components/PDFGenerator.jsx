@@ -851,6 +851,34 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 
   const gList = guindastes.map(enrich);
 
+  // Deduplicar guindastes: usar id como chave primária, fallback para modelo/codigo_produto
+  const uniqueGuindastes = [];
+  const seenIds = new Set();
+  const seenFallbacks = new Set();
+
+  for (const g of gList) {
+    const primaryKey = g.id;
+    const fallbackKey = (g.modelo || g.codigo_produto || g.nome || '').toLowerCase().trim();
+
+    if (primaryKey) {
+      if (!seenIds.has(primaryKey)) {
+        seenIds.add(primaryKey);
+        uniqueGuindastes.push(g);
+      }
+    } else if (fallbackKey) {
+      if (!seenFallbacks.has(fallbackKey)) {
+        seenFallbacks.add(fallbackKey);
+        uniqueGuindastes.push(g);
+      }
+    } else {
+      // Sem id nem fallback: incluir apenas se for o primeiro sem identificação
+      if (!seenFallbacks.has('__no_id__')) {
+        seenFallbacks.add('__no_id__');
+        uniqueGuindastes.push(g);
+      }
+    }
+  }
+
   const el = createContainer('pdf-equipamento', { inline });
   let html = `
     <div class="wrap" style="padding:22px;">
@@ -858,10 +886,10 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
       <div class="title" style="font-size:22px;margin-bottom:16px;font-weight:800;">${t(lang, 'equipmentTechDescription')}</div>
   `;
 
-  if (gList.length === 0) {
+  if (uniqueGuindastes.length === 0) {
     html += `<div class="p caps">${t(lang, 'noMainEquipment')}</div>`;
   } else {
-    gList.forEach((g, idx) => {
+    uniqueGuindastes.forEach((g, idx) => {
       const desc = formatarTexto(g.descricao) || '';
       const naoIncluido = formatarTexto(g.nao_incluido) || '';
       const descLang = lang === 'es' ? translatePtToEsHeuristic(desc) : desc;
