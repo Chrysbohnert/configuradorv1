@@ -604,12 +604,18 @@ const renderCapa = async (pedidoData, numeroProposta, { inline = false } = {}) =
   })();
 
   // Determinar se deve usar dados da concessionária ou da Stark
-  const concessionariaNome = (pedidoData?.concessionariaNome || '').trim();
+  // Para pedido de compra, usar concessionária compradora (selecionada ou logada)
+  const concessionariaNome = pedidoData?.isConcessionariaCompra
+    ? (pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '').trim()
+    : (pedidoData?.concessionariaNome || '').trim();
+  const concessionariaLogoUrl = pedidoData?.isConcessionariaCompra
+    ? (pedidoData?.concessionariaCompradoraLogoUrl || pedidoData?.concessionariaLogoUrl || '')
+    : (pedidoData?.concessionariaLogoUrl || '');
   const usarDadosConcessionaria = Boolean(
     pedidoData?.concessionariaData ||
     pedidoData?.concessionaria ||
     pedidoData?.concessionaria_id ||
-    pedidoData?.concessionariaLogoUrl ||
+    concessionariaLogoUrl ||
     concessionariaNome
   );
 
@@ -1559,9 +1565,12 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
   } catch {}
   if (!vendedor) vendedor = t(lang, 'notProvided');
 
-  const concessionariaNomeSig = (!pedidoData.isConcessionariaCompra && pedidoData.concessionariaNome)
-    ? (pedidoData.concessionariaNome || '').trim()
-    : '';
+  // Para pedido de compra, mostrar concessionária na assinatura do vendedor quando operando em nome de outra
+  const concessionariaNomeSig = pedidoData.isConcessionariaCompra && pedidoData.pedidoEmNomeDeOutra
+    ? (pedidoData.concessionariaCompradoraNome || '').trim()
+    : (!pedidoData.isConcessionariaCompra && pedidoData.concessionariaNome
+      ? (pedidoData.concessionariaNome || '').trim()
+      : '');
 
   // Para pedido de compra, usar a concessionária compradora (destino selecionado ou logada)
   // Para proposta comercial normal, usar clienteData.nome
@@ -2239,7 +2248,10 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
       const numeroProposta = getNextProposalNumber();
       const _tsDate = new Date().toLocaleString('pt-BR');
       const _tsVendedor = (pedidoData?.vendedor_nome || pedidoData?.vendedor || '').trim();
-      const _tsConc = (pedidoData?.concessionariaNome || '').trim();
+      // Para pedido de compra, usar concessionária compradora (selecionada ou logada)
+      const _tsConc = pedidoData?.isConcessionariaCompra
+        ? (pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '').trim()
+        : (pedidoData?.concessionariaNome || '').trim();
       const _tsNum = numeroProposta ? `PROPOSTA Nº ${numeroProposta} — ` : '';
       const _tsResp = _tsConc
         ? `${_tsConc} — Representante ${_tsVendedor}`

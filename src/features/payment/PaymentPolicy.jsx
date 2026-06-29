@@ -56,6 +56,7 @@ export default function PaymentPolicy({
   regiaoClienteSelecionada = '', // Região selecionada do cliente
   caminhaoData = {}, // Dados do caminhão (para calcular conversor de voltagem)
   initialPaymentData = null, // Dados salvos para restauração (modo edição)
+  concessionariaSelecionadaParaPedido = null, // Concessionária selecionada (uso interno Stark)
   debug = false,
 }) {
   const user = useMemo(() => {
@@ -294,17 +295,28 @@ export default function PaymentPolicy({
     async function load() {
       try {
         let data = [];
-        
+
         if (modoConcessionaria) {
-          // Modo concessionária: carregar TODOS os pontos (sem filtro de região)
-          // Permite que o usuário selecione qualquer local via filtro de UF
-          console.log('🏢 [PaymentPolicy] Modo concessionária: carregando todos os pontos de instalação');
-          data = await db.getPontosInstalacaoPorRegiao() || [];
+          // Modo concessionária: verificar se há concessionária selecionada (uso interno Stark)
+          if (concessionariaSelecionadaParaPedido) {
+            // Usar UF da concessionária selecionada para filtrar fretes
+            const ufSelecionada = concessionariaSelecionadaParaPedido.uf || '';
+            console.log('🏢 [PaymentPolicy] Modo concessionária com concessionária selecionada:', {
+              concessionaria: concessionariaSelecionadaParaPedido.nome,
+              uf: ufSelecionada
+            });
+            data = await db.getPontosInstalacaoPorRegiao(ufSelecionada) || [];
+          } else {
+            // Sem concessionária selecionada: carregar TODOS os pontos (sem filtro de região)
+            // Permite que o usuário selecione qualquer local via filtro de UF
+            console.log('🏢 [PaymentPolicy] Modo concessionária: carregando todos os pontos de instalação');
+            data = await db.getPontosInstalacaoPorRegiao() || [];
+          }
         } else {
           // Modo vendedor: filtrar por região do vendedor
           data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
         }
-        
+
         const pontosNormalizados = Array.isArray(data) ? data : [];
         console.log(`📍 [PaymentPolicy] ${pontosNormalizados.length} pontos de instalação carregados`);
         setPontosInstalacao(pontosNormalizados);
@@ -314,7 +326,7 @@ export default function PaymentPolicy({
       }
     }
     load();
-  }, [modoConcessionaria, user?.id]);
+  }, [modoConcessionaria, user?.id, concessionariaSelecionadaParaPedido]);
 
   const ufsDisponiveis = useMemo(() => {
     const set = new Set(

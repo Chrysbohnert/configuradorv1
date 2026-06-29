@@ -1422,6 +1422,7 @@ const NovoPedido = () => {
               cotacaoUSD={cotacaoUSD}
               caminhaoData={caminhaoData}
               initialPaymentData={isEdicao ? pagamentoData : null}
+              concessionariaSelecionadaParaPedido={concessionariaSelecionadaParaPedido}
             />
           </div>
         );
