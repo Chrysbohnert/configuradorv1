@@ -394,7 +394,10 @@ const ResumoPedido = ({
     // Flag: pedido foi gerado em nome de outra concessionária (não a logada)
     pedidoEmNomeDeOutra: !!concessionariaSelecionadaParaPedido,
     // Quem operacionalizou (pode aparecer como info secundária no PDF)
-    operadoPorNome: concessionariaSelecionadaParaPedido ? (user?.nome || '') : ''
+    operadoPorNome: concessionariaSelecionadaParaPedido ? (user?.nome || '') : '',
+    // Objeto raw da concessionária do pedido — fonte de verdade para o PDF
+    // Usa a selecionada quando disponível; fallback para a logada
+    concessionariaDestinoObj: concessionariaCompradora || null
   };
 
   const totalItens = carrinho.reduce((total, item) => total + (item.preco || 0), 0);

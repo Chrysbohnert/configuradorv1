@@ -2248,9 +2248,10 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
       const numeroProposta = getNextProposalNumber();
       const _tsDate = new Date().toLocaleString('pt-BR');
       const _tsVendedor = (pedidoData?.vendedor_nome || pedidoData?.vendedor || '').trim();
-      // Para pedido de compra, usar concessionária compradora (selecionada ou logada)
+      // Para pedido de compra, usar objeto raw da concessionária destino (mais confiável que campos individuais)
+      const _destRaw = pedidoData?.concessionariaDestinoObj || {};
       const _tsConc = pedidoData?.isConcessionariaCompra
-        ? (pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '').trim()
+        ? ((_destRaw.nome || pedidoData?.concessionariaCompradoraNome || pedidoData?.concessionariaNome || '')).trim()
         : (pedidoData?.concessionariaNome || '').trim();
       const _tsNum = numeroProposta ? `PROPOSTA Nº ${numeroProposta} — ` : '';
       const _tsResp = _tsConc
@@ -2262,6 +2263,20 @@ const PDFGenerator = ({ pedidoData, onGenerate, autoGenerate }) => {
         ...(pedidoData || {}),
         pdfLang: effectiveLang,
       };
+
+      // Garantir que os campos da concessionária compradora no PDF usem o objeto raw (fonte de verdade)
+      // Isso evita que erros na cadeia de campos individuais causem fallback para Stark
+      if (pedidoDataLang.isConcessionariaCompra && pedidoDataLang.concessionariaDestinoObj) {
+        const dest = pedidoDataLang.concessionariaDestinoObj;
+        pedidoDataLang.concessionariaCompradoraNome     = (dest.nome     || pedidoDataLang.concessionariaCompradoraNome     || '').trim();
+        pedidoDataLang.concessionariaCompradoraCnpj     = dest.cnpj     || pedidoDataLang.concessionariaCompradoraCnpj     || '';
+        pedidoDataLang.concessionariaCompradoraTelefone = dest.telefone || pedidoDataLang.concessionariaCompradoraTelefone || '';
+        pedidoDataLang.concessionariaCompradoraEmail    = dest.email    || pedidoDataLang.concessionariaCompradoraEmail    || '';
+        pedidoDataLang.concessionariaCompradoraEndereco = dest.endereco || pedidoDataLang.concessionariaCompradoraEndereco || '';
+        pedidoDataLang.concessionariaCompradoraLogoUrl  = dest.logo_url || pedidoDataLang.concessionariaCompradoraLogoUrl  || '';
+        pedidoDataLang.concessionariaCompradoraRegiao   = dest.regiao_preco || pedidoDataLang.concessionariaCompradoraRegiao || '';
+        console.log('✅ [PDFGenerator] concessionariaDestino aplicada:', dest.nome, '| pedidoEmNomeDeOutra:', pedidoDataLang.pedidoEmNomeDeOutra);
+      }
 
       const headerDataURL = await renderImageToDataURL(HEADER_IMG);
       const footerDataURL = await renderImageToDataURL(FOOTER_IMG);

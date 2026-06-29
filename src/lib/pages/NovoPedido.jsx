@@ -1034,18 +1034,26 @@ const NovoPedido = () => {
         prototipo_label: guindasteCompleto.prototipo_label || null,
         prototipo_observacoes_pdf: guindasteCompleto.prototipo_observacoes_pdf || null,
         prototipo_payment_set_id: guindasteCompleto.prototipo_payment_set_id || null,
+        valor_instalacao_cliente: guindasteCompleto.valor_instalacao_cliente ?? null,
+        valor_instalacao_incluso: guindasteCompleto.valor_instalacao_incluso ?? null,
+        bloquear_desconto: !!guindasteCompleto.bloquear_desconto,
         preco: precoGuindaste,
         tipo: 'guindaste'
       };
 
-      // 4. NÃO adicionar ao carrinho aqui - apenas navegar para detalhes
-      // O carrinho será atualizado quando voltar de DetalhesGuindaste
-      logger.log('Navegando para detalhes do guindaste (sem adicionar ao carrinho ainda)');
+      // 4. Para o fluxo de Novo Pedido da Concessionária: adicionar ao carrinho diretamente
+      // Não redirecionar para /detalhes-guindaste neste fluxo
+      if (isModoConcessionaria) {
+        adicionarAoCarrinho(produto, 'guindaste');
+        logger.log('[CONCESSIONARIA] Guindaste adicionado ao carrinho diretamente, mantendo step 1');
+        return;
+      }
 
-      // 5. Navegar para detalhes com objeto completo
+      // 5. Fluxo normal: navegar para detalhes com objeto completo
+      logger.log('Navegando para detalhes do guindaste (sem adicionar ao carrinho ainda)');
       const navState = {
         guindaste: { ...guindasteCompleto, preco: precoGuindaste },
-        returnTo: isModoConcessionaria ? '/nova-proposta-concessionaria' : '/novo-pedido',
+        returnTo: '/novo-pedido',
         step: 2,
         regiaoClienteSelecionada: regiaoClienteSelecionada
       };
