@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
+import { getFretes, getPontosInstalacaoPorVendedor as getFretesPorVendedor } from '../../api/fretes';
 import { useFretes } from '../../hooks/useFretes';
 import { temControleRemoto } from '../../utils/guindasteHelper';
 import { normalizarRegiao } from '../../utils/regiaoHelper';
@@ -299,22 +300,21 @@ export default function PaymentPolicy({
         if (modoConcessionaria) {
           // Modo concessionária: verificar se há concessionária selecionada (uso interno Stark)
           if (concessionariaSelecionadaParaPedido) {
-            // Usar UF da concessionária selecionada para filtrar fretes
-            const ufSelecionada = concessionariaSelecionadaParaPedido.uf || '';
+            // Usar UF da concessionária selecionada para filtrar fretes (backend API)
+            const ufSelecionada = concessionariaSelecionadaParaPedido.uf || null;
             console.log('🏢 [PaymentPolicy] Modo concessionária com concessionária selecionada:', {
               concessionaria: concessionariaSelecionadaParaPedido.nome,
               uf: ufSelecionada
             });
-            data = await db.getPontosInstalacaoPorRegiao(ufSelecionada) || [];
+            data = await getFretes(ufSelecionada) || [];
           } else {
-            // Sem concessionária selecionada: carregar TODOS os pontos (sem filtro de região)
-            // Permite que o usuário selecione qualquer local via filtro de UF
+            // Sem concessionária selecionada: carregar TODOS os pontos via backend API
             console.log('🏢 [PaymentPolicy] Modo concessionária: carregando todos os pontos de instalação');
-            data = await db.getPontosInstalacaoPorRegiao() || [];
+            data = await getFretes() || [];
           }
         } else {
-          // Modo vendedor: filtrar por região do vendedor
-          data = await db.getPontosInstalacaoPorVendedor(user?.id) || [];
+          // Modo vendedor: filtrar por região do vendedor via backend API
+          data = await getFretesPorVendedor(user?.id) || [];
         }
 
         const pontosNormalizados = Array.isArray(data) ? data : [];

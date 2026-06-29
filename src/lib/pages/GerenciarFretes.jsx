@@ -139,7 +139,10 @@ const GerenciarFretes = () => {
             <h1>Fretes e Pontos de Instalação</h1>
             <p>Gerencie os valores de frete CIF por cidade/UF</p>
           </div>
-          <BlobButton onClick={() => { resetForm(); setEditingFrete(null); setShowModal(true); }}>
+          <BlobButton
+            onClick={() => { resetForm(); setEditingFrete(null); setShowModal(true); }}
+            style={{ '--blob-color': '#ffffff', color: '#ffffff' }}
+          >
             + Novo Frete
           </BlobButton>
         </div>

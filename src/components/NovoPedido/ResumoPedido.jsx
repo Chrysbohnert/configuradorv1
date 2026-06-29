@@ -367,7 +367,7 @@ const ResumoPedido = ({
     pagamentoData,
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',
-    isConcessionariaCompra: user?.tipo === 'admin_concessionaria',
+    isConcessionariaCompra: !!isConcessionariaCompra || user?.tipo === 'admin_concessionaria',
     // concessionariaNome/Logo/Cnpj — usados em propostas comerciais normais (emitente = concessionária logada)
     // Para pedido de compra, usar concessionária selecionada quando disponível
     concessionariaLogoUrl: concessionariaCompradora?.logo_url || concessionariaInfo?.logo_url || '',
