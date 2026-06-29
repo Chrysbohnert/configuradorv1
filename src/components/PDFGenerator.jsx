@@ -1596,6 +1596,15 @@ const renderAssinaturas = (pedidoData, { inline = false } = {}) => {
 const renderCapaCompraConcessionaria = (pedidoData, numeroProposta, { inline = false } = {}) => {
   const el = createContainer('pdf-capa-compra', { inline });
   const data = new Date().toLocaleDateString('pt-BR');
+  
+  // Debug log para verificar dados recebidos no PDF
+  console.log('🔍 [PDFGenerator] renderCapaCompraConcessionaria:', {
+    concessionariaCompradoraNome: pedidoData.concessionariaCompradoraNome,
+    pedidoEmNomeDeOutra: pedidoData.pedidoEmNomeDeOutra,
+    operadoPorNome: pedidoData.operadoPorNome,
+    clienteDataNome: pedidoData.clienteData?.nome
+  });
+  
   // Concessionária compradora: destino selecionado ou fallback para a logada
   const cc = {
     nome:     pedidoData.concessionariaCompradoraNome     || pedidoData.clienteData?.nome     || 'Não informado',

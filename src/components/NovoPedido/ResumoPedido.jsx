@@ -352,6 +352,14 @@ const ResumoPedido = ({
   // o PDF deve mostrar os dados dela — não da Stark logada.
   const concessionariaCompradora = concessionariaSelecionadaParaPedido || concessionariaInfo;
 
+  // Debug log para verificar dados da concessionária compradora
+  console.log('🔍 [ResumoPedido] concessionariaCompradora:', {
+    temSelecionada: !!concessionariaSelecionadaParaPedido,
+    nomeSelecionada: concessionariaSelecionadaParaPedido?.nome,
+    nomeLogada: concessionariaInfo?.nome,
+    final: concessionariaCompradora?.nome
+  });
+
   const pedidoData = {
     carrinho,
     clienteData,

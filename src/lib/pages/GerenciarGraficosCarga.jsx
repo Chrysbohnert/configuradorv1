@@ -190,9 +190,10 @@ const GerenciarGraficosCarga = () => {
             <p>Gerencie os gráficos técnicos dos guindastes</p>
           </div>
           <BlobButton
-            text="+ Novo Gráfico"
             onClick={() => { resetForm(); setEditingGrafico(null); setShowModal(true); }}
-          />
+          >
+            + Novo Gráfico
+          </BlobButton>
         </div>
 
         {isLoading && (
@@ -237,8 +238,8 @@ const GerenciarGraficosCarga = () => {
                   )}
                 </div>
                 <div className="grafico-actions">
-                  <BlobButton text="Editar" onClick={() => handleEdit(grafico)} />
-                  <BlobButton text="Excluir" onClick={() => handleDelete(grafico.id)} />
+                  <BlobButton onClick={() => handleEdit(grafico)}>Editar</BlobButton>
+                  <BlobButton onClick={() => handleDelete(grafico.id)}>Excluir</BlobButton>
                 </div>
               </div>
             ))}

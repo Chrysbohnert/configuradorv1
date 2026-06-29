@@ -20,6 +20,7 @@ const GerenciarVendedores = lazy(() => import('./lib/pages/GerenciarVendedores')
 const RelatorioCompleto = lazy(() => import('./lib/pages/RelatorioCompleto'));
 const GerenciarGuindastes = lazy(() => import('./lib/pages/GerenciarGuindastes'));
 const GerenciarGraficosCarga = lazy(() => import('./lib/pages/GerenciarGraficosCarga'));
+const GerenciarFretes = lazy(() => import('./lib/pages/GerenciarFretes'));
 const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
 const AprovacoesDescontos = lazy(() => import('./lib/pages/AprovacoesDescontos'));
 const PlanosPagamento = lazy(() => import('./lib/pages/PlanosPagamento'));
@@ -158,6 +159,15 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
                         <GerenciarGraficosCarga />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/gerenciar-fretes"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Fretes...">
+                        <GerenciarFretes />
                       </LazyRoute>
                     }
                   />

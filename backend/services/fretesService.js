@@ -70,4 +70,62 @@ async function getFretePorOficinaCidadeUF(oficina, cidade, uf) {
   return rows[0] || null;
 }
 
-module.exports = { getFretes, getFretesPorVendedor, getFretePorOficinaCidadeUF };
+// Admin Stark: retorna todos os fretes sem filtro de UF
+async function getTodosFretesAdmin() {
+  const { rows } = await query(
+    `SELECT * FROM fretes ORDER BY cidade, uf`
+  );
+  return rows;
+}
+
+async function createFrete(freteData) {
+  const { rows } = await query(
+    `INSERT INTO fretes (oficina, cidade, uf, valor_prioridade, valor_reaproveitamento)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING *`,
+    [
+      freteData.oficina,
+      freteData.cidade,
+      freteData.uf,
+      freteData.valor_prioridade || 0,
+      freteData.valor_reaproveitamento || 0
+    ]
+  );
+  return rows[0];
+}
+
+async function updateFrete(id, freteData) {
+  const { rows } = await query(
+    `UPDATE fretes
+     SET oficina = $1, cidade = $2, uf = $3, valor_prioridade = $4, valor_reaproveitamento = $5
+     WHERE id = $6
+     RETURNING *`,
+    [
+      freteData.oficina,
+      freteData.cidade,
+      freteData.uf,
+      freteData.valor_prioridade || 0,
+      freteData.valor_reaproveitamento || 0,
+      id
+    ]
+  );
+  return rows[0];
+}
+
+async function deleteFrete(id) {
+  const { rows } = await query(
+    `DELETE FROM fretes WHERE id = $1 RETURNING *`,
+    [id]
+  );
+  return rows[0];
+}
+
+module.exports = { 
+  getFretes, 
+  getFretesPorVendedor, 
+  getFretePorOficinaCidadeUF,
+  getTodosFretesAdmin,
+  createFrete,
+  updateFrete,
+  deleteFrete
+};
