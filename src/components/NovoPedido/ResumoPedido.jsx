@@ -23,7 +23,8 @@ const ResumoPedido = ({
   onLimparPedidoAtual,
   onLimparCarrinhoAcumulativo,
   onRemoverDoCarrinhoAcumulativo,
-  concessionariaSelecionadaParaPedido = null
+  concessionariaSelecionadaParaPedido = null,
+  cotacaoUSD = null
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
 
@@ -364,7 +365,9 @@ const ResumoPedido = ({
     carrinho,
     clienteData,
     caminhaoData,
-    pagamentoData,
+    pagamentoData: (cotacaoUSD && pagamentoData?.moeda === 'USD')
+      ? { ...pagamentoData, cotacao_usd: cotacaoUSD }
+      : pagamentoData,
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',
     isConcessionariaCompra: !!isConcessionariaCompra || user?.tipo === 'admin_concessionaria',

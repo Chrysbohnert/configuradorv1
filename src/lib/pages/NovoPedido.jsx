@@ -74,15 +74,30 @@ const NovoPedido = () => {
     return [];
   });
   const [pedidoAtual, setPedidoAtual] = useState(null);
-  const [clienteData, setClienteData] = useState({});
+  const [clienteData, setClienteData] = useState(() => {
+    try {
+      const savedCart = localStorage.getItem('carrinho');
+      let hasCart = false;
+      try { hasCart = Array.isArray(JSON.parse(savedCart || '[]')) && JSON.parse(savedCart || '[]').length > 0; } catch {}
+      if (hasCart || propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
+        const saved = localStorage.getItem('novoPedido_clienteData');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return {};
+  });
   // MODIFICADO: caminhaoData agora é um array de estudos veiculares (um por equipamento)
   const [caminhaoData, setCaminhaoData] = useState(() => {
-    if (isModoConcessionaria) {
-      // Modo concessionária: array de estudos
-      return [];
-    }
-    // Modo vendedor: objeto único (compatibilidade)
-    return {};
+    try {
+      const savedCart = localStorage.getItem('carrinho');
+      let hasCart = false;
+      try { hasCart = Array.isArray(JSON.parse(savedCart || '[]')) && JSON.parse(savedCart || '[]').length > 0; } catch {}
+      if (hasCart || propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
+        const saved = localStorage.getItem('novoPedido_caminhaoData');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return isModoConcessionaria ? [] : {};
   });
 
   // Helper: normalizar estudos veiculares para array seguro (modo concessionária)
@@ -125,7 +140,7 @@ const NovoPedido = () => {
     }
   }, [carrinho]);
   const [pagamentoData, setPagamentoData] = useState(() => {
-    if (propostaId || location.state?.fromDetalhes) {
+    if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
       const saved = localStorage.getItem('novoPedido_pagamentoData');
       try {
         return saved ? JSON.parse(saved) : {
@@ -279,6 +294,8 @@ const NovoPedido = () => {
       setGuindastesSelecionados([]);
       localStorage.removeItem('carrinho');
       localStorage.removeItem('novoPedido_pagamentoData');
+      localStorage.removeItem('novoPedido_clienteData');
+      localStorage.removeItem('novoPedido_caminhaoData');
       localStorage.removeItem('carrinhoAcumulativo');
       localStorage.removeItem('novoPedido_currentStep');
       localStorage.removeItem('novoPedido_maxStepReached');
@@ -414,11 +431,16 @@ const NovoPedido = () => {
   React.useEffect(() => {
     const carregarPropostaParaEdicao = async () => {
       if (!propostaId) {
-        // Modo criação: limpar dados
-        setClienteData({});
-        setCaminhaoData(isModoConcessionaria ? [] : {});
-        localStorage.removeItem('novoPedido_clienteData');
-        localStorage.removeItem('novoPedido_caminhaoData');
+        // Modo criação: só limpar se não há sessão ativa em andamento
+        const savedCart = localStorage.getItem('carrinho');
+        let hasCart = false;
+        try { const p = JSON.parse(savedCart || '[]'); hasCart = Array.isArray(p) && p.length > 0; } catch {}
+        if (!hasCart) {
+          setClienteData({});
+          setCaminhaoData(isModoConcessionaria ? [] : {});
+          localStorage.removeItem('novoPedido_clienteData');
+          localStorage.removeItem('novoPedido_caminhaoData');
+        }
         setIsEdicao(false);
         return;
       }
@@ -486,9 +508,22 @@ const NovoPedido = () => {
     carregarPropostaParaEdicao();
   }, [propostaId]);
 
-  // Salvar dados no localStorage sempre que mudarem (exceto clienteData)
+  // Salvar dados no localStorage sempre que mudarem (rascunho da proposta em andamento)
 
-  // Removido: não salvar dados do caminhão no localStorage
+  React.useEffect(() => {
+    if (Object.keys(clienteData || {}).length > 0) {
+      localStorage.setItem('novoPedido_clienteData', JSON.stringify(clienteData));
+    }
+  }, [clienteData]);
+
+  React.useEffect(() => {
+    const hasData = Array.isArray(caminhaoData)
+      ? caminhaoData.some(e => e && Object.keys(e).length > 0)
+      : Object.keys(caminhaoData || {}).length > 0;
+    if (hasData) {
+      localStorage.setItem('novoPedido_caminhaoData', JSON.stringify(caminhaoData));
+    }
+  }, [caminhaoData]);
 
   React.useEffect(() => {
     localStorage.setItem('novoPedido_pagamentoData', JSON.stringify(pagamentoData));
@@ -1205,6 +1240,8 @@ const NovoPedido = () => {
     setGuindastesSelecionados([]);
     localStorage.removeItem('carrinho');
     localStorage.removeItem('novoPedido_pagamentoData');
+    localStorage.removeItem('novoPedido_clienteData');
+    localStorage.removeItem('novoPedido_caminhaoData');
     localStorage.removeItem('novoPedido_currentStep');
     localStorage.removeItem('novoPedido_maxStepReached');
     // Resetar flags de proteção para permitir novo ciclo
@@ -1529,6 +1566,7 @@ const NovoPedido = () => {
                   regiaoCompraSelecionada={regiaoClienteSelecionada}
                   regiaoClienteSelecionada={regiaoClienteSelecionada}
                   concessionariaSelecionadaParaPedido={concessionariaSelecionadaParaPedido}
+                  cotacaoUSD={cotacaoUSD}
                 />
               </div>
             ) : (
@@ -1572,6 +1610,7 @@ const NovoPedido = () => {
               regiaoClienteSelecionada={regiaoClienteSelecionada}
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
+              cotacaoUSD={cotacaoUSD}
             />
           </div>
         );
