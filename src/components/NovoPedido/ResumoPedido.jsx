@@ -3,6 +3,7 @@ import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import PDFGenerator from '../PDFGenerator';
 import { db } from '../../config/supabase';
 import { updateProposta, createpropostas } from '../../api/propostas';
+import { getCotacaoUSD } from '../../api/configuracoes';
 
 const ResumoPedido = ({
   carrinho,
@@ -27,6 +28,13 @@ const ResumoPedido = ({
   cotacaoUSD = null
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
+  const [cotacaoUSDFresh, setCotacaoUSDFresh] = useState(null);
+
+  useEffect(() => {
+    if (pagamentoData?.moeda === 'USD') {
+      getCotacaoUSD().then(v => { if (v) setCotacaoUSDFresh(Number(v)); }).catch(() => {});
+    }
+  }, [pagamentoData?.moeda]);
 
   const modoEdicaoCalc = !!propostaId || isEdicao;
   const propostaIdCalc = propostaOriginal?.id || propostaId || null;
@@ -365,8 +373,8 @@ const ResumoPedido = ({
     carrinho,
     clienteData,
     caminhaoData,
-    pagamentoData: (cotacaoUSD && pagamentoData?.moeda === 'USD')
-      ? { ...pagamentoData, cotacao_usd: cotacaoUSD }
+    pagamentoData: pagamentoData?.moeda === 'USD'
+      ? { ...pagamentoData, cotacao_usd: cotacaoUSDFresh || cotacaoUSD || pagamentoData?.cotacao_usd }
       : pagamentoData,
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',
