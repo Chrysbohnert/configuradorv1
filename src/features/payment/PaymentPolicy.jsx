@@ -2078,7 +2078,21 @@ export default function PaymentPolicy({
             <div className="pp-subsection">
               <span className="pp-section-label">Forma de Entrada</span>
               {isComercioExterior && (
-                <div className="pp-info-note">Condição de pagamento para Comércio Exterior.</div>
+                <>
+                  <div className="pp-info-note">Condição de pagamento para Comércio Exterior.</div>
+                  <div className="pp-tabs" style={{ marginTop: '8px' }}>
+                    <button
+                      type="button"
+                      className={`pp-tab ${percentualEntrada === '100' ? 'pp-tab-active' : ''}`}
+                      onClick={() => { setPercentualEntrada('100'); setPlanoSelecionado(null); onPlanSelected?.(null); }}
+                    >À Vista (100%)</button>
+                    <button
+                      type="button"
+                      className={`pp-tab ${percentualEntrada === '50' ? 'pp-tab-active' : ''}`}
+                      onClick={() => { setPercentualEntrada('50'); setPlanoSelecionado(null); onPlanSelected?.(null); }}
+                    >50% + Pós Faturamento</button>
+                  </div>
+                </>
               )}
               {!isComercioExterior && modoEntrada === 'percentual' && (
                 <div className="pp-fields-row" style={{ alignItems: 'flex-end' }}>

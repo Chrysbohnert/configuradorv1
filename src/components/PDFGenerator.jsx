@@ -887,9 +887,9 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 
   const el = createContainer('pdf-equipamento', { inline });
   let html = `
-    <div class="wrap" style="padding:22px;">
+    <div class="wrap" style="padding:16px;">
     <div style="page-break-before: always;"></div>
-      <div class="title" style="font-size:22px;margin-bottom:16px;font-weight:800;">${t(lang, 'equipmentTechDescription')}</div>
+      <div class="title" style="font-size:20px;margin-bottom:10px;font-weight:800;">${t(lang, 'equipmentTechDescription')}</div>
   `;
 
   if (uniqueGuindastes.length === 0) {
@@ -903,12 +903,12 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 
       const nomeEquip = (g.subgrupo || g.nome || g.modelo || '').toUpperCase();
       html += `
-        ${idx > 0 ? '<div style="border-top:2px solid #e2e8f0; margin:18px 0;"></div>' : ''}
+        ${idx > 0 ? '<div style="border-top:2px solid #e2e8f0; margin:12px 0;"></div>' : ''}
 
         <!-- BANNER DO EQUIPAMENTO -->
         ${nomeEquip ? `
-        <div style="background:#111827; color:#fff; padding:10px 16px; margin-bottom:14px; display:flex; align-items:center; gap:12px; border-radius:2px;">
-          <div style="width:4px; height:36px; background:#fff; flex-shrink:0; border-radius:2px;"></div>
+        <div style="background:#111827; color:#fff; padding:7px 12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; border-radius:2px;">
+          <div style="width:4px; height:28px; background:#fff; flex-shrink:0; border-radius:2px;"></div>
           <div>
             <div style="font-size:9px; letter-spacing:2px; color:#9ca3af; text-transform:uppercase; margin-bottom:3px;">EQUIPAMENTO</div>
             <div style="font-size:14px; font-weight:800; letter-spacing:0.5px;">${nomeEquip}</div>
@@ -916,22 +916,22 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
         </div>` : ''}
 
         <!-- DESCRIÇÃO TÉCNICA -->
-        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:11px;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:8px;">
+          <div style="background:#e5e5e5; padding:6px 10px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             DESCRIÇÃO TÉCNICA
           </div>
-          <div style="padding:10px 12px; font-size:11.5px; line-height:1.65; text-transform:uppercase; color:#000;">
+          <div style="padding:7px 10px; font-size:11px; line-height:1.4; text-transform:uppercase; color:#000;">
             ${descLang ? convertHyphensToList(descLang) : t(lang, 'notProvided')}
           </div>
         </div>
 
         <!-- NÃO INCLUÍDO -->
         ${naoIncluidoLang ? `
-        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:11px;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+        <div style="border:1px solid #333; background:#fff; padding:0; margin-bottom:8px;">
+          <div style="background:#e5e5e5; padding:6px 10px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${t(lang, 'notIncluded')}
           </div>
-          <div style="padding:10px 12px; font-size:11.5px; line-height:1.65; text-transform:uppercase; color:#000;">
+          <div style="padding:7px 10px; font-size:11px; line-height:1.4; text-transform:uppercase; color:#000;">
             ${convertHyphensToList(naoIncluidoLang)}
           </div>
         </div>
@@ -939,24 +939,24 @@ const renderEquipamento = (pedidoData, { inline = false } = {}) => {
 
         <!-- GARANTIA -->
         <div style="border:1px solid #333; background:#fff; padding:0;">
-          <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
+          <div style="background:#e5e5e5; padding:6px 10px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
             ${t(lang, 'warrantyProgramTitle')}
           </div>
-          <div style="padding:10px 12px; font-size:11px; line-height:1.65; color:#000;">
-            <ul style="margin:0; padding-left:18px; list-style-type:disc;">
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet1')}
-                <ul style="margin-top:4px; padding-left:16px; list-style-type:circle;">
-                  <li style="margin-bottom:3px;">${t(lang, 'warrantyBullet2')}</li>
-                  <li style="margin-bottom:3px;">${t(lang, 'warrantyBullet3')}</li>
+          <div style="padding:7px 10px; font-size:10.5px; line-height:1.4; color:#000;">
+            <ul style="margin:0; padding-left:16px; list-style-type:disc;">
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet1')}
+                <ul style="margin-top:2px; padding-left:14px; list-style-type:circle;">
+                  <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet2')}</li>
+                  <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet3')}</li>
                 </ul>
               </li>
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet4')}</li>
-              <li style="margin-bottom:8px;">${t(lang, 'warrantyBullet5')}</li>
-              <li style="margin-bottom:4px; font-weight:700;">${t(lang, 'warrantyBullet6')}</li>
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet7')}</li>
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet8')}</li>
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet9')}</li>
-              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet10')}</li>
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet4')}</li>
+              <li style="margin-bottom:4px;">${t(lang, 'warrantyBullet5')}</li>
+              <li style="margin-bottom:2px; font-weight:700;">${t(lang, 'warrantyBullet6')}</li>
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet7')}</li>
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet8')}</li>
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet9')}</li>
+              <li style="margin-bottom:2px;">${t(lang, 'warrantyBullet10')}</li>
             </ul>
           </div>
         </div>

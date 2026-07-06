@@ -1,3 +1,4 @@
+
 /**
  * Biblioteca de cálculos de pagamento
  * @module lib/payments
