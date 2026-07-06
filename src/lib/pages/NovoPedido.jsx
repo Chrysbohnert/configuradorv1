@@ -758,17 +758,22 @@ const NovoPedido = () => {
         }
         processedNavKeyRef.current = location.key;
         
+        setGuindastesSelecionados([guindaste]);
+
         //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
         // Em modo concessionária, múltiplos guindastes são permitidos
         if (!isModoConcessionaria) {
           const jaNoCarrinho = carrinho.some(item => item.id === guindaste.id && item.tipo === 'guindaste');
           if (jaNoCarrinho) {
+            // Não readicionar ao carrinho, mas garantir avanço de step
+            if (location.state.step) {
+              setCurrentStep(location.state.step);
+              setMaxStepReached(prev => Math.max(prev, location.state.step));
+            }
             navigate(location.pathname, { replace: true, state: { fromDetalhes: true } });
             return;
           }
         }
-        
-        setGuindastesSelecionados([guindaste]);
 
         // Buscar preço inicial baseado na região selecionada
         let precoGuindaste = guindaste.preco || 0;

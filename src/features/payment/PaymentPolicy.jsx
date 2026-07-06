@@ -1752,6 +1752,16 @@ export default function PaymentPolicy({
     }
   }, [percentualEntrada, todosPlanos, modoConcessionaria, onPlanSelected]);
 
+  // Auto-selecionar plano Pós Faturamento (50%) para Comércio Exterior
+  useEffect(() => {
+    if (!isComercioExterior || percentualEntrada !== '50') return;
+    const plano50 = todosPlanos.find(p => Number(p.entry_percent_required) === 0.50);
+    if (plano50) {
+      setPlanoSelecionado(plano50);
+      onPlanSelected?.(plano50);
+    }
+  }, [isComercioExterior, percentualEntrada, todosPlanos, onPlanSelected]);
+
   useEffect(() => {
     if (!modoConcessionaria) return;
     setDescontoVendedor(Number(descontoConcessionaria) || 0);
@@ -2090,7 +2100,7 @@ export default function PaymentPolicy({
                       type="button"
                       className={`pp-tab ${percentualEntrada === '50' ? 'pp-tab-active' : ''}`}
                       onClick={() => { setPercentualEntrada('50'); setPlanoSelecionado(null); onPlanSelected?.(null); }}
-                    >50% + Pós Faturamento</button>
+                    >50% no Pedido + 50% no Faturamento</button>
                   </div>
                 </>
               )}
@@ -2331,7 +2341,7 @@ export default function PaymentPolicy({
 
         <div className="pp-inner-2col pp-subsection">
 
-          {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && percentualEntrada && (
+          {percentualEntrada !== 'financiamento' && percentualEntrada !== '100' && percentualEntrada && !isComercioExterior && (
             <div className="form-group">
               <label>Plano de Pagamento *</label>
               {modoConcessionaria && parseFloat(percentualEntrada) < 30 && (
