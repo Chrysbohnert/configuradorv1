@@ -44,14 +44,20 @@ const NovoPedido = () => {
   ]), []);
   const [currentStep, setCurrentStep] = useState(() => {
     try {
-      const saved = localStorage.getItem('novoPedido_currentStep');
-      return saved ? Number(saved) : 1;
+      if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
+        const saved = localStorage.getItem('novoPedido_currentStep');
+        return saved ? Number(saved) : 1;
+      }
+      return 1;
     } catch { return 1; }
   });
   const [maxStepReached, setMaxStepReached] = useState(() => {
     try {
-      const saved = localStorage.getItem('novoPedido_maxStepReached');
-      return saved ? Number(saved) : 1;
+      if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
+        const saved = localStorage.getItem('novoPedido_maxStepReached');
+        return saved ? Number(saved) : 1;
+      }
+      return 1;
     } catch { return 1; }
   });
   const [isEdicao, setIsEdicao] = useState(false); // Modo edição
@@ -254,18 +260,9 @@ const NovoPedido = () => {
       console.warn('[STEP_RESET_IGNORED] reset automático de entrada ignorado — avanço manual já ocorreu');
       return;
     }
-    // Se há carrinho no localStorage, significa que o usuário está no meio de um pedido
-    // (possível reload de página) — NÃO limpar
-    const savedCart = localStorage.getItem('carrinho');
-    let hasCartItems = false;
-    try {
-      const parsed = savedCart ? JSON.parse(savedCart) : [];
-      hasCartItems = Array.isArray(parsed) && parsed.length > 0;
-    } catch (e) {
-      console.warn('[STEP_PRESERVE] Erro ao parsear carrinho do localStorage:', e);
-    }
-    if (hasCartItems) {
-      console.log('[STEP_PRESERVE] Carrinho encontrado no localStorage — pulando reset automático de entrada');
+    // Se há carrinho no estado ativo (não stale do localStorage), não resetar
+    if (carrinho.length > 0) {
+      console.log('[STEP_PRESERVE] Carrinho ativo encontrado — pulando reset automático de entrada');
       return;
     }
     // ⚠️ PROTEÇÃO: Não resetar se já estamos em uma etapa avançada (evita voltar para step 1 indevidamente)
