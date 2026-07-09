@@ -882,7 +882,8 @@ const NovoPedido = () => {
   // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
   useEffect(() => {
     // Não resetar pagamento no modo edição (dados já carregados)
-    if (isEdicao) return;
+    // Checar também propostaId (URL imediato) para cobrir a janela async antes de isEdicao=true
+    if (isEdicao || propostaId) return;
     // Reseta se voltar para Step 1
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
       console.log('[STEP_RESET] Resetando pagamentoData ao voltar para Step 1');
@@ -1899,20 +1900,9 @@ const NovoPedido = () => {
 
 
 
-  const handleFinish = async () => {
-    try {
-      // Salvar relatório no banco de dados
-      await salvarRelatorio();
-      
-      // Limpar carrinho e navegar para histórico
-      limparCarrinho();
-      navigate(isModoConcessionaria ? '/dashboard-admin' : '/historico');
-      
-      alert('Proposta finalizada e salva com sucesso!');
-    } catch (error) {
-      console.error('Erro ao finalizar proposta:', error);
-      alert('Erro ao salvar proposta. Tente novamente.');
-    }
+  const handleFinish = () => {
+    limparCarrinho();
+    navigate(isModoConcessionaria ? '/dashboard-admin' : '/historico');
   };
 
   if (!user) {

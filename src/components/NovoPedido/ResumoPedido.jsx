@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import PDFGenerator from '../PDFGenerator';
 import { db } from '../../config/supabase';
@@ -28,6 +29,8 @@ const ResumoPedido = ({
   cotacaoUSD = null
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
+  const navigate = useNavigate();
   const [cotacaoUSDFresh, setCotacaoUSDFresh] = useState(null);
 
   useEffect(() => {
@@ -98,6 +101,21 @@ const ResumoPedido = ({
     }
   };
 
+  const handleSalvarEdicao = async () => {
+    if (!modoEdicaoCalc || !propostaIdCalc) return;
+    try {
+      setSalvandoEdicao(true);
+      await salvarRelatorio();
+      alert('Proposta atualizada com sucesso!');
+      navigate('/historico');
+    } catch (error) {
+      console.error('Erro ao salvar edição:', error);
+      alert('Erro ao atualizar proposta. Tente novamente.');
+    } finally {
+      setSalvandoEdicao(false);
+    }
+  };
+
   const filterCaminhaoDataForDB = (data) => ({
     tipo: data.tipo,
     marca: data.marca,
@@ -113,6 +131,10 @@ const ResumoPedido = ({
     try {
       const modoEdicao = modoEdicaoCalc;
       const propostaIdToUpdate = propostaIdCalc;
+
+      if (modoEdicao && !propostaIdToUpdate) {
+        throw new Error('Modo edição ativo mas ID da proposta não encontrado. Operação cancelada para evitar duplicação.');
+      }
 
       if (modoEdicao && propostaIdToUpdate) {
         const guindasteNoCarrinho = carrinho.find(item => item.tipo === 'equipamento' || item.tipo === 'guindaste');
@@ -1178,6 +1200,15 @@ const ResumoPedido = ({
             Ações Finais
           </h3>
 
+          {modoEdicaoCalc && (
+            <button
+              onClick={handleSalvarEdicao}
+              disabled={salvandoEdicao}
+              style={{ ...primaryButtonStyle('#16a34a', '#15803d'), width: '100%', marginBottom: '12px' }}
+            >
+              {salvandoEdicao ? 'Salvando...' : 'Salvar Alterações'}
+            </button>
+          )}
           <PDFGenerator pedidoData={pedidoData} onGenerate={handlePDFGenerated} />
         </div>
       </div>

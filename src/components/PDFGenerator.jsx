@@ -1320,6 +1320,27 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         </div>
       ` : ''}
 
+      <!-- DESCONTO EXTRA DO GESTOR (quando aprovado via solicitação) -->
+      ${parseFloat(p.descontoGestorValor || 0) > 0 ? (() => {
+        const descontoGestorNum = parseFloat(p.descontoGestorValor);
+        const valorAntes = valorTotalFinal + descontoGestorNum;
+        return `
+          <div style="margin-top:10px; border:1px solid #b71c1c; background:#fff8f8; padding:0;">
+            <div style="background:#b71c1c; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; border-bottom:1px solid #b71c1c;">DESCONTO EXTRA — APROVADO PELO GESTOR</div>
+            <div style="padding:10px 12px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:12px; font-weight:600; color:#000;">Valor antes do desconto extra</span>
+                <span style="font-size:14px; font-weight:700; color:#000;">${fmt(convert(valorAntes))}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #f5c6cb;">
+                <span style="font-size:12px; font-weight:600; color:#b71c1c;">Desconto extra aprovado pelo gestor</span>
+                <span style="font-size:14px; font-weight:800; color:#b71c1c;">- ${fmt(convert(descontoGestorNum))}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      })() : ''}
+
       <!-- VALOR TOTAL -->
       <div style="margin-top:10px; border:2px solid #000; background:#e8e8e8; padding:0;">
         <div style="background:#333; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; border-bottom:2px solid #000;">${t(lang, 'totalProposal')}</div>
@@ -1327,7 +1348,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       </div>
 
       <!-- ENTRADA (se houver) -->
-      ${(tipoClienteCalc === 'cliente' && percentualEntradaNum > 0) ? `
+      ${(percentualEntradaNum > 0) ? `
         <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">⑤ ${t(lang, 'entry')} (${percentualEntradaNum}%)</div>
           <div style="padding:10px 12px;">
@@ -1371,7 +1392,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
       ${p.condicaoExclusiva ? `
         <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">
-            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
+            ${percentualEntradaNum > 0 ? '⑥' : '④'} CONDIÇÃO EXCLUSIVA
           </div>
           <div style="padding:10px 12px; font-size:12px; color:#000; line-height:1.6; white-space:pre-wrap; font-weight:600;">
             ${p.condicaoExclusivaObs || 'Condição de pagamento negociada manualmente.'}
@@ -1402,7 +1423,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         return `
         <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc; margin-bottom:0;">
-            ${tipoClienteCalc === 'cliente' && percentualEntradaNum > 0 ? '⑦' : '⑤'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
+            ${percentualEntradaNum > 0 ? '⑦' : '⑤'} ${t(lang, 'term')}: ${(p.prazoPagamento || '').replaceAll('_',' ').toUpperCase()}
           </div>
           <div style="padding:10px 12px;">
             <div style="font-size:12px; color:#444; margin-bottom:8px; font-weight:600;">${t(lang, 'balanceOf')} ${fmt(convert(saldoAPagarCalc))} ${t(lang, 'dividedInto')} ${n} ${t(lang, 'installments')}:</div>
@@ -1929,6 +1950,27 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
           </div>
         </div>
       ` : ''}
+
+      <!-- DESCONTO EXTRA DO GESTOR (quando aprovado via solicitação) -->
+      ${parseFloat(p.descontoGestorValor || 0) > 0 ? (() => {
+        const descontoGestorNum = parseFloat(p.descontoGestorValor);
+        const valorAntes = valorTotalFinal + descontoGestorNum;
+        return `
+          <div style="margin-top:10px; border:1px solid #b71c1c; background:#fff8f8; padding:0;">
+            <div style="background:#b71c1c; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff; border-bottom:1px solid #b71c1c;">DESCONTO EXTRA — APROVADO PELO GESTOR</div>
+            <div style="padding:10px 12px;">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <span style="font-size:12px; font-weight:600; color:#000;">Valor antes do desconto extra</span>
+                <span style="font-size:14px; font-weight:700; color:#000;">${fmt(convert(valorAntes))}</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; padding-top:6px; border-top:1px solid #f5c6cb;">
+                <span style="font-size:12px; font-weight:600; color:#b71c1c;">Desconto extra aprovado pelo gestor</span>
+                <span style="font-size:14px; font-weight:800; color:#b71c1c;">- ${fmt(convert(descontoGestorNum))}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      })() : ''}
 
       <!-- VALOR TOTAL -->
       <div style="margin-top:10px; border:2px solid #000; background:#e8e8e8; padding:0;">

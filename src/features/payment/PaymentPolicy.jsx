@@ -525,6 +525,7 @@ export default function PaymentPolicy({
                 revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
                 prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : 'Financiamento Bancário',
                 descontoAdicionalValor: descontoExtraValor,
+                descontoGestorValor: descontoExtraValor,
                 valorFinalComDescontoAdicional: valorAposExtra,
                 descontoValor: 0,
                 acrescimoValor: 0,
@@ -627,6 +628,7 @@ export default function PaymentPolicy({
               ...r,
               precoBase: precoBase,
               descontoAdicionalValor: descontoExtraValor,
+              descontoGestorValor: descontoExtraValor,
               valorFinalComDescontoAdicional: valorAposExtra,
               extraDescricao: extraDescricao || '',
               extraValor: extraValorNum,
@@ -1029,7 +1031,7 @@ export default function PaymentPolicy({
       const valorFrete = valorFreteCalculado;
       const valorInstalacao = instalacao === 'incluso' ? instalacaoInclusoValor : 0;
       const valorBaseTotal = precoBase + extraValorNum + valorFrete + valorInstalacao + valorConversor;
-      const descontoExtraValor = descontoVendedorEfetivo > 0 ? (valorBaseTotal * descontoVendedorEfetivo / 100) : 0;
+      const descontoExtraValor = descontoVendedorEfetivo > 0 ? (precoBase * descontoVendedorEfetivo / 100) : 0;
       const valorAposExtra = valorBaseTotal - descontoExtraValor;
       const valorTotal = valorAposExtra;
       
@@ -1109,7 +1111,7 @@ export default function PaymentPolicy({
 
       const valorBaseTotalFin = baseEquipamentos + extraValorNum + valorFrete + valorInstalacao + valorConversor;
       const descontoExtraValor = descontoVendedorEfetivo > 0
-        ? valorBaseTotalFin * (descontoVendedorEfetivo / 100)
+        ? baseEquipamentos * (descontoVendedorEfetivo / 100)
         : 0;
       const valorAposExtra = valorBaseTotalFin - descontoExtraValor;
 
@@ -1200,7 +1202,7 @@ export default function PaymentPolicy({
 
       const valorSemDescGestor = r.valorAjustado + extraValorNum + valorFrete + valorInstalacao + valorConversor;
       const descontoExtraValor = descontoVendedorEfetivo > 0
-        ? valorSemDescGestor * (descontoVendedorEfetivo / 100)
+        ? precoBaseAjustado * (descontoVendedorEfetivo / 100)
         : 0;
       const valorAposExtra = valorSemDescGestor - descontoExtraValor;
 
@@ -1484,6 +1486,7 @@ export default function PaymentPolicy({
             revendaTemIE: tipoIE === 'produtor' ? 'sim' : tipoIE === 'cnpj_cpf' ? 'nao' : '',
             prazoPagamento: modoEntrada === 'exclusiva' ? 'Condição Exclusiva' : 'Financiamento Bancário',
             descontoAdicionalValor: descontoExtraValor,
+            descontoGestorValor: descontoExtraValor,
             valorFinalComDescontoAdicional: valorAposExtra,
             descontoValor: 0,
             acrescimoValor: 0,
@@ -1590,6 +1593,7 @@ export default function PaymentPolicy({
           descontoQuantidadePercent,
           descontoQuantidadeValor,
           descontoAdicionalValor: descontoExtraValor,
+          descontoGestorValor: descontoExtraValor,
           valorFinalComDescontoAdicional: valorAposExtra,
           extraDescricao: extraDescricao || '',
           extraValor: extraValorNum,
