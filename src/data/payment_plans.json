@@ -121,8 +121,8 @@
   {
     "audience": "revenda",
     "order": 5,
-    "description": "15/30/45/60 DD",
-    "installments": 4,
+    "description": "15 DD",
+    "installments": 1,
     "active": true,
     "nature": "Venda",
     "discount_percent": 0.01
@@ -362,8 +362,8 @@
   {
     "audience": "cliente",
     "order": 14,
-    "description": "15/30/45/60 DD",
-    "installments": 4,
+    "description": "15 DD",
+    "installments": 1,
     "active": true,
     "nature": "Venda",
     "entry_percent_required": 0.30,
@@ -384,8 +384,8 @@
   {
     "audience": "cliente",
     "order": 17,
-    "description": "45/60/75/90 DD",
-    "installments": 4,
+    "description": "30 DD",
+    "installments": 1,
     "active": true,
     "nature": "Venda",
     "entry_percent_required": 0.30,
