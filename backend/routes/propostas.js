@@ -14,7 +14,7 @@ const router = Router();
 const isAdmin = (req) => ['admin_stark', 'admin', 'admin_concessionaria'].includes(req.user?.tipo);
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor } = req.query;
+  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id } = req.query;
 
   let vendedor_id;
   if (isAdmin(req)) {
@@ -29,6 +29,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     vendedor_id,
     status:    status    || undefined,
     tipo:      tipo      || undefined,
+    cliente_id: cliente_id || undefined,
     limit:     limit !== undefined ? (parseInt(limit) || 0) : 0,
     offset:    parseInt(offset) || 0,
     includeDadosSerializados: includeDadosSerializados === 'true',

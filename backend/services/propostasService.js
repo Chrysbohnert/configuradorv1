@@ -10,7 +10,7 @@ const PROPOSTA_FIELDS = [
   'numero_proposta', 'data', 'vendedor_id', 'vendedor_nome', 'cliente_nome', 'cliente_documento',
   'valor_total', 'tipo', 'status', 'concessionaria_id', 'canal_venda', 'segmento_cliente',
   'cliente_uf', 'cliente_cidade', 'produto_principal', 'linha_produto', 'resultado_venda',
-  'motivo_perda', 'data_resultado_venda', 'dados_serializados',
+  'motivo_perda', 'data_resultado_venda', 'dados_serializados', 'cliente_id',
 ];
 
 const COLS_RESUMO = [
@@ -18,13 +18,14 @@ const COLS_RESUMO = [
   'cliente_documento', 'valor_total', 'tipo', 'status', 'concessionaria_id', 'canal_venda',
   'segmento_cliente', 'cliente_uf', 'cliente_cidade', 'produto_principal', 'linha_produto',
   'resultado_venda', 'motivo_perda', 'data_resultado_venda', 'created_at', 'updated_at',
+  'cliente_id',
 ];
 
 function buildConditions(filters) {
   const conditions = [];
   const params = [];
 
-  const { vendedor_id, status, tipo, concessionaria_id } = filters;
+  const { vendedor_id, status, tipo, concessionaria_id, cliente_id } = filters;
 
   if (Array.isArray(vendedor_id) && vendedor_id.length) {
     params.push(vendedor_id);
@@ -39,12 +40,16 @@ function buildConditions(filters) {
     params.push(concessionaria_id);
     conditions.push(`concessionaria_id = $${params.length}`);
   }
+  if (cliente_id) {
+    params.push(cliente_id);
+    conditions.push(`cliente_id = $${params.length}`);
+  }
 
   return { conditions, params };
 }
 
-async function findAll({ vendedor_id, status, tipo, concessionaria_id, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id });
+async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_id, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const selectCols = includeDadosSerializados ? '*' : COLS_RESUMO.join(', ');
 
@@ -60,8 +65,8 @@ async function findAll({ vendedor_id, status, tipo, concessionaria_id, limit = 0
   return rows;
 }
 
-async function count({ vendedor_id, status, tipo, concessionaria_id } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id });
+async function count({ vendedor_id, status, tipo, concessionaria_id, cliente_id } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await query(`SELECT COUNT(*)::int AS total FROM propostas ${where}`, params);
   return rows[0]?.total || 0;
