@@ -1246,11 +1246,11 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         </div>
 
         <!-- COLUNA 2: DESCONTOS -->
-        ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
+        ${((p.financiamentoBancario === 'sim' ? 0 : p.desconto) || p.descontoPrazo || p.acrescimo) ? `
           <div style="border:1px solid #333; background:#fff; padding:0;">
             <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'discountsAndAdjustments')}</div>
             <div style="padding:10px 12px;">
-              ${p.desconto ? `
+              ${(p.desconto && p.financiamentoBancario !== 'sim') ? `
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
                   <span style="font-size:12px; font-weight:600; color:#000;">${t(lang, 'sellerDiscount')} (${p.desconto}%)</span>
                   <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
@@ -1273,8 +1273,8 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
         ` : '<div></div>'}
       </div>
 
-      <!-- FRETE E INSTALAÇÃO -->
-      ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
+      <!-- FRETE E INSTALAÇÃO (ocultado no financiamento bancário; valor continua computado no total) -->
+      ${(p.financiamentoBancario !== 'sim' && (p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado)) ? `
         <div style="margin-top:11px; border:1px solid #333; background:#fff; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#000; border-bottom:1px solid #333;">${t(lang, 'freightAndInstallation')}</div>
           <div style="padding:8px 12px; display:flex; flex-wrap:wrap; gap:8px;">
@@ -1885,11 +1885,11 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
           <div style="padding:10px 12px; font-size:24px; font-weight:800; color:#000;">${fmt(convert(totalBase))}</div>
         </div>
 
-        ${(p.desconto || p.descontoPrazo || p.acrescimo) ? `
+        ${((p.financiamentoBancario === 'sim' ? 0 : p.desconto) || p.descontoPrazo || p.acrescimo) ? `
           <div style="border:1px solid #ccc; background:#f8f8f8; padding:0;">
             <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">④ DESCONTOS E AJUSTES</div>
             <div style="padding:10px 12px;">
-              ${p.desconto ? `
+              ${(p.desconto && p.financiamentoBancario !== 'sim') ? `
                 <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:13px;">
                   <span style="font-weight:600; color:#000;">Desconto Vendedor (${p.desconto}%)</span>
                   <span style="font-weight:700; font-size:14px; color:#000;">- ${fmt(convert(valorDescontoVendedor))}</span>
@@ -1912,8 +1912,8 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
         ` : '<div></div>'}
       </div>
 
-      <!-- FRETE E INSTALAÇÃO -->
-      ${(p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado) ? `
+      <!-- FRETE E INSTALAÇÃO (ocultado no financiamento bancário; valor continua computado no total) -->
+      ${(p.financiamentoBancario !== 'sim' && (p.tipoFrete || p.tipoInstalacao || valorFreteFinal || valorInstalacaoInformado)) ? `
         <div style="margin-top:10px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
           <div style="background:#e5e5e5; padding:8px 12px; font-size:10px; font-weight:800; letter-spacing:1.2px; text-transform:uppercase; color:#000; border-bottom:1px solid #ccc;">② ${t(lang, 'freightAndInstallation')}</div>
           <table style="width:100%; border-collapse:collapse; font-size:12px;">

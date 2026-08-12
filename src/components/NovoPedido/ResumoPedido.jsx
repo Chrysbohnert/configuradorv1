@@ -107,7 +107,7 @@ const ResumoPedido = ({
       setSalvandoEdicao(true);
       await salvarRelatorio();
       alert('Proposta atualizada com sucesso!');
-      navigate('/historico');
+      navigate('/propostas');
     } catch (error) {
       console.error('Erro ao salvar edição:', error);
       alert('Erro ao atualizar proposta. Tente novamente.');

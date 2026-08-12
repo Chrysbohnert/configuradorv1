@@ -134,14 +134,9 @@ export default function PaymentPolicy({
     if (bloquearDesconto) setDescontoVendedor(0);
   }, [bloquearDesconto]);
 
-  // Calcular valor do conversor de voltagem (Caminhão 12V = +R$ 450)
-  const valorConversor = useMemo(() => {
-    // Caminhão 12V exige conversor de voltagem
-    if (caminhaoData?.voltagem === '12V') {
-      return 450;
-    }
-    return 0;
-  }, [caminhaoData?.voltagem]);
+  // Conversor de voltagem removido: caminhão 12V não adiciona mais item/valor automaticamente.
+  // Mantido como 0 para não alterar cálculos, resumo e PDF que dependem de valorConversor.
+  const valorConversor = 0;
 
   // =============== ESTADO PRINCIPAL (7 ETAPAS) ===================
   const [etapa, setEtapa] = useState(() => {
