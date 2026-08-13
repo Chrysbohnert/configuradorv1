@@ -26,7 +26,7 @@ function buildConditions({ vendedor_id, search } = {}) {
   const params = [];
 
   if (vendedor_id) {
-    params.push(vendedor_id);
+    params.push(parseInt(vendedor_id, 10));
     conditions.push(`c.vendedor_id = $${params.length}`);
   }
 

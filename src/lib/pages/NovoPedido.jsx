@@ -67,7 +67,17 @@ const NovoPedido = () => {
   const [propostaOriginal, setPropostaOriginal] = useState(null); // Dados originais da proposta
   // ✅ Fluxo "Cliente primeiro" — somente para vendedor Stark comum, em propostas novas (não em edição)
   const isVendedorStarkComum = !isModoConcessionaria && user?.tipo === 'vendedor' && !isEdicao;
-  const [clienteCadastrado, setClienteCadastrado] = useState(null);
+  // ✅ Persistido no localStorage (mesmo padrão de clienteData/caminhaoData/pagamentoData)
+  // para sobreviver ao unmount/remount do componente ao navegar para /detalhes-guindaste e voltar.
+  const [clienteCadastrado, setClienteCadastrado] = useState(() => {
+    try {
+      if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
+        const saved = localStorage.getItem('novoPedido_clienteCadastrado');
+        if (saved) return JSON.parse(saved);
+      }
+    } catch {}
+    return null;
+  });
   const [carrinho, setCarrinho] = useState(() => {
     // ✅ Carrega do localStorage em modo edição, vindo de detalhes, ou retornando com guindaste selecionado
     if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
@@ -316,10 +326,12 @@ const NovoPedido = () => {
       setCurrentStep(1);
       setMaxStepReached(1);
       setGuindastesSelecionados([]);
+      setClienteCadastrado(null);
       localStorage.removeItem('carrinho');
       localStorage.removeItem('novoPedido_pagamentoData');
       localStorage.removeItem('novoPedido_clienteData');
       localStorage.removeItem('novoPedido_caminhaoData');
+      localStorage.removeItem('novoPedido_clienteCadastrado');
       localStorage.removeItem('carrinhoAcumulativo');
       localStorage.removeItem('novoPedido_currentStep');
       localStorage.removeItem('novoPedido_maxStepReached');
@@ -462,8 +474,10 @@ const NovoPedido = () => {
         if (!hasCart) {
           setClienteData({});
           setCaminhaoData(isModoConcessionaria ? [] : {});
+          setClienteCadastrado(null);
           localStorage.removeItem('novoPedido_clienteData');
           localStorage.removeItem('novoPedido_caminhaoData');
+          localStorage.removeItem('novoPedido_clienteCadastrado');
         }
         setIsEdicao(false);
         return;
@@ -540,6 +554,15 @@ const NovoPedido = () => {
     }
   }, [clienteData]);
 
+  // ✅ Persistir cliente cadastrado selecionado (fluxo "Cliente primeiro")
+  React.useEffect(() => {
+    if (clienteCadastrado) {
+      localStorage.setItem('novoPedido_clienteCadastrado', JSON.stringify(clienteCadastrado));
+    } else {
+      localStorage.removeItem('novoPedido_clienteCadastrado');
+    }
+  }, [clienteCadastrado]);
+
   React.useEffect(() => {
     const hasData = Array.isArray(caminhaoData)
       ? caminhaoData.some(e => e && Object.keys(e).length > 0)
@@ -587,8 +610,10 @@ const NovoPedido = () => {
     localStorage.removeItem('novoPedido_clienteData');
     localStorage.removeItem('novoPedido_caminhaoData');
     localStorage.removeItem('novoPedido_pagamentoData');
+    localStorage.removeItem('novoPedido_clienteCadastrado');
     localStorage.removeItem('carrinho');
     setClienteData({});
+    setClienteCadastrado(null);
     setCaminhaoData(isModoConcessionaria ? [] : {});
     setPagamentoData({
       tipoPagamento: '',
@@ -1382,10 +1407,25 @@ const NovoPedido = () => {
                   )}
                 </>
               ) : isVendedorStarkComum ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
-                  <span>Cliente: <strong>{clienteCadastrado?.nome}</strong></span>
-                  <span style={{ marginLeft: 'auto' }}>Região: <strong>{regiaoClienteSelecionada || '...'}</strong></span>
-                </div>
+                regiaoClienteSelecionada ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
+                    <span>Cliente: <strong>{clienteCadastrado?.nome}</strong></span>
+                    <span style={{ marginLeft: 'auto' }}>Região: <strong>{regiaoClienteSelecionada}</strong></span>
+                  </div>
+                ) : (
+                  // Cliente sem região definida (ex.: cadastro legado) — exibir seletor para não travar o fluxo
+                  <div style={{ marginBottom: '12px' }}>
+                    <div style={{ fontSize: '0.8125rem', color: '#000000', marginBottom: '6px' }}>
+                      Cliente: <strong>{clienteCadastrado?.nome}</strong>
+                    </div>
+                    <SeletorRegiaoCliente
+                      regiaoSelecionada={regiaoClienteSelecionada}
+                      onRegiaoChange={setRegiaoClienteSelecionada}
+                      regioesDisponiveis={regioesParaSeletor}
+                      questionLabel="Região do cliente (não definida no cadastro)"
+                    />
+                  </div>
+                )
               ) : (
                 <SeletorRegiaoCliente
                   regiaoSelecionada={regiaoClienteSelecionada}
