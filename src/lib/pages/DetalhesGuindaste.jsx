@@ -50,24 +50,22 @@ const DetalhesGuindaste = () => {
 
   const handleContinuar = () => {
     const returnTo = location.state?.returnTo || '/novo-pedido';
-    navigate(returnTo, { 
-      state: { 
-        step: 2,
+    navigate(returnTo, {
+      state: {
+        step: location.state?.step || 2,
         guindasteSelecionado: guindaste,
         regiaoClienteSelecionada: location.state?.regiaoClienteSelecionada
-      } 
+      }
     });
   };
 
   const handleVoltar = () => {
     const returnTo = location.state?.returnTo || '/novo-pedido';
-    const step = location.state?.step || 1;
-    
-    navigate(returnTo, { 
-      state: { 
-        step: step,
-        guindasteSelecionado: guindaste 
-      } 
+    navigate(returnTo, {
+      state: {
+        step: 1,
+        guindasteSelecionado: guindaste
+      }
     });
   };
 

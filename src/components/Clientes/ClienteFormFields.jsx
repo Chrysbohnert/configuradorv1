@@ -44,7 +44,7 @@ export default function ClienteFormFields({
           />
         </Field>
 
-        <Field label="CPF/CNPJ" required error={errors.documento}>
+        <Field label="CPF/CNPJ" error={errors.documento}>
           <input
             type="text"
             value={formData.documento || ''}
@@ -53,7 +53,7 @@ export default function ClienteFormFields({
           />
         </Field>
 
-        <Field label="Telefone" error={errors.telefone}>
+        <Field label="Telefone" required error={errors.telefone}>
           <input
             type="tel"
             value={formData.telefone || ''}
@@ -93,7 +93,7 @@ export default function ClienteFormFields({
       <hr style={{ border: 'none', borderTop: '1px solid #e5e7eb', margin: '4px 0' }} />
 
       <div style={{ display: 'grid', gridTemplateColumns: compact ? '1fr' : '1fr 1fr', gap: '12px' }}>
-        <Field label="Região do Cliente" required error={errors.regiao}>
+        <Field label="Região do Cliente" error={errors.regiao}>
           <select
             value={formData.regiao || ''}
             onChange={(e) => handleChange('regiao', e.target.value)}
@@ -105,7 +105,7 @@ export default function ClienteFormFields({
           </select>
         </Field>
 
-        <Field label="Tipo de Venda" required error={errors.tipo_venda}>
+        <Field label="Tipo de Venda" error={errors.tipo_venda}>
           <select
             value={formData.tipo_venda || ''}
             onChange={(e) => {
@@ -126,7 +126,7 @@ export default function ClienteFormFields({
         </Field>
 
         {mostraParticipacao && (
-          <Field label="Participação de Revenda?" required error={errors.participacao_revenda}>
+          <Field label="Participação de Revenda?" error={errors.participacao_revenda}>
             <select
               value={formData.participacao_revenda || ''}
               onChange={(e) => handleChange('participacao_revenda', e.target.value)}
@@ -139,7 +139,7 @@ export default function ClienteFormFields({
         )}
 
         {mostraTipoCliente && (
-          <Field label="Tipo de Cliente" required error={errors.tipo_cliente}>
+          <Field label="Tipo de Cliente" error={errors.tipo_cliente}>
             <select
               value={formData.tipo_cliente || ''}
               onChange={(e) => handleChange('tipo_cliente', e.target.value)}

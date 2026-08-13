@@ -70,15 +70,7 @@ export default function ClienteSelectorStep({
 
   const validar = () => {
     if (!formData.nome?.trim()) return 'Informe o nome do cliente';
-    if (!formData.documento?.trim()) return 'Informe o CPF/CNPJ do cliente';
-    if (!formData.regiao) return 'Selecione a região do cliente';
-    if (!formData.tipo_venda) return 'Selecione o tipo de venda';
-    if (formData.tipo_venda === 'cliente' && !formData.participacao_revenda) {
-      return 'Informe se há participação de revenda';
-    }
-    if (formData.tipo_venda === 'cliente' && formData.participacao_revenda && !formData.tipo_cliente) {
-      return 'Selecione o tipo de cliente';
-    }
+    if (!formData.telefone?.trim()) return 'Informe o telefone do cliente';
     return '';
   };
 
@@ -94,6 +86,7 @@ export default function ClienteSelectorStep({
       setModoCadastro(false);
       await carregarClientes();
       onClienteSelecionado(salvo);
+      onNext?.();
     } catch (e) {
       setSaveError(e.message || 'Erro ao salvar cliente');
     } finally {

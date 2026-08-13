@@ -83,4 +83,16 @@ router.put('/:id', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, data);
 }));
 
+router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
+  const existente = await svc.findById(req.params.id);
+  if (!existente) return res_.notFound(res, 'Cliente não encontrado');
+
+  if (!isAdmin(req) && String(existente.vendedor_id) !== String(req.user.id)) {
+    return res_.forbidden(res, 'Acesso negado');
+  }
+
+  await svc.remove(req.params.id);
+  return res_.ok(res, { message: 'Cliente excluído com sucesso' });
+}));
+
 module.exports = router;

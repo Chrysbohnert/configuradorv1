@@ -55,3 +55,13 @@ export async function updateCliente(id, updates) {
   if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao atualizar cliente');
   return json.data;
 }
+
+export async function deleteCliente(id) {
+  const res = await fetch(`${BASE_URL}/${id}`, {
+    method: 'DELETE',
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao excluir cliente');
+  return json.data;
+}

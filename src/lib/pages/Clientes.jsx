@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { getClientes, createCliente, updateCliente, getPropostasDoCliente } from '../../api/clientes';
+import { getClientes, createCliente, updateCliente, deleteCliente, getPropostasDoCliente } from '../../api/clientes';
 import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency } from '../../utils/formatters';
 import ClienteFormFields from '../../components/Clientes/ClienteFormFields';
@@ -14,7 +14,7 @@ const CLIENTE_VAZIO = {
 
 export default function Clientes() {
   const { user } = useOutletContext();
-  const isAdmin = user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
+  const isAdmin = ['admin_stark', 'admin', 'admin_concessionaria'].includes(user?.tipo);
 
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -62,9 +62,19 @@ export default function Clientes() {
     setShowModal(true);
   };
 
+  const excluir = async (cliente) => {
+    if (!window.confirm(`Confirma a exclusão do cliente "${cliente.nome}"?`)) return;
+    try {
+      await deleteCliente(cliente.id);
+      carregar();
+    } catch (e) {
+      setErrorMsg(e.message || 'Erro ao excluir cliente');
+    }
+  };
+
   const salvar = async () => {
-    if (!formData.nome?.trim() || !formData.documento?.trim()) {
-      setErrorMsg('Nome e CPF/CNPJ são obrigatórios');
+    if (!formData.nome?.trim() || !formData.telefone?.trim()) {
+      setErrorMsg('Nome e telefone são obrigatórios');
       return;
     }
     setSaving(true);
@@ -146,6 +156,16 @@ export default function Clientes() {
                     </td>
                     <td>
                       <button type="button" className="btn-secundario" onClick={() => abrirEdicao(c)}>Editar</button>
+                      {(isAdmin || String(c.vendedor_id) === String(user?.id)) && (
+                        <button
+                          type="button"
+                          className="btn-secundario"
+                          onClick={() => excluir(c)}
+                          style={{ marginLeft: '8px', color: '#dc2626' }}
+                        >
+                          Excluir
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

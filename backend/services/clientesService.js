@@ -26,8 +26,11 @@ function buildConditions({ vendedor_id, search } = {}) {
   const params = [];
 
   if (vendedor_id) {
-    params.push(parseInt(vendedor_id, 10));
-    conditions.push(`c.vendedor_id = $${params.length}`);
+    const id = parseInt(vendedor_id, 10);
+    if (!Number.isNaN(id) && id > 0) {
+      params.push(id);
+      conditions.push(`(c.vendedor_id)::int = $${params.length}`);
+    }
   }
 
   if (search && search.trim()) {
@@ -47,12 +50,14 @@ async function findAll({ vendedor_id, search } = {}) {
             v.nome AS vendedor_nome,
             COALESCE(p.total_propostas, 0)::int AS total_propostas
      FROM clientes c
-     LEFT JOIN app_users v ON v.id = c.vendedor_id
+     LEFT JOIN app_users v ON v.id = (c.vendedor_id)::int
      LEFT JOIN (
-       SELECT cliente_id, COUNT(*) AS total_propostas
+       SELECT (cliente_id)::int AS cliente_id, COUNT(*) AS total_propostas
        FROM propostas
-       WHERE cliente_id IS NOT NULL AND status <> 'excluido'
-       GROUP BY cliente_id
+       WHERE cliente_id IS NOT NULL
+         AND (cliente_id)::text ~ '^[0-9]+$'
+         AND status <> 'excluido'
+       GROUP BY (cliente_id)::int
      ) p ON p.cliente_id = c.id
      ${where}
      ORDER BY c.nome ASC`,
@@ -65,7 +70,7 @@ async function findById(id) {
   const { rows } = await query(
     `SELECT ${COLS_BASE}, v.nome AS vendedor_nome
      FROM clientes c
-     LEFT JOIN app_users v ON v.id = c.vendedor_id
+     LEFT JOIN app_users v ON v.id = (c.vendedor_id)::int
      WHERE c.id = $1`,
     [id]
   );
@@ -137,6 +142,14 @@ async function update(id, data) {
   return rows[0] || null;
 }
 
+async function remove(id) {
+  const { rows } = await query(
+    'DELETE FROM clientes WHERE id = $1 RETURNING *',
+    [id]
+  );
+  return rows[0] || null;
+}
+
 module.exports = {
   findAll,
   findById,
@@ -144,4 +157,5 @@ module.exports = {
   findPropostasByClienteId,
   create,
   update,
+  remove,
 };
