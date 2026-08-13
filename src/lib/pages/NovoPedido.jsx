@@ -7,7 +7,7 @@ import GuindasteConfigurador from '../../components/NovoPedido/GuindasteConfigur
 import SeletorRegiaoCliente from '../../components/SeletorRegiaoCliente';
 import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 import EstudosVeicularesMultiplos from '../../components/NovoPedido/EstudosVeicularesMultiplos';
-import ClienteSelectorStep from '../../components/Clientes/ClienteSelectorStep';
+import SeletorCliente from '../../components/Clientes/SeletorCliente';
 
 import { db } from '../../config/supabase';
 import { getGuindastesLite } from '../../api/guindastes';
@@ -34,8 +34,9 @@ const NovoPedido = () => {
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const isAdminStark = user?.tipo === 'admin';
   const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
-  // Mapa de tradução: numeração exibida (1..4) -> numeração legada usada nos switches internos
-  const LEGACY_STEP_MAP = { 1: 1, 2: 2, 3: 4, 4: 5 };
+  // Mapa para o fluxo vendedor Stark comum: 4 etapas
+  // 1=Guindaste, 2=Pagamento, 3=Estudo Veicular, 4=Finalizar
+  const STARK_STEP_MAP = { 1: 1, 2: 2, 3: 4, 4: 5 };
 
   const regioesCompraDisponiveis = useMemo(() => ([
     'Norte-Nordeste',
@@ -222,6 +223,7 @@ const NovoPedido = () => {
     }
     setClienteData((prev) => ({
       ...prev,
+      cliente_id: clienteCadastrado.id || null,
       nome: clienteCadastrado.nome || '',
       documento: clienteCadastrado.documento || '',
       telefone: clienteCadastrado.telefone || '',
@@ -592,14 +594,17 @@ const NovoPedido = () => {
 
   // Verificar se há dados salvos para cada step
   const hasStepData = (stepId) => {
-    const stepReal = isVendedorStarkComum ? (LEGACY_STEP_MAP[stepId] ?? stepId) : stepId;
+    const stepReal = isVendedorStarkComum ? (STARK_STEP_MAP[stepId] ?? stepId) : stepId;
     switch (stepReal) {
       case 1: // Selecionar Guindaste
+        if (isVendedorStarkComum) return !!clienteCadastrado;
         return carrinho.length > 0;
       case 2: // Pagamento
         return pagamentoData.tipoPagamento !== '' || pagamentoData.prazoPagamento !== '';
-      case 3:
-        return false;
+      case 4: // Estudo Veicular
+        return Array.isArray(caminhaoData)
+          ? caminhaoData.some(e => e && Object.keys(e).length > 0)
+          : Object.keys(caminhaoData || {}).length > 0;
       default:
         return false;
     }
@@ -929,12 +934,12 @@ const NovoPedido = () => {
   }, [location.state, navigate, user]);
 
 
-  // Efeito para resetar pagamento quando voltar para Step 1 OU quando equipamento mudar
+  // Efeito para resetar pagamento quando voltar para a etapa de Guindaste
   useEffect(() => {
     // Não resetar pagamento no modo edição (dados já carregados)
     // Checar também propostaId (URL imediato) para cobrir a janela async antes de isEdicao=true
     if (isEdicao || propostaId) return;
-    // Reseta se voltar para Step 1
+    // Reseta se voltar para a etapa de Guindaste
     if (currentStep === 1 && pagamentoData.tipoPagamento) {
       console.log('[STEP_RESET] Resetando pagamentoData ao voltar para Step 1');
       setPagamentoData({
@@ -1333,18 +1338,7 @@ const NovoPedido = () => {
 
   // Renderizar conteúdo do step
   function renderStepContent() {
-    if (isVendedorStarkComum && !clienteCadastrado) {
-      return (
-        <ClienteSelectorStep
-          user={user}
-          clienteSelecionado={clienteCadastrado}
-          onClienteSelecionado={setClienteCadastrado}
-          onNext={() => {}}
-          errors={validationErrors}
-        />
-      );
-    }
-    const stepParaRenderizar = isVendedorStarkComum ? (LEGACY_STEP_MAP[currentStep] ?? currentStep) : currentStep;
+    const stepParaRenderizar = isVendedorStarkComum ? (STARK_STEP_MAP[currentStep] ?? currentStep) : currentStep;
     switch (stepParaRenderizar) {
       case 1:
         return (
@@ -1407,25 +1401,28 @@ const NovoPedido = () => {
                   )}
                 </>
               ) : isVendedorStarkComum ? (
-                regiaoClienteSelecionada ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
-                    <span>Cliente: <strong>{clienteCadastrado?.nome}</strong></span>
-                    <span style={{ marginLeft: 'auto' }}>Região: <strong>{regiaoClienteSelecionada}</strong></span>
-                  </div>
-                ) : (
-                  // Cliente sem região definida (ex.: cadastro legado) — exibir seletor para não travar o fluxo
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ fontSize: '0.8125rem', color: '#000000', marginBottom: '6px' }}>
-                      Cliente: <strong>{clienteCadastrado?.nome}</strong>
-                    </div>
+                <>
+                  <SeletorCliente
+                    user={user}
+                    clienteSelecionado={clienteCadastrado}
+                    onClienteSelecionado={setClienteCadastrado}
+                    regioesDisponiveis={regioesParaSeletor}
+                  />
+                  {clienteCadastrado && !regiaoClienteSelecionada && (
                     <SeletorRegiaoCliente
                       regiaoSelecionada={regiaoClienteSelecionada}
                       onRegiaoChange={setRegiaoClienteSelecionada}
                       regioesDisponiveis={regioesParaSeletor}
                       questionLabel="Região do cliente (não definida no cadastro)"
                     />
-                  </div>
-                )
+                  )}
+                  {clienteCadastrado && regiaoClienteSelecionada && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', marginBottom: '12px', fontSize: '0.8125rem', color: '#000000' }}>
+                      <span>Cliente: <strong>{clienteCadastrado.nome}</strong></span>
+                      <span style={{ marginLeft: 'auto' }}>Região: <strong>{regiaoClienteSelecionada}</strong></span>
+                    </div>
+                  )}
+                </>
               ) : (
                 <SeletorRegiaoCliente
                   regiaoSelecionada={regiaoClienteSelecionada}
@@ -1436,22 +1433,30 @@ const NovoPedido = () => {
               )}
             </>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '12px 0 10px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#000000' }}> Selecionar Guindaste</span>
-            </div>
+            {(!isVendedorStarkComum || (clienteCadastrado && regiaoClienteSelecionada)) ? (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', margin: '12px 0 10px', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#000000' }}> Selecionar Guindaste</span>
+                </div>
 
-            <GuindasteConfigurador
-              guindastes={guindastes}
-              onGuindasteSelect={handleSelecionarGuindaste}
-              isLoading={isLoading}
-              getPreco={getPrecoParaConfigurador}
-              getImagem={getImagemParaConfigurador}
-              precoContextKey={
-                isModoConcessionaria
-                  ? ((regiaoClienteSelecionada || '').trim() || concessionariaInfo?.regiao_preco || '')
-                  : (regiaoClienteSelecionada || '').trim()
-              }
-            />
+                <GuindasteConfigurador
+                  guindastes={guindastes}
+                  onGuindasteSelect={handleSelecionarGuindaste}
+                  isLoading={isLoading}
+                  getPreco={getPrecoParaConfigurador}
+                  getImagem={getImagemParaConfigurador}
+                  precoContextKey={
+                    isModoConcessionaria
+                      ? ((regiaoClienteSelecionada || '').trim() || concessionariaInfo?.regiao_preco || '')
+                      : (regiaoClienteSelecionada || '').trim()
+                  }
+                />
+              </>
+            ) : (
+              <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem', marginTop: '16px' }}>
+                Selecione o cliente e a região para continuar.
+              </div>
+            )}
 
             {/* Mostrar carrinho e botão de continuar para modo concessionária */}
             {isModoConcessionaria && carrinho.length > 0 && (
@@ -1572,6 +1577,8 @@ const NovoPedido = () => {
                         }
                       : null)
               }
+              clienteCadastrado={clienteCadastrado}
+              isVendedorStarkComum={isVendedorStarkComum}
               concessionariaSelecionadaParaPedido={concessionariaSelecionadaParaPedido}
             />
           </div>
@@ -1743,7 +1750,7 @@ const NovoPedido = () => {
 
   function validateStep(step) {
     const errors = {};
-    if (isVendedorStarkComum) step = LEGACY_STEP_MAP[step] ?? step;
+    if (isVendedorStarkComum) step = STARK_STEP_MAP[step] ?? step;
 
     if (isModoConcessionaria) {
       if (step === 1) {
@@ -1775,6 +1782,9 @@ const NovoPedido = () => {
     }
     switch (step) {
       case 1:
+        if (isVendedorStarkComum && !clienteCadastrado) {
+          errors.cliente = 'Selecione ou cadastre um cliente';
+        }
         if (guindastesSelecionados.length === 0) {
           errors.guindaste = 'Selecione pelo menos um guindaste';
         }
@@ -1859,9 +1869,10 @@ const NovoPedido = () => {
           return false;
       }
     }
-    const stepAtual = isVendedorStarkComum ? (LEGACY_STEP_MAP[currentStep] ?? currentStep) : currentStep;
+    const stepAtual = isVendedorStarkComum ? (STARK_STEP_MAP[currentStep] ?? currentStep) : currentStep;
     switch (stepAtual) {
       case 1:
+        if (isVendedorStarkComum && !clienteCadastrado) return false;
         return guindastesSelecionados.length > 0;
       case 2:
         // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete são obrigatórios
@@ -1914,12 +1925,13 @@ const NovoPedido = () => {
     usuarioJaTentouAvancarRef.current = true;
     bloqueioResetAutomaticoRef.current = true;
 
-    // Log detalhado ANTES da validação (etapa 1 é crítica para o bug)
-    if (currentStep === 1) {
+    // Log detalhado ANTES da validação (etapa Guindaste é crítica para o bug)
+    const guindasteStep = 1;
+    if (currentStep === guindasteStep) {
       const itemGuindaste = carrinho.find(i => i.tipo === 'guindaste');
       const guindasteRef = guindastesSelecionados[0] || itemGuindaste || null;
       const { erros } = validarEtapaSelecionarGuindaste();
-      console.log('[STEP_DEBUG] tentativa avanço etapa 1 -> 2', {
+      console.log(`[STEP_DEBUG] tentativa avanço etapa ${guindasteStep} -> ${guindasteStep + 1}`, {
         etapaAtual: currentStep,
         regiaoSelecionada: regiaoClienteSelecionada,
         guindasteSelecionado: guindastesSelecionados[0] || null,
@@ -1963,7 +1975,7 @@ const NovoPedido = () => {
       console.log('[STEP_SUCCESS] avançou da etapa', currentStep, 'para', nextStep);
     } else {
       console.warn('[STEP_BLOCKED] avanço bloqueado na etapa', currentStep);
-      if (currentStep === 1) {
+      if (currentStep === guindasteStep) {
         const { erros } = validarEtapaSelecionarGuindaste();
         console.warn('[STEP_BLOCKED] avanço para pagamento bloqueado', {
           motivo: erros.length > 0 ? 'validação falhou' : 'validação de outro step falhou',

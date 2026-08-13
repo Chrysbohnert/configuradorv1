@@ -58,6 +58,8 @@ export default function PaymentPolicy({
   caminhaoData = {}, // Dados do caminhão (para calcular conversor de voltagem)
   initialPaymentData = null, // Dados salvos para restauração (modo edição)
   concessionariaSelecionadaParaPedido = null, // Concessionária selecionada (uso interno Stark)
+  clienteCadastrado = null, // Dados do cliente selecionado no fluxo Stark comum
+  isVendedorStarkComum = false, // Indica fluxo "cliente primeiro" do vendedor Stark
   debug = false,
 }) {
   const user = useMemo(() => {
@@ -264,6 +266,38 @@ export default function PaymentPolicy({
       isRestoringRef.current = false;
     }, 300);
   }, [initialPaymentData, modoConcessionaria]);
+
+  // =============== DADOS COMERCIAIS DO CADASTRO DO CLIENTE (FLUXO STARK COMUM) ===
+  // Para o vendedor Stark comum, os dados comerciais do cliente (tipo_venda,
+  // participacao_revenda, tipo_cliente) já vêm do cadastro. Quando completos,
+  // alimentam os mesmos estados usados nas regras comerciais e as perguntas
+  // iniciais são ocultadas.
+  const dadosComerciaisCliente = useMemo(() => {
+    if (!isVendedorStarkComum || !clienteCadastrado) return null;
+    return {
+      tipo_venda: clienteCadastrado.tipo_venda || '',
+      participacao_revenda: clienteCadastrado.participacao_revenda || '',
+      tipo_cliente: clienteCadastrado.tipo_cliente || '',
+    };
+  }, [isVendedorStarkComum, clienteCadastrado]);
+
+  const camposComerciaisCompletos = useMemo(() => {
+    if (!dadosComerciaisCliente) return false;
+    const { tipo_venda, participacao_revenda, tipo_cliente } = dadosComerciaisCliente;
+    if (!tipo_venda) return false;
+    if (tipo_venda === 'revenda') return true;
+    return !!participacao_revenda && !!tipo_cliente;
+  }, [dadosComerciaisCliente]);
+
+  useEffect(() => {
+    if (!isVendedorStarkComum || !clienteCadastrado || isRestoringRef.current) return;
+    const { tipo_venda, participacao_revenda, tipo_cliente } = clienteCadastrado;
+    if (tipo_venda) setTipoCliente(tipo_venda);
+    if (tipo_venda === 'cliente') {
+      if (participacao_revenda) setParticipacaoRevenda(participacao_revenda);
+      if (tipo_cliente) setTipoIE(tipo_cliente);
+    }
+  }, [isVendedorStarkComum, clienteCadastrado]);
 
   // Hook para buscar dados de frete baseado no local de instalação
   const { dadosFreteAtual } = useFretes(localInstalacao);
@@ -963,6 +997,9 @@ export default function PaymentPolicy({
     if (modoConcessionaria) return;
     if (isRestoringRef.current) return; // Não resetar durante restauração
     if (isComercioExterior) return; // Comércio Exterior: etapas 1 e 2 são auto-inicializadas
+    // Fluxo Stark comum com dados comerciais completos no cadastro: não zera
+    // os valores vindos do cadastro do cliente.
+    if (camposComerciaisCompletos) return;
     // Mudou tipo de cliente? zera dependentes
     setParticipacaoRevenda('');
     setTipoIE('');
@@ -984,7 +1021,7 @@ export default function PaymentPolicy({
 
     // salta etapa correta (cliente precisa decidir participação; revenda não)
     setEtapa( tipoCliente ? (tipoCliente === 'cliente' ? 2 : 3) : 1 );
-  }, [tipoCliente, modoConcessionaria, isComercioExterior]);
+  }, [tipoCliente, modoConcessionaria, isComercioExterior, camposComerciaisCompletos]);
 
   useEffect(() => {
     if (isRestoringRef.current) return; // Não resetar durante restauração
@@ -1811,8 +1848,15 @@ export default function PaymentPolicy({
       {/* COMPACT FORM LAYOUT */}
       <div className="pp-form-wrap">
 
+    {/* AVISO: dados comerciais do cadastro incompletos (fluxo Stark comum) */}
+    {isVendedorStarkComum && !modoConcessionaria && !isComercioExterior && dadosComerciaisCliente && !camposComerciaisCompletos && (
+      <div className="pp-info-note" style={{ background: '#fffbeb', borderColor: '#f59e0b', color: '#92400e', marginBottom: '12px' }}>
+        ⚠️ Dados comerciais incompletos no cadastro do cliente. Preencha os campos abaixo para continuar ou <strong>edite o cadastro do cliente</strong>.
+      </div>
+    )}
+
     {/* SEÇÃO 1 — Tipo de Venda */}
-    {!modoConcessionaria && !isComercioExterior && (
+    {!modoConcessionaria && !isComercioExterior && !camposComerciaisCompletos && (
       <section className="pp-section">
         <span className="pp-section-label">Tipo de Venda</span>
         <div className="pp-tabs">
@@ -1827,7 +1871,7 @@ export default function PaymentPolicy({
     )}
 
     {/* SEÇÃO 2 — Participação de Revenda & Tipo de Cliente */}
-    {!modoConcessionaria && !isComercioExterior && tipoCliente === 'cliente' && (
+    {!modoConcessionaria && !isComercioExterior && tipoCliente === 'cliente' && !camposComerciaisCompletos && (
       <section className="pp-section">
         <span className="pp-section-label">Participação de Revenda</span>
         <div className="pp-tabs">
