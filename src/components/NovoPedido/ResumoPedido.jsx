@@ -26,7 +26,8 @@ const ResumoPedido = ({
   onLimparCarrinhoAcumulativo,
   onRemoverDoCarrinhoAcumulativo,
   concessionariaSelecionadaParaPedido = null,
-  cotacaoUSD = null
+  cotacaoUSD = null,
+  isVendedorStarkComum = false,
 }) => {
   const [pedidoSalvoId, setPedidoSalvoId] = useState(null);
   const [salvandoEdicao, setSalvandoEdicao] = useState(false);
@@ -62,7 +63,9 @@ const ResumoPedido = ({
         return;
       }
 
-      const camposClienteOK = clienteData?.modoInternacional
+      // Para vendedor Stark comum: apenas nome e telefone são obrigatórios.
+      // Os demais campos (email, documento, IE, endereço) são opcionais no cadastro rápido.
+      const camposClienteOK = (isVendedorStarkComum || clienteData?.modoInternacional)
         ? Boolean(clienteData?.nome && clienteData?.telefone)
         : Boolean(clienteData?.nome && clienteData?.telefone && clienteData?.email && clienteData?.documento && clienteData?.inscricao_estadual && clienteData?.endereco);
 
@@ -274,7 +277,11 @@ const ResumoPedido = ({
         observacoes: clienteData.observacoes || null
       };
 
-      const cliente = await db.createCliente(clienteDataToSave);
+      // Para vendedor Stark comum: reutilizar o cliente já cadastrado/selecionado
+      // (não cria um novo registro em `clientes` a cada proposta).
+      const cliente = (isVendedorStarkComum && clienteData?.cliente_id)
+        ? { id: clienteData.cliente_id, ...clienteDataToSave }
+        : await db.createCliente(clienteDataToSave);
 
       let caminhao = null;
       if (isPropostaPreliminar) {

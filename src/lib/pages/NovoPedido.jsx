@@ -474,6 +474,15 @@ const NovoPedido = () => {
         let hasCart = false;
         try { const p = JSON.parse(savedCart || '[]'); hasCart = Array.isArray(p) && p.length > 0; } catch {}
         if (!hasCart) {
+          // ✅ Não resetar quando retornando de /detalhes-guindaste ou de navegação interna.
+          // Nesse momento o carrinho ainda está vazio (o guindaste é adicionado pelo
+          // efeito processarGuindasteSelecionado após o remount), mas o cliente já foi
+          // selecionado e está salvo no localStorage — apagá-lo quebraria a propagação
+          // dos dados do cliente para revisão, PDF e PaymentPolicy.
+          if (location.state?.guindasteSelecionado || location.state?.fromDetalhes) {
+            setIsEdicao(false);
+            return;
+          }
           setClienteData({});
           setCaminhaoData(isModoConcessionaria ? [] : {});
           setClienteCadastrado(null);
@@ -1718,6 +1727,7 @@ const NovoPedido = () => {
               onRemoverItem={removerItemPorIndex}
               onLimparCarrinho={limparCarrinho}
               cotacaoUSD={cotacaoUSD}
+              isVendedorStarkComum={isVendedorStarkComum}
             />
           </div>
         );
