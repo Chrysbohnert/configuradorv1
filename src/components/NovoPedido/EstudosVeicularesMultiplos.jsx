@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import CaminhaoFormDetalhado from './CaminhaoFormDetalhado';
+import CaminhaoForm from './CaminhaoForm';
 import './EstudosVeicularesMultiplos.css';
 
 /**
@@ -185,10 +185,11 @@ const EstudosVeicularesMultiplos = ({
       </div>
 
       {/* Formulário do estudo atual */}
-      <CaminhaoFormDetalhado
+      <CaminhaoForm
         formData={estudoAtual}
         setFormData={handleEstudoChange}
         errors={errors}
+        carrinho={carrinho}
       />
 
       {/* Navegação entre equipamentos */}

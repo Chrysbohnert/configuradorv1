@@ -1996,6 +1996,12 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
                   <span style="font-size:13px; font-weight:600; color:#000;">Sinal já pago</span>
                   <span style="font-size:13px; font-weight:700; color:#000;">- ${fmt(convert(sinalPago))}</span>
                 </div>
+                ${(entradaTotalCalc - sinalPago) > 0 ? `
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
+                    <span style="font-size:13px; font-weight:600; color:#000;">Saldo restante da entrada</span>
+                    <span style="font-size:15px; font-weight:800; color:#000;">${fmt(convert(Math.max(0, entradaTotalCalc - sinalPago)))}</span>
+                  </div>
+                ` : ''}
               </div>
             ` : ''}
             ${p.formaEntrada ? `
