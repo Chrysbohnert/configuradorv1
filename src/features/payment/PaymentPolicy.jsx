@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useReducer, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { calcularPagamento } from '../../lib/payments';
 import { formatCurrency } from '../../utils/formatters';
 import { db, supabase } from '../../config/supabase';
@@ -401,6 +401,22 @@ export default function PaymentPolicy({
     return null; // abaixo de 30 não filtra nada
   }, [modoEntrada, percentualEntradaNumCalc, percentualEntrada]);
 
+  // Valor digitado em modo "valor R$" — usado como fonte principal da entrada
+  const entradaValorCustomNum = useMemo(() => {
+    const v = parseFloat(entradaValorCustom);
+    return Number.isNaN(v) || v < 0 ? 0 : v;
+  }, [entradaValorCustom]);
+
+  // Cálculo único da entrada: percentual sobre valor final, ou valor digitado (sem recalcular via %)
+  const calcularEntradaTotal = useCallback((valorFinal) => {
+    if (modoEntrada === 'valor') {
+      const vf = Math.max(0, Number(valorFinal) || 0);
+      return Math.min(entradaValorCustomNum, vf);
+    }
+    const pct = percentualEntradaNumCalc;
+    return pct > 0 ? (Math.max(0, Number(valorFinal) || 0) * pct / 100) : 0;
+  }, [modoEntrada, entradaValorCustomNum, percentualEntradaNumCalc]);
+
   const pontosInstalacaoFiltrados = useMemo(() => {
     const base = Array.isArray(pontosInstalacao) ? pontosInstalacao : [];
     const filtrados = ufFiltroInstalacao
@@ -489,6 +505,7 @@ export default function PaymentPolicy({
             percentualEntrada, percentualEntradaNumCalc, extraDescricao,
             formaEntrada, tipoCliente, participacaoRevenda, tipoIE,
             tipoFrete, localInstalacao, tipoEntrega,
+            modoEntrada, entradaValorCustom,
           } = _rtVals.current;
 
           try {
@@ -626,8 +643,12 @@ export default function PaymentPolicy({
             const valorSinalNum = parseFloat(valorSinal) || 0;
             
             // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+            // Usa percentual apenas no modo percentual; no modo valor, usa exatamente o valor digitado
             const percentualEntradaNum = percentualEntrada !== 'financiamento' ? percentualEntradaNumCalc : 0;
-            const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+            const entradaValorCustomNumRT = parseFloat(entradaValorCustom) || 0;
+            const entradaTotalCalc = modoEntrada === 'valor'
+              ? Math.min(Math.max(0, entradaValorCustomNumRT), Math.max(0, valorFinal))
+              : (percentualEntradaNumCalc > 0 ? (Math.max(0, valorFinal) * percentualEntradaNumCalc / 100) : 0);
             
             const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
             
@@ -1248,8 +1269,9 @@ export default function PaymentPolicy({
       const valorSinalNum = parseFloat(valorSinal) || 0;
       
       // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+      // No modo percentual, calcula pela %; no modo valor, usa exatamente o valor digitado
       const percentualEntradaNum = percentualEntrada !== 'financiamento' ? percentualEntradaNumCalc : 0;
-      const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+      const entradaTotalCalc = calcularEntradaTotal(valorFinal);
       
       const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
       
@@ -1381,6 +1403,8 @@ export default function PaymentPolicy({
     cotacaoUSD,
     onPaymentComputed,
     modoEntrada,
+    entradaValorCustom,
+    calcularEntradaTotal,
     condicaoExclusivaObs,
   ]);
 
@@ -1589,8 +1613,9 @@ export default function PaymentPolicy({
         const valorSinalNum = parseFloat(valorSinal) || 0;
         
         // CORREÇÃO: Calcular entrada sobre o VALOR FINAL (com frete e instalação)
+        // No modo percentual, calcula pela %; no modo valor, usa exatamente o valor digitado
         const percentualEntradaNum = percentualEntrada !== 'financiamento' ? percentualEntradaNumCalc : 0;
-        const entradaTotalCalc = percentualEntradaNum > 0 ? (valorFinal * percentualEntradaNum / 100) : 0;
+        const entradaTotalCalc = calcularEntradaTotal(valorFinal);
         
         const faltaEntradaCalc = Math.max(0, entradaTotalCalc - valorSinalNum);
         

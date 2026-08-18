@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { useGuindasteConfigurador, TIPO_LABELS, getTipoModelo } from '../../hooks/useGuindasteConfigurador';
+import { useGuindasteConfigurador } from '../../hooks/useGuindasteConfigurador';
 import LazyGuindasteImage from '../LazyGuindasteImage';
-
-const SERIE_LABELS = { GSI: 'Interno', GSE: 'Externo' };
 
 const TABS = [
   { key: 'GSI', code: 'GSI', desc: 'GUINDASTE INTERNO', serie: 'GSI', tipo: 'todos' },
@@ -27,7 +25,6 @@ const Step1GuindasteSelector = ({
 
   const {
     filteredGroups,
-    activeTipo,
     handleSerie,
     handleTipo,
   } = useGuindasteConfigurador({
@@ -71,43 +68,12 @@ const Step1GuindasteSelector = ({
         ))}
       </div>
 
-      {/* Filtro de tipo (apenas para GSI, pois GSE já está dividido em C/T) */}
-      {stepTab === 'GSI' && (
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '6px',
-          marginBottom: '12px'
-        }}>
-          {Object.entries(TIPO_LABELS).map(([key, label]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => handleTipo(key)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '20px',
-                border: activeTipo === key ? '2px solid #000000' : '1.5px solid #e5e7eb',
-                background: activeTipo === key ? '#000000' : '#ffffff',
-                color: activeTipo === key ? '#ffffff' : '#000000',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      )}
-
       <div className="gc-meta">{filteredGroups.length} modelo(s) disponível(is)</div>
 
       {/* Grid compacta de modelos */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
         gap: '10px',
         marginTop: '12px'
       }}>
@@ -120,9 +86,10 @@ const Step1GuindasteSelector = ({
               onClick={() => onSelectModel && onSelectModel(grp)}
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                padding: '8px 10px',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                gap: '8px',
+                padding: '10px',
                 background: '#ffffff',
                 border: '1.5px solid #e5e7eb',
                 borderRadius: '10px',
@@ -141,15 +108,49 @@ const Step1GuindasteSelector = ({
                 e.currentTarget.style.transform = 'none';
               }}
             >
-              {/* Miniatura integrada pequena */}
+              {/* Linha do título + ação */}
               <div style={{
-                width: '56px',
-                height: '56px',
-                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px'
+              }}>
+                <span style={{
+                  fontSize: '1.05rem',
+                  fontWeight: 700,
+                  color: '#000000',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}>
+                  {grp.model}
+                </span>
+                <div style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: '#000000',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}>
+                    <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
+                  </svg>
+                </div>
+              </div>
+
+              {/* Miniatura abaixo do título */}
+              <div style={{
+                width: '72px',
+                height: '72px',
                 borderRadius: '8px',
                 overflow: 'hidden',
                 background: '#f3f4f6',
-                border: '1px solid #e5e7eb'
+                border: '1px solid #e5e7eb',
+                alignSelf: 'center'
               }}>
                 {rep?.id ? (
                   <LazyGuindasteImage
@@ -159,67 +160,8 @@ const Step1GuindasteSelector = ({
                     className="gc-step1-thumb-img"
                   />
                 ) : (
-                  <span role="img" aria-label="guindaste" style={{ fontSize: '22px', display: 'block', textAlign: 'center', lineHeight: '48px' }}>🏗️</span>
+                  <span role="img" aria-label="guindaste" style={{ fontSize: '28px', display: 'block', textAlign: 'center', lineHeight: '68px' }}>🏗️</span>
                 )}
-              </div>
-
-              {/* Informações compactas */}
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{
-                  fontSize: '0.875rem',
-                  fontWeight: 700,
-                  color: '#000000',
-                  marginBottom: '1px',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis'
-                }}>
-                  {grp.model}
-                </div>
-                <div style={{
-                  fontSize: '0.6875rem',
-                  color: '#6b7280',
-                  marginBottom: '2px'
-                }}>
-                  {SERIE_LABELS[grp.serie] || grp.serie}
-                  {' · '}
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '1px 4px',
-                    borderRadius: '3px',
-                    background: '#f3f4f6',
-                    color: '#000000',
-                    fontWeight: 600,
-                    fontSize: '0.625rem',
-                    textTransform: 'uppercase'
-                  }}>
-                    {TIPO_LABELS[getTipoModelo(grp.model)]}
-                  </span>
-                </div>
-                <div style={{
-                  fontSize: '0.6875rem',
-                  color: '#000000',
-                  fontWeight: 500
-                }}>
-                  {grp.variants.length} config.
-                </div>
-              </div>
-
-              {/* Indicador de ação */}
-              <div style={{
-                width: '24px',
-                height: '24px',
-                borderRadius: '50%',
-                background: '#000000',
-                color: '#ffffff',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: '14px', height: '14px' }}>
-                  <path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
-                </svg>
               </div>
             </button>
           );

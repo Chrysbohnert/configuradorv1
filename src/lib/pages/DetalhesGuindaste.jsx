@@ -340,22 +340,9 @@ const DetalhesGuindaste = () => {
         subtitle={tituloPagina}
       />
       <div className="detalhes-content">
-        {/* Cabeçalho com nome e modelo/configuração */}
+        {/* Cabeçalho com nome do equipamento */}
         <div className="guindaste-info-section">
           <h2>{guindaste?.subgrupo || baseModel || 'Configurar Equipamento'}</h2>
-          {guindaste && (
-            <div className="guindaste-meta">
-              {guindaste.modelo && (
-                <span>Modelo: {guindaste.modelo}</span>
-              )}
-              {guindaste.peso_kg && (
-                <span>Lanças: {guindaste.peso_kg}</span>
-              )}
-              {guindaste.codigo_referencia && (
-                <span>Código: {guindaste.codigo_referencia}</span>
-              )}
-            </div>
-          )}
         </div>
 
         {/* Área principal do configurador */}
@@ -396,8 +383,15 @@ const DetalhesGuindaste = () => {
           </div>
         )}
 
-        {/* Botão de confirmação final */}
-        <div className="acoes-section">
+        {/* Botões de ação */}
+        <div className="acoes-section" style={{ gap: '12px' }}>
+          <button
+            type="button"
+            className="voltar-configuracao-btn"
+            onClick={handleVoltar}
+          >
+            Voltar
+          </button>
           {isLegacyMode ? (
             <button
               type="button"
