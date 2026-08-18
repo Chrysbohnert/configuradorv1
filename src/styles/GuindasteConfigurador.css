@@ -47,11 +47,12 @@
 .gc-tab.active { background: #000000; }
 
 .gc-tab-code {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: #000000;
   letter-spacing: 0.04em;
   line-height: 1;
+  white-space: nowrap;
 }
 .gc-tab.active .gc-tab-code { color: #f1f5f9; }
 

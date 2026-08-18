@@ -1,8 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGuindasteConfigurador, TIPO_LABELS, getTipoModelo } from '../../hooks/useGuindasteConfigurador';
 import LazyGuindasteImage from '../LazyGuindasteImage';
 
 const SERIE_LABELS = { GSI: 'Interno', GSE: 'Externo' };
+
+const TABS = [
+  { key: 'GSI', code: 'GSI', desc: 'GUINDASTE INTERNO', serie: 'GSI', tipo: 'todos' },
+  { key: 'GSE_C', code: 'GSE C', desc: 'CANIVETE EXTERNO', serie: 'GSE', tipo: 'canivete' },
+  { key: 'GSE_T', code: 'GSE T', desc: 'TRAVE EXTERNO', serie: 'GSE', tipo: 'trave' },
+];
 
 /**
  * Step 1 — Seleção compacta do modelo base de guindaste.
@@ -17,10 +23,10 @@ const Step1GuindasteSelector = ({
   isLoading = false,
   onSelectModel
 }) => {
+  const [stepTab, setStepTab] = useState('GSI');
+
   const {
-    SERIE_LABELS: hookSerieLabels,
     filteredGroups,
-    activeSerie,
     activeTipo,
     handleSerie,
     handleTipo,
@@ -30,6 +36,14 @@ const Step1GuindasteSelector = ({
     getImagem: null,
     precoContextKey: '',
   });
+
+  const applyTab = (tab) => {
+    const found = TABS.find(t => t.key === tab);
+    if (!found) return;
+    setStepTab(tab);
+    handleSerie(found.serie);
+    handleTipo(found.tipo);
+  };
 
   if (isLoading) {
     return <div className="gc-loading">Carregando equipamentos...</div>;
@@ -42,49 +56,51 @@ const Step1GuindasteSelector = ({
         <p>Escolha o modelo base e configure os opcionais na próxima tela</p>
       </div>
 
-      {/* Filtro de série */}
+      {/* Filtro de série/subtipo */}
       <div className="gc-tabs" style={{ marginBottom: '10px' }}>
-        {['GSI', 'GSE'].map(s => (
+        {TABS.map(tab => (
           <button
-            key={s}
+            key={tab.key}
             type="button"
-            className={`gc-tab ${activeSerie === s ? 'active' : ''}`}
-            onClick={() => handleSerie(s)}
+            className={`gc-tab ${stepTab === tab.key ? 'active' : ''}`}
+            onClick={() => applyTab(tab.key)}
           >
-            <span className="gc-tab-code">{s}</span>
-            <span className="gc-tab-desc">{hookSerieLabels[s]}</span>
+            <span className="gc-tab-code">{tab.code}</span>
+            <span className="gc-tab-desc">{tab.desc}</span>
           </button>
         ))}
       </div>
 
-      {/* Filtro de tipo */}
-      <div style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '6px',
-        marginBottom: '12px'
-      }}>
-        {Object.entries(TIPO_LABELS).map(([key, label]) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => handleTipo(key)}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '20px',
-              border: activeTipo === key ? '2px solid #000000' : '1.5px solid #e5e7eb',
-              background: activeTipo === key ? '#000000' : '#ffffff',
-              color: activeTipo === key ? '#ffffff' : '#000000',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Filtro de tipo (apenas para GSI, pois GSE já está dividido em C/T) */}
+      {stepTab === 'GSI' && (
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '6px',
+          marginBottom: '12px'
+        }}>
+          {Object.entries(TIPO_LABELS).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleTipo(key)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '20px',
+                border: activeTipo === key ? '2px solid #000000' : '1.5px solid #e5e7eb',
+                background: activeTipo === key ? '#000000' : '#ffffff',
+                color: activeTipo === key ? '#ffffff' : '#000000',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="gc-meta">{filteredGroups.length} modelo(s) disponível(is)</div>
 
