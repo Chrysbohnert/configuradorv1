@@ -392,3 +392,9 @@
   }
   .gc-tab-code { font-size: 17px; }
 }
+
+/* Miniatura real dentro dos cards compactos do Step1 */
+.gc-step1-thumb-img {
+  padding: 2px !important;
+  object-fit: cover !important;
+}

@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useOutletContext, useParams } from 'react-rou
 import UnifiedHeader from '../../components/UnifiedHeader';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
 import PaymentPolicy from '../../features/payment/PaymentPolicy';
+import Step1GuindasteSelector from '../../components/NovoPedido/Step1GuindasteSelector';
 import GuindasteConfigurador from '../../components/NovoPedido/GuindasteConfigurador';
 import SeletorRegiaoCliente from '../../components/SeletorRegiaoCliente';
 import LazyGuindasteImage from '../../components/LazyGuindasteImage';
@@ -759,8 +760,6 @@ const NovoPedido = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [guindastes, setGuindastes] = useState([]);
   const [guindastesSelecionados, setGuindastesSelecionados] = useState([]);
-  const [selectedCapacidade, setSelectedCapacidade] = useState(null);
-  const [selectedModelo, setSelectedModelo] = useState(null);
   const [validationErrors, setValidationErrors] = useState({});
   // ← MOVIDO: Definir funções antes dos useEffects
   // Funções do Carrinho
@@ -986,56 +985,6 @@ const NovoPedido = () => {
         { id: 5, title: 'Finalizar',  description: 'Revisar e confirmar' }
       ];
 
-  // Capacidades dinâmicas com base nos guindastes carregados
-  const getCapacidadesUnicas = () => {
-    const set = new Set();
-
-    (guindastes || []).forEach(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match) set.add(match[1]);
-    });
-
-    return Array.from(set).sort((a, b) => parseFloat(a) - parseFloat(b));
-  };
-
-  const getModelosPorCapacidade = (capacidade) => {
-    
-    const modelos = new Map();
-    
-    guindastes.forEach(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      
-      const match = modeloBase.match(/(\d+\.?\d*)/);
-      if (match && match[1] === capacidade) {
-        // Agrupar por modelo base (GSI 6.5, GSE 8.0C, etc.) - coluna "Modelo" da tabela
-        if (!modelos.has(modeloBase)) {
-          modelos.set(modeloBase, guindaste);
-        }
-      }
-    });
-    
-    const resultado = Array.from(modelos.values());
-    return resultado;
-  };
-
-  const getGuindastesPorModelo = (modelo) => {
-    return guindastes.filter(guindaste => {
-      const subgrupo = guindaste.subgrupo || '';
-      const modeloBase = subgrupo.replace(/^(Guindaste\s+)+/, '').split(' ').slice(0, 2).join(' ');
-      return modeloBase === modelo;
-    });
-  };
-
-
-
-  // Obter dados para a interface em cascata
-  const capacidades = getCapacidadesUnicas();
-  const modelosDisponiveis = selectedCapacidade ? getModelosPorCapacidade(selectedCapacidade) : [];
-  const guindastesDisponiveis = selectedModelo ? getGuindastesPorModelo(selectedModelo) : [];
-  
   const getPrecoParaConfigurador = async (guindasteId, regiaoOverride) => {
     try {
       if (isModoConcessionaria) {
@@ -1183,63 +1132,29 @@ const NovoPedido = () => {
     }
   };
 
-  // Função para selecionar capacidade
-  const handleSelecionarCapacidade = (capacidade) => {
-    setSelectedCapacidade(capacidade);
-    setSelectedModelo(null);
-    setGuindastesSelecionados([]);
-    
-    // Adicionar efeito visual de destaque
-    const card = document.querySelector(`[data-capacidade="${capacidade}"]`);
-    if (card) {
-      card.classList.add('selection-highlight');
-      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
+  // Função para selecionar modelo base no fluxo normal (navega para configuração em DetalhesGuindaste)
+  const handleSelecionarModelo = (group) => {
+    const regiaoParaUsar = (regiaoClienteSelecionada || '').trim();
+    if (!regiaoParaUsar) {
+      alert('Selecione a região do cliente antes de escolher o equipamento.');
+      return;
     }
-    
-    // Scroll automático para a próxima etapa após um pequeno delay
-    setTimeout(() => {
-      const stepElement = document.querySelector('.cascata-step:nth-child(2)');
-      if (stepElement) {
-        // Calcular offset para mobile
-        const isMobile = window.innerWidth <= 768;
-        const offset = isMobile ? 120 : 80;
-        
-        const elementPosition = stepElement.offsetTop - offset;
-        window.scrollTo({
-          top: elementPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 300);
-  };
 
-  // Função para selecionar modelo
-  const handleSelecionarModelo = (modelo) => {
-    setSelectedModelo(modelo);
-    setGuindastesSelecionados([]);
-    
-    // Adicionar efeito visual de destaque
-    const card = document.querySelector(`[data-modelo="${modelo}"]`);
-    if (card) {
-      card.classList.add('selection-highlight');
-      setTimeout(() => card.classList.remove('selection-highlight'), 1000);
-    }
-    
-    // Scroll automático para a próxima etapa após um pequeno delay
-    setTimeout(() => {
-      const stepElement = document.querySelector('.cascata-step:nth-child(3)');
-      if (stepElement) {
-        // Calcular offset para mobile
-        const isMobile = window.innerWidth <= 768;
-        const offset = isMobile ? 120 : 80;
-        
-        const elementPosition = stepElement.offsetTop - offset;
-        window.scrollTo({
-          top: elementPosition,
-          behavior: 'smooth'
-        });
-      }
-    }, 300);
+    const navState = {
+      baseModel: group.model,
+      variants: group.variants,
+      regiaoClienteSelecionada: regiaoParaUsar,
+      returnTo: '/novo-pedido',
+      step: 2,
+    };
+
+    console.log('[STEP_NAVIGATE] Indo para /detalhes-guindaste com modelo base:', {
+      baseModel: navState.baseModel,
+      regiaoClienteSelecionada: navState.regiaoClienteSelecionada,
+      variantsCount: navState.variants.length,
+    });
+
+    navigate('/detalhes-guindaste', { state: navState });
   };
 
 
@@ -1448,18 +1363,24 @@ const NovoPedido = () => {
                   <span style={{ fontSize: '0.75rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#000000' }}> Selecionar Guindaste</span>
                 </div>
 
-                <GuindasteConfigurador
-                  guindastes={guindastes}
-                  onGuindasteSelect={handleSelecionarGuindaste}
-                  isLoading={isLoading}
-                  getPreco={getPrecoParaConfigurador}
-                  getImagem={getImagemParaConfigurador}
-                  precoContextKey={
-                    isModoConcessionaria
-                      ? ((regiaoClienteSelecionada || '').trim() || concessionariaInfo?.regiao_preco || '')
-                      : (regiaoClienteSelecionada || '').trim()
-                  }
-                />
+                {isModoConcessionaria ? (
+                  <GuindasteConfigurador
+                    guindastes={guindastes}
+                    onGuindasteSelect={handleSelecionarGuindaste}
+                    isLoading={isLoading}
+                    getPreco={getPrecoParaConfigurador}
+                    getImagem={getImagemParaConfigurador}
+                    precoContextKey={
+                      ((regiaoClienteSelecionada || '').trim() || concessionariaInfo?.regiao_preco || '')
+                    }
+                  />
+                ) : (
+                  <Step1GuindasteSelector
+                    guindastes={guindastes}
+                    isLoading={isLoading}
+                    onSelectModel={handleSelecionarModelo}
+                  />
+                )}
               </>
             ) : (
               <div style={{ padding: '16px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', textAlign: 'center', color: '#6b7280', fontSize: '0.875rem', marginTop: '16px' }}>
