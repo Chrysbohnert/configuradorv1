@@ -40,16 +40,19 @@ const EstudosVeicularesMultiplos = ({
   }, [guindastes.length]);
 
   // Atualizar estudo do equipamento atual (suporta objeto ou updater function)
+  // Usa updater function para acumular atualizações consecutivas (ex: medidaC + patolamento)
   const handleEstudoChange = (update) => {
-    if (!Array.isArray(estudosVeiculares)) {
-      console.error('❌ [EstudosVeiculares] estudosVeiculares não é um array:', estudosVeiculares);
-      return;
-    }
-    const novosEstudos = [...estudosVeiculares];
-    const atual = novosEstudos[equipamentoAtivo] || {};
-    const atualizado = typeof update === 'function' ? update(atual) : { ...atual, ...update };
-    novosEstudos[equipamentoAtivo] = atualizado;
-    setEstudosVeiculares(novosEstudos);
+    setEstudosVeiculares(prevEstudos => {
+      if (!Array.isArray(prevEstudos)) {
+        console.error('❌ [EstudosVeiculares] estudosVeiculares não é um array:', prevEstudos);
+        return prevEstudos;
+      }
+      const novosEstudos = [...prevEstudos];
+      const atual = novosEstudos[equipamentoAtivo] || {};
+      const atualizado = typeof update === 'function' ? update(atual) : { ...atual, ...update };
+      novosEstudos[equipamentoAtivo] = atualizado;
+      return novosEstudos;
+    });
   };
 
   // Verificar se todos os estudos estão preenchidos
