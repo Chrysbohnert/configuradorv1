@@ -4009,121 +4009,139 @@
    REDESIGN STEPPER - MINIMALISTA CORPORATIVO
    ======================================== */
 
-/* Container do Stepper */
+/* Container do Stepper — linha de chips compactos */
 .novo-pedido-container .progress-steps {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: 6px !important;
   background: transparent !important;
   border-radius: 0 !important;
-  padding: 0 !important;
+  padding: 0 0 8px 0 !important;
   box-shadow: none !important;
   border: none !important;
-  border-bottom: 2px solid #e5e7eb !important;
-  gap: 0 !important;
-  overflow: visible !important;
+  border-bottom: 1px solid #e5e7eb !important;
+  overflow-x: auto !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
 }
 
-/* Barra de progresso inferior */
+.novo-pedido-container .progress-steps::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Barra de progresso inferior — linha fina preta */
 .novo-pedido-container .progress-steps::before {
   display: none !important;
 }
 
 .novo-pedido-container .progress-steps::after {
-  bottom: -2px !important;
+  bottom: 0 !important;
   top: auto !important;
-  height: 3px !important;
+  height: 2px !important;
   background: #111827 !important;
-  border-radius: 2px 2px 0 0 !important;
+  border-radius: 0 !important;
+  transition: width 0.3s ease !important;
 }
 
-/* Cards dos Steps - Design Corporativo */
+/* Chips dos Steps — compactos, bordas cinza/preto */
 .novo-pedido-container .progress-steps .step {
-  background: #000000 !important; /* CARD PRETO */
-  border: 2px solid #000000 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
-  padding: 1rem 0.75rem 1.25rem !important;
-  min-height: auto !important;
-  gap: 0.5rem !important;
-  border-bottom: none !important;
-  margin-bottom: 0 !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-  margin: 0 0.25rem !important;
+  flex: 0 0 auto !important;
+  display: inline-flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 6px !important;
+  box-shadow: none !important;
+  padding: 6px 10px !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  transition: border-color 0.15s ease, background 0.15s ease !important;
 }
 
-/* Step Ativo - Mantém Preto com Destaque */
 .novo-pedido-container .progress-steps .step.active {
-  background: #000000 !important; /* Mantém preto */
-  border: 2px solid #ffffff !important; /* Borda branca para destaque */
-  border-bottom: 3px solid #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  transform: translateY(-2px) !important;
+  background: #111827 !important;
+  border-color: #111827 !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
-/* Step Completado - Preto com Opacidade */
 .novo-pedido-container .progress-steps .step.completed {
-  background: #000000 !important; /* Mantém preto */
-  border: 2px solid #4a4a4a !important; /* Borda cinza escura */
-  opacity: 0.8 !important;
+  background: #f8fafc !important;
+  border-color: #d1d5db !important;
+  opacity: 1 !important;
 }
 
-/* Step Hover - Preto Mais Claro */
 .novo-pedido-container .progress-steps .step.clickable:hover {
-  background: #1a1a1a !important;
-  border-color: #ffffff !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  background: #f9fafb !important;
+  border-color: #111827 !important;
+  box-shadow: none !important;
+  transform: none !important;
 }
 
-/* Números dos Steps - Contraste Alto */
+.novo-pedido-container .progress-steps .step.active.clickable:hover {
+  background: #111827 !important;
+  border-color: #111827 !important;
+}
+
+/* Números dos Steps — pequenos, dentro do chip */
 .novo-pedido-container .progress-steps .step .step-number {
-  width: 36px !important;
-  height: 36px !important;
+  width: 18px !important;
+  height: 18px !important;
   border-radius: 50% !important;
-  background: #ffffff !important; /* Fundo branco */
-  color: #000000 !important; /* Número preto */
-  border: 2px solid #ffffff !important; /* Borda branca */
-  font-size: 0.875rem !important;
+  background: #f3f4f6 !important;
+  color: #374151 !important;
+  border: 1px solid #e5e7eb !important;
+  font-size: 0.65rem !important;
   font-weight: 700 !important;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  box-shadow: none !important;
+  transition: none !important;
+  flex-shrink: 0 !important;
 }
 
 .novo-pedido-container .progress-steps .step.active .step-number {
-  background: #000000 !important; /* Preto para step ativo */
-  color: #ffffff !important; /* Texto branco */
-  border-color: #ffffff !important; /* Borda branca */
-  transform: scale(1.1) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  background: #ffffff !important;
+  color: #111827 !important;
+  border-color: #ffffff !important;
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 .novo-pedido-container .progress-steps .step.completed .step-number {
-  background: #4a4a4a !important; /* Cinza escuro para completado */
-  color: #ffffff !important; /* Texto branco */
-  border-color: #4a4a4a !important; /* Borda cinza escura */
+  width: 18px !important;
+  height: 18px !important;
+  background: #111827 !important;
+  color: #ffffff !important;
+  border-color: #111827 !important;
+  font-size: 0.65rem !important;
 }
 
-/* Textos dos Steps - Contraste Alto */
+/* Textos dos Steps — fonte pequena, ao lado do número */
 .novo-pedido-container .progress-steps .step .step-title {
-  font-size: 0.8125rem !important;
+  font-size: 0.7rem !important;
   font-weight: 600 !important;
-  color: #ffffff !important; /* TEXTO BRANCO */
-  line-height: 1.2 !important;
-  text-align: center !important;
+  color: #374151 !important;
+  line-height: 1 !important;
+  text-align: left !important;
   margin: 0 !important;
+  white-space: nowrap !important;
 }
 
 .novo-pedido-container .progress-steps .step.active .step-title {
-  color: #ffffff !important; /* Mantém branco para ativo */
+  color: #ffffff !important;
   font-weight: 700 !important;
 }
 
 .novo-pedido-container .progress-steps .step.completed .step-title {
-  color: #d1d5db !important; /* Cinza claro para completado */
+  color: #111827 !important;
+  font-weight: 600 !important;
 }
 
 .novo-pedido-container .progress-steps .step .step-description {
-  font-size: 0.6875rem !important;
-  color: #d1d5db !important; /* Cinza claro para descrição */
-  line-height: 1.2 !important;
-  text-align: center !important;
   display: none !important;
 }
 
@@ -4171,34 +4189,33 @@
   
   /* Stepper */
   .novo-pedido-container .progress-steps {
-    padding-bottom: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    padding-bottom: 8px !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
   }
-  
+
   .novo-pedido-container .progress-steps::-webkit-scrollbar {
-    display: none;
+    display: none !important;
   }
-  
+
   .novo-pedido-container .progress-steps .step {
-    padding: 0.75rem 0.25rem 1rem !important;
-    min-width: 0;
-    flex: 1;
-    max-width: calc(20% - 0.2rem);
-    flex-shrink: 1;
+    padding: 5px 8px !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    max-width: none !important;
   }
-  
+
   .novo-pedido-container .progress-steps .step .step-number {
-    width: 32px !important;
-    height: 32px !important;
-    font-size: 0.75rem !important;
+    width: 16px !important;
+    height: 16px !important;
+    font-size: 0.6rem !important;
   }
-  
+
   .novo-pedido-container .progress-steps .step .step-title {
-    font-size: 0.75rem !important;
-    line-height: 1.2 !important;
+    font-size: 0.65rem !important;
+    line-height: 1 !important;
   }
   
   /* Main Content */
@@ -4233,21 +4250,20 @@
   
   /* Stepper */
   .novo-pedido-container .progress-steps .step {
-    padding: 0.625rem 0.2rem 0.875rem !important;
-    min-width: 0;
-    flex: 1;
-    max-width: calc(20% - 0.1rem);
-    flex-shrink: 1;
+    padding: 5px 7px !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    max-width: none !important;
   }
-  
+
   .novo-pedido-container .progress-steps .step .step-number {
-    width: 28px !important;
-    height: 28px !important;
-    font-size: 0.6875rem !important;
+    width: 15px !important;
+    height: 15px !important;
+    font-size: 0.55rem !important;
   }
-  
+
   .novo-pedido-container .progress-steps .step .step-title {
-    font-size: 0.6875rem !important;
+    font-size: 0.62rem !important;
   }
   
   /* Main Content */
