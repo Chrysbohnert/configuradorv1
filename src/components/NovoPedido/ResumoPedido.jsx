@@ -273,7 +273,9 @@ const ResumoPedido = ({
         email: clienteData.email,
         documento: clienteData.documento,
         inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
-        endereco: enderecoCompleto,
+        endereco: clienteData.endereco || enderecoCompleto,
+        cidade: clienteData.cidade || null,
+        uf: clienteData.uf || null,
         observacoes: clienteData.observacoes || null
       };
 
@@ -321,6 +323,7 @@ const ResumoPedido = ({
         vendedor_nome: user.nome || 'Não informado',
         cliente_nome: cliente.nome || 'Não informado',
         cliente_documento: clienteDocumentoDB,
+        cliente_id: cliente?.id || clienteData?.cliente_id || null,
         valor_total: pagamentoData.valorFinal || carrinho.reduce((total, item) => total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1)), 0),
         tipo: 'proposta',
         status: 'finalizado',
@@ -336,6 +339,7 @@ const ResumoPedido = ({
           clienteData: cliente,
           caminhaoData: caminhao,
           pagamentoData,
+          cliente_id: cliente?.id || clienteData?.cliente_id || null,
           regiaoClienteSelecionada: regiaoClienteSelecionada || regiaoCompraSelecionada || null,
           concessionaria_id: user?.concessionaria_id || null,
           // Concessionária de destino (quando Stark opera em nome de outra)

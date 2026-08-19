@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useNavigate } from 'react-router-dom';
 import { getClientes, createCliente, updateCliente, deleteCliente, getPropostasDoCliente } from '../../api/clientes';
 import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency } from '../../utils/formatters';
@@ -7,13 +7,15 @@ import ClienteFormFields from '../../components/Clientes/ClienteFormFields';
 import '../../styles/Clientes.css';
 
 const CLIENTE_VAZIO = {
-  nome: '', documento: '', telefone: '', email: '', endereco: '',
-  inscricao_estadual: '', observacoes: '', regiao: '', tipo_venda: '',
-  participacao_revenda: '', tipo_cliente: '',
+  nome: '', documento: '', documento_tipo: '', telefone: '', email: '',
+  endereco: '', cidade: '', uf: '',
+  inscricao_estadual: '', possui_ie: '', observacoes: '', regiao: '',
+  tipo_venda: '', participacao_revenda: '', tipo_cliente: '',
 };
 
 export default function Clientes() {
   const { user } = useOutletContext();
+  const navigate = useNavigate();
   const isAdmin = ['admin_stark', 'admin', 'admin_concessionaria'].includes(user?.tipo);
 
   const [clientes, setClientes] = useState([]);
@@ -70,6 +72,10 @@ export default function Clientes() {
     } catch (e) {
       setErrorMsg(e.message || 'Erro ao excluir cliente');
     }
+  };
+
+  const iniciarNovaProposta = (cliente) => {
+    navigate('/novo-pedido', { state: { clienteSelecionado: cliente } });
   };
 
   const salvar = async () => {
@@ -156,6 +162,14 @@ export default function Clientes() {
                     </td>
                     <td>
                       <button type="button" className="btn-secundario" onClick={() => abrirEdicao(c)}>Editar</button>
+                      <button
+                        type="button"
+                        className="btn-secundario"
+                        onClick={() => iniciarNovaProposta(c)}
+                        style={{ marginLeft: '8px' }}
+                      >
+                        Nova Proposta
+                      </button>
                       {(isAdmin || String(c.vendedor_id) === String(user?.id)) && (
                         <button
                           type="button"

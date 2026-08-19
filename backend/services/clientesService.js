@@ -10,14 +10,15 @@
 const { query } = require('../db/pool');
 
 const CLIENTE_FIELDS = [
-  'nome', 'email', 'telefone', 'documento', 'endereco', 'observacoes',
-  'inscricao_estadual', 'vendedor_id', 'regiao', 'tipo_venda',
-  'participacao_revenda', 'tipo_cliente',
+  'nome', 'email', 'telefone', 'documento', 'documento_tipo', 'endereco',
+  'cidade', 'uf', 'observacoes', 'inscricao_estadual', 'possui_ie',
+  'vendedor_id', 'regiao', 'tipo_venda', 'participacao_revenda', 'tipo_cliente',
 ];
 
 const COLS_BASE = `
-  c.id, c.nome, c.email, c.telefone, c.documento, c.endereco, c.observacoes,
-  c.inscricao_estadual, c.vendedor_id, c.regiao, c.tipo_venda,
+  c.id, c.nome, c.email, c.telefone, c.documento, c.documento_tipo,
+  c.endereco, c.cidade, c.uf, c.observacoes, c.inscricao_estadual,
+  c.possui_ie, c.vendedor_id, c.regiao, c.tipo_venda,
   c.participacao_revenda, c.tipo_cliente, c.created_at, c.updated_at
 `;
 

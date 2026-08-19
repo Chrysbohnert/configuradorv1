@@ -3,9 +3,10 @@ import { getClientes, createCliente } from '../../api/clientes';
 import ClienteFormFields from './ClienteFormFields';
 
 const CLIENTE_VAZIO = {
-  nome: '', documento: '', telefone: '', email: '', endereco: '',
-  inscricao_estadual: '', observacoes: '', regiao: '', tipo_venda: '',
-  participacao_revenda: '', tipo_cliente: '',
+  nome: '', documento: '', documento_tipo: '', telefone: '', email: '',
+  endereco: '', cidade: '', uf: '',
+  inscricao_estadual: '', possui_ie: '', observacoes: '', regiao: '',
+  tipo_venda: '', participacao_revenda: '', tipo_cliente: '',
 };
 
 export default function SeletorCliente({

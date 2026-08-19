@@ -71,8 +71,10 @@ const NovoPedido = () => {
   const isVendedorStarkComum = !isModoConcessionaria && user?.tipo === 'vendedor' && !isEdicao;
   // ✅ Persistido no localStorage (mesmo padrão de clienteData/caminhaoData/pagamentoData)
   // para sobreviver ao unmount/remount do componente ao navegar para /detalhes-guindaste e voltar.
+  // Também pode vir preenchido pela lista de clientes (Nova Proposta).
   const [clienteCadastrado, setClienteCadastrado] = useState(() => {
     try {
+      if (location.state?.clienteSelecionado) return location.state.clienteSelecionado;
       if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
         const saved = localStorage.getItem('novoPedido_clienteCadastrado');
         if (saved) return JSON.parse(saved);
@@ -230,6 +232,8 @@ const NovoPedido = () => {
       telefone: clienteCadastrado.telefone || '',
       email: clienteCadastrado.email || '',
       endereco: clienteCadastrado.endereco || '',
+      cidade: clienteCadastrado.cidade || '',
+      uf: clienteCadastrado.uf || '',
       inscricao_estadual: clienteCadastrado.inscricao_estadual || '',
       observacoes: clienteCadastrado.observacoes || '',
       modoInternacional: false,
@@ -3253,7 +3257,9 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       email: clienteData.email,
       documento: clienteData.documento,
       inscricao_estadual: clienteData.inscricao_estadual || clienteData.inscricaoEstadual,
-      endereco: enderecoCompleto,
+      endereco: clienteData.endereco || enderecoCompleto,
+      cidade: clienteData.cidade || null,
+      uf: clienteData.uf || null,
       observacoes: clienteData.observacoes || null
     };
 
@@ -3344,7 +3350,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
       cliente_nome: cliente.nome || 'Não informado',
       cliente_documento: clienteDocumentoDB,
-      cliente_id: clienteCadastrado?.id || null,
+      cliente_id: cliente?.id || clienteCadastrado?.id || null,
 
       valor_total: valorTotal,
 
@@ -3367,7 +3373,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         guindasteId,
         regiaoClienteSelecionada: regiaoCompraSelecionada || null,
         concessionaria_id: user?.concessionaria_id || null,
-        cliente_id: clienteCadastrado?.id || null
+        cliente_id: cliente?.id || clienteCadastrado?.id || null
       }
     };
 

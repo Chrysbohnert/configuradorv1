@@ -1,5 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { maskPhone, maskCPF, maskCNPJ, onlyDigits } from '../../utils/masks';
+
+const UFs = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS',
+  'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC',
+  'SP', 'SE', 'TO',
+];
 
 /**
  * Campos de cadastro de cliente, reaproveitados em:
@@ -10,6 +16,7 @@ import { maskPhone, maskCPF, maskCNPJ, onlyDigits } from '../../utils/masks';
  * - tipo_venda: 'cliente' | 'revenda'                 (== PaymentPolicy.tipoCliente)
  * - participacao_revenda: 'sim' | 'nao'                (== PaymentPolicy.participacaoRevenda)
  * - tipo_cliente: 'produtor' | 'cnpj_cpf'               (== PaymentPolicy.tipoIE)
+ *     Derivado internamente a partir de documento_tipo + possui_ie
  * - regiao: label livre (== user.regioes_operacao / regiaoClienteSelecionada)
  */
 export default function ClienteFormFields({
@@ -23,14 +30,48 @@ export default function ClienteFormFields({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleDocumentoTipoChange = (tipo) => {
+    setFormData((prev) => ({
+      ...prev,
+      documento_tipo: tipo,
+      documento: '',
+    }));
+  };
+
+  // Detecta o tipo de documento a partir do valor salvo (edição de clientes antigos).
+  useEffect(() => {
+    if (!formData.id || formData.documento_tipo) return;
+    const digits = onlyDigits(formData.documento || '');
+    if (digits.length > 11) {
+      setFormData((prev) => ({ ...prev, documento_tipo: 'cnpj' }));
+    } else if (digits.length > 0) {
+      setFormData((prev) => ({ ...prev, documento_tipo: 'cpf' }));
+    }
+  }, [formData.id, formData.documento, formData.documento_tipo]);
+
   const handleDocumentoChange = (value) => {
     const digits = onlyDigits(value);
-    const masked = digits.length <= 11 ? maskCPF(digits) : maskCNPJ(digits);
+    const isCNPJ = formData.documento_tipo === 'cnpj';
+    const masked = isCNPJ ? maskCNPJ(digits) : maskCPF(digits);
     handleChange('documento', masked);
   };
 
+  // Deriva internamente o tipo_cliente esperado pelo PaymentPolicy.
+  // 'produtor'  => cliente possui Inscrição Estadual.
+  // 'cnpj_cpf'  => cliente NÃO possui Inscrição Estadual.
+  useEffect(() => {
+    setFormData((prev) => {
+      const { documento_tipo, possui_ie } = prev;
+      let tipo_cliente = '';
+      if (documento_tipo && possui_ie) {
+        tipo_cliente = possui_ie === 'sim' ? 'produtor' : 'cnpj_cpf';
+      }
+      if (prev.tipo_cliente === tipo_cliente) return prev;
+      return { ...prev, tipo_cliente };
+    });
+  }, [formData.documento_tipo, formData.possui_ie]);
+
   const mostraParticipacao = formData.tipo_venda === 'cliente';
-  const mostraTipoCliente = mostraParticipacao && !!formData.participacao_revenda;
 
   return (
     <div style={{ display: 'grid', gap: compact ? '10px' : '14px' }}>
@@ -41,15 +82,6 @@ export default function ClienteFormFields({
             value={formData.nome || ''}
             onChange={(e) => handleChange('nome', e.target.value)}
             placeholder="Nome completo ou razão social"
-          />
-        </Field>
-
-        <Field label="CPF/CNPJ" error={errors.documento}>
-          <input
-            type="text"
-            value={formData.documento || ''}
-            onChange={(e) => handleDocumentoChange(e.target.value)}
-            placeholder="000.000.000-00"
           />
         </Field>
 
@@ -71,22 +103,85 @@ export default function ClienteFormFields({
           />
         </Field>
 
-        <Field label="Inscrição Estadual" error={errors.inscricao_estadual}>
-          <input
-            type="text"
-            value={formData.inscricao_estadual || ''}
-            onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
-            placeholder="ISENTO ou número"
-          />
+        <Field label="Tipo de Documento" required error={errors.documento_tipo}>
+          <select
+            value={formData.documento_tipo || ''}
+            onChange={(e) => handleDocumentoTipoChange(e.target.value)}
+          >
+            <option value="">-- CPF ou CNPJ --</option>
+            <option value="cpf">CPF</option>
+            <option value="cnpj">CNPJ</option>
+          </select>
         </Field>
+
+        {formData.documento_tipo && (
+          <Field label={formData.documento_tipo === 'cnpj' ? 'CNPJ' : 'CPF'} required error={errors.documento}>
+            <input
+              type="text"
+              value={formData.documento || ''}
+              onChange={(e) => handleDocumentoChange(e.target.value)}
+              placeholder={formData.documento_tipo === 'cnpj' ? '00.000.000/0000-00' : '000.000.000-00'}
+            />
+          </Field>
+        )}
+
+        <Field label="Possui Inscrição Estadual?" error={errors.possui_ie}>
+          <select
+            value={formData.possui_ie || ''}
+            onChange={(e) => {
+              const value = e.target.value;
+              setFormData((prev) => ({
+                ...prev,
+                possui_ie: value,
+                inscricao_estadual: value === 'sim' ? prev.inscricao_estadual : '',
+              }));
+            }}
+          >
+            <option value="">-- Selecione --</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </Field>
+
+        {formData.possui_ie === 'sim' && (
+          <Field label="Inscrição Estadual" error={errors.inscricao_estadual}>
+            <input
+              type="text"
+              value={formData.inscricao_estadual || ''}
+              onChange={(e) => handleChange('inscricao_estadual', e.target.value)}
+              placeholder="ISENTO ou número"
+            />
+          </Field>
+        )}
 
         <Field label="Endereço" error={errors.endereco}>
           <input
             type="text"
             value={formData.endereco || ''}
             onChange={(e) => handleChange('endereco', e.target.value)}
-            placeholder="Rua, número, bairro, cidade/UF"
+            placeholder="Rua, número, bairro"
           />
+        </Field>
+
+        <Field label="Cidade" error={errors.cidade}>
+          <input
+            type="text"
+            value={formData.cidade || ''}
+            onChange={(e) => handleChange('cidade', e.target.value)}
+            placeholder="Cidade"
+          />
+        </Field>
+
+        <Field label="UF" error={errors.uf}>
+          <select
+            value={formData.uf || ''}
+            onChange={(e) => handleChange('uf', e.target.value)}
+          >
+            <option value="">-- UF --</option>
+            {UFs.map((uf) => (
+              <option key={uf} value={uf}>{uf}</option>
+            ))}
+          </select>
         </Field>
       </div>
 
@@ -115,7 +210,6 @@ export default function ClienteFormFields({
                 tipo_venda: value,
                 // ao trocar tipo de venda, limpa dependentes (mesma regra do PaymentPolicy)
                 participacao_revenda: value === 'revenda' ? '' : prev.participacao_revenda,
-                tipo_cliente: value === 'revenda' ? '' : prev.tipo_cliente,
               }));
             }}
           >
@@ -134,19 +228,6 @@ export default function ClienteFormFields({
               <option value="">-- Selecione --</option>
               <option value="sim">Sim</option>
               <option value="nao">Não</option>
-            </select>
-          </Field>
-        )}
-
-        {mostraTipoCliente && (
-          <Field label="Tipo de Cliente" error={errors.tipo_cliente}>
-            <select
-              value={formData.tipo_cliente || ''}
-              onChange={(e) => handleChange('tipo_cliente', e.target.value)}
-            >
-              <option value="">-- Selecione --</option>
-              <option value="produtor">Produtor Rural</option>
-              <option value="cnpj_cpf">CNPJ/CPF</option>
             </select>
           </Field>
         )}
