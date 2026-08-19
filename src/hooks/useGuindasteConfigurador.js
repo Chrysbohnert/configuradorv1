@@ -95,8 +95,18 @@ export function useGuindasteConfigurador({
 
   const [selectedGroup, setSelectedGroup] = useState(initialGroup);
   const [selectedGuindaste, setSelectedGuindaste] = useState(() => {
-    if (!initialVariantId || !initialGroup) return null;
-    return initialGroup.variants.find(v => String(v.id) === String(initialVariantId)) || initialGroup.variants[0] || null;
+    if (!initialGroup) return null;
+    if (initialVariantId) {
+      return initialGroup.variants.find(v => String(v.id) === String(initialVariantId)) || initialGroup.variants[0] || null;
+    }
+    // Seleciona automaticamente a primeira configuração base/standard (sem opcionais)
+    // usando a ordenação já existente das variantes.
+    const baseVariant = [...initialGroup.variants].sort((a, b) => {
+      if (!a._optStr) return -1;
+      if (!b._optStr) return 1;
+      return a._optStr.localeCompare(b._optStr);
+    })[0];
+    return baseVariant || null;
   });
   const [precoExibido, setPrecoExibido] = useState(null);
   const [loadingPreco, setLoadingPreco] = useState(false);

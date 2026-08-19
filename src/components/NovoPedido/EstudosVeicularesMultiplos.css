@@ -1,41 +1,45 @@
 .estudos-veiculares-container {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 24px;
+  padding: 16px;
 }
 
 .estudos-header {
-  text-align: center;
-  margin-bottom: 32px;
+  text-align: left;
+  margin-bottom: 20px;
 }
 
 .estudos-header h2 {
-  font-size: 28px;
+  font-size: 1.25rem;
   font-weight: 700;
-  color: #1f2937;
-  margin-bottom: 8px;
+  color: #111827;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .estudos-subtitle {
-  font-size: 14px;
+  font-size: 0.8125rem;
   color: #6b7280;
+  margin: 0;
 }
 
 /* Abas de equipamentos */
 .equipamentos-tabs {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .equipamento-tab {
   background: #f9fafb;
-  border: 2px solid #e5e7eb;
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
   text-align: left;
 }
 
@@ -45,46 +49,46 @@
 }
 
 .equipamento-tab.active {
-  background: #eff6ff;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  background: #f3f4f6;
+  border-color: #111827;
+  box-shadow: 0 0 0 1px rgba(17, 24, 39, 0.08);
 }
 
 .equipamento-tab.completed {
   background: #f0fdf4;
-  border-color: #10b981;
+  border-color: #86efac;
 }
 
 .equipamento-tab.completed.active {
   background: #dcfce7;
-  border-color: #10b981;
+  border-color: #16a34a;
 }
 
 .tab-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .tab-numero {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .tab-check {
-  font-size: 16px;
-  color: #10b981;
+  font-size: 12px;
+  color: #16a34a;
   font-weight: 700;
 }
 
 .tab-nome {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
-  color: #1f2937;
+  color: #111827;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -95,45 +99,83 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
 }
 
 .equipamento-badge {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .badge-label {
-  font-size: 12px;
-  font-weight: 600;
-  opacity: 0.9;
+  font-size: 10px;
+  font-weight: 700;
+  color: #6b7280;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .badge-nome {
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 700;
 }
 
 .equipamento-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.2);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  gap: 6px;
+  background: #dcfce7;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
+  color: #166534;
 }
 
 .status-icon {
-  font-size: 18px;
+  font-size: 14px;
+}
+
+/* Aviso Proposta Rápida */
+.proposta-rapida-hint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.btn-proposta-rapida {
+  background: #f59e0b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-proposta-rapida:hover {
+  background: #d97706;
+}
+
+.proposta-rapida-hint-note {
+  color: #a16207;
+  font-size: 11px;
 }
 
 /* Navegação entre equipamentos */
@@ -141,22 +183,23 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 24px 0;
-  padding: 16px;
+  margin: 16px 0;
+  padding: 10px 12px;
   background: #f9fafb;
-  border-radius: 12px;
+  border-radius: 8px;
+  gap: 12px;
 }
 
 .btn-nav-equipamento {
   background: white;
-  border: 2px solid #e5e7eb;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
+  border: 1px solid #e5e7eb;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
   font-weight: 600;
   color: #374151;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
 }
 
 .btn-nav-equipamento:hover:not(:disabled) {
@@ -170,63 +213,63 @@
 }
 
 .nav-indicator {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #6b7280;
 }
 
 /* Alertas */
 .alert {
-  padding: 16px;
+  padding: 10px 12px;
   border-radius: 8px;
-  margin-bottom: 24px;
-  font-size: 14px;
+  margin-bottom: 16px;
+  font-size: 12px;
 }
 
 .alert-warning {
-  background: #fef3c7;
-  border: 1px solid #fbbf24;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
   color: #92400e;
 }
 
 .alert-info {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
   color: #1e40af;
 }
 
 .estudos-progress {
-  margin-top: 8px;
-  font-weight: 600;
-  font-size: 13px;
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: 12px;
 }
 
 /* Ações */
 .form-actions {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
-  margin-top: 32px;
-  padding-top: 24px;
-  border-top: 2px solid #e5e7eb;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
 }
 
 .btn-back-secondary,
 .btn-continue {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
+  gap: 6px;
+  padding: 10px 18px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .btn-back-secondary {
   background: white;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #e5e7eb;
   color: #374151;
 }
 
@@ -236,14 +279,14 @@
 }
 
 .btn-continue {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: #111827;
   border: none;
   color: white;
 }
 
 .btn-continue:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+  background: #1f2937;
+  transform: translateY(-1px);
 }
 
 .btn-continue:disabled {
@@ -253,8 +296,8 @@
 
 .btn-back-secondary svg,
 .btn-continue svg {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
 }
 
 /* Responsivo */
@@ -266,12 +309,12 @@
   .equipamento-atual-info {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 8px;
   }
 
   .equipamentos-navigation {
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
 
   .btn-nav-equipamento {
@@ -286,5 +329,10 @@
   .btn-continue {
     width: 100%;
     justify-content: center;
+  }
+
+  .proposta-rapida-hint {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }

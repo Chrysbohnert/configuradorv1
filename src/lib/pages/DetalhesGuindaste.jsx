@@ -343,6 +343,9 @@ const DetalhesGuindaste = () => {
         {/* Cabeçalho com nome do equipamento */}
         <div className="guindaste-info-section">
           <h2>{guindaste?.subgrupo || baseModel || 'Configurar Equipamento'}</h2>
+          {guindaste?.descricao && (
+            <p className="guindaste-descricao-topo">{guindaste.descricao}</p>
+          )}
         </div>
 
         {/* Área principal do configurador */}
@@ -384,7 +387,7 @@ const DetalhesGuindaste = () => {
         )}
 
         {/* Botões de ação */}
-        <div className="acoes-section" style={{ gap: '12px' }}>
+        <div className="acoes-section">
           <button
             type="button"
             className="voltar-configuracao-btn"
