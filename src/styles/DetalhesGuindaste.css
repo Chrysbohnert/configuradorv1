@@ -432,11 +432,11 @@
 }
 
 .foto-destaque {
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
+  background: transparent;
+  border: none;
   border-radius: 12px;
-  min-height: 260px;
-  max-height: 360px;
+  min-height: 220px;
+  max-height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -446,7 +446,7 @@
 .foto-destaque img {
   width: 100%;
   height: 100%;
-  max-height: 360px;
+  max-height: 300px;
   object-fit: contain;
   cursor: pointer;
   transition: transform 0.2s ease;
@@ -462,8 +462,52 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 260px;
+  min-height: 220px;
   color: #6b7280;
+}
+
+/* Ilustrações dos opcionais abaixo da imagem do guindaste */
+.opcionais-ilustracao {
+  margin-top: 8px;
+  padding: 8px 0 0 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+.opcionais-ilustracao-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+  margin-bottom: 10px;
+}
+
+.opcionais-ilustracao-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: flex-start;
+}
+
+.opcional-ilustracao-item {
+  width: 120px;
+  height: 120px;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.opcional-ilustracao-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .foto-destaque .sem-foto span {
@@ -854,12 +898,21 @@
   }
 
   .foto-destaque {
-    min-height: 220px;
-    max-height: 300px;
+    min-height: 180px;
+    max-height: 260px;
   }
 
   .foto-destaque img {
-    max-height: 300px;
+    max-height: 260px;
+  }
+
+  .foto-destaque .sem-foto {
+    min-height: 180px;
+  }
+
+  .opcional-ilustracao-item {
+    width: 96px;
+    height: 96px;
   }
 
   .variantes-lista {

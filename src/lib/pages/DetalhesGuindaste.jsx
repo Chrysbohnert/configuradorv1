@@ -6,6 +6,7 @@ import { db } from '../../config/supabase';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizarRegiao } from '../../utils/regiaoHelper';
 import { useGuindasteConfigurador } from '../../hooks/useGuindasteConfigurador';
+import { getOpcionalImagesFromVariant } from '../../config/opcionalImages';
 
 const DetalhesGuindaste = () => {
   const navigate = useNavigate();
@@ -239,6 +240,23 @@ const DetalhesGuindaste = () => {
     );
   };
 
+  const renderOpcionaisIlustracao = () => {
+    const images = getOpcionalImagesFromVariant(selectedGuindaste?._optStr);
+    if (!images.length) return null;
+    return (
+      <div className="opcionais-ilustracao">
+        <span className="opcionais-ilustracao-label">Opcionais selecionados</span>
+        <div className="opcionais-ilustracao-grid">
+          {images.map((src, idx) => (
+            <div key={idx} className="opcional-ilustracao-item">
+              <img src={src} alt="" className="opcional-ilustracao-img" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   const renderVariantes = () => {
     if (!selectedGroup) return null;
     return (
@@ -343,9 +361,6 @@ const DetalhesGuindaste = () => {
         {/* Cabeçalho com nome do equipamento */}
         <div className="guindaste-info-section">
           <h2>{guindaste?.subgrupo || baseModel || 'Configurar Equipamento'}</h2>
-          {guindaste?.descricao && (
-            <p className="guindaste-descricao-topo">{guindaste.descricao}</p>
-          )}
         </div>
 
         {/* Área principal do configurador */}
@@ -354,6 +369,7 @@ const DetalhesGuindaste = () => {
             <div className="configurador-grid">
               <div className="configurador-imagem">
                 {renderFotoDestaque()}
+                {renderOpcionaisIlustracao()}
                 {renderGaleriaMiniaturas()}
               </div>
               {renderVariantes()}
@@ -367,6 +383,7 @@ const DetalhesGuindaste = () => {
             <div className="configurador-grid single-column">
               <div className="configurador-imagem">
                 {renderFotoDestaque()}
+                {renderOpcionaisIlustracao()}
                 {renderGaleriaMiniaturas()}
               </div>
             </div>

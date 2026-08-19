@@ -292,6 +292,24 @@
   font-family: 'Courier New', monospace;
 }
 
+.gc-variant-images {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-left: auto;
+  padding-left: 8px;
+}
+
+.gc-variant-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+}
+
 .gc-variant-radio {
   width: 16px;
   height: 16px;
@@ -393,6 +411,26 @@
     padding: 8px 10px;
   }
   .gc-tab-code { font-size: 14px; }
+
+  .gc-variant {
+    flex-wrap: wrap;
+  }
+  .gc-variant-info {
+    flex: 1 1 calc(100% - 28px);
+    min-width: 0;
+  }
+  .gc-variant-images {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    margin-top: 6px;
+    padding-left: 0;
+    justify-content: flex-start;
+  }
+  .gc-variant-radio {
+    order: 2;
+    margin-left: 0;
+  }
 }
 
 /* Miniatura real dentro dos cards compactos do Step1 */

@@ -2,6 +2,7 @@ import React from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import LazyGuindasteImage from '../LazyGuindasteImage';
 import { useGuindasteConfigurador } from '../../hooks/useGuindasteConfigurador';
+import { getOpcionalImagesFromVariant } from '../../config/opcionalImages';
 import '../../styles/GuindasteConfigurador.css';
 
 export default function GuindasteConfigurador({
@@ -123,6 +124,7 @@ export default function GuindasteConfigurador({
             <div className="gc-variants">
               {sortedVariants.map(v => {
                 const isActive = selectedGuindaste && String(selectedGuindaste.id) === String(v.id);
+                const opcionalImages = isActive ? getOpcionalImagesFromVariant(v._optStr) : [];
                 return (
                   <button key={v.id} type="button"
                     className={`gc-variant ${isActive ? 'active' : ''}`}
@@ -131,6 +133,13 @@ export default function GuindasteConfigurador({
                       <div className="gc-variant-name">{variantLabel(v._optStr)}</div>
                       <div className="gc-variant-code">Código: {v.codigo_referencia || '—'}</div>
                     </div>
+                    {opcionalImages.length > 0 && (
+                      <div className="gc-variant-images" aria-hidden="true">
+                        {opcionalImages.map((src, idx) => (
+                          <img key={idx} src={src} alt="" className="gc-variant-img" />
+                        ))}
+                      </div>
+                    )}
                     <div className={`gc-variant-radio ${isActive ? 'checked' : ''}`} />
                   </button>
                 );
