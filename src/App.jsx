@@ -19,6 +19,7 @@ const DashboardAdmin = lazy(() => import('./lib/pages/DashboardAdmin'));
 const GerenciarVendedores = lazy(() => import('./lib/pages/GerenciarVendedores'));
 const RelatorioCompleto = lazy(() => import('./lib/pages/RelatorioCompleto'));
 const GerenciarGuindastes = lazy(() => import('./lib/pages/GerenciarGuindastes'));
+const GerenciarEstoque = lazy(() => import('./lib/pages/GerenciarEstoque'));
 const GerenciarGraficosCarga = lazy(() => import('./lib/pages/GerenciarGraficosCarga'));
 const GerenciarFretes = lazy(() => import('./lib/pages/GerenciarFretes'));
 const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
@@ -169,6 +170,15 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Guindastes...">
                         <GerenciarGuindastes />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/gerenciar-estoque"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Estoque...">
+                        <GerenciarEstoque />
                       </LazyRoute>
                     }
                   />

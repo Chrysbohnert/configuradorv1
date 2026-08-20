@@ -480,7 +480,6 @@ const GerenciarGuindastes = () => {
         codigo_referencia: formData.codigo_referencia.trim(),
         finame: formData.finame.trim(),
         ncm: formData.ncm.trim(),
-        quantidade_disponivel: formData.quantidade_disponivel,
         is_prototipo: !!formData.is_prototipo,
         prototipo_label: (formData.prototipo_label || '').trim() || null,
         prototipo_observacoes_pdf: (formData.prototipo_observacoes_pdf || '').trim() || null,
@@ -912,28 +911,7 @@ const GerenciarGuindastes = () => {
                         className="modern-input"
                       />
                     </div>
-                    <div className="modern-form-group">
-                      <label>Qtde. Disponível <span title="Estoque para pronta entrega" style={{cursor:'help', color:'#3b82f6'}}>ℹ️</span></label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="1"
-                        value={formData.quantidade_disponivel}
-                        onChange={e => {
-                          const val = e.target.value;
-                          if (val === '') { handleInputChange('quantidade_disponivel', ''); return; }
-                          const num = parseInt(val, 10);
-                          handleInputChange('quantidade_disponivel', isNaN(num) ? 0 : num);
-                        }}
-                        onBlur={e => {
-                          const val = e.target.value;
-                          if (val === '' || val === null || val === undefined) {
-                            handleInputChange('quantidade_disponivel', 0);
-                          }
-                        }}
-                        className="modern-input"
-                      />
-                    </div>
+                    {/* Estoque controlado em Gerenciar Estoque */}
                   </div>
 
                   <div className="modern-grid-2">

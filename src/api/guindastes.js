@@ -170,6 +170,25 @@ export async function savePrecosCompraPorRegiao(guindasteId, precos) {
   return json.data;
 }
 
+// --- Estoque ---
+export async function getEstoque() {
+  const res = await fetch(`${BASE_URL}/estoque`, { headers: authHeaders() });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao carregar estoque');
+  return json.data || [];
+}
+
+export async function updateEstoque(id, quantidade_disponivel) {
+  const res = await fetch(`${BASE_URL}/${id}/estoque`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+    body: JSON.stringify({ quantidade_disponivel }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao atualizar estoque');
+  return json.data;
+}
+
 export async function getGuindastesCountForDashboard() {
   try {
     const res = await fetch(`${BASE_URL}?limit=1`, { headers: authHeaders() });

@@ -1588,8 +1588,6 @@ async getUserById(id) {
 
   async createpropostas(propostasData) {
     try {
-      
-      // 1. Criar a proposta
       const { data, error } = await supabase
         .from('propostas')
         .insert(propostasData)
@@ -1598,36 +1596,7 @@ async getUserById(id) {
       
       if (error) throw error;
       
-      
-      // 2. Se o pedido tem um guindaste associado, descontar do estoque
-      if (propostasData.id_guindaste) {
-        
-        try {
-          const resultado = await this.descontarEstoque(propostasData.id_guindaste);
-          
-          if (resultado.success) {
-            
-            // Marcar que o estoque foi descontado
-            const { data: updatedData } = await supabase
-              .from('pedidos')
-              .update({ estoque_descontado: true })
-              .eq('id', data.id)
-              .select()
-              .single();
-            
-            // Atualizar o objeto data com o campo atualizado
-            if (updatedData) {
-              data.estoque_descontado = false;
-            }
-          } else {
-            console.warn('⚠️ [createpropostas] Não foi possível descontar estoque:', resultado.message);
-          }
-        } catch (estoqueError) {
-          console.error('❌ [createpropostas] Erro ao descontar estoque:', estoqueError);
-          // Não falhar o pedido se houver erro no estoque, apenas logar
-        }
-      }
-      
+      // Estoque descontado apenas ao efetivar proposta (backend)
       return data;
     } catch (error) {
       console.error('❌ [createpropostas] Erro:', error);

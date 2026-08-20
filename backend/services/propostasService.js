@@ -11,6 +11,7 @@ const PROPOSTA_FIELDS = [
   'valor_total', 'tipo', 'status', 'concessionaria_id', 'canal_venda', 'segmento_cliente',
   'cliente_uf', 'cliente_cidade', 'produto_principal', 'linha_produto', 'resultado_venda',
   'motivo_perda', 'data_resultado_venda', 'dados_serializados', 'cliente_id',
+  'id_guindaste', 'estoque_descontado',
 ];
 
 const COLS_RESUMO = [
@@ -18,7 +19,7 @@ const COLS_RESUMO = [
   'cliente_documento', 'valor_total', 'tipo', 'status', 'concessionaria_id', 'canal_venda',
   'segmento_cliente', 'cliente_uf', 'cliente_cidade', 'produto_principal', 'linha_produto',
   'resultado_venda', 'motivo_perda', 'data_resultado_venda', 'created_at', 'updated_at',
-  'cliente_id',
+  'cliente_id', 'id_guindaste', 'estoque_descontado',
 ];
 
 function buildConditions(filters) {
@@ -78,7 +79,7 @@ async function findById(id) {
 }
 
 async function create(data) {
-  const { id_guindaste, id: _ignoredId, ...propostaData } = data;
+  const { id: _ignoredId, ...propostaData } = data;
 
   const nextId = randomUUID();
 
@@ -105,21 +106,7 @@ async function create(data) {
     `INSERT INTO propostas (${cols.join(', ')}) VALUES (${vals.join(', ')}) RETURNING *`,
     params
   );
-  const proposta = rows[0];
-
-  if (id_guindaste) {
-    try {
-      await query(
-        `UPDATE guindastes SET quantidade_disponivel = GREATEST(0, quantidade_disponivel - 1) WHERE id = $1`,
-        [id_guindaste]
-      );
-      console.log(`✅ [propostasService.create] Estoque decrementado: guindaste ${id_guindaste}`);
-    } catch (e) {
-      console.warn(`⚠️ [propostasService.create] Erro ao decrementar estoque:`, e.message);
-    }
-  }
-
-  return proposta;
+  return rows[0];
 }
 
 async function update(id, data) {
@@ -140,7 +127,38 @@ async function update(id, data) {
     `UPDATE propostas SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
     params
   );
-  return rows[0] || null;
+  const proposta = rows[0] || null;
+
+  // Baixa de estoque: somente ao marcar resultado_venda = 'efetivada' e se ainda não descontou
+  if (proposta && data.resultado_venda === 'efetivada' && !proposta.estoque_descontado) {
+    const guindasteId = proposta.id_guindaste;
+    if (guindasteId) {
+      try {
+        // Verificar estoque antes de descontar
+        const { rows: gRows } = await query(
+          `SELECT quantidade_disponivel FROM guindastes WHERE id = $1`, [guindasteId]
+        );
+        const qtdAtual = gRows[0]?.quantidade_disponivel || 0;
+
+        if (qtdAtual > 0) {
+          await query(
+            `UPDATE guindastes SET quantidade_disponivel = quantidade_disponivel - 1 WHERE id = $1 AND quantidade_disponivel > 0`,
+            [guindasteId]
+          );
+        }
+        // Marcar estoque_descontado = true para não descontar novamente
+        await query(
+          `UPDATE propostas SET estoque_descontado = true WHERE id = $1`, [id]
+        );
+        proposta.estoque_descontado = true;
+        console.log(`✅ [propostasService.update] Estoque descontado: guindaste ${guindasteId} (proposta ${id})`);
+      } catch (e) {
+        console.warn(`⚠️ [propostasService.update] Erro ao descontar estoque:`, e.message);
+      }
+    }
+  }
+
+  return proposta;
 }
 
 async function softDelete(id) {

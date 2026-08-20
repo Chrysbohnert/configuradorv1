@@ -31,6 +31,21 @@ const KNOWN_FIELDS = [
   'valor_instalacao_incluso', 'bloquear_desconto',
 ];
 
+async function findAllEstoque() {
+  const { rows } = await query(
+    `SELECT id, codigo_referencia, subgrupo, modelo, quantidade_disponivel FROM guindastes ORDER BY subgrupo ASC`
+  );
+  return rows;
+}
+
+async function updateEstoque(id, quantidade) {
+  const { rows } = await query(
+    `UPDATE guindastes SET quantidade_disponivel = $1 WHERE id = $2 RETURNING id, codigo_referencia, subgrupo, modelo, quantidade_disponivel`,
+    [quantidade, id]
+  );
+  return rows[0] || null;
+}
+
 async function findAll({ limit, offset, lite = false } = {}) {
   const select = lite ? LITE_COLUMNS : '*';
   let sql = `SELECT ${select} FROM guindastes ORDER BY subgrupo ASC`;
@@ -239,6 +254,8 @@ async function savePrecosCompraPorRegiao(guindasteId, precos) {
 
 module.exports = {
   findAll,
+  findAllEstoque,
+  updateEstoque,
   count,
   findById,
   findImagemById,

@@ -303,6 +303,15 @@ const DetalhesGuindaste = () => {
           </div>
         </div>
 
+        {/* Indicador de estoque */}
+        {selectedGuindaste && !loadingDetalhes && guindaste && (
+          <div className={`estoque-indicador ${(guindaste.quantidade_disponivel || 0) > 0 ? 'disponivel' : 'indisponivel'}`}>
+            {(guindaste.quantidade_disponivel || 0) > 0
+              ? `Estoque disponível: ${guindaste.quantidade_disponivel} unidade(s)`
+              : 'Sem estoque \u2014 Prazo de fabricação: 45 dias'}
+          </div>
+        )}
+
         {selectedGuindaste && loadingDetalhes && (
           <div className="carregando-detalhes">Carregando detalhes técnicos...</div>
         )}
@@ -320,9 +329,10 @@ const DetalhesGuindaste = () => {
       { label: 'Configuração', value: guindaste.configuracao },
       { label: 'NCM', value: guindaste.ncm },
       { label: 'FINAME', value: guindaste.finame },
-      { label: 'Quantidade Disponível', value: guindaste.quantidade_disponivel },
       { label: 'Protótipo', value: guindaste.is_prototipo ? (guindaste.prototipo_label || 'Sim') : 'Não' },
     ].filter(s => s.value != null && String(s.value).trim() !== '');
+
+    const qtdDisponivel = guindaste.quantidade_disponivel || 0;
 
     return (
       <div className="resumo-tecnico-section">
@@ -335,6 +345,15 @@ const DetalhesGuindaste = () => {
             </div>
           ))}
         </div>
+
+        {/* Indicador de estoque (legado/fallback) */}
+        {isLegacyMode && (
+          <div className={`estoque-indicador ${qtdDisponivel > 0 ? 'disponivel' : 'indisponivel'}`}>
+            {qtdDisponivel > 0
+              ? `Estoque disponível: ${qtdDisponivel} unidade(s)`
+              : 'Sem estoque \u2014 Prazo de fabricação: 45 dias'}
+          </div>
+        )}
 
         {guindaste.descricao && (
           <div className="descricao-tecnica">

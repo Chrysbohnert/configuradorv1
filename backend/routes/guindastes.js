@@ -22,6 +22,25 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, data, { count: total });
 }));
 
+// --- Estoque ---
+router.get('/estoque', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const data = await svc.findAllEstoque();
+  return res_.ok(res, data);
+}));
+
+router.patch('/:id/estoque', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const { quantidade_disponivel } = req.body;
+  if (quantidade_disponivel === undefined || quantidade_disponivel === null) {
+    return res_.badRequest(res, 'quantidade_disponivel é obrigatória');
+  }
+  const qtd = parseInt(quantidade_disponivel, 10);
+  if (isNaN(qtd) || qtd < 0) return res_.badRequest(res, 'quantidade_disponivel deve ser >= 0');
+
+  const data = await svc.updateEstoque(req.params.id, qtd);
+  if (!data) return res_.notFound(res, 'Guindaste não encontrado');
+  return res_.ok(res, data);
+}));
+
 router.get('/:id/preco', requireAuth, asyncHandler(async (req, res) => {
   const regiao = (req.query.regiao || '').trim();
   if (!regiao) return res_.badRequest(res, 'Query regiao é obrigatória');
