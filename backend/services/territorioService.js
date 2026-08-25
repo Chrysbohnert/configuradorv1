@@ -21,7 +21,7 @@ async function listarEntidades(tipo) {
 
   if (type === 'instaladora') {
     const { rows } = await query(
-      `SELECT id, oficina AS nome, cidade, uf, cor
+      `SELECT id, oficina AS nome, cidade, uf, NULL::text AS cor
        FROM public.fretes
        ORDER BY oficina ASC`
     );
@@ -49,11 +49,25 @@ async function listarEntidades(tipo) {
 }
 
 async function listarTodasEntidades() {
-  const [instaladoras, concessionarias, representantes] = await Promise.all([
+  // Promise.allSettled: uma falha (ex: coluna ausente em concessionarias/representantes)
+  // não derruba as outras — instaladoras continuam visíveis.
+  const [rInstaladora, rConcessionaria, rRepresentante] = await Promise.allSettled([
     listarEntidades('instaladora'),
     listarEntidades('concessionaria'),
     listarEntidades('representante'),
   ]);
+
+  if (rInstaladora.status === 'rejected')
+    console.error('[territorioService] Erro ao listar instaladoras:', rInstaladora.reason?.message);
+  if (rConcessionaria.status === 'rejected')
+    console.error('[territorioService] Erro ao listar concessionarias:', rConcessionaria.reason?.message);
+  if (rRepresentante.status === 'rejected')
+    console.error('[territorioService] Erro ao listar representantes:', rRepresentante.reason?.message);
+
+  const instaladoras    = rInstaladora.status    === 'fulfilled' ? rInstaladora.value    : [];
+  const concessionarias = rConcessionaria.status === 'fulfilled' ? rConcessionaria.value : [];
+  const representantes  = rRepresentante.status  === 'fulfilled' ? rRepresentante.value  : [];
+
   return [...instaladoras, ...concessionarias, ...representantes];
 }
 

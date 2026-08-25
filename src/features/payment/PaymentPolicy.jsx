@@ -342,8 +342,8 @@ export default function PaymentPolicy({
             data = await getFretes() || [];
           }
         } else {
-          // Modo vendedor: filtrar por região do vendedor via backend API
-          data = await getFretesPorVendedor(user?.id) || [];
+          // Modo vendedor: carregar TODOS os pontos; filtro de UF é feito no frontend
+          data = await getFretes() || [];
         }
 
         const pontosNormalizados = Array.isArray(data) ? data : [];

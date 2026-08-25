@@ -24,6 +24,26 @@ function validateType(req, res, next) {
   next();
 }
 
+// GET /api/areas/todas/entidades — lista todas as entidades territoriais
+// DEVE vir antes de /:tipo/:entidadeId para não ser capturada pelo parâmetro dinâmico
+router.get('/todas/entidades', requireAuth, asyncHandler(async (req, res) => {
+  const data = await listarTodasEntidades();
+  return res_.ok(res, data, { count: data.length });
+}));
+
+// GET /api/areas/:tipo/entidades — lista entidades de um tipo
+// DEVE vir antes de /:tipo/:entidadeId (segmento fixo 'entidades' vs param genérico)
+router.get('/:tipo/entidades', requireAuth, validateType, asyncHandler(async (req, res) => {
+  const data = await listarEntidades(req.entityType);
+  return res_.ok(res, data, { count: data.length });
+}));
+
+// GET /api/areas/:tipo/:entidadeId/instaladoras-comuns — instaladoras com municípios em comum
+router.get('/:tipo/:entidadeId/instaladoras-comuns', requireAuth, validateType, asyncHandler(async (req, res) => {
+  const data = await listarInstaladorasComAreaComum(req.entityType, req.params.entidadeId);
+  return res_.ok(res, data, { count: data.length });
+}));
+
 // GET /api/areas/:tipo/:entidadeId — lista municípios da área
 router.get('/:tipo/:entidadeId', requireAuth, validateType, asyncHandler(async (req, res) => {
   const data = await getAreas(req.entityType, req.params.entidadeId);
@@ -35,24 +55,6 @@ router.put('/:tipo/:entidadeId', requireAuth, requireAdmin, validateType, asyncH
   const areas = Array.isArray(req.body?.areas) ? req.body.areas : [];
   const data = await replaceAreas(req.entityType, req.params.entidadeId, areas);
   return res_.ok(res, data);
-}));
-
-// GET /api/areas/:tipo/:entidadeId/instaladoras-comuns — instaladoras com municípios em comum
-router.get('/:tipo/:entidadeId/instaladoras-comuns', requireAuth, validateType, asyncHandler(async (req, res) => {
-  const data = await listarInstaladorasComAreaComum(req.entityType, req.params.entidadeId);
-  return res_.ok(res, data, { count: data.length });
-}));
-
-// GET /api/areas/:tipo/entidades — lista entidades de um tipo
-router.get('/:tipo/entidades', requireAuth, validateType, asyncHandler(async (req, res) => {
-  const data = await listarEntidades(req.entityType);
-  return res_.ok(res, data, { count: data.length });
-}));
-
-// GET /api/areas/todas/entidades — lista todas as entidades territoriais
-router.get('/todas/entidades', requireAuth, asyncHandler(async (req, res) => {
-  const data = await listarTodasEntidades();
-  return res_.ok(res, data, { count: data.length });
 }));
 
 module.exports = router;

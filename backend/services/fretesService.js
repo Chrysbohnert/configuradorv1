@@ -44,14 +44,14 @@ async function getFretes(uf = null) {
 
 async function getFretesPorVendedor(vendedorId) {
   const { rows: userRows } = await query(
-    `SELECT id, estado, regiao_grupo FROM app_users WHERE id = $1`,
+    `SELECT id, regiao FROM app_users WHERE id = $1`,
     [vendedorId]
   );
 
   const vendedor = userRows[0];
   if (!vendedor) return getFretes();
 
-  const grupoRaw = vendedor.regiao_grupo || vendedor.estado;
+  const grupoRaw = vendedor.regiao;
   if (!grupoRaw) return getFretes();
 
   const ufNorm = grupoRaw.toUpperCase().trim();
