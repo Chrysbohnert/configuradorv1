@@ -35,11 +35,16 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Authorization'],
+  maxAge: 86400,
 };
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
+
+// Responder preflight OPTIONS imediatamente antes de chegar às rotas protegidas
+app.options('*', (_req, res) => res.sendStatus(204));
 
 // ─── BODY PARSING ──────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
