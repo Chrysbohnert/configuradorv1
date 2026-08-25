@@ -16,10 +16,13 @@ router.get('/', async (_req, res) => {
       environment: process.env.NODE_ENV || 'development',
     });
   } catch (err) {
+    console.error('[health] Banco indisponível:', err);
+    // AggregateError (Node pg) pode ter message vazia; expõe o primeiro erro interno.
+    const detailedMessage = err.errors?.[0]?.message || err.message || String(err);
     res.status(503).json({
       success: false,
       status: 'error',
-      database: { status: 'disconnected', error: err.message },
+      database: { status: 'disconnected', error: detailedMessage },
     });
   }
 });
