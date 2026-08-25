@@ -1,79 +1,62 @@
 /**
  * precificacaoService.js
- * Queries SQL para precificação de guindastes.
- * Centraliza as regras percentuais e os preços de venda calculados por UF.
+ * Queries SQL para precificação simplificada por equipamento/referência.
+ * Os campos de frete e instalação são lidos das fontes já existentes.
  */
 
 const { query } = require('../db/pool');
 
-const REGRA_FIELDS = [
-  'uf',
-  'descricao',
+const PRECIFICACAO_FIELDS = [
+  'guindaste_id',
   'custo_fixo_percent',
   'comissao_percent',
   'assistencia_percent',
   'margem_lucro_percent',
-  'icms_percent',
-  'ipi_percent',
-  'pis_percent',
-  'cofins_percent',
-  'outros_impostos_percent',
-  'ativo',
 ];
 
-function normalizarUf(uf) {
-  const v = String(uf || '').trim().toUpperCase();
-  return v === '' || v === 'NULL' || v === 'DEFAULT' ? null : v;
-}
-
-async function findAllRegras() {
+async function findAll() {
   const { rows } = await query(
-    `SELECT * FROM regras_precificacao ORDER BY uf NULLS FIRST, created_at DESC`
+    `SELECT
+       p.*,
+       g.codigo_referencia,
+       g.subgrupo,
+       g.modelo,
+       g.custo_mp,
+       g.custo_mo
+     FROM public.precificacao p
+     JOIN public.guindastes g ON g.id = p.guindaste_id
+     ORDER BY g.subgrupo ASC, g.modelo ASC`
   );
   return rows;
 }
 
-async function findRegraById(id) {
+async function findByGuindasteId(guindasteId) {
   const { rows } = await query(
-    `SELECT * FROM regras_precificacao WHERE id = $1`,
-    [id]
+    `SELECT *
+     FROM public.precificacao
+     WHERE guindaste_id = $1`,
+    [guindasteId]
   );
   return rows[0] || null;
 }
 
-async function findRegraByUf(uf) {
-  const normalized = normalizarUf(uf);
-  const { rows } = await query(
-    `SELECT * FROM regras_precificacao WHERE (uf IS NOT DISTINCT FROM $1) AND ativo = TRUE`,
-    [normalized]
-  );
-  return rows[0] || null;
-}
-
-async function upsertRegra(data) {
-  const uf = normalizarUf(data.uf);
-  const existing = await findRegraByUf(uf);
-
-  const payload = {};
-  REGRA_FIELDS.forEach((f) => {
-    if (data[f] !== undefined) {
-      payload[f] = data[f];
-    }
-  });
-  payload.uf = uf;
+async function upsert(data) {
+  const existing = await findByGuindasteId(data.guindaste_id);
 
   if (existing) {
     const sets = [];
     const params = [];
-    Object.keys(payload).forEach((key) => {
-      if (key === 'id' || key === 'created_at') return;
-      params.push(payload[key] === '' ? null : payload[key]);
-      sets.push(`"${key}" = $${params.length}`);
+    PRECIFICACAO_FIELDS.forEach((f) => {
+      if (f === 'guindaste_id') return;
+      if (data[f] !== undefined) {
+        params.push(data[f] === '' ? 0 : Number(data[f]));
+        sets.push(`"${f}" = $${params.length}`);
+      }
     });
     if (sets.length === 0) throw new Error('Nenhum campo para atualizar');
     params.push(existing.id);
     const { rows } = await query(
-      `UPDATE regras_precificacao SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      `UPDATE public.precificacao SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
       params
     );
     return rows[0];
@@ -82,116 +65,63 @@ async function upsertRegra(data) {
   const cols = [];
   const vals = [];
   const params = [];
-  Object.keys(payload).forEach((key) => {
-    if (payload[key] === undefined) return;
-    cols.push(`"${key}"`);
-    params.push(payload[key] === '' ? null : payload[key]);
+  PRECIFICACAO_FIELDS.forEach((f) => {
+    const value = data[f] === '' ? 0 : Number(data[f]);
+    cols.push(`"${f}"`);
+    params.push(value);
     vals.push(`$${params.length}`);
   });
-  if (cols.length === 0) throw new Error('Nenhum campo fornecido');
 
   const { rows } = await query(
-    `INSERT INTO regras_precificacao (${cols.join(', ')}) VALUES (${vals.join(', ')}) RETURNING *`,
+    `INSERT INTO public.precificacao (${cols.join(', ')}) VALUES (${vals.join(', ')}) RETURNING *`,
     params
   );
   return rows[0];
 }
 
-async function removeRegra(id) {
+async function remove(id) {
   const { rowCount } = await query(
-    `DELETE FROM regras_precificacao WHERE id = $1`,
+    `DELETE FROM public.precificacao WHERE id = $1`,
     [id]
   );
   return rowCount > 0;
 }
 
-async function calcularPreco(guindasteId, uf) {
+async function calcularPrecoBase(guindasteId) {
   const { rows } = await query(
-    `SELECT public.calcular_preco_venda($1, $2) AS preco`,
-    [guindasteId, normalizarUf(uf)]
+    `SELECT public.calcular_preco_base($1) AS preco`,
+    [guindasteId]
   );
   return Number(rows[0]?.preco) || 0;
 }
 
-async function findAllGuindastesComCusto() {
+async function listarEquipamentosComCusto() {
   const { rows } = await query(
     `SELECT
-      id, subgrupo, modelo, codigo_referencia, peso_kg,
-      custo_mp, custo_mo
-     FROM guindastes
-     ORDER BY subgrupo ASC`
+       g.id,
+       g.codigo_referencia,
+       g.subgrupo,
+       g.modelo,
+       g.custo_mp,
+       g.custo_mo,
+       p.id AS precificacao_id,
+       p.custo_fixo_percent,
+       p.comissao_percent,
+       p.assistencia_percent,
+       p.margem_lucro_percent,
+       public.calcular_preco_base(g.id) AS preco_base_calculado
+     FROM public.guindastes g
+     LEFT JOIN public.precificacao p ON p.guindaste_id = g.id
+     ORDER BY g.subgrupo ASC, g.modelo ASC`
   );
   return rows;
-}
-
-async function findPrecosCalculados({ guindaste_id, uf } = {}) {
-  const conditions = [];
-  const params = [];
-
-  if (guindaste_id) {
-    params.push(guindaste_id);
-    conditions.push(`guindaste_id = $${params.length}`);
-  }
-  if (uf !== undefined && uf !== null) {
-    params.push(normalizarUf(uf));
-    conditions.push(`uf = $${params.length}`);
-  }
-
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-  const { rows } = await query(
-    `SELECT * FROM precos_venda_guindaste_uf ${where} ORDER BY updated_at DESC`,
-    params
-  );
-  return rows;
-}
-
-async function upsertPrecoCalculado({ guindaste_id, uf, preco_calculado, formula_snapshot }) {
-  const normalizedUf = normalizarUf(uf);
-  const { rows } = await query(
-    `INSERT INTO precos_venda_guindaste_uf (guindaste_id, uf, preco_calculado, formula_snapshot)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (guindaste_id, uf)
-     DO UPDATE SET
-       preco_calculado = EXCLUDED.preco_calculado,
-       formula_snapshot = EXCLUDED.formula_snapshot,
-       updated_at = NOW()
-     RETURNING *`,
-    [guindaste_id, normalizedUf, preco_calculado, formula_snapshot || null]
-  );
-  return rows[0];
-}
-
-async function recalcularTodosPorUf(uf) {
-  const normalizedUf = normalizarUf(uf);
-  const { rows: guindastes } = await query(
-    `SELECT id FROM guindastes`
-  );
-
-  const resultados = [];
-  for (const g of guindastes) {
-    const preco = await calcularPreco(g.id, normalizedUf);
-    if (preco > 0) {
-      const row = await upsertPrecoCalculado({
-        guindaste_id: g.id,
-        uf: normalizedUf,
-        preco_calculado: preco,
-        formula_snapshot: null,
-      });
-      resultados.push(row);
-    }
-  }
-  return resultados;
 }
 
 module.exports = {
-  findAllRegras,
-  findRegraById,
-  findRegraByUf,
-  upsertRegra,
-  removeRegra,
-  calcularPreco,
-  findAllGuindastesComCusto,
-  findPrecosCalculados,
-  upsertPrecoCalculado,
-  recalcularTodosPorUf,
+  findAll,
+  findByGuindasteId,
+  upsert,
+  remove,
+  calcularPrecoBase,
+  listarEquipamentosComCusto,
 };

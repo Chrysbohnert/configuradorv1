@@ -1,7 +1,6 @@
 /* =====================================================
-   ESTILOS - PRECIFICAÇÃO
-   Funcionalidade paralela/em preparação para formação
-   de preço dos guindastes por UF.
+   ESTILOS - PRECIFICAÇÃO SIMPLIFICADA
+   Formação de preço por equipamento/referência.
    ===================================================== */
 
 .precificacao-page {
@@ -11,7 +10,7 @@
 }
 
 .precificacao-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -61,144 +60,51 @@
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
 
-.precificacao-tabs {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid #e2e8f0;
-  margin-bottom: 24px;
-  padding-bottom: 12px;
-}
-
-.precificacao-tab {
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
-  border-radius: 10px;
-  padding: 10px 16px;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.precificacao-tab:hover {
-  border-color: #94a3b8;
-  color: #0f172a;
-}
-
-.precificacao-tab.active {
-  border-color: #0f172a;
-  background: #0f172a;
-  color: #ffffff;
-}
-
-.precificacao-section-title {
-  font-size: 18px;
-  font-weight: 800;
-  color: #0f172a;
-  margin: 0 0 6px 0;
-}
-
-.precificacao-section-subtitle {
-  font-size: 13px;
-  color: #64748b;
-  margin: 0 0 20px 0;
-}
-
-/* Formulários */
-.precificacao-form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
+.precificacao-info-box {
+  background: #f8fafc;
+  border-left: 4px solid #0f172a;
+  padding: 16px;
+  border-radius: 0 10px 10px 0;
   margin-bottom: 20px;
 }
 
-.precificacao-form-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+.precificacao-info-box p {
+  margin: 0;
+  font-size: 13px;
+  color: #475569;
+  line-height: 1.5;
 }
 
-.precificacao-form-group label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.precificacao-form-group input,
-.precificacao-form-group select {
-  border: 1px solid #cbd5e1;
-  border-radius: 10px;
-  padding: 10px 12px;
-  font-size: 14px;
+.precificacao-info-box strong {
   color: #0f172a;
-  background: #fff;
-  outline: none;
 }
 
-.precificacao-form-group input:focus,
-.precificacao-form-group select:focus {
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
-}
-
-.precificacao-form-actions {
-  display: flex;
-  gap: 10px;
-  margin-top: 8px;
-}
-
-/* Botões */
-.precificacao-btn {
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #0f172a;
+/* Status / Toast */
+.precificacao-status {
+  padding: 12px 14px;
   border-radius: 10px;
-  padding: 10px 16px;
+  margin: 0 0 16px 0;
   font-weight: 700;
   font-size: 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
-.precificacao-btn:hover {
-  background: #f8fafc;
+.precificacao-status.success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
 }
 
-.precificacao-btn.primary {
-  border-color: #2563eb;
-  background: #2563eb;
-  color: #fff;
+.precificacao-status.error {
+  background: #fee2e2;
+  color: #7f1d1d;
+  border: 1px solid #fecaca;
 }
 
-.precificacao-btn.primary:hover {
-  background: #1d4ed8;
-}
-
-.precificacao-btn.danger {
-  border-color: #dc2626;
-  background: #fff;
-  color: #dc2626;
-}
-
-.precificacao-btn.danger:hover {
-  background: #fef2f2;
-}
-
-.precificacao-btn.small {
-  padding: 6px 10px;
-  font-size: 12px;
-}
-
-/* Tabelas */
+/* Tabela */
 .precificacao-table-wrap {
   overflow-x: auto;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
-  margin-top: 16px;
 }
 
 .precificacao-table {
@@ -236,72 +142,59 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Status e avisos */
-.precificacao-status {
-  padding: 12px 14px;
-  border-radius: 10px;
-  margin: 12px 0;
-  font-weight: 700;
+/* Inputs inline */
+.precificacao-input {
+  width: 80px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 8px;
   font-size: 13px;
-}
-
-.precificacao-status.success {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
-}
-
-.precificacao-status.error {
-  background: #fee2e2;
-  color: #7f1d1d;
-  border: 1px solid #fecaca;
-}
-
-.precificacao-status.info {
-  background: #e0f2fe;
-  color: #075985;
-  border: 1px solid #7dd3fc;
-}
-
-/* Simulador */
-.precificacao-simulador {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 20px;
-}
-
-.precificacao-simulador-result {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.precificacao-simulador-card {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 14px;
-}
-
-.precificacao-simulador-card .label {
-  font-size: 11px;
-  font-weight: 700;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  margin-bottom: 6px;
-}
-
-.precificacao-simulador-card .value {
-  font-size: 18px;
-  font-weight: 800;
   color: #0f172a;
+  text-align: right;
 }
 
-.precificacao-simulador-card .value.highlight {
-  color: #2563eb;
+.precificacao-input:focus {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
+/* Botões */
+.precificacao-btn {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.precificacao-btn:hover {
+  background: #f8fafc;
+}
+
+.precificacao-btn.primary {
+  border-color: #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.precificacao-btn.primary:hover {
+  background: #1d4ed8;
+}
+
+.precificacao-btn.small {
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.precificacao-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
 }
 
 /* Loading / Empty */
@@ -319,7 +212,6 @@
   background: #f8fafc;
   border: 1px dashed #cbd5e1;
   border-radius: 12px;
-  margin-top: 16px;
 }
 
 .precificacao-empty h3 {
@@ -333,50 +225,14 @@
   font-size: 13px;
 }
 
-/* Inline tags */
-.precificacao-tag {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  background: #e2e8f0;
-  color: #475569;
-}
+@media (max-width: 768px) {
+  .precificacao-table th,
+  .precificacao-table td {
+    padding: 10px 8px;
+    font-size: 12px;
+  }
 
-.precificacao-tag.default {
-  background: #dcfce7;
-  color: #166534;
-}
-
-.precificacao-tag.uf {
-  background: #e0e7ff;
-  color: #3730a3;
-}
-
-/* Info box */
-.precificacao-info-box {
-  background: #f8fafc;
-  border-left: 4px solid #0f172a;
-  padding: 16px;
-  border-radius: 0 10px 10px 0;
-  margin-bottom: 20px;
-}
-
-.precificacao-info-box p {
-  margin: 0;
-  font-size: 13px;
-  color: #475569;
-  line-height: 1.5;
-}
-
-.precificacao-info-box strong {
-  color: #0f172a;
-}
-
-@media (max-width: 640px) {
-  .precificacao-form-grid {
-    grid-template-columns: 1fr;
+  .precificacao-input {
+    width: 64px;
   }
 }
