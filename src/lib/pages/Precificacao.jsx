@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { formatCurrency } from '../../utils/formatters';
 import {
@@ -13,6 +13,23 @@ import {
   atualizarRegraTributacao,
   excluirRegraTributacao,
 } from '../../api/tributacao';
+import {
+  listarCondicoes,
+  criarCondicao,
+  atualizarCondicao,
+  excluirCondicao,
+} from '../../api/precificacaoCondicoes';
+import {
+  getParametros,
+  salvarParametros,
+} from '../../api/precificacaoParametros';
+import {
+  simular,
+  simularESalvar,
+  listarHistorico,
+  excluirHistorico,
+} from '../../api/precificacaoSimulador';
+import { calcularPreco } from '../pricingEngine';
 import '../../styles/Precificacao.css';
 
 const UFS = [
@@ -61,6 +78,13 @@ function formatarInstalacao(cliente, incluso) {
   return partes.length > 0 ? partes.join(' / ') : '—';
 }
 
+function formatarPercent(v) {
+  return `${Number(v || 0).toFixed(2)}%`;
+}
+
+// =============================
+// 1. Equipamentos
+// =============================
 function PrecificacaoEquipamentos({ showToast }) {
   const [isLoading, setIsLoading] = useState(false);
   const [equipamentos, setEquipamentos] = useState([]);
@@ -306,6 +330,9 @@ function PrecificacaoEquipamentos({ showToast }) {
   );
 }
 
+// =============================
+// 2. Tributação
+// =============================
 const EMPTY_TRIBUTACAO_FORM = {
   ncm: '',
   icms_contribuinte_percent: '',
@@ -427,8 +454,7 @@ function Tributacao({ showToast }) {
     <section>
       <h2 className="precificacao-section-title">Tributação</h2>
       <p className="precificacao-section-subtitle">
-        Cadastro de regras tributárias por UF + NCM. Por enquanto apenas preparação;
-        não afeta cálculo de propostas.
+        Cadastro de regras tributárias por UF + NCM. Usada apenas no simulador da nova precificação.
       </p>
 
       <div className="precificacao-form-box">
@@ -671,19 +697,773 @@ function LinhaTributacao({ regra, isEditing, onEdit, onSave, onCancel, onDelete,
   );
 }
 
+// =============================
+// 3. Condições de pagamento
+// =============================
+const EMPTY_CONDICAO_FORM = {
+  descricao: '',
+  entrada_percent: '',
+  parcelas: '1',
+  taxa_mensal: '',
+};
+
+function CondicoesPagamento({ showToast }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [condicoes, setCondicoes] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState({ ...EMPTY_CONDICAO_FORM });
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const load = async () => {
+    setIsLoading(true);
+    try {
+      const data = await listarCondicoes({ ativo: true });
+      setCondicoes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar condições:', error);
+      showToast('error', 'Erro ao carregar condições de pagamento.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setEditingId(null);
+    setForm({ ...EMPTY_CONDICAO_FORM });
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      if (editingId) {
+        await atualizarCondicao(editingId, form);
+        showToast('success', 'Condição atualizada!');
+      } else {
+        await criarCondicao(form);
+        showToast('success', 'Condição criada!');
+      }
+      reset();
+      load();
+    } catch (error) {
+      console.error('Erro ao salvar condição:', error);
+      showToast('error', error.message || 'Erro ao salvar condição.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (c) => {
+    setEditingId(c.id);
+    setForm({
+      descricao: c.descricao || '',
+      entrada_percent: c.entrada_percent ?? '',
+      parcelas: String(c.parcelas ?? 1),
+      taxa_mensal: c.taxa_mensal ?? '',
+    });
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Excluir condição?')) return;
+    setIsLoading(true);
+    try {
+      await excluirCondicao(id);
+      showToast('success', 'Condição excluída!');
+      load();
+    } catch (error) {
+      console.error('Erro ao excluir condição:', error);
+      showToast('error', error.message || 'Erro ao excluir condição.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="precificacao-section-title">Condições de pagamento</h2>
+      <p className="precificacao-section-subtitle">
+        Condições isoladas para testes no simulador. Não afetam planos de pagamento existentes.
+      </p>
+
+      <div className="precificacao-form-box">
+        <form onSubmit={handleSubmit} className="precificacao-form-grid">
+          <div className="precificacao-form-group">
+            <label>Descrição</label>
+            <input
+              type="text"
+              value={form.descricao}
+              onChange={(e) => handleChange('descricao', e.target.value)}
+              placeholder="Ex: 30% entrada + 5x"
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Entrada (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.01"
+              value={form.entrada_percent}
+              onChange={(e) => handleChange('entrada_percent', e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Parcelas</label>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              step="1"
+              value={form.parcelas}
+              onChange={(e) => handleChange('parcelas', e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Taxa mensal (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.taxa_mensal}
+              onChange={(e) => handleChange('taxa_mensal', e.target.value)}
+              placeholder="0,00"
+            />
+          </div>
+          <div className="precificacao-form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button type="submit" className="precificacao-btn primary" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : (editingId ? 'Atualizar' : 'Adicionar')}
+            </button>
+            {editingId && (
+              <button type="button" className="precificacao-btn" onClick={reset} style={{ marginLeft: 8 }}>
+                Cancelar
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      {isLoading && condicoes.length === 0 ? (
+        <div className="precificacao-loading">Carregando...</div>
+      ) : condicoes.length === 0 ? (
+        <div className="precificacao-empty">
+          <h3>Nenhuma condição cadastrada</h3>
+        </div>
+      ) : (
+        <div className="precificacao-table-wrap">
+          <table className="precificacao-table">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th className="numeric">Entrada %</th>
+                <th className="numeric">Parcelas</th>
+                <th className="numeric">Taxa mensal %</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {condicoes.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.descricao || '—'}</td>
+                  <td className="numeric">{formatarPercent(c.entrada_percent)}</td>
+                  <td className="numeric">{c.parcelas}x</td>
+                  <td className="numeric">{formatarPercent(c.taxa_mensal)}</td>
+                  <td>
+                    <div className="precificacao-row-actions">
+                      <button className="precificacao-btn small" onClick={() => handleEdit(c)}>Editar</button>
+                      <button className="precificacao-btn small danger" onClick={() => handleDelete(c.id)}>Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// =============================
+// 4. Parâmetros
+// =============================
+function Parametros({ showToast }) {
+  const [isLoading, setIsLoading] = useState(false);
+  const [form, setForm] = useState({
+    comissao_base_vendedor_percent: '',
+    desconto_comercial_max_percent: '',
+    comissao_cedivel_max_percent: '',
+    irpj_csll_percent: '',
+  });
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const load = async () => {
+    try {
+      const data = await getParametros();
+      setForm({
+        comissao_base_vendedor_percent: data.comissao_base_vendedor_percent ?? '',
+        desconto_comercial_max_percent: data.desconto_comercial_max_percent ?? '',
+        comissao_cedivel_max_percent: data.comissao_cedivel_max_percent ?? '',
+        irpj_csll_percent: data.irpj_csll_percent ?? '',
+      });
+    } catch (error) {
+      console.error('Erro ao carregar parâmetros:', error);
+      showToast('error', 'Erro ao carregar parâmetros.');
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      await salvarParametros({
+        comissao_base_vendedor_percent: form.comissao_base_vendedor_percent,
+        desconto_comercial_max_percent: form.desconto_comercial_max_percent,
+        comissao_cedivel_max_percent: form.comissao_cedivel_max_percent,
+        irpj_csll_percent: form.irpj_csll_percent,
+      });
+      showToast('success', 'Parâmetros salvos!');
+      load();
+    } catch (error) {
+      console.error('Erro ao salvar parâmetros:', error);
+      showToast('error', error.message || 'Erro ao salvar parâmetros.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="precificacao-section-title">Parâmetros</h2>
+      <p className="precificacao-section-subtitle">
+        Configurações globais usadas apenas no cálculo do simulador.
+      </p>
+
+      <div className="precificacao-form-box">
+        <form onSubmit={handleSubmit} className="precificacao-form-grid">
+          <div className="precificacao-form-group">
+            <label>Comissão base do vendedor (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.comissao_base_vendedor_percent}
+              onChange={(e) => handleChange('comissao_base_vendedor_percent', e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Desconto comercial máximo (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.desconto_comercial_max_percent}
+              onChange={(e) => handleChange('desconto_comercial_max_percent', e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Máx. da própria comissão que o vendedor pode ceder (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.comissao_cedivel_max_percent}
+              onChange={(e) => handleChange('comissao_cedivel_max_percent', e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>IRPJ/CSLL sobre margem (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={form.irpj_csll_percent}
+              onChange={(e) => handleChange('irpj_csll_percent', e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
+            <button type="submit" className="precificacao-btn primary" disabled={isLoading}>
+              {isLoading ? 'Salvando...' : 'Salvar parâmetros'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  );
+}
+
+// =============================
+// 5. Simulador
+// =============================
+function Simulador({ showToast }) {
+  const [equipamentos, setEquipamentos] = useState([]);
+  const [condicoes, setCondicoes] = useState([]);
+  const [parametros, setParametros] = useState({});
+  const [tributacoes, setTributacoes] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [resultado, setResultado] = useState(null);
+
+  const [guindasteId, setGuindasteId] = useState('');
+  const [uf, setUf] = useState('');
+  const [contribuinteStr, setContribuinteStr] = useState('true');
+  const contribuinte = contribuinteStr === 'true';
+  const [condicaoId, setCondicaoId] = useState('');
+  const [descontoComercial, setDescontoComercial] = useState('');
+  const [descontoComissao, setDescontoComissao] = useState('');
+  const [frete, setFrete] = useState('');
+  const [instalacao, setInstalacao] = useState('');
+
+  useEffect(() => {
+    loadBase();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const loadBase = async () => {
+    try {
+      const [eq, cond, par, trib] = await Promise.all([
+        getEquipamentosComPrecificacao(),
+        listarCondicoes({ ativo: true }),
+        getParametros(),
+        getRegrasTributacao(),
+      ]);
+      setEquipamentos(eq || []);
+      setCondicoes(cond || []);
+      setParametros(par || {});
+      setTributacoes(trib || []);
+    } catch (error) {
+      console.error('Erro ao carregar base do simulador:', error);
+      showToast('error', 'Erro ao carregar dados do simulador.');
+    }
+  };
+
+  const equipamentoSelecionado = useMemo(() => {
+    return equipamentos.find((e) => String(e.id) === String(guindasteId));
+  }, [equipamentos, guindasteId]);
+
+  const ncmEquipamento = equipamentoSelecionado?.ncm || '';
+  const tributacaoSelecionada = useMemo(() => {
+    if (!uf) return null;
+    return tributacoes.find((t) => t.uf === uf && t.ncm === (ncmEquipamento || t.ncm));
+  }, [tributacoes, uf, ncmEquipamento]);
+
+  const condicaoSelecionada = useMemo(() => {
+    return condicoes.find((c) => String(c.id) === String(condicaoId));
+  }, [condicoes, condicaoId]);
+
+  const calcularLocal = () => {
+    if (!equipamentoSelecionado) return null;
+
+    const icmsPct = contribuinte
+      ? tributacaoSelecionada?.icms_contribuinte_percent
+      : tributacaoSelecionada?.icms_nao_contribuinte_percent;
+
+    const input = {
+      custo_mp: equipamentoSelecionado.custo_mp,
+      custo_mo: equipamentoSelecionado.custo_mo,
+      equipamento: {
+        custo_fixo_percent: equipamentoSelecionado.custo_fixo_percent,
+        comissao_percent: equipamentoSelecionado.comissao_percent,
+        assistencia_percent: equipamentoSelecionado.assistencia_percent,
+        margem_lucro_percent: equipamentoSelecionado.margem_lucro_percent,
+      },
+      tributacao: {
+        icms_percent: icmsPct ?? 0,
+        pis_cofins_percent: tributacaoSelecionada?.pis_cofins_percent ?? 0,
+      },
+      condicao: {
+        entrada_percent: condicaoSelecionada?.entrada_percent ?? 0,
+        parcelas: condicaoSelecionada?.parcelas ?? 1,
+        taxa_mensal: condicaoSelecionada?.taxa_mensal ?? 0,
+      },
+      parametros,
+      contribuinte,
+      desconto_comercial_percent: descontoComercial,
+      desconto_da_comissao_percent: descontoComissao,
+      frete,
+      instalacao,
+    };
+
+    return calcularPreco(input);
+  };
+
+  const handleSimular = async () => {
+    if (!equipamentoSelecionado) {
+      showToast('error', 'Selecione um equipamento.');
+      return;
+    }
+    if (!uf) {
+      showToast('error', 'Selecione uma UF.');
+      return;
+    }
+    if (!condicaoSelecionada) {
+      showToast('error', 'Selecione uma condição de pagamento.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await simular({
+        guindaste_id: guindasteId,
+        uf,
+        contribuinte,
+        condicao_id: condicaoId,
+        desconto_comercial_percent: descontoComercial,
+        desconto_da_comissao_percent: descontoComissao,
+        frete,
+        instalacao,
+      });
+      setResultado(data);
+      showToast('success', 'Simulação concluída!');
+    } catch (error) {
+      console.error('Erro na simulação:', error);
+      showToast('error', error.message || 'Erro na simulação.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSalvar = async () => {
+    if (!equipamentoSelecionado || !uf || !condicaoSelecionada) {
+      showToast('error', 'Preencha equipamento, UF e condição.');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const data = await simularESalvar({
+        guindaste_id: guindasteId,
+        uf,
+        contribuinte,
+        condicao_id: condicaoId,
+        desconto_comercial_percent: descontoComercial,
+        desconto_da_comissao_percent: descontoComissao,
+        frete,
+        instalacao,
+      });
+      setResultado(data.resultado);
+      showToast('success', 'Simulação salva no histórico!');
+    } catch (error) {
+      console.error('Erro ao salvar simulação:', error);
+      showToast('error', error.message || 'Erro ao salvar simulação.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resultadoPreview = calcularLocal();
+
+  const ncmOptions = useMemo(() => {
+    const set = new Set(equipamentos.map((e) => e.ncm).filter(Boolean));
+    return Array.from(set);
+  }, [equipamentos]);
+
+  return (
+    <section>
+      <h2 className="precificacao-section-title">Simulador</h2>
+      <p className="precificacao-section-subtitle">
+        Teste a nova regra de precificação sem gerar proposta. Não alimenta nenhum fluxo de produção.
+      </p>
+
+      <div className="precificacao-form-box">
+        <form className="precificacao-form-grid" onSubmit={(e) => { e.preventDefault(); handleSimular(); }}>
+          <div className="precificacao-form-group">
+            <label>Equipamento</label>
+            <select value={guindasteId} onChange={(e) => setGuindasteId(e.target.value)}>
+              <option value="">Selecione</option>
+              {equipamentos.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.codigo_referencia || e.modelo} — {e.subgrupo}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="precificacao-form-group">
+            <label>UF</label>
+            <select value={uf} onChange={(e) => setUf(e.target.value)}>
+              <option value="">Selecione</option>
+              {UFS.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
+          </div>
+          <div className="precificacao-form-group">
+            <label>Contribuinte ICMS?</label>
+            <select value={contribuinteStr} onChange={(e) => setContribuinteStr(e.target.value)}>
+              <option value="true">Sim</option>
+              <option value="false">Não</option>
+            </select>
+          </div>
+          <div className="precificacao-form-group">
+            <label>Condição de pagamento</label>
+            <select value={condicaoId} onChange={(e) => setCondicaoId(e.target.value)}>
+              <option value="">Selecione</option>
+              {condicoes.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.descricao || `${c.entrada_percent}% entrada + ${c.parcelas}x`}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="precificacao-form-group">
+            <label>Desconto comercial (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={descontoComercial}
+              onChange={(e) => setDescontoComercial(e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Desconto da comissão (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={descontoComissao}
+              onChange={(e) => setDescontoComissao(e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Frete (R$)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={frete}
+              onChange={(e) => setFrete(e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Instalação (R$)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={instalacao}
+              onChange={(e) => setInstalacao(e.target.value)}
+            />
+          </div>
+          <div className="precificacao-form-group" style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+            <button type="submit" className="precificacao-btn primary" disabled={isLoading}>
+              {isLoading ? 'Calculando...' : 'Simular'}
+            </button>
+            <button type="button" className="precificacao-btn" onClick={handleSalvar} disabled={isLoading}>
+              Simular e salvar
+            </button>
+          </div>
+        </form>
+      </div>
+
+      {(resultado || resultadoPreview) && (
+        <div className="precificacao-resultado">
+          <h3>Resultado</h3>
+          <ResultadoSimulacao resultado={resultado || resultadoPreview} />
+        </div>
+      )}
+
+      {ncmOptions.length === 0 && equipamentos.length > 0 && (
+        <div className="precificacao-info-box" style={{ marginTop: 16 }}>
+          <p>
+            <strong>Atenção:</strong> os equipamentos não possuem NCM cadastrada. A tributação pode não ser encontrada.
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ResultadoSimulacao({ resultado }) {
+  if (!resultado) return null;
+  const p = resultado.pagamento || {};
+  const c = resultado.comissao || {};
+  const m = resultado.margem || {};
+  const l = resultado.logistica || {};
+
+  return (
+    <div className="precificacao-resultado-grid">
+      <div className="precificacao-resultado-card">
+        <span className="label">Preço base / tabela</span>
+        <span className="value">{formatCurrency(resultado.preco_tabela || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Preço final</span>
+        <span className="value">{formatCurrency(resultado.preco_final || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Entrada ({formatarPercent(p.entrada_percent)})</span>
+        <span className="value">{formatCurrency(p.entrada_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Saldo parcelado</span>
+        <span className="value">{formatCurrency(p.saldo_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Parcelas</span>
+        <span className="value">{(p.parcelas || []).map((par) => `${par.numero}x ${formatCurrency(par.valor)}`).join(', ')}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Comissão original</span>
+        <span className="value">{formatarPercent(c.equipamento_percent)} = {formatCurrency(c.equipamento_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Comissão cedida</span>
+        <span className="value">{formatCurrency(c.cedida_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Comissão final</span>
+        <span className="value">{formatCurrency(c.final_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Margem bruta</span>
+        <span className="value">{formatarPercent(m.percentual)} = {formatCurrency(m.bruta_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Margem líquida (IRPJ/CSLL)</span>
+        <span className="value">{formatCurrency(m.liquida_valor || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Frete</span>
+        <span className="value">{formatCurrency(l.frete || 0)}</span>
+      </div>
+      <div className="precificacao-resultado-card">
+        <span className="label">Instalação</span>
+        <span className="value">{formatCurrency(l.instalacao || 0)}</span>
+      </div>
+    </div>
+  );
+}
+
+// =============================
+// 6. Histórico
+// =============================
+function Historico({ showToast }) {
+  const [historico, setHistorico] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selecionado, setSelecionado] = useState(null);
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const load = async () => {
+    setIsLoading(true);
+    try {
+      const data = await listarHistorico({ limit: 50 });
+      setHistorico(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar histórico:', error);
+      showToast('error', 'Erro ao carregar histórico.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Excluir snapshot do histórico?')) return;
+    try {
+      await excluirHistorico(id);
+      showToast('success', 'Snapshot excluído!');
+      load();
+      if (selecionado?.id === id) setSelecionado(null);
+    } catch (error) {
+      console.error('Erro ao excluir histórico:', error);
+      showToast('error', error.message || 'Erro ao excluir histórico.');
+    }
+  };
+
+  return (
+    <section>
+      <h2 className="precificacao-section-title">Histórico de teste</h2>
+      <p className="precificacao-section-subtitle">
+        Snapshots das simulações salvas. Preservam as regras e valores utilizados no momento do cálculo.
+      </p>
+
+      {isLoading && historico.length === 0 ? (
+        <div className="precificacao-loading">Carregando histórico...</div>
+      ) : historico.length === 0 ? (
+        <div className="precificacao-empty">
+          <h3>Nenhum snapshot salvo</h3>
+          <p>Use "Simular e salvar" para guardar uma precificação.</p>
+        </div>
+      ) : (
+        <div className="precificacao-table-wrap">
+          <table className="precificacao-table">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Equipamento</th>
+                <th>UF</th>
+                <th className="numeric">Preço final</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              {historico.map((h) => {
+                const eq = h.equipamento || {};
+                const res = h.resultado || {};
+                return (
+                  <React.Fragment key={h.id}>
+                    <tr>
+                      <td>{new Date(h.created_at).toLocaleString('pt-BR')}</td>
+                      <td>{eq.codigo_referencia || eq.modelo || '—'}</td>
+                      <td>{(h.tributacao || {}).uf || '—'}</td>
+                      <td className="numeric">{formatCurrency(res.preco_final || 0)}</td>
+                      <td>
+                        <div className="precificacao-row-actions">
+                          <button
+                            className="precificacao-btn small"
+                            onClick={() => setSelecionado(selecionado?.id === h.id ? null : h)}
+                          >
+                            {selecionado?.id === h.id ? 'Ocultar' : 'Detalhes'}
+                          </button>
+                          <button className="precificacao-btn small danger" onClick={() => handleDelete(h.id)}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                    {selecionado?.id === h.id && (
+                      <tr>
+                        <td colSpan={5} style={{ padding: 0 }}>
+                          <div className="precificacao-form-box" style={{ margin: 12, background: '#f8fafc' }}>
+                            <h4>Detalhes do snapshot</h4>
+                            <ResultadoSimulacao resultado={res} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
+
+// =============================
+// Página principal
+// =============================
 export default function Precificacao() {
-  const navigate = useNavigate();
   const { user } = useOutletContext();
   const [activeTab, setActiveTab] = useState('precificacao');
   const [toast, setToast] = useState({ type: '', message: '' });
-
-  useEffect(() => {
-    if (!user) return;
-    if (user.tipo !== 'admin') {
-      navigate('/dashboard-admin');
-      return;
-    }
-  }, [user, navigate]);
 
   const showToast = (type, message) => {
     setToast({ type, message });
@@ -700,7 +1480,7 @@ export default function Precificacao() {
         showUserInfo={true}
         user={user}
         title="Precificação"
-        subtitle="Formação de preço e tributação por equipamento/UF (preparação)"
+        subtitle="Formação de preço, tributação e simulador (ambiente de teste)"
       />
 
       <div className="precificacao-container">
@@ -708,12 +1488,11 @@ export default function Precificacao() {
           <div>
             <h1>Precificação</h1>
             <p>
-              Configure os percentuais de precificação por equipamento e as regras
-              tributárias por UF + NCM. Estas funcionalidades estão em preparação e
-              ainda não alteram propostas ou preços em produção.
+              Configure equipamentos, tributação, condições e parâmetros; teste tudo no simulador.
+              Esta área está isolada e ainda não altera propostas, preços em produção ou PDFs.
             </p>
           </div>
-          <span className="precificacao-badge">Em preparação</span>
+          <span className="precificacao-badge">Em teste</span>
         </div>
 
         <div className="precificacao-content">
@@ -723,29 +1502,37 @@ export default function Precificacao() {
 
           <div className="precificacao-info-box">
             <p>
-              <strong>Fontes atuais mantidas:</strong> fretes, instalação, planos de
-              pagamento, propostas e PDF. Não há integração automática com a nova
-              precificação/tributação.
+              <strong>Isolamento mantido:</strong> fretes, instalação, planos de pagamento,
+              propostas e PDFs continuam usando as fontes atuais. A nova precificação não
+              alimenta nenhum fluxo de produção.
             </p>
           </div>
 
           <div className="precificacao-tabs">
-            <button
-              className={`precificacao-tab ${activeTab === 'precificacao' ? 'active' : ''}`}
-              onClick={() => setActiveTab('precificacao')}
-            >
-              Precificação
-            </button>
-            <button
-              className={`precificacao-tab ${activeTab === 'tributacao' ? 'active' : ''}`}
-              onClick={() => setActiveTab('tributacao')}
-            >
-              Tributação
-            </button>
+            {[
+              { key: 'precificacao', label: 'Equipamentos' },
+              { key: 'tributacao', label: 'Tributação' },
+              { key: 'condicoes', label: 'Condições' },
+              { key: 'parametros', label: 'Parâmetros' },
+              { key: 'simulador', label: 'Simulador' },
+              { key: 'historico', label: 'Histórico' },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                className={`precificacao-tab ${activeTab === tab.key ? 'active' : ''}`}
+                onClick={() => setActiveTab(tab.key)}
+              >
+                {tab.label}
+              </button>
+            ))}
           </div>
 
           {activeTab === 'precificacao' && <PrecificacaoEquipamentos showToast={showToast} />}
           {activeTab === 'tributacao' && <Tributacao showToast={showToast} />}
+          {activeTab === 'condicoes' && <CondicoesPagamento showToast={showToast} />}
+          {activeTab === 'parametros' && <Parametros showToast={showToast} />}
+          {activeTab === 'simulador' && <Simulador showToast={showToast} />}
+          {activeTab === 'historico' && <Historico showToast={showToast} />}
         </div>
       </div>
     </div>

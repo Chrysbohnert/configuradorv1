@@ -3,6 +3,7 @@ import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateL
 import { normalizarArray, normalizarObjeto } from '../utils/normalizadores';
 
 import { API_URL } from '../api/config.js';
+import { fetchJson } from '../api/fetchHelper.js';
 const BASE_URL = `${API_URL}/api/users`;
 
 function _clearStorage() {
@@ -46,30 +47,20 @@ export const AuthProvider = ({ children }) => {
       }
 
       try {
-        const res = await fetch(`${BASE_URL}/me`, {
+        const json = await fetchJson(`${BASE_URL}/me`, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
         });
 
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            const normalized = _normalizarUser(json.data);
-            setUser(normalized);
-            localStorage.setItem('user', JSON.stringify(normalized));
-            console.log('[AUTH RESTORE]', { user: normalized?.email, tipo: normalized?.tipo, tokenExiste: !!token });
-          } else {
-            console.warn('[AUTH RESTORE] Resposta inesperada do /me:', json);
-            _clearStorage();
-          }
-        } else if (res.status === 401) {
-          console.warn('[AUTH RESTORE] Token inválido ou expirado (401) – sessão limpa');
-          _clearStorage();
-          setError('Sessão expirada ou usuário sem permissão. Faça login novamente.');
+        if (json.success && json.data) {
+          const normalized = _normalizarUser(json.data);
+          setUser(normalized);
+          localStorage.setItem('user', JSON.stringify(normalized));
+          console.log('[AUTH RESTORE]', { user: normalized?.email, tipo: normalized?.tipo, tokenExiste: !!token });
         } else {
-          console.warn('[AUTH RESTORE] Falha ao restaurar sessão, status:', res.status);
+          console.warn('[AUTH RESTORE] Resposta inesperada do /me:', json);
           _clearStorage();
         }
       } catch (err) {
@@ -108,15 +99,13 @@ export const AuthProvider = ({ children }) => {
         throw new Error(`Muitas tentativas de login. Tente novamente em ${timeRemaining} minutos.`);
       }
 
-      const res = await fetch(`${BASE_URL}/login`, {
+      const json = await fetchJson(`${BASE_URL}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
       });
 
-      const json = await res.json();
-
-      if (!res.ok || !json.success) {
+      if (!json.success) {
         recordLoginAttempt(clientIP, email, false);
         throw new Error(json.error || 'Email ou senha inválidos');
       }

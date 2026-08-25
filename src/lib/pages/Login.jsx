@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { showError } from '../../utils/errorHandler';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../../utils/rateLimiter';
 import { API_URL } from '../../api/config.js';
+import { fetchJson } from '../../api/fetchHelper.js';
 import '../../styles/Login.css';
 
 const Login = () => {
@@ -78,15 +79,13 @@ const Login = () => {
         return;
       }
 
-      const response = await fetch(`${API_URL}/api/users/login`, {
+      const data = await fetchJson(`${API_URL}/api/users/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, senha }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         recordLoginAttempt(clientIP, email, false);
         setError(data.error || 'Credenciais inválidas');
         return;
