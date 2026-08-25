@@ -839,7 +839,7 @@ async getUserById(id) {
       // ⚡ imagem_url, descricao, nao_incluido excluídos para reduzir egress
       // imagem_url: carregada sob demanda via getGuindasteImagem() (cache 30min)
       // descricao/nao_incluido: carregadas via getGuindasteCompleto() quando necessário
-      .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, finame, ncm, codigo_referencia, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_observacoes_pdf, is_comercio_exterior, prototipo_payment_set_id, created_at, updated_at')
+      .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, finame, ncm, codigo_referencia, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_observacoes_pdf, is_comercio_exterior, prototipo_payment_set_id, custo_mp, custo_mo, created_at, updated_at')
       .order('subgrupo');
     
     if (error) throw error;
@@ -922,7 +922,7 @@ async getUserById(id) {
       // As imagens serão carregadas sob demanda quando necessário
       const { data, error } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_payment_set_id, is_comercio_exterior')
+        .select('id, subgrupo, modelo, codigo_referencia, peso_kg, quantidade_disponivel, is_prototipo, prototipo_label, prototipo_payment_set_id, is_comercio_exterior, custo_mp, custo_mo')
         .order('subgrupo')
         .range(from, to);
 
@@ -1064,7 +1064,9 @@ async getUserById(id) {
         : parseInt(guindasteData.quantidade_disponivel, 10),
       valor_instalacao_cliente: guindasteData.valor_instalacao_cliente !== '' && guindasteData.valor_instalacao_cliente != null ? parseFloat(guindasteData.valor_instalacao_cliente) || null : null,
       valor_instalacao_incluso: guindasteData.valor_instalacao_incluso !== '' && guindasteData.valor_instalacao_incluso != null ? parseFloat(guindasteData.valor_instalacao_incluso) || null : null,
-      bloquear_desconto: !!guindasteData.bloquear_desconto
+      bloquear_desconto: !!guindasteData.bloquear_desconto,
+      custo_mp: guindasteData.custo_mp !== '' && guindasteData.custo_mp != null ? parseFloat(guindasteData.custo_mp) || null : null,
+      custo_mo: guindasteData.custo_mo !== '' && guindasteData.custo_mo != null ? parseFloat(guindasteData.custo_mo) || null : null
     };
     
     
@@ -1155,7 +1157,9 @@ async getUserById(id) {
           : parseInt(guindasteData.quantidade_disponivel, 10),
         valor_instalacao_cliente: guindasteData.valor_instalacao_cliente !== '' && guindasteData.valor_instalacao_cliente != null ? parseFloat(guindasteData.valor_instalacao_cliente) || null : null,
         valor_instalacao_incluso: guindasteData.valor_instalacao_incluso !== '' && guindasteData.valor_instalacao_incluso != null ? parseFloat(guindasteData.valor_instalacao_incluso) || null : null,
-        bloquear_desconto: !!guindasteData.bloquear_desconto
+        bloquear_desconto: !!guindasteData.bloquear_desconto,
+        custo_mp: guindasteData.custo_mp !== '' && guindasteData.custo_mp != null ? parseFloat(guindasteData.custo_mp) || null : null,
+        custo_mo: guindasteData.custo_mo !== '' && guindasteData.custo_mo != null ? parseFloat(guindasteData.custo_mo) || null : null
       };
 
       // Remover qualquer campo que possa conter UUID
@@ -1177,7 +1181,7 @@ async getUserById(id) {
       // que são pesados e não confiáveis para comparação por referência)
       const { data: existingRecord, error: checkError } = await supabase
         .from('guindastes')
-        .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, descricao, nao_incluido, codigo_referencia, finame, ncm, is_prototipo, prototipo_label, prototipo_observacoes_pdf, prototipo_payment_set_id, is_comercio_exterior, quantidade_disponivel, valor_instalacao_cliente, valor_instalacao_incluso, bloquear_desconto')
+        .select('id, subgrupo, modelo, grupo, peso_kg, configuração, tem_contr, descricao, nao_incluido, codigo_referencia, finame, ncm, is_prototipo, prototipo_label, prototipo_observacoes_pdf, prototipo_payment_set_id, is_comercio_exterior, quantidade_disponivel, valor_instalacao_cliente, valor_instalacao_incluso, bloquear_desconto, custo_mp, custo_mo')
         .eq('id', numericId)
         .single();
       

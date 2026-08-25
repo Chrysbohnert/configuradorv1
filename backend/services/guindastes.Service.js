@@ -29,6 +29,7 @@ const KNOWN_FIELDS = [
   'codigo_referencia', 'quantidade_disponivel', 'is_prototipo', 'prototipo_label',
   'prototipo_observacoes_pdf', 'is_comercio_exterior', 'valor_instalacao_cliente',
   'valor_instalacao_incluso', 'bloquear_desconto',
+  'custo_mp', 'custo_mo',
 ];
 
 async function findAllEstoque() {

@@ -64,7 +64,9 @@ const GerenciarGuindastes = () => {
     is_comercio_exterior: false,
     valor_instalacao_cliente: '',
     valor_instalacao_incluso: '',
-    bloquear_desconto: false
+    bloquear_desconto: false,
+    custo_mp: '',
+    custo_mo: ''
   });
 
   const [vendedoresDisponiveis, setVendedoresDisponiveis] = useState([]);
@@ -275,7 +277,9 @@ const GerenciarGuindastes = () => {
         is_comercio_exterior: !!guindasteData.is_comercio_exterior,
         valor_instalacao_cliente: guindasteData.valor_instalacao_cliente ?? '',
         valor_instalacao_incluso: guindasteData.valor_instalacao_incluso ?? '',
-        bloquear_desconto: !!guindasteData.bloquear_desconto
+        bloquear_desconto: !!guindasteData.bloquear_desconto,
+        custo_mp: guindasteData.custo_mp ?? '',
+        custo_mo: guindasteData.custo_mo ?? ''
       };
       setFormData(newFormData);
 
@@ -321,7 +325,9 @@ const GerenciarGuindastes = () => {
       is_comercio_exterior: false,
       valor_instalacao_cliente: '',
       valor_instalacao_incluso: '',
-      bloquear_desconto: false
+      bloquear_desconto: false,
+      custo_mp: '',
+      custo_mo: ''
     });
     document.body.classList.remove('modal-open');
   };
@@ -353,7 +359,9 @@ const GerenciarGuindastes = () => {
       is_comercio_exterior: false,
       valor_instalacao_cliente: '',
       valor_instalacao_incluso: '',
-      bloquear_desconto: false
+      bloquear_desconto: false,
+      custo_mp: '',
+      custo_mo: ''
     });
     setShowModal(true);
     document.body.classList.add('modal-open');
@@ -486,7 +494,9 @@ const GerenciarGuindastes = () => {
         is_comercio_exterior: !!formData.is_comercio_exterior,
         valor_instalacao_cliente: formData.valor_instalacao_cliente !== '' ? parseFloat(formData.valor_instalacao_cliente) || null : null,
         valor_instalacao_incluso: formData.valor_instalacao_incluso !== '' ? parseFloat(formData.valor_instalacao_incluso) || null : null,
-        bloquear_desconto: !!formData.bloquear_desconto
+        bloquear_desconto: !!formData.bloquear_desconto,
+        custo_mp: formData.custo_mp !== '' ? parseFloat(formData.custo_mp) || null : null,
+        custo_mo: formData.custo_mo !== '' ? parseFloat(formData.custo_mo) || null : null
       };
 
 
@@ -912,6 +922,36 @@ const GerenciarGuindastes = () => {
                       />
                     </div>
                     {/* Estoque controlado em Gerenciar Estoque */}
+                  </div>
+
+                  <div className="modern-section-title" style={{ marginTop: '18px', fontSize: '14px', color: '#334155', fontWeight: '700' }}>
+                    Custos do produto (sem impostos)
+                  </div>
+                  <div className="modern-grid-2">
+                    <div className="modern-form-group">
+                      <label>Valor MP sem impostos (R$)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.custo_mp}
+                        onChange={e => handleInputChange('custo_mp', e.target.value)}
+                        placeholder="0,00"
+                        className="modern-input"
+                      />
+                    </div>
+                    <div className="modern-form-group">
+                      <label>Valor MO sem impostos (R$)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={formData.custo_mo}
+                        onChange={e => handleInputChange('custo_mo', e.target.value)}
+                        placeholder="0,00"
+                        className="modern-input"
+                      />
+                    </div>
                   </div>
 
                   <div className="modern-grid-2">

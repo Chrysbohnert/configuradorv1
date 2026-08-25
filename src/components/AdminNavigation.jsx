@@ -178,6 +178,16 @@ const AdminNavigation = ({ user }) => {
       )
     },
     {
+      path: '/precificacao',
+      label: 'Precificação',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          <line x1="3" y1="12" x2="21" y2="12" />
+        </svg>
+      )
+    },
+    {
       path: '/admin/configuracoes',
       label: 'Configurações',
       icon: (
