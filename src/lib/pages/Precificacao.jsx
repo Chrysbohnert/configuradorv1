@@ -5,7 +5,6 @@ import { formatCurrency } from '../../utils/formatters';
 import {
   getEquipamentosComPrecificacao,
   salvarPrecificacao,
-  calcularPrecoBase,
 } from '../../api/precificacao';
 import '../../styles/Precificacao.css';
 
@@ -16,6 +15,38 @@ const EMPTY_FORM = {
   assistencia_percent: '',
   margem_lucro_percent: '',
 };
+
+function calcularPrecoBase(mp, mo, regra) {
+  const vMp = Number(mp) || 0;
+  const vMo = Number(mo) || 0;
+  const subtotal = vMp + vMo;
+  const custoFixo = Number(regra?.custo_fixo_percent) || 0;
+  const comissao = Number(regra?.comissao_percent) || 0;
+  const assistencia = Number(regra?.assistencia_percent) || 0;
+  const margem = Number(regra?.margem_lucro_percent) || 0;
+
+  const variaveis = subtotal * (custoFixo + comissao + assistencia) / 100;
+  const preco = (subtotal + variaveis) * (1 + margem / 100);
+  return Number(preco.toFixed(4));
+}
+
+function formatarFrete(item) {
+  const min = Number(item.frete_min);
+  const max = Number(item.frete_max);
+  if (min > 0 && max > 0) {
+    return `${formatCurrency(min)} - ${formatCurrency(max)}`;
+  }
+  if (min > 0) return formatCurrency(min);
+  if (max > 0) return formatCurrency(max);
+  return '—';
+}
+
+function formatarInstalacao(cliente, incluso) {
+  const partes = [];
+  if (Number(cliente) > 0) partes.push(`Cliente: ${formatCurrency(cliente)}`);
+  if (Number(incluso) > 0) partes.push(`Incluso: ${formatCurrency(incluso)}`);
+  return partes.length > 0 ? partes.join(' / ') : '—';
+}
 
 export default function Precificacao() {
   const navigate = useNavigate();
@@ -87,19 +118,21 @@ export default function Precificacao() {
         margem_lucro_percent: form.margem_lucro_percent,
       });
 
-      // Recalcula preço base localmente para feedback imediato
-      const calc = await calcularPrecoBase(form.guindaste_id);
+      const novaRegra = {
+        custo_fixo_percent: Number(form.custo_fixo_percent) || 0,
+        comissao_percent: Number(form.comissao_percent) || 0,
+        assistencia_percent: Number(form.assistencia_percent) || 0,
+        margem_lucro_percent: Number(form.margem_lucro_percent) || 0,
+      };
 
       setEquipamentos((prev) =>
         prev.map((item) =>
-          item.id === form.guindaste_id
+          String(item.id) === String(form.guindaste_id)
             ? {
                 ...item,
-                custo_fixo_percent: Number(form.custo_fixo_percent) || 0,
-                comissao_percent: Number(form.comissao_percent) || 0,
-                assistencia_percent: Number(form.assistencia_percent) || 0,
-                margem_lucro_percent: Number(form.margem_lucro_percent) || 0,
-                preco_base_calculado: calc.preco,
+                ...novaRegra,
+                precificacao_id: item.precificacao_id || true,
+                preco_base_calculado: calcularPrecoBase(item.custo_mp, item.custo_mo, novaRegra),
               }
             : item
         )
@@ -172,6 +205,8 @@ export default function Precificacao() {
                     <th className="numeric">Custo MP</th>
                     <th className="numeric">Custo MO</th>
                     <th className="numeric">Custo fixo %</th>
+                    <th className="numeric">Frete</th>
+                    <th className="numeric">Instalação</th>
                     <th className="numeric">Comissão %</th>
                     <th className="numeric">Assistência %</th>
                     <th className="numeric">Margem %</th>
@@ -208,6 +243,8 @@ export default function Precificacao() {
                                 className="precificacao-input"
                               />
                             </td>
+                            <td className="numeric">—</td>
+                            <td className="numeric">—</td>
                             <td className="numeric">
                               <input
                                 type="number"
@@ -270,6 +307,12 @@ export default function Precificacao() {
                               {Number(item.custo_fixo_percent || 0).toFixed(2)}%
                             </td>
                             <td className="numeric">
+                              {formatarFrete(item)}
+                            </td>
+                            <td className="numeric" title="Fonte: guindastes.valor_instalacao_*">
+                              {formatarInstalacao(item.valor_instalacao_cliente, item.valor_instalacao_incluso)}
+                            </td>
+                            <td className="numeric">
                               {Number(item.comissao_percent || 0).toFixed(2)}%
                             </td>
                             <td className="numeric">
@@ -300,15 +343,6 @@ export default function Precificacao() {
               </table>
             </div>
           )}
-
-          <div className="precificacao-info-box" style={{ marginTop: '20px' }}>
-            <p>
-              <strong>Frete e instalação:</strong> continuam sendo buscados
-              automaticamente pelas estruturas já utilizadas hoje (cadastro de
-              fretes e valores de instalação do guindaste). Não há cadastro
-              duplicado nesta tela.
-            </p>
-          </div>
         </div>
       </div>
     </div>

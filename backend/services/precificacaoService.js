@@ -1,6 +1,8 @@
 /**
  * precificacaoService.js
  * Queries SQL para precificação simplificada por equipamento/referência.
+ * Lista sempre todos os guindastes cadastrados, independentemente de já
+ * terem regra de precificação preenchida.
  * Os campos de frete e instalação são lidos das fontes já existentes.
  */
 
@@ -14,20 +16,94 @@ const PRECIFICACAO_FIELDS = [
   'margem_lucro_percent',
 ];
 
-async function findAll() {
-  const { rows } = await query(
+function calcularPrecoBaseLocal(mp, mo, regra) {
+  const vMp = Number(mp) || 0;
+  const vMo = Number(mo) || 0;
+  const subtotal = vMp + vMo;
+  const custoFixo = Number(regra?.custo_fixo_percent) || 0;
+  const comissao = Number(regra?.comissao_percent) || 0;
+  const assistencia = Number(regra?.assistencia_percent) || 0;
+  const margem = Number(regra?.margem_lucro_percent) || 0;
+
+  const variaveis = subtotal * (custoFixo + comissao + assistencia) / 100;
+  const preco = (subtotal + variaveis) * (1 + margem / 100);
+
+  return Number(preco.toFixed(4));
+}
+
+async function listarEquipamentosComCusto() {
+  // Sempre retorna todos os guindastes, mesmo sem precificação ou sem SQL executado.
+  const { rows: guindastes } = await query(
     `SELECT
-       p.*,
-       g.codigo_referencia,
-       g.subgrupo,
-       g.modelo,
-       g.custo_mp,
-       g.custo_mo
-     FROM public.precificacao p
-     JOIN public.guindastes g ON g.id = p.guindaste_id
-     ORDER BY g.subgrupo ASC, g.modelo ASC`
+       id,
+       codigo_referencia,
+       subgrupo,
+       modelo,
+       custo_mp,
+       custo_mo,
+       valor_instalacao_cliente,
+       valor_instalacao_incluso
+     FROM public.guindastes
+     ORDER BY subgrupo ASC, modelo ASC`
   );
-  return rows;
+
+  let precificacoes = [];
+  try {
+    const { rows } = await query(
+      `SELECT
+         id AS precificacao_id,
+         guindaste_id,
+         custo_fixo_percent,
+         comissao_percent,
+         assistencia_percent,
+         margem_lucro_percent
+       FROM public.precificacao`
+    );
+    precificacoes = rows || [];
+  } catch (err) {
+    // Tabela ainda não existe (SQL não executado): continua com array vazio.
+    console.warn('[precificacaoService] Tabela precificacao não encontrada:', err.message);
+  }
+
+  const mapaPrecificacao = new Map();
+  precificacoes.forEach((p) => {
+    mapaPrecificacao.set(String(p.guindaste_id), p);
+  });
+
+  // Resumo de frete das fontes atuais (global, apenas para exibição)
+  let freteMin = null;
+  let freteMax = null;
+  try {
+    const { rows: freteRows } = await query(
+      `SELECT
+         MIN(LEAST(COALESCE(valor_prioridade, 0), COALESCE(valor_reaproveitamento, 0))) AS frete_min,
+         MAX(GREATEST(COALESCE(valor_prioridade, 0), COALESCE(valor_reaproveitamento, 0))) AS frete_max
+       FROM public.fretes`
+    );
+    freteMin = Number(freteRows[0]?.frete_min) || null;
+    freteMax = Number(freteRows[0]?.frete_max) || null;
+  } catch (err) {
+    console.warn('[precificacaoService] Tabela fretes não encontrada:', err.message);
+  }
+
+  return (guindastes || []).map((g) => {
+    const regra = mapaPrecificacao.get(String(g.id));
+    return {
+      ...g,
+      custo_mp: g.custo_mp ?? null,
+      custo_mo: g.custo_mo ?? null,
+      valor_instalacao_cliente: g.valor_instalacao_cliente ?? null,
+      valor_instalacao_incluso: g.valor_instalacao_incluso ?? null,
+      precificacao_id: regra?.precificacao_id ?? null,
+      custo_fixo_percent: regra?.custo_fixo_percent ?? 0,
+      comissao_percent: regra?.comissao_percent ?? 0,
+      assistencia_percent: regra?.assistencia_percent ?? 0,
+      margem_lucro_percent: regra?.margem_lucro_percent ?? 0,
+      preco_base_calculado: calcularPrecoBaseLocal(g.custo_mp, g.custo_mo, regra),
+      frete_min: freteMin,
+      frete_max: freteMax,
+    };
+  });
 }
 
 async function findByGuindasteId(guindasteId) {
@@ -88,33 +164,20 @@ async function remove(id) {
 }
 
 async function calcularPrecoBase(guindasteId) {
-  const { rows } = await query(
-    `SELECT public.calcular_preco_base($1) AS preco`,
+  const { rows: guindasteRows } = await query(
+    `SELECT custo_mp, custo_mo FROM public.guindastes WHERE id = $1`,
     [guindasteId]
   );
-  return Number(rows[0]?.preco) || 0;
+  const guindaste = guindasteRows[0];
+  if (!guindaste) return 0;
+
+  const regra = await findByGuindasteId(guindasteId);
+  return calcularPrecoBaseLocal(guindaste.custo_mp, guindaste.custo_mo, regra);
 }
 
-async function listarEquipamentosComCusto() {
-  const { rows } = await query(
-    `SELECT
-       g.id,
-       g.codigo_referencia,
-       g.subgrupo,
-       g.modelo,
-       g.custo_mp,
-       g.custo_mo,
-       p.id AS precificacao_id,
-       p.custo_fixo_percent,
-       p.comissao_percent,
-       p.assistencia_percent,
-       p.margem_lucro_percent,
-       public.calcular_preco_base(g.id) AS preco_base_calculado
-     FROM public.guindastes g
-     LEFT JOIN public.precificacao p ON p.guindaste_id = g.id
-     ORDER BY g.subgrupo ASC, g.modelo ASC`
-  );
-  return rows;
+async function findAll() {
+  const equipamentos = await listarEquipamentosComCusto();
+  return equipamentos.filter((e) => e.precificacao_id != null);
 }
 
 module.exports = {
