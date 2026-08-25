@@ -2,9 +2,13 @@
 -- MIGRATION: Precificação de Guindastes
 -- DESCRIÇÃO: Prepara a estrutura para formação de preço
 --            dos equipamentos sem alterar regras antigas.
---            Deve ser executado manualmente no Supabase
---            SQL Editor com usuário postgres.
+--            Executar manualmente no PostgreSQL de
+--            produção com um usuário administrativo.
 -- =====================================================
+
+-- As permissões de acesso/edição são controladas exclusivamente
+-- pelo backend Node.js via JWT (rotas /api/precificacao).
+-- Não há RLS/policies nesta migration.
 
 -- Garante função utilitária de updated_at
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -78,30 +82,6 @@ CREATE TRIGGER regras_precificacao_set_updated_at
 CREATE INDEX IF NOT EXISTS idx_regras_precificacao_uf ON public.regras_precificacao(uf);
 CREATE INDEX IF NOT EXISTS idx_regras_precificacao_ativo ON public.regras_precificacao(ativo);
 
--- RLS
-ALTER TABLE public.regras_precificacao ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS regras_precificacao_admin_manage ON public.regras_precificacao;
-CREATE POLICY regras_precificacao_admin_manage ON public.regras_precificacao
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin'
-    )
-  );
-
-DROP POLICY IF EXISTS regras_precificacao_read ON public.regras_precificacao;
-CREATE POLICY regras_precificacao_read ON public.regras_precificacao
-  FOR SELECT
-  USING (true);
-
 -- =====================================================
 -- 3. TABELA DE PREÇOS DE VENDA CALCULADOS POR GUINDASTE/UF
 --     Estrutura para cache/histórico dos preços calculados.
@@ -128,29 +108,6 @@ CREATE TRIGGER precos_venda_guindaste_uf_set_updated_at
 
 CREATE INDEX IF NOT EXISTS idx_precos_venda_guindaste_uf_guindaste ON public.precos_venda_guindaste_uf(guindaste_id);
 CREATE INDEX IF NOT EXISTS idx_precos_venda_guindaste_uf_uf ON public.precos_venda_guindaste_uf(uf);
-
-ALTER TABLE public.precos_venda_guindaste_uf ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS precos_venda_guindaste_uf_admin_manage ON public.precos_venda_guindaste_uf;
-CREATE POLICY precos_venda_guindaste_uf_admin_manage ON public.precos_venda_guindaste_uf
-  FOR ALL
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin'
-    )
-  );
-
-DROP POLICY IF EXISTS precos_venda_guindaste_uf_read ON public.precos_venda_guindaste_uf;
-CREATE POLICY precos_venda_guindaste_uf_read ON public.precos_venda_guindaste_uf
-  FOR SELECT
-  USING (true);
 
 -- =====================================================
 -- 4. FUNÇÃO AUXILIAR: buscar regra ativa para uma UF
