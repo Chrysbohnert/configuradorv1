@@ -197,6 +197,102 @@
   flex-wrap: nowrap;
 }
 
+/* Abas */
+.precificacao-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.precificacao-tab {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-bottom: -2px;
+}
+
+.precificacao-tab:hover {
+  color: #0f172a;
+}
+
+.precificacao-tab.active {
+  color: #0f172a;
+  border-bottom-color: #0f172a;
+}
+
+/* Títulos de seção */
+.precificacao-section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 6px 0;
+}
+
+.precificacao-section-subtitle {
+  font-size: 13px;
+  color: #64748b;
+  margin: 0 0 20px 0;
+}
+
+/* Form boxes */
+.precificacao-form-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.precificacao-form-box h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0 0 16px 0;
+}
+
+.precificacao-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+.precificacao-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.precificacao-form-group label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.precificacao-form-group input,
+.precificacao-form-group select {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 13px;
+  color: #0f172a;
+  background: #fff;
+}
+
+.precificacao-form-group input:focus,
+.precificacao-form-group select:focus {
+  border-color: #0f172a;
+  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+  outline: none;
+}
+
 /* Loading / Empty */
 .precificacao-loading {
   text-align: center;

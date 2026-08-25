@@ -24,6 +24,7 @@ const solicitacoesDescontoRouter = require('./solicitacoes_desconto');
 const clientesRouter        = require('./clientes');
 const areasRouter           = require('./areas');
 const precificacaoRouter    = require('./precificacao');
+const tributacaoRouter      = require('./tributacao');
 
 const router = Router();
 
@@ -43,5 +44,6 @@ router.use('/solicitacoes-desconto', solicitacoesDescontoRouter);
 router.use('/clientes',        clientesRouter);
 router.use('/areas',           areasRouter);
 router.use('/precificacao',    precificacaoRouter);
+router.use('/tributacao',      tributacaoRouter);
 
 module.exports = router;
