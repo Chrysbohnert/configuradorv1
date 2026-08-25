@@ -1,0 +1,562 @@
+/* ============================================
+   MAPA TERRITORIAL - PÁGINA
+   ============================================ */
+
+.mapa-territorial-page {
+  min-height: 100vh;
+  background: #e3e3e3;
+  display: flex;
+  flex-direction: column;
+}
+
+.mapa-territorial-container {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  padding: 24px;
+  overflow: hidden;
+}
+
+/* Área principal do mapa */
+.mapa-territorial-main {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.map-territorial-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.maplibregl-map {
+  font-family: inherit;
+}
+
+/* Loading sobre o mapa */
+.mapa-territorial-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mapa-territorial-overlay-content,
+.map-territorial-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  color: #333;
+  font-weight: 500;
+}
+
+.mapa-territorial-error {
+  position: absolute;
+  inset: 24px;
+  z-index: 30;
+  background: #fff5f5;
+  border: 1px solid #fc8181;
+  border-radius: 16px;
+  padding: 24px;
+  color: #c53030;
+}
+
+.mapa-territorial-error button {
+  margin-top: 12px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: #c53030;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.map-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #eef2f7;
+  border-top-color: #ffc107;
+  border-radius: 50%;
+  animation: map-spin 1s linear infinite;
+}
+
+@keyframes map-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Sidebar */
+.mapa-territorial-sidebar {
+  width: 340px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  overflow-y: auto;
+  max-height: calc(100vh - 130px);
+}
+
+.mapa-territorial-sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mapa-territorial-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.mapa-territorial-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.mapa-sidebar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mapa-sidebar-row {
+  flex-direction: row !important;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mapa-sidebar-title {
+  margin: 0;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #6b7280;
+  font-weight: 700;
+}
+
+.mapa-current-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid #e2e8f0;
+}
+
+.mapa-state-label {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.mapa-state-uf {
+  font-size: 13px;
+  font-weight: 700;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.mapa-count-badge {
+  background: #ffc107;
+  color: #000;
+  font-weight: 800;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 999px;
+}
+
+.mapa-color-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mapa-color-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+}
+
+.mapa-color-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mapa-color-option {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.mapa-color-option:hover {
+  transform: scale(1.08);
+}
+
+.mapa-color-option.active {
+  border-color: #1e293b;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.08);
+}
+
+.mapa-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.mapa-btn {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.mapa-btn-primary {
+  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  color: #000;
+}
+
+.mapa-btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.35);
+}
+
+.mapa-btn-secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #e2e8f0;
+}
+
+.mapa-btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.mapa-btn-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.mapa-btn-danger:hover {
+  background: #fee2e2;
+}
+
+.mapa-btn-block {
+  width: 100%;
+}
+
+.mapa-municipios-list {
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.mapa-municipios-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mapa-municipio-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #334155;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.mapa-municipio-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mapa-municipio-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapa-empty {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  text-align: center;
+  padding: 16px 0;
+}
+
+.mapa-entities-list {
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 8px;
+  background: #f8fafc;
+}
+
+.mapa-entities-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mapa-entity-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.mapa-entity-item:hover {
+  background: #f1f5f9;
+}
+
+.mapa-entity-item.active {
+  background: #fffbeb;
+  border-color: #f59e0b;
+}
+
+.mapa-entity-item.highlight {
+  background: #ecfdf5;
+  border-color: #10b981;
+}
+
+.mapa-entity-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.mapa-entity-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mapa-entity-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mapa-entity-meta {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.mapa-info-box {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.mapa-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.mapa-filter-tab {
+  flex: 1 1 auto;
+  min-width: 70px;
+  padding: 8px 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mapa-filter-tab:hover {
+  background: #f1f5f9;
+}
+
+.mapa-filter-tab.active {
+  background: #1e293b;
+  border-color: #1e293b;
+  color: #fff;
+}
+
+.mapa-related-item {
+  border-left: 3px solid #10b981;
+}
+
+.mapa-sidebar-footer {
+  margin-top: auto;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+/* Marcadores de sede */
+.map-territorial-marker {
+  width: 16px;
+  height: 16px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
+  border: 2px solid #fff;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.map-territorial-marker span {
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  white-space: nowrap;
+  background: rgba(26, 32, 44, 0.9);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 6px;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.map-territorial-marker:hover {
+  transform: rotate(-45deg) scale(1.15);
+}
+
+/* Tooltip customizado */
+.maplibregl-popup.map-territorial-popup .maplibregl-popup-content {
+  background: rgba(26, 32, 44, 0.95);
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  font-family: inherit;
+}
+
+.maplibregl-popup.map-territorial-popup .maplibregl-popup-tip {
+  border-top-color: rgba(26, 32, 44, 0.95);
+}
+
+.map-popup-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.map-popup-sub {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+/* Controles do MapLibre */
+.maplibregl-ctrl-group {
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1) !important;
+}
+
+.maplibregl-ctrl-group button {
+  border-radius: 12px !important;
+}
+
+/* Responsividade */
+@media (max-width: 1200px) {
+  .mapa-territorial-container {
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .mapa-territorial-main {
+    min-height: 500px;
+    flex: none;
+  }
+
+  .mapa-territorial-sidebar {
+    width: 100%;
+    max-height: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .mapa-territorial-container {
+    padding: 12px;
+    gap: 16px;
+  }
+
+  .mapa-territorial-main {
+    min-height: 420px;
+    border-radius: 16px;
+  }
+
+  .mapa-territorial-sidebar {
+    border-radius: 16px;
+    padding: 18px;
+  }
+
+  .mapa-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .mapa-territorial-main {
+    min-height: 360px;
+  }
+
+  .mapa-sidebar-title {
+    font-size: 12px;
+  }
+
+  .mapa-state-label {
+    font-size: 15px;
+  }
+}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import BlobButton from '../../components/BlobButton';
 import { getTodosFretesAdmin, createFrete, updateFrete, deleteFrete } from '../../api/fretes';
@@ -9,6 +9,7 @@ import '../../styles/GerenciarFretes.css';
 const GerenciarFretes = () => {
   const navigate = useNavigate();
   const { user } = useOutletContext();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [fretes, setFretes] = useState([]);
   const [showModal, setShowModal] = useState(false);
@@ -33,6 +34,22 @@ const GerenciarFretes = () => {
     }
     loadFretes();
   }, [user, navigate]);
+
+  // Preenche cidade/UF quando redirecionado do Mapa Territorial
+  useEffect(() => {
+    const cidade = searchParams.get('cidade');
+    const uf = searchParams.get('uf');
+    if (cidade || uf) {
+      setFormData((prev) => ({
+        ...prev,
+        cidade: cidade || prev.cidade,
+        uf: (uf || prev.uf).toUpperCase(),
+      }));
+      setEditingFrete(null);
+      setShowModal(true);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const loadFretes = async () => {
     try {

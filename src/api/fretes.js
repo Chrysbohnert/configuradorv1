@@ -5,6 +5,7 @@
  */
 
 import { API_URL } from './config.js';
+import { getAreas, saveAreas } from './areas.js';
 const BASE_URL = `${API_URL}/api/fretes`;
 
 function authHeaders() {
@@ -72,4 +73,14 @@ export async function deleteFrete(id) {
   const json = await res.json();
   if (!json.success) throw new Error(json.error || 'Erro ao excluir frete');
   return json.data;
+}
+
+// Admin Stark: carregar áreas de atuação de uma instaladora
+export async function getFreteAreas(id) {
+  return getAreas('instaladora', id);
+}
+
+// Admin Stark: salvar áreas de atuação de uma instaladora
+export async function saveFreteAreas(id, areas) {
+  return saveAreas('instaladora', id, areas);
 }

@@ -26,6 +26,7 @@ const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
 const AprovacoesDescontos = lazy(() => import('./lib/pages/AprovacoesDescontos'));
 const PlanosPagamento = lazy(() => import('./lib/pages/PlanosPagamento'));
 const CotacaoDolar = lazy(() => import('./lib/pages/CotacaoDolar'));
+const MapaTerritorial = lazy(() => import('./lib/pages/MapaTerritorial'));
 
 const Configuracoes = lazy(() => import('./lib/pages/Configuracoes'));
 const DashboardVendedor = lazy(() => import('./lib/pages/DashboardVendedor'));
@@ -233,6 +234,15 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Cotação...">
                         <CotacaoDolar />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/mapa-territorial"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Mapa Territorial...">
+                        <MapaTerritorial />
                       </LazyRoute>
                     }
                   />

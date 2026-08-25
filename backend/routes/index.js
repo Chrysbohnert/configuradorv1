@@ -22,6 +22,7 @@ const metasRouter           = require('./metas');
 const concPrecosRouter      = require('./concessionaria_precos');
 const solicitacoesDescontoRouter = require('./solicitacoes_desconto');
 const clientesRouter        = require('./clientes');
+const areasRouter           = require('./areas');
 
 const router = Router();
 
@@ -39,5 +40,6 @@ router.use('/metas',           metasRouter);
 router.use('/concessionaria-precos', concPrecosRouter);
 router.use('/solicitacoes-desconto', solicitacoesDescontoRouter);
 router.use('/clientes',        clientesRouter);
+router.use('/areas',           areasRouter);
 
 module.exports = router;

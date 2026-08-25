@@ -72,8 +72,8 @@ export default defineConfig({
   // Configurações de servidor de desenvolvimento
   server: {
     port: 5173,
-    strictPort: false,
-    host: true,
+    strictPort: true,
+    host: 'localhost',
     open: false,
     hmr: {
       overlay: true,

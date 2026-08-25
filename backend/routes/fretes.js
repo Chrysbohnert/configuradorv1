@@ -48,4 +48,17 @@ router.delete('/admin/:id', requireAuth, requireAdmin, asyncHandler(async (req, 
   return res_.ok(res, data);
 }));
 
+// GET /api/fretes/admin/:id/areas — áreas de atuação de uma instaladora
+router.get('/admin/:id/areas', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const data = await svc.getAreasByFrete(req.params.id);
+  return res_.ok(res, data, { count: data.length });
+}));
+
+// PUT /api/fretes/admin/:id/areas — substituir áreas de atuação (Admin Stark)
+router.put('/admin/:id/areas', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+  const areas = Array.isArray(req.body?.areas) ? req.body.areas : [];
+  const data = await svc.replaceFreteAreas(req.params.id, areas);
+  return res_.ok(res, data);
+}));
+
 module.exports = router;

@@ -6,6 +6,7 @@
  */
 
 const { query } = require('../db/pool');
+const { getAreas, replaceAreas } = require('./areasAtuacaoService');
 
 const MAPEAMENTO_ESTADOS = {
   'RIO GRANDE DO SUL': 'RS',
@@ -120,6 +121,14 @@ async function deleteFrete(id) {
   return rows[0];
 }
 
+async function getAreasByFrete(freteId) {
+  return getAreas('instaladora', freteId);
+}
+
+async function replaceFreteAreas(freteId, areas) {
+  return replaceAreas('instaladora', freteId, areas);
+}
+
 module.exports = { 
   getFretes, 
   getFretesPorVendedor, 
@@ -127,5 +136,7 @@ module.exports = {
   getTodosFretesAdmin,
   createFrete,
   updateFrete,
-  deleteFrete
+  deleteFrete,
+  getAreasByFrete,
+  replaceFreteAreas,
 };
