@@ -2133,59 +2133,34 @@ async getUserById(id) {
 
   async uploadGraficoCarga(file, fileName) {
     try {
-      
       // Verificar autenticação via token da API (sistema próprio — não usa Supabase Auth)
       const token = localStorage.getItem('authToken');
       if (!token) {
         throw new Error('Sessão expirada. Faça login novamente.');
       }
-      
-      // Fazer upload diretamente (bucket já existe)
-      const { data, error } = await supabase.storage
-        .from('graficos-carga')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-      
-      if (error) {
-        console.error('Erro no upload:', error);
-        console.error('Detalhes do erro:', JSON.stringify(error, null, 2));
-        console.error('Mensagem do erro:', error.message);
-        console.error('Código do erro:', error.code);
-        
-        // Se for erro de arquivo duplicado, tentar com upsert
-        if (error.message && error.message.includes('already exists')) {
-          const { data: upsertData, error: upsertError } = await supabase.storage
-            .from('graficos-carga')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: true
-            });
-          
-          if (upsertError) {
-            console.error('Erro no upsert:', upsertError);
-            throw upsertError;
-          }
-          
-          const { data: urlData } = supabase.storage
-            .from('graficos-carga')
-            .getPublicUrl(fileName);
-          
-          return urlData.publicUrl;
-        }
-        
-        throw error;
+
+      // O upload passa pelo backend, que usa a service role key do Supabase para
+      // contornar o RLS sem abrir o bucket para usuários anônimos.
+      const formData = new FormData();
+      formData.append('arquivo', file, fileName);
+      formData.append('fileName', fileName);
+
+      const response = await fetch(`${API_URL}/api/graficos-carga/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        const msg = result.error || `Erro no upload (${response.status})`;
+        console.error('❌ [uploadGraficoCarga] Erro do backend:', msg);
+        throw new Error(msg);
       }
-      
-      
-      // Obter URL pública
-      const { data: urlData } = supabase.storage
-        .from('graficos-carga')
-        .getPublicUrl(fileName);
-      
-      return urlData.publicUrl;
-      
+
+      return result.data.url;
+
     } catch (error) {
       console.error('Erro completo no uploadGraficoCarga:', error);
       throw error;
