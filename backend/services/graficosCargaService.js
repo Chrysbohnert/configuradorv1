@@ -3,6 +3,7 @@
  * Leitura da tabela graficos_carga (PostgreSQL).
  */
 
+const { randomUUID } = require('crypto');
 const { query } = require('../db/pool');
 
 function mapRow(row) {
@@ -30,11 +31,12 @@ async function findById(id) {
 
 async function create(data) {
   const { nome, arquivo_url = null } = data;
+  const id = randomUUID();
   const { rows } = await query(
-    `INSERT INTO graficos_carga (nome, arquivo_url)
-     VALUES ($1, $2)
+    `INSERT INTO graficos_carga (id, nome, arquivo_url)
+     VALUES ($1, $2, $3)
      RETURNING *`,
-    [nome, arquivo_url]
+    [id, nome, arquivo_url]
   );
   return mapRow(rows[0]);
 }
