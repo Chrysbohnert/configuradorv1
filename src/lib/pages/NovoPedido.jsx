@@ -809,7 +809,9 @@ const NovoPedido = () => {
       // ⚠️ PROTEÇÃO: Garantir que all é array antes de filtrar
       const filtrados = Array.isArray(all) ? all.filter(g => {
         if (!g || typeof g !== 'object') return false;
-        if (g?.is_prototipo && !isAdminStark) return false;
+
+        // Protótipos são visíveis para todos — a informação de protótipo
+        // é preservada no carrinho e exibida no PDF gerado.
 
         if (g?.is_comercio_exterior) {
           if (!isAdminStark && !isVendedorCE) return false;
