@@ -796,7 +796,7 @@ const NovoPedido = () => {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
-      const result = await getGuindastesLite(1, 100, true);
+      const result = await getGuindastesLite(1, 2000, true);
       // ⚠️ PROTEÇÃO: Garantir que result.data é um array
       const all = Array.isArray(result?.data) ? result.data : [];
 

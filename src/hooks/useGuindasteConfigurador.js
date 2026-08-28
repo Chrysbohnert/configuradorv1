@@ -11,12 +11,21 @@ export const TIPO_LABELS = {
 };
 
 function extractBase(subgrupo) {
-  return (subgrupo || '').replace(/^(Guindaste\s+)+/i, '').split(' ').slice(0, 2).join(' ');
+  const tokens = (subgrupo || '').replace(/^(Guindaste\s+)+/i, '').split(' ').filter(Boolean);
+  // Inclui o 3.º token quando ele é o indicador de tipo C ou T separado por espaço
+  // Ex: "GSE 10.8 C" → "GSE 10.8 C"   |   "GSE 8.0C" → "GSE 8.0C" (inalterado)
+  if (tokens.length >= 3 && /^[CT]$/i.test(tokens[2])) {
+    return tokens.slice(0, 3).join(' ');
+  }
+  return tokens.slice(0, 2).join(' ');
 }
 
 function extractOpts(subgrupo) {
-  const clean = (subgrupo || '').replace(/^(Guindaste\s+)+/i, '');
-  return clean.split(' ').slice(2).join(' ').trim();
+  const tokens = (subgrupo || '').replace(/^(Guindaste\s+)+/i, '').split(' ').filter(Boolean);
+  // Pula o indicador de tipo C/T na posição 2 (quando separado por espaço) para não
+  // poluir a label de opcional — a mesma lógica de extractBase acima.
+  const start = (tokens.length >= 3 && /^[CT]$/i.test(tokens[2])) ? 3 : 2;
+  return tokens.slice(start).join(' ').trim();
 }
 
 export function variantLabel(optStr) {
@@ -46,8 +55,18 @@ export function buildGroups(guindastes) {
   (guindastes || []).forEach(g => {
     const base = extractBase(g.subgrupo);
     if (!base) return;
-    const serie = base.split(' ')[0];
-    if (serie !== 'GSI' && serie !== 'GSE') return;
+    const serie = base.split(' ')[0].toUpperCase();
+    if (serie !== 'GSI' && serie !== 'GSE') {
+      // Diagnóstico: guindaste ignorado por formato de subgrupo fora do padrão
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn(
+          `[buildGroups] Guindaste ignorado — id=${g.id}, subgrupo="${g.subgrupo}".\n` +
+          `  O subgrupo deve começar com GSI ou GSE após remover o prefixo "Guindaste ".\n` +
+          `  Exemplos válidos: "Guindaste GSI 6.5", "GSE 10.8C", "Guindaste GSE 10.8 C".`
+        );
+      }
+      return;
+    }
     const optStr = extractOpts(g.subgrupo);
     if (!map.has(base)) map.set(base, { model: base, serie, variants: [] });
     const grp = map.get(base);

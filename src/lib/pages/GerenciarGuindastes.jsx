@@ -831,10 +831,13 @@ const GerenciarGuindastes = () => {
                   type="text"
                   value={formData.subgrupo}
                   onChange={e => handleInputChange('subgrupo', e.target.value)}
-                  placeholder="Ex: Guindaste Hidráulico"
+                  placeholder="Ex: Guindaste GSI 6.5 ou Guindaste GSE 10.8C"
                   required
                   className="modern-input"
                 />
+                <small style={{ color: '#6b7280', fontSize: '12px', marginTop: '4px', display: 'block' }}>
+                  Deve conter GSI (interno) ou GSE (externo). Para canivete use C, para trave use T (ex: GSE 10.8C ou GSE 10.8 C).
+                </small>
               </div>
 
               <div className="modern-top-section">
