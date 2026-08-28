@@ -701,9 +701,7 @@ function LinhaTributacao({ regra, isEditing, onEdit, onSave, onCancel, onDelete,
 // 3. Condições de pagamento
 // =============================
 const EMPTY_CONDICAO_FORM = {
-  descricao: '',
   entrada_percent: '',
-  parcelas: '1',
   taxa_mensal: '',
 };
 
@@ -764,9 +762,7 @@ function CondicoesPagamento({ showToast }) {
   const handleEdit = (c) => {
     setEditingId(c.id);
     setForm({
-      descricao: c.descricao || '',
       entrada_percent: c.entrada_percent ?? '',
-      parcelas: String(c.parcelas ?? 1),
       taxa_mensal: c.taxa_mensal ?? '',
     });
   };
@@ -796,15 +792,6 @@ function CondicoesPagamento({ showToast }) {
       <div className="precificacao-form-box">
         <form onSubmit={handleSubmit} className="precificacao-form-grid">
           <div className="precificacao-form-group">
-            <label>Descrição</label>
-            <input
-              type="text"
-              value={form.descricao}
-              onChange={(e) => handleChange('descricao', e.target.value)}
-              placeholder="Ex: 30% entrada + 5x"
-            />
-          </div>
-          <div className="precificacao-form-group">
             <label>Entrada (%)</label>
             <input
               type="number"
@@ -814,17 +801,6 @@ function CondicoesPagamento({ showToast }) {
               value={form.entrada_percent}
               onChange={(e) => handleChange('entrada_percent', e.target.value)}
               placeholder="0,00"
-            />
-          </div>
-          <div className="precificacao-form-group">
-            <label>Parcelas</label>
-            <input
-              type="number"
-              min="1"
-              max="12"
-              step="1"
-              value={form.parcelas}
-              onChange={(e) => handleChange('parcelas', e.target.value)}
             />
           </div>
           <div className="precificacao-form-group">
@@ -862,9 +838,7 @@ function CondicoesPagamento({ showToast }) {
           <table className="precificacao-table">
             <thead>
               <tr>
-                <th>Descrição</th>
                 <th className="numeric">Entrada %</th>
-                <th className="numeric">Parcelas</th>
                 <th className="numeric">Taxa mensal %</th>
                 <th>Ações</th>
               </tr>
@@ -872,9 +846,7 @@ function CondicoesPagamento({ showToast }) {
             <tbody>
               {condicoes.map((c) => (
                 <tr key={c.id}>
-                  <td>{c.descricao || '—'}</td>
                   <td className="numeric">{formatarPercent(c.entrada_percent)}</td>
-                  <td className="numeric">{c.parcelas}x</td>
                   <td className="numeric">{formatarPercent(c.taxa_mensal)}</td>
                   <td>
                     <div className="precificacao-row-actions">

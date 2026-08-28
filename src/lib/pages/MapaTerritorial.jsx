@@ -33,6 +33,12 @@ function findMunicipioFeature(geojson, cityName) {
   return geojson.features.find((f) => normalizeText(f.properties?.nome) === target);
 }
 
+function findStateFeature(geojson, uf) {
+  if (!geojson?.features || !uf) return null;
+  const target = uf.toUpperCase();
+  return geojson.features.find((f) => (f.properties?.sigla_uf || '').toUpperCase() === target);
+}
+
 function computeCentroid(feature) {
   if (!feature?.geometry) return null;
   let x = 0;
@@ -350,49 +356,87 @@ export default function MapaTerritorial() {
 
   // Marcadores de sede para todas as entidades visíveis
   const sedeMarkers = useMemo(() => {
-    if (!municipiosGeoJson || filter !== 'todos' || selectedEntity) return [];
+    if (filter !== 'todos' || selectedEntity) return [];
+    const targetGeo = municipiosGeoJson || states;
+    if (!targetGeo) return [];
     const markers = [];
     for (const entity of entities) {
-      if (!entity.cidade || !entity.uf) continue;
-      const feature = findMunicipioFeature(municipiosGeoJson, entity.cidade);
+      if (!entity.uf) continue;
+      let feature;
+      if (municipiosGeoJson) {
+        feature = findMunicipioFeature(municipiosGeoJson, entity.cidade);
+      }
+      if (!feature) {
+        feature = findStateFeature(states, entity.uf);
+      }
       if (!feature) continue;
       const centroid = computeCentroid(feature);
       if (!centroid) continue;
+      const label = entity.cidade
+        ? `${entity.name} — ${entity.cidade}/${entity.uf}`
+        : `${entity.name} — ${entity.uf}`;
       markers.push({
         id: `sede-${entityKey(entity)}`,
         lng: centroid[0],
         lat: centroid[1],
-        label: `${entity.name} — ${entity.cidade}/${entity.uf}`,
+        label,
         color: entity.color,
         entity,
       });
     }
     return markers;
-  }, [entities, municipiosGeoJson, filter, selectedEntity]);
+  }, [entities, municipiosGeoJson, states, filter, selectedEntity]);
 
-  // Marcador da entidade selecionada (sempre visível quando há foco em UF)
+  // Marcador da entidade selecionada (sempre visível quando há foco)
   const selectedMarker = useMemo(() => {
-    if (!selectedEntity || !municipiosGeoJson) return [];
-    const feature = findMunicipioFeature(municipiosGeoJson, selectedEntity.cidade);
+    if (!selectedEntity) return [];
+    const targetGeo = municipiosGeoJson || states;
+    if (!targetGeo) return [];
+    let feature;
+    if (municipiosGeoJson) {
+      feature = findMunicipioFeature(municipiosGeoJson, selectedEntity.cidade);
+    }
+    if (!feature) {
+      feature = findStateFeature(states, selectedEntity.uf);
+    }
     if (!feature) return [];
     const centroid = computeCentroid(feature);
     if (!centroid) return [];
+    const label = selectedEntity.cidade
+      ? `${selectedEntity.name} — ${selectedEntity.cidade}/${selectedEntity.uf}`
+      : `${selectedEntity.name} — ${selectedEntity.uf}`;
     return [
       {
         id: `sede-${entityKey(selectedEntity)}`,
         lng: centroid[0],
         lat: centroid[1],
-        label: `${selectedEntity.name} — ${selectedEntity.cidade}/${selectedEntity.uf}`,
+        label,
         color: selectedEntity.color,
         entity: selectedEntity,
       },
     ];
-  }, [selectedEntity, municipiosGeoJson]);
+  }, [selectedEntity, municipiosGeoJson, states]);
 
   const markers = useMemo(
     () => (selectedEntity ? selectedMarker : sedeMarkers),
     [selectedEntity, selectedMarker, sedeMarkers]
   );
+
+  // Cor dominante por estado para visualização nacional
+  const stateColors = useMemo(() => {
+    const map = new Map();
+    const targetEntities = filter === 'todos'
+      ? allEntities
+      : allEntities.filter((e) => e.tipo === filter);
+    for (const entity of targetEntities) {
+      if (!entity.uf) continue;
+      const key = entity.uf.toUpperCase();
+      if (!map.has(key)) {
+        map.set(key, entity.color);
+      }
+    }
+    return map;
+  }, [allEntities, filter]);
 
   // Camadas de área a serem exibidas no mapa
   const areaLayers = useMemo(() => {
@@ -486,6 +530,7 @@ export default function MapaTerritorial() {
             onMarkerClick={handleSelectEntity}
             mode={mode}
             onSelectSede={handleSelectSede}
+            stateColors={stateColors}
           />
         </div>
 

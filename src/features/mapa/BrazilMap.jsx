@@ -47,14 +47,15 @@ function formatUfLabel(uf) {
 }
 
 const DEFAULT_COLORS = {
-  background: '#eef2f7',
-  stateFill: 'rgba(58, 123, 213, 0.55)',
-  stateFillHover: 'rgba(255, 193, 7, 0.75)',
-  stateLine: '#1a3a6c',
-  stateSelected: 'rgba(255, 193, 7, 0.85)',
-  municipioFill: 'rgba(96, 165, 250, 0.45)',
-  municipioFillHover: 'rgba(255, 193, 7, 0.65)',
-  municipioLine: 'rgba(26, 58, 108, 0.55)',
+  background: '#f4f6f8',
+  stateFill: 'rgba(203, 213, 225, 0.55)',
+  stateFillHover: 'rgba(255, 193, 7, 0.65)',
+  stateLine: '#64748b',
+  stateSelected: 'rgba(255, 193, 7, 0.75)',
+  municipioFill: 'rgba(226, 232, 240, 0.25)',
+  municipioFillHover: 'rgba(255, 193, 7, 0.45)',
+  municipioLine: 'rgba(100, 116, 139, 0.55)',
+  areaOutline: 'rgba(255, 255, 255, 0.35)',
 };
 
 export default function BrazilMap({
@@ -70,6 +71,7 @@ export default function BrazilMap({
   onMarkerClick,
   mode = 'default',
   onSelectSede,
+  stateColors = new Map(),
 }) {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
@@ -134,6 +136,7 @@ export default function BrazilMap({
     if (!isMapReady || !map || !states) return;
 
     const sourceId = 'states-source';
+    const entityStateLayerId = 'entity-states-fill';
     const hasSource = map.getSource(sourceId);
 
     if (!hasSource) {
@@ -142,6 +145,23 @@ export default function BrazilMap({
         data: states,
         promoteId: 'codigo_ibge',
         generateId: false,
+      });
+
+      // Preenchimento das entidades no Brasil (visão nacional)
+      map.addLayer({
+        id: entityStateLayerId,
+        type: 'fill',
+        source: sourceId,
+        paint: {
+          'fill-color': [
+            'match',
+            ['get', 'sigla_uf'],
+            ...Array.from(stateColors.entries()).flat(),
+            'transparent',
+          ],
+          'fill-opacity': ['case', ['==', selectedUF || '', ''], 0.6, 0],
+          'fill-outline-color': 'transparent',
+        },
       });
 
       map.addLayer({
@@ -159,10 +179,10 @@ export default function BrazilMap({
           ],
           'fill-opacity': [
             'case',
-            ['==', selectedUF || '', ''], 0.85,
+            ['==', selectedUF || '', ''], 0.2,
             ['==', ['get', 'sigla_uf'], selectedUF || ''],
-            0.95,
-            0.2,
+            0.05,
+            0,
           ],
           'fill-outline-color': 'transparent',
         },
@@ -174,8 +194,8 @@ export default function BrazilMap({
         source: sourceId,
         paint: {
           'line-color': DEFAULT_COLORS.stateLine,
-          'line-width': ['case', ['==', ['get', 'sigla_uf'], selectedUF || ''], 2.5, 1.2],
-          'line-opacity': 0.9,
+          'line-width': ['case', ['==', ['get', 'sigla_uf'], selectedUF || ''], 2.2, 0.8],
+          'line-opacity': ['case', ['==', ['get', 'sigla_uf'], selectedUF || ''], 0.9, 0.2],
         },
       });
 
@@ -230,6 +250,14 @@ export default function BrazilMap({
       map.getSource(sourceId).setData(states);
     }
 
+    map.setPaintProperty(entityStateLayerId, 'fill-color', [
+      'match',
+      ['get', 'sigla_uf'],
+      ...Array.from(stateColors.entries()).flat(),
+      'transparent',
+    ]);
+    map.setPaintProperty(entityStateLayerId, 'fill-opacity', ['case', ['==', selectedUF || '', ''], 0.6, 0]);
+
     map.setPaintProperty('states-fill', 'fill-color', [
       'case',
       ['boolean', ['feature-state', 'hover'], false],
@@ -241,18 +269,24 @@ export default function BrazilMap({
     map.setPaintProperty('states-fill', 'fill-opacity', [
       'case',
       ['==', selectedUF || '', ''],
-      0.85,
+      0.2,
       ['==', ['get', 'sigla_uf'], selectedUF || ''],
-      0.95,
-      0.22,
+      0.05,
+      0,
     ]);
     map.setPaintProperty('states-line', 'line-width', [
       'case',
       ['==', ['get', 'sigla_uf'], selectedUF || ''],
-      2.8,
-      1.2,
+      2.2,
+      0.8,
     ]);
-  }, [isMapReady, states, selectedUF, onSelectUF]);
+    map.setPaintProperty('states-line', 'line-opacity', [
+      'case',
+      ['==', ['get', 'sigla_uf'], selectedUF || ''],
+      0.9,
+      0.2,
+    ]);
+  }, [isMapReady, states, selectedUF, onSelectUF, stateColors]);
 
   // Ajusta o viewport (Brasil ou estado selecionado)
   useEffect(() => {
@@ -324,19 +358,19 @@ export default function BrazilMap({
         source: municipioSourceId,
         paint: {
           'line-color': DEFAULT_COLORS.municipioLine,
-          'line-width': 0.5,
-          'line-opacity': 0.6,
+          'line-width': 0.65,
+          'line-opacity': 0.75,
         },
       });
 
-      // Preenchimento base para todos os municípios (levemente visível)
+      // Preenchimento base dos municípios (neutro, para destacar camadas de área)
       map.addLayer({
         id: municipioBaseId,
         type: 'fill',
         source: municipioSourceId,
         paint: {
           'fill-color': DEFAULT_COLORS.municipioFill,
-          'fill-opacity': 0.35,
+          'fill-opacity': 0.12,
           'fill-outline-color': 'transparent',
         },
       });
@@ -428,7 +462,8 @@ export default function BrazilMap({
       });
 
       const layerId = `municipios-area-${String(layer.id).replace(/[^a-zA-Z0-9_-]/g, '-')}`;
-      areaLayerIdsRef.current.push(layerId);
+      const lineId = `${layerId}-line`;
+      areaLayerIdsRef.current.push(layerId, lineId);
 
       map.addLayer({
         id: layerId,
@@ -436,8 +471,19 @@ export default function BrazilMap({
         source: municipioSourceId,
         paint: {
           'fill-color': stops.length > 0 ? ['match', ['get', 'codigo_ibge'], ...stops, 'transparent'] : 'transparent',
-          'fill-opacity': layer.selected ? 0.85 : 0.45,
-          'fill-outline-color': 'transparent',
+          'fill-opacity': layer.selected ? 0.78 : 0.52,
+          'fill-outline-color': DEFAULT_COLORS.areaOutline,
+        },
+      });
+
+      map.addLayer({
+        id: lineId,
+        type: 'line',
+        source: municipioSourceId,
+        paint: {
+          'line-color': ['match', ['get', 'codigo_ibge'], ...stops, 'transparent'],
+          'line-width': 1.2,
+          'line-opacity': 0.85,
         },
       });
     });
@@ -453,23 +499,47 @@ export default function BrazilMap({
     markersRef.current = [];
 
     markers.forEach((marker) => {
+      const entity = marker.entity;
+      const popupHtml = `
+        <div class="map-territorial-popup-card">
+          <div class="map-territorial-popup-dot" style="background-color:${marker.color || '#ffc107'}"></div>
+          <div class="map-territorial-popup-body">
+            <div class="map-territorial-popup-name">${marker.label || entity?.name || 'Entidade'}</div>
+            ${entity?.cidade ? `<div class="map-territorial-popup-meta">${entity.cidade}/${entity.uf || ''}</div>` : ''}
+            ${entity?.raw?.endereco ? `<div class="map-territorial-popup-address">${entity.raw.endereco}</div>` : ''}
+            ${entity?.raw?.tipo ? `<div class="map-territorial-popup-type">${entity.raw.tipo}</div>` : ''}
+          </div>
+        </div>
+      `;
+
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: 18,
+        className: 'map-territorial-popup map-territorial-marker-popup',
+      }).setHTML(popupHtml);
+
       const el = document.createElement('div');
       el.className = 'map-territorial-marker';
       el.style.backgroundColor = marker.color || '#ffc107';
-      el.title = marker.label || '';
-
-      const label = document.createElement('span');
-      label.textContent = marker.label || '';
-      el.appendChild(label);
 
       const m = new maplibregl.Marker({ element: el, anchor: 'bottom' })
         .setLngLat([marker.lng, marker.lat])
+        .setPopup(popup)
         .addTo(map);
 
       if (onMarkerClick) {
         el.style.cursor = 'pointer';
         el.addEventListener('click', () => onMarkerClick(marker));
       }
+
+      // Hover mostra popup, sai esconde
+      el.addEventListener('mouseenter', () => {
+        popup.setLngLat([marker.lng, marker.lat]).addTo(map);
+      });
+      el.addEventListener('mouseleave', () => {
+        popup.remove();
+      });
 
       markersRef.current.push(m);
     });

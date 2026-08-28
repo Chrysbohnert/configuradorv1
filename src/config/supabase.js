@@ -2134,27 +2134,10 @@ async getUserById(id) {
   async uploadGraficoCarga(file, fileName) {
     try {
       
-      // Verificar se há sessão ativa
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        
-        // Verificar se há indicação de sessão Supabase no localStorage
-        const supabaseSession = localStorage.getItem('supabaseSession');
-        
-        if (supabaseSession === 'active') {
-          
-          // Tentar renovar a sessão
-          const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          
-          if (refreshError) {
-            // Se não conseguir renovar, tentar fazer sign in novamente
-            throw new Error('Sessão Supabase expirada. Faça login novamente.');
-          } else {
-          }
-        } else {
-          throw new Error('Sessão Supabase não encontrada. Faça login novamente.');
-        }
+      // Verificar autenticação via token da API (sistema próprio — não usa Supabase Auth)
+      const token = localStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('Sessão expirada. Faça login novamente.');
       }
       
       // Fazer upload diretamente (bucket já existe)
