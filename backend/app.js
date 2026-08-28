@@ -52,6 +52,10 @@ app.options('*', (_req, res) => res.sendStatus(204));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// ─── ARQUIVOS ESTÁTICOS (uploads locais) ───────────────────────────────────────
+// PDFs de gráficos de carga salvos pelo backend ficam acessíveis em /uploads/...
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ─── LOG (apenas em desenvolvimento) ──────────────────────────────────────────
 if (process.env.NODE_ENV !== 'production') {
   app.use((req, _res, next) => {

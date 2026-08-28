@@ -58,3 +58,7 @@ backend/csv/*.csv
 backend/csv/*.zip
 backend/csv/*.csv
 backend/csv/*.csv
+
+# PDFs de gráficos de carga (upload local)
+backend/uploads/graficos-carga/*.pdf
+!backend/uploads/graficos-carga/.gitkeep
