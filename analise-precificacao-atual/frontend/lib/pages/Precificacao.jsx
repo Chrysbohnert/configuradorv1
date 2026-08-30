@@ -1,10 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { formatCurrency } from '../../utils/formatters';
 import {
   getEquipamentosComPrecificacao,
-  importarPrecificacao,
   salvarPrecificacao,
 } from '../../api/precificacao';
 import {
@@ -30,7 +29,7 @@ import {
   listarHistorico,
   excluirHistorico,
 } from '../../api/precificacaoSimulador';
-import { analisarPrecificacaoExcel, exportarPrecificacaoExcel } from '../precificacaoExcel';
+import { calcularPreco } from '../pricingEngine';
 import '../../styles/Precificacao.css';
 
 const UFS = [
@@ -45,8 +44,21 @@ const EMPTY_FORM_PREC = {
   comissao_percent: '',
   assistencia_percent: '',
   margem_lucro_percent: '',
-  ipi_percent: '',
 };
+
+function calcularPrecoBase(mp, mo, regra) {
+  const vMp = Number(mp) || 0;
+  const vMo = Number(mo) || 0;
+  const subtotal = vMp + vMo;
+  const custoFixo = Number(regra?.custo_fixo_percent) || 0;
+  const comissao = Number(regra?.comissao_percent) || 0;
+  const assistencia = Number(regra?.assistencia_percent) || 0;
+  const margem = Number(regra?.margem_lucro_percent) || 0;
+
+  const variaveis = subtotal * (custoFixo + comissao + assistencia) / 100;
+  const preco = (subtotal + variaveis) * (1 + margem / 100);
+  return Number(preco.toFixed(4));
+}
 
 function formatarFrete(item) {
   const min = Number(item.frete_min);
@@ -105,7 +117,6 @@ function PrecificacaoEquipamentos({ showToast }) {
       comissao_percent: item.comissao_percent ?? '',
       assistencia_percent: item.assistencia_percent ?? '',
       margem_lucro_percent: item.margem_lucro_percent ?? '',
-      ipi_percent: item.ipi_percent ?? '',
     });
   };
 
@@ -128,10 +139,27 @@ function PrecificacaoEquipamentos({ showToast }) {
         comissao_percent: form.comissao_percent,
         assistencia_percent: form.assistencia_percent,
         margem_lucro_percent: form.margem_lucro_percent,
-        ipi_percent: form.ipi_percent,
       });
 
-      await loadEquipamentos();
+      const novaRegra = {
+        custo_fixo_percent: Number(form.custo_fixo_percent) || 0,
+        comissao_percent: Number(form.comissao_percent) || 0,
+        assistencia_percent: Number(form.assistencia_percent) || 0,
+        margem_lucro_percent: Number(form.margem_lucro_percent) || 0,
+      };
+
+      setEquipamentos((prev) =>
+        prev.map((item) =>
+          String(item.id) === String(form.guindaste_id)
+            ? {
+                ...item,
+                ...novaRegra,
+                precificacao_id: item.precificacao_id || true,
+                preco_base_calculado: calcularPrecoBase(item.custo_mp, item.custo_mo, novaRegra),
+              }
+            : item
+        )
+      );
 
       showToast('success', 'Precificação salva com sucesso!');
       handleCancel();
@@ -163,7 +191,6 @@ function PrecificacaoEquipamentos({ showToast }) {
             <thead>
               <tr>
                 <th>Referência</th>
-                <th>NCM</th>
                 <th>Modelo / Subgrupo</th>
                 <th className="numeric">Custo MP</th>
                 <th className="numeric">Custo MO</th>
@@ -173,7 +200,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                 <th className="numeric">Comissão %</th>
                 <th className="numeric">Assistência %</th>
                 <th className="numeric">Margem %</th>
-                <th className="numeric">IPI %</th>
                 <th className="numeric">Preço base</th>
                 <th>Ações</th>
               </tr>
@@ -183,8 +209,7 @@ function PrecificacaoEquipamentos({ showToast }) {
                 const isEditing = String(editingId) === String(item.id);
                 return (
                   <tr key={item.id}>
-                    <td><strong>{item.codigo_referencia || '-'}</strong></td>
-                    <td>{item.ncm || '—'}</td>
+                    <td>{item.codigo_referencia || '-'}</td>
                     <td>
                       {item.modelo} {item.subgrupo}
                     </td>
@@ -238,16 +263,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                             className="precificacao-input"
                           />
                         </td>
-                        <td className="numeric">
-                          <input
-                            type="number"
-                            min="0"
-                            step="0.01"
-                            value={form.ipi_percent}
-                            onChange={(e) => handleChange('ipi_percent', e.target.value)}
-                            className="precificacao-input"
-                          />
-                        </td>
                         <td className="numeric">—</td>
                         <td>
                           <div className="precificacao-row-actions">
@@ -288,9 +303,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                         </td>
                         <td className="numeric">
                           {Number(item.margem_lucro_percent || 0).toFixed(2)}%
-                        </td>
-                        <td className="numeric">
-                          {Number(item.ipi_percent || 0).toFixed(2)}%
                         </td>
                         <td className="numeric">
                           <strong>
@@ -355,10 +367,14 @@ function Tributacao({ showToast }) {
 
   const handleGerarUFs = async (e) => {
     e.preventDefault();
+    if (!formNovaNCM.ncm.trim()) {
+      showToast('error', 'Informe a NCM.');
+      return;
+    }
     setIsLoading(true);
     try {
       await gerarRegrasParaTodasUFs({
-        ncm: formNovaNCM.ncm || 'PADRAO',
+        ncm: formNovaNCM.ncm,
         icms_contribuinte_percent: formNovaNCM.icms_contribuinte_percent,
         icms_nao_contribuinte_percent: formNovaNCM.icms_nao_contribuinte_percent,
         pis_cofins_percent: formNovaNCM.pis_cofins_percent,
@@ -376,15 +392,15 @@ function Tributacao({ showToast }) {
 
   const handleAdicionarLinha = async (e) => {
     e.preventDefault();
-    if (!novaLinha.uf) {
-      showToast('error', 'UF é obrigatória.');
+    if (!novaLinha.uf || !novaLinha.ncm.trim()) {
+      showToast('error', 'UF e NCM são obrigatórias.');
       return;
     }
     setIsLoading(true);
     try {
       await salvarRegraTributacao({
         uf: novaLinha.uf,
-        ncm: novaLinha.ncm || 'PADRAO',
+        ncm: novaLinha.ncm,
         icms_contribuinte_percent: novaLinha.icms_contribuinte_percent,
         icms_nao_contribuinte_percent: novaLinha.icms_nao_contribuinte_percent,
         pis_cofins_percent: novaLinha.pis_cofins_percent,
@@ -686,7 +702,7 @@ function LinhaTributacao({ regra, isEditing, onEdit, onSave, onCancel, onDelete,
 // =============================
 const EMPTY_CONDICAO_FORM = {
   entrada_percent: '',
-  taxa_anual_percent: '',
+  taxa_mensal: '',
 };
 
 function CondicoesPagamento({ showToast }) {
@@ -747,7 +763,7 @@ function CondicoesPagamento({ showToast }) {
     setEditingId(c.id);
     setForm({
       entrada_percent: c.entrada_percent ?? '',
-      taxa_anual_percent: c.taxa_anual_percent ?? '',
+      taxa_mensal: c.taxa_mensal ?? '',
     });
   };
 
@@ -788,13 +804,13 @@ function CondicoesPagamento({ showToast }) {
             />
           </div>
           <div className="precificacao-form-group">
-            <label>Taxa anual (%)</label>
+            <label>Taxa mensal (%)</label>
             <input
               type="number"
               min="0"
               step="0.01"
-              value={form.taxa_anual_percent}
-              onChange={(e) => handleChange('taxa_anual_percent', e.target.value)}
+              value={form.taxa_mensal}
+              onChange={(e) => handleChange('taxa_mensal', e.target.value)}
               placeholder="0,00"
             />
           </div>
@@ -823,7 +839,7 @@ function CondicoesPagamento({ showToast }) {
             <thead>
               <tr>
                 <th className="numeric">Entrada %</th>
-                <th className="numeric">Taxa anual %</th>
+                <th className="numeric">Taxa mensal %</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -831,7 +847,7 @@ function CondicoesPagamento({ showToast }) {
               {condicoes.map((c) => (
                 <tr key={c.id}>
                   <td className="numeric">{formatarPercent(c.entrada_percent)}</td>
-                  <td className="numeric">{formatarPercent(c.taxa_anual_percent)}</td>
+                  <td className="numeric">{formatarPercent(c.taxa_mensal)}</td>
                   <td>
                     <div className="precificacao-row-actions">
                       <button className="precificacao-btn small" onClick={() => handleEdit(c)}>Editar</button>
@@ -857,10 +873,7 @@ function Parametros({ showToast }) {
     comissao_base_vendedor_percent: '',
     desconto_comercial_max_percent: '',
     comissao_cedivel_max_percent: '',
-    passo_desconto_parcela_percent: '',
-    irpj_percent: '',
-    csll_percent: '',
-    ipi_padrao_percent: '',
+    irpj_csll_percent: '',
   });
 
   useEffect(() => {
@@ -875,10 +888,7 @@ function Parametros({ showToast }) {
         comissao_base_vendedor_percent: data.comissao_base_vendedor_percent ?? '',
         desconto_comercial_max_percent: data.desconto_comercial_max_percent ?? '',
         comissao_cedivel_max_percent: data.comissao_cedivel_max_percent ?? '',
-        passo_desconto_parcela_percent: data.passo_desconto_parcela_percent ?? '',
-        irpj_percent: data.irpj_percent ?? '',
-        csll_percent: data.csll_percent ?? '',
-        ipi_padrao_percent: data.ipi_padrao_percent ?? '',
+        irpj_csll_percent: data.irpj_csll_percent ?? '',
       });
     } catch (error) {
       console.error('Erro ao carregar parâmetros:', error);
@@ -898,10 +908,7 @@ function Parametros({ showToast }) {
         comissao_base_vendedor_percent: form.comissao_base_vendedor_percent,
         desconto_comercial_max_percent: form.desconto_comercial_max_percent,
         comissao_cedivel_max_percent: form.comissao_cedivel_max_percent,
-        passo_desconto_parcela_percent: form.passo_desconto_parcela_percent,
-        irpj_percent: form.irpj_percent,
-        csll_percent: form.csll_percent,
-        ipi_padrao_percent: form.ipi_padrao_percent,
+        irpj_csll_percent: form.irpj_csll_percent,
       });
       showToast('success', 'Parâmetros salvos!');
       load();
@@ -953,43 +960,13 @@ function Parametros({ showToast }) {
             />
           </div>
           <div className="precificacao-form-group">
-            <label>Redução do desconto por parcela (%)</label>
+            <label>IRPJ/CSLL sobre margem (%)</label>
             <input
               type="number"
               min="0"
               step="0.01"
-              value={form.passo_desconto_parcela_percent}
-              onChange={(e) => handleChange('passo_desconto_parcela_percent', e.target.value)}
-            />
-          </div>
-          <div className="precificacao-form-group">
-            <label>IRPJ (%)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.irpj_percent}
-              onChange={(e) => handleChange('irpj_percent', e.target.value)}
-            />
-          </div>
-          <div className="precificacao-form-group">
-            <label>CSLL (%)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.csll_percent}
-              onChange={(e) => handleChange('csll_percent', e.target.value)}
-            />
-          </div>
-          <div className="precificacao-form-group">
-            <label>IPI padrão (%)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.01"
-              value={form.ipi_padrao_percent}
-              onChange={(e) => handleChange('ipi_padrao_percent', e.target.value)}
+              value={form.irpj_csll_percent}
+              onChange={(e) => handleChange('irpj_csll_percent', e.target.value)}
             />
           </div>
           <div className="precificacao-form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
@@ -1009,16 +986,16 @@ function Parametros({ showToast }) {
 function Simulador({ showToast }) {
   const [equipamentos, setEquipamentos] = useState([]);
   const [condicoes, setCondicoes] = useState([]);
+  const [parametros, setParametros] = useState({});
+  const [tributacoes, setTributacoes] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [resultado, setResultado] = useState(null);
-  const [matriz, setMatriz] = useState([]);
 
   const [guindasteId, setGuindasteId] = useState('');
   const [uf, setUf] = useState('');
   const [contribuinteStr, setContribuinteStr] = useState('true');
   const contribuinte = contribuinteStr === 'true';
   const [condicaoId, setCondicaoId] = useState('');
-  const [parcelas, setParcelas] = useState('0');
   const [descontoComercial, setDescontoComercial] = useState('');
   const [descontoComissao, setDescontoComissao] = useState('');
   const [frete, setFrete] = useState('');
@@ -1031,12 +1008,16 @@ function Simulador({ showToast }) {
 
   const loadBase = async () => {
     try {
-      const [eq, cond] = await Promise.all([
+      const [eq, cond, par, trib] = await Promise.all([
         getEquipamentosComPrecificacao(),
         listarCondicoes({ ativo: true }),
+        getParametros(),
+        getRegrasTributacao(),
       ]);
       setEquipamentos(eq || []);
       setCondicoes(cond || []);
+      setParametros(par || {});
+      setTributacoes(trib || []);
     } catch (error) {
       console.error('Erro ao carregar base do simulador:', error);
       showToast('error', 'Erro ao carregar dados do simulador.');
@@ -1047,28 +1028,50 @@ function Simulador({ showToast }) {
     return equipamentos.find((e) => String(e.id) === String(guindasteId));
   }, [equipamentos, guindasteId]);
 
+  const ncmEquipamento = equipamentoSelecionado?.ncm || '';
+  const tributacaoSelecionada = useMemo(() => {
+    if (!uf) return null;
+    return tributacoes.find((t) => t.uf === uf && t.ncm === (ncmEquipamento || t.ncm));
+  }, [tributacoes, uf, ncmEquipamento]);
+
   const condicaoSelecionada = useMemo(() => {
     return condicoes.find((c) => String(c.id) === String(condicaoId));
   }, [condicoes, condicaoId]);
 
+  const calcularLocal = () => {
+    if (!equipamentoSelecionado) return null;
 
-  const carregarMatriz = async () => {
-    const linhas = await Promise.all(condicoes.map(async (condicao) => {
-      const respostas = await Promise.allSettled(Array.from({ length: 13 }, (_, quantidade) => simular({
-        guindaste_id: guindasteId,
-        uf,
-        contribuinte,
-        condicao_id: condicao.id,
-        parcelas: quantidade,
-        desconto_comercial_percent: 0,
-        desconto_da_comissao_percent: 0,
-        frete: 0,
-        instalacao: 0,
-      })));
-      const resultados = respostas.map((resposta) => resposta.status === 'fulfilled' ? resposta.value : null);
-      return { condicao, resultados };
-    }));
-    setMatriz(linhas);
+    const icmsPct = contribuinte
+      ? tributacaoSelecionada?.icms_contribuinte_percent
+      : tributacaoSelecionada?.icms_nao_contribuinte_percent;
+
+    const input = {
+      custo_mp: equipamentoSelecionado.custo_mp,
+      custo_mo: equipamentoSelecionado.custo_mo,
+      equipamento: {
+        custo_fixo_percent: equipamentoSelecionado.custo_fixo_percent,
+        comissao_percent: equipamentoSelecionado.comissao_percent,
+        assistencia_percent: equipamentoSelecionado.assistencia_percent,
+        margem_lucro_percent: equipamentoSelecionado.margem_lucro_percent,
+      },
+      tributacao: {
+        icms_percent: icmsPct ?? 0,
+        pis_cofins_percent: tributacaoSelecionada?.pis_cofins_percent ?? 0,
+      },
+      condicao: {
+        entrada_percent: condicaoSelecionada?.entrada_percent ?? 0,
+        parcelas: condicaoSelecionada?.parcelas ?? 1,
+        taxa_mensal: condicaoSelecionada?.taxa_mensal ?? 0,
+      },
+      parametros,
+      contribuinte,
+      desconto_comercial_percent: descontoComercial,
+      desconto_da_comissao_percent: descontoComissao,
+      frete,
+      instalacao,
+    };
+
+    return calcularPreco(input);
   };
 
   const handleSimular = async () => {
@@ -1091,15 +1094,13 @@ function Simulador({ showToast }) {
         uf,
         contribuinte,
         condicao_id: condicaoId,
-        parcelas,
         desconto_comercial_percent: descontoComercial,
         desconto_da_comissao_percent: descontoComissao,
         frete,
         instalacao,
       });
       setResultado(data);
-      await carregarMatriz();
-      showToast('success', 'Simulação e matriz de condições atualizadas!');
+      showToast('success', 'Simulação concluída!');
     } catch (error) {
       console.error('Erro na simulação:', error);
       showToast('error', error.message || 'Erro na simulação.');
@@ -1120,14 +1121,12 @@ function Simulador({ showToast }) {
         uf,
         contribuinte,
         condicao_id: condicaoId,
-        parcelas,
         desconto_comercial_percent: descontoComercial,
         desconto_da_comissao_percent: descontoComissao,
         frete,
         instalacao,
       });
       setResultado(data.resultado);
-      await carregarMatriz();
       showToast('success', 'Simulação salva no histórico!');
     } catch (error) {
       console.error('Erro ao salvar simulação:', error);
@@ -1136,6 +1135,8 @@ function Simulador({ showToast }) {
       setIsLoading(false);
     }
   };
+
+  const resultadoPreview = calcularLocal();
 
   const ncmOptions = useMemo(() => {
     const set = new Set(equipamentos.map((e) => e.ncm).filter(Boolean));
@@ -1184,17 +1185,8 @@ function Simulador({ showToast }) {
               <option value="">Selecione</option>
               {condicoes.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.descricao || `${c.entrada_percent}% entrada + ${c.taxa_anual_percent}% a.a.`}
+                  {c.descricao || `${c.entrada_percent}% entrada + ${c.parcelas}x`}
                 </option>
-              ))}
-            </select>
-          </div>
-          <div className="precificacao-form-group">
-            <label>Parcelas</label>
-            <select value={parcelas} onChange={(e) => setParcelas(e.target.value)}>
-              <option value="0">À vista / faturamento</option>
-              {Array.from({ length: 12 }, (_, index) => index + 1).map((quantidade) => (
-                <option key={quantidade} value={quantidade}>{quantidade}x</option>
               ))}
             </select>
           </div>
@@ -1249,14 +1241,10 @@ function Simulador({ showToast }) {
         </form>
       </div>
 
-      {resultado && (
+      {(resultado || resultadoPreview) && (
         <div className="precificacao-resultado">
-          <CadeiaCalculo resultado={resultado} />
-          <MatrizCondicoes matriz={matriz} />
-          <div className="precificacao-audit-panel">
-            <h3>Composição do preço (auditoria)</h3>
-            <ResultadoSimulacao resultado={resultado} />
-          </div>
+          <h3>Resultado</h3>
+          <ResultadoSimulacao resultado={resultado || resultadoPreview} />
         </div>
       )}
 
@@ -1271,89 +1259,12 @@ function Simulador({ showToast }) {
   );
 }
 
-function CadeiaCalculo({ resultado }) {
-  const custos = resultado.custos || {};
-  const formacao = resultado.formacao || {};
-  const desconto = resultado.desconto_comercial || {};
-  const comissao = resultado.comissao || {};
-  const pagamento = resultado.pagamento || {};
-  const margem = resultado.margem || {};
-  const margemAlvo = Number(margem.percentual || 0);
-  const margemLiquida = Number(margem.liquida_percent || 0);
-  return (
-    <>
-      <div className="precificacao-audit-panel">
-        <h3>Cadeia de cálculo</h3>
-        <dl className="precificacao-audit-list">
-          <div><dt>Custo (MP + MO)</dt><dd>{formatCurrency(custos.custoVariavel || 0)}</dd></div>
-          <div><dt>IRPJ/CSLL sobre a margem (gross-up)</dt><dd>{formatarPercent(formacao.irpj_csll_gross_up_percent)}</dd></div>
-          <div><dt>Σ percentuais do divisor</dt><dd>{formatarPercent(formacao.soma_percentuais)}</dd></div>
-          <div><dt>÷ (1 − Σ percentuais)</dt><dd>{formatCurrency(formacao.base || 0)}</dd></div>
-          <div><dt>Preço de tabela (pior cenário)</dt><dd>{formatCurrency(resultado.preco_tabela || 0)}</dd></div>
-          <div><dt>× (1 − desconto financeiro {formatarPercent(formacao.desconto_financeiro_percent)})</dt><dd>{formatCurrency(formacao.preco_condicao || 0)}</dd></div>
-          <div><dt>× (1 − desconto comercial {formatarPercent(desconto.percentual)}) × (1 − desconto da comissão {formatarPercent(comissao.cedida_percent_sobre_base)})</dt><dd>{formatCurrency(resultado.preco_final_sem_logistica || 0)}</dd></div>
-        </dl>
-        <div className="precificacao-audit-totals">
-          <div><span>Preço final</span><strong>{formatCurrency(resultado.preco_final || 0)}</strong></div>
-          <div><span>Entrada ({formatarPercent(pagamento.entrada_percent)})</span><strong>{formatCurrency(pagamento.entrada_valor || 0)}</strong></div>
-          <div><span>Saldo no faturamento</span><strong>{formatCurrency(pagamento.saldo_valor || 0)}</strong></div>
-        </div>
-      </div>
-      <div className="precificacao-audit-panel">
-        <h3>Validação de margem</h3>
-        <div className="precificacao-audit-totals">
-          <div><span>Margem alvo</span><strong>{formatarPercent(margemAlvo)}</strong></div>
-          <div><span>Margem antes do IR</span><strong>{formatarPercent(margem.antes_ir_percent)}</strong></div>
-          <div><span>Margem líquida após IR/CSLL</span><strong>{formatarPercent(margemLiquida)}</strong></div>
-        </div>
-        <div className={`precificacao-margin-status ${margemLiquida + 0.0001 >= margemAlvo ? 'ok' : 'warning'}`}>
-          {margemLiquida + 0.0001 >= margemAlvo
-            ? 'Margem líquida dentro ou acima da margem alvo cadastrada.'
-            : 'Margem líquida abaixo da margem alvo cadastrada.'}
-        </div>
-      </div>
-    </>
-  );
-}
-
-function MatrizCondicoes({ matriz }) {
-  if (!matriz.length) return null;
-  return (
-    <div className="precificacao-audit-panel">
-      <h3>Preço por condição de pagamento</h3>
-      <div className="precificacao-matrix-wrap">
-        <table className="precificacao-matrix">
-          <thead><tr><th>Entrada</th>{Array.from({ length: 13 }, (_, index) => <th key={index}>{index === 0 ? 'À vista' : `${index}x`}</th>)}</tr></thead>
-          <tbody>{matriz.map(({ condicao, resultados }) => (
-            <tr key={condicao.id}>
-              <th>{formatarPercent(condicao.entrada_percent)}</th>
-              {resultados.map((item, index) => (
-                <td key={index}>
-                  {item ? (
-                    <>
-                      <strong>{formatCurrency(item.preco_final_sem_logistica || 0)}</strong>
-                      <span>desc. até {formatarPercent(item.desconto_comercial?.maximo_permitido)}</span>
-                    </>
-                  ) : <span>Indisponível</span>}
-                </td>
-              ))}
-            </tr>
-          ))}</tbody>
-        </table>
-      </div>
-      <p className="precificacao-matrix-note">O preço de tabela contempla o custo financeiro máximo; condições mais curtas liberam desconto financeiro e comercial.</p>
-    </div>
-  );
-}
-
 function ResultadoSimulacao({ resultado }) {
   if (!resultado) return null;
   const p = resultado.pagamento || {};
   const c = resultado.comissao || {};
   const m = resultado.margem || {};
   const l = resultado.logistica || {};
-  const t = resultado.tributacao || {};
-  const f = resultado.formacao || {};
 
   return (
     <div className="precificacao-resultado-grid">
@@ -1390,24 +1301,12 @@ function ResultadoSimulacao({ resultado }) {
         <span className="value">{formatCurrency(c.final_valor || 0)}</span>
       </div>
       <div className="precificacao-resultado-card">
-        <span className="label">Margem antes de IRPJ/CSLL</span>
-        <span className="value">{formatarPercent(m.antes_ir_percent)} = {formatCurrency(m.antes_ir_valor || 0)}</span>
+        <span className="label">Margem bruta</span>
+        <span className="value">{formatarPercent(m.percentual)} = {formatCurrency(m.bruta_valor || 0)}</span>
       </div>
       <div className="precificacao-resultado-card">
         <span className="label">Margem líquida (IRPJ/CSLL)</span>
-        <span className="value">{formatarPercent(m.liquida_percent)} = {formatCurrency(m.liquida_valor || 0)}</span>
-      </div>
-      <div className="precificacao-resultado-card">
-        <span className="label">IPI / IRPJ / CSLL</span>
-        <span className="value">{formatarPercent(t.ipi_percent)} / {formatarPercent(t.irpj_percent)} / {formatarPercent(t.csll_percent)}</span>
-      </div>
-      <div className="precificacao-resultado-card">
-        <span className="label">Fator pior / condição</span>
-        <span className="value">{Number(f.fator_pior_cenario || 1).toFixed(4)} / {Number(f.fator_condicao || 1).toFixed(4)}</span>
-      </div>
-      <div className="precificacao-resultado-card">
-        <span className="label">Preço da condição</span>
-        <span className="value">{formatCurrency(f.preco_condicao || 0)}</span>
+        <span className="value">{formatCurrency(m.liquida_valor || 0)}</span>
       </div>
       <div className="precificacao-resultado-card">
         <span className="label">Frete</span>
@@ -1530,149 +1429,12 @@ function Historico({ showToast }) {
   );
 }
 
-function ExcelActions({ showToast, onApplied }) {
-  const inputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-
-  const carregarBase = async () => {
-    const [equipamentos, condicoes, tributacoes, parametros] = await Promise.all([
-      getEquipamentosComPrecificacao(),
-      listarCondicoes({ ativo: true }),
-      getRegrasTributacao(),
-      getParametros(),
-    ]);
-    return { equipamentos, condicoes, tributacoes, parametros };
-  };
-
-  const handleExport = async () => {
-    setIsLoading(true);
-    try {
-      await exportarPrecificacaoExcel(await carregarBase());
-      showToast('success', 'Banco de dados da precificação exportado.');
-    } catch (error) {
-      showToast('error', error.message || 'Erro ao exportar Excel.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    setIsLoading(true);
-    try {
-      const base = await carregarBase();
-      setPreview(await analisarPrecificacaoExcel(
-        file,
-        base.equipamentos,
-        base.condicoes,
-        base.tributacoes,
-        base.parametros
-      ));
-    } catch (error) {
-      showToast('error', error.message || 'Arquivo Excel inválido.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApply = async () => {
-    if (!preview) return;
-    setIsLoading(true);
-    try {
-      if (preview.erros.length > 0) {
-        showToast('error', 'Corrija os erros apontados antes de importar.');
-        return;
-      }
-      const relatorio = await importarPrecificacao({
-        equipamentos: preview.equipamentos,
-        condicoes: preview.condicoes,
-        tributacoes: preview.tributacoes,
-        parametros: preview.parametros,
-      });
-      setPreview(null);
-      onApplied();
-      showToast('success', `Importação atômica concluída: ${relatorio.equipamentos} equipamentos, ${relatorio.condicoes} condições e ${relatorio.tributacoes} tributações.`);
-    } catch (error) {
-      showToast('error', error.message || 'Erro ao aplicar importação.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="precificacao-toolbar">
-        <button className="precificacao-btn" onClick={() => inputRef.current?.click()} disabled={isLoading}>
-          Importar Excel
-        </button>
-        <button className="precificacao-btn" onClick={handleExport} disabled={isLoading}>
-          Exportar Excel
-        </button>
-        <input ref={inputRef} type="file" accept=".xlsx" hidden onChange={handleFile} />
-      </div>
-      {preview && (
-        <div className="precificacao-import-overlay" role="dialog" aria-modal="true">
-          <div className="precificacao-import-modal">
-            <h3>Validar importação</h3>
-            <p className="precificacao-section-subtitle">{preview.arquivo}</p>
-            <div className="precificacao-summary-grid">
-              <div><strong>{preview.equipamentos.length}</strong><span>equipamentos encontrados</span></div>
-              <div><strong>{preview.condicoes.length}</strong><span>condições</span></div>
-              <div><strong>{preview.tributacoes.length}</strong><span>regras tributárias</span></div>
-              <div><strong>{preview.parametros ? 1 : 0}</strong><span>conjunto de parâmetros</span></div>
-            </div>
-            {preview.codigosNaoEncontrados.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Códigos não encontrados — não serão criados:</strong>
-                <p>{preview.codigosNaoEncontrados.join(', ')}</p>
-              </div>
-            )}
-            {preview.codigosDuplicados.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Códigos repetidos no arquivo — será considerada a última linha:</strong>
-                <p>{preview.codigosDuplicados.join(', ')}</p>
-              </div>
-            )}
-            {preview.erros.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Erros que bloqueiam a importação:</strong>
-                <p>{preview.erros.join('; ')}</p>
-              </div>
-            )}
-            <div className="precificacao-table-wrap precificacao-import-list">
-              <table className="precificacao-table">
-                <thead><tr><th>Código</th><th>Atualização</th></tr></thead>
-                <tbody>{preview.equipamentos.map((item) => (
-                  <tr key={item.codigo}>
-                    <td>{item.codigo}</td>
-                    <td>Custo fixo, comissão, assistência, IPI e margem</td>
-                  </tr>
-                ))}</tbody>
-              </table>
-            </div>
-            <div className="precificacao-modal-actions">
-              <button className="precificacao-btn" onClick={() => setPreview(null)} disabled={isLoading}>Cancelar</button>
-              <button className="precificacao-btn primary" onClick={handleApply} disabled={isLoading || preview.erros.length > 0}>
-                {isLoading ? 'Importando...' : 'Confirmar atualizações'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
-
 // =============================
 // Página principal
 // =============================
 export default function Precificacao() {
   const { user } = useOutletContext();
   const [activeTab, setActiveTab] = useState('precificacao');
-  const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ type: '', message: '' });
 
   const showToast = (type, message) => {
@@ -1710,11 +1472,6 @@ export default function Precificacao() {
             <div className={`precificacao-status ${toast.type}`}>{toast.message}</div>
           )}
 
-          <ExcelActions
-            showToast={showToast}
-            onApplied={() => setRefreshKey((current) => current + 1)}
-          />
-
           <div className="precificacao-info-box">
             <p>
               <strong>Isolamento mantido:</strong> fretes, instalação, planos de pagamento,
@@ -1742,12 +1499,12 @@ export default function Precificacao() {
             ))}
           </div>
 
-          {activeTab === 'precificacao' && <PrecificacaoEquipamentos key={refreshKey} showToast={showToast} />}
-          {activeTab === 'tributacao' && <Tributacao key={refreshKey} showToast={showToast} />}
-          {activeTab === 'condicoes' && <CondicoesPagamento key={refreshKey} showToast={showToast} />}
-          {activeTab === 'parametros' && <Parametros key={refreshKey} showToast={showToast} />}
-          {activeTab === 'simulador' && <Simulador key={refreshKey} showToast={showToast} />}
-          {activeTab === 'historico' && <Historico key={refreshKey} showToast={showToast} />}
+          {activeTab === 'precificacao' && <PrecificacaoEquipamentos showToast={showToast} />}
+          {activeTab === 'tributacao' && <Tributacao showToast={showToast} />}
+          {activeTab === 'condicoes' && <CondicoesPagamento showToast={showToast} />}
+          {activeTab === 'parametros' && <Parametros showToast={showToast} />}
+          {activeTab === 'simulador' && <Simulador showToast={showToast} />}
+          {activeTab === 'historico' && <Historico showToast={showToast} />}
         </div>
       </div>
     </div>

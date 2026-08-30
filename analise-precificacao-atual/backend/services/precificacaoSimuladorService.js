@@ -7,7 +7,6 @@
 const { query } = require('../db/pool');
 const engine = require('./precificacaoEngine');
 const parametrosService = require('./precificacaoParametrosService');
-const { NCM_PADRAO } = require('./tributacaoService');
 
 async function buscarEquipamento(guindasteId) {
   const { rows } = await query(
@@ -25,8 +24,7 @@ async function buscarEquipamento(guindasteId) {
        p.custo_fixo_percent,
        p.comissao_percent,
        p.assistencia_percent,
-       p.margem_lucro_percent,
-       p.ipi_percent
+       p.margem_lucro_percent
      FROM public.guindastes g
      LEFT JOIN public.precificacao p ON p.guindaste_id = g.id
      WHERE g.id = $1`,
@@ -36,7 +34,6 @@ async function buscarEquipamento(guindasteId) {
 }
 
 async function buscarTributacao(uf, ncm) {
-  const ncmBusca = (ncm || '').trim() || NCM_PADRAO;
   const { rows } = await query(
     `SELECT
        uf,
@@ -45,16 +42,9 @@ async function buscarTributacao(uf, ncm) {
        icms_nao_contribuinte_percent,
        pis_cofins_percent
      FROM public.tributacao
-     WHERE uf = UPPER(TRIM($1))
-     ORDER BY
-       CASE
-         WHEN TRIM(ncm) = $2 THEN 0
-         WHEN TRIM(ncm) = $3 THEN 1
-         ELSE 2
-       END,
-       ncm
+     WHERE uf = UPPER(TRIM($1)) AND ncm = TRIM($2)
      LIMIT 1`,
-    [uf, ncmBusca, NCM_PADRAO]
+    [uf, ncm]
   );
   return rows[0] || null;
 }
@@ -65,21 +55,6 @@ async function buscarCondicao(id) {
     [id]
   );
   return rows[0] || null;
-}
-
-async function buscarFatorPiorCenario() {
-  const { rows } = await query(
-    `SELECT entrada_percent, taxa_anual_percent
-     FROM public.precificacao_condicoes
-     WHERE ativo = TRUE`
-  );
-  return Math.max(
-    1,
-    ...rows.map((item) => engine.fatoresCondicao(
-      item.entrada_percent,
-      item.taxa_anual_percent
-    )[11])
-  );
 }
 
 function normalizarTributacao(tributacao, contribuinte) {
@@ -109,18 +84,10 @@ async function simular(input, usuario) {
     : {
         entrada_percent: input.entrada_percent || 0,
         parcelas: input.parcelas || 1,
-        taxa_anual_percent: input.taxa_anual_percent || 0,
+        taxa_mensal: input.taxa_mensal || 0,
       };
-  if (!condicao) {
-    const error = new Error('Condição de pagamento não encontrada');
-    error.status = 404;
-    throw error;
-  }
 
-  const [parametros, fatorPiorCenario] = await Promise.all([
-    parametrosService.buscarParametros(),
-    buscarFatorPiorCenario(),
-  ]);
+  const parametros = await parametrosService.buscarParametros();
 
   const engineInput = {
     custo_mp: equipamento.custo_mp,
@@ -130,16 +97,14 @@ async function simular(input, usuario) {
       comissao_percent: equipamento.comissao_percent,
       assistencia_percent: equipamento.assistencia_percent,
       margem_lucro_percent: equipamento.margem_lucro_percent,
-      ipi_percent: equipamento.ipi_percent,
     },
     tributacao,
     condicao: {
       entrada_percent: condicao.entrada_percent,
-      parcelas: input.parcelas === undefined ? condicao.parcelas : input.parcelas,
-      taxa_anual_percent: condicao.taxa_anual_percent,
+      parcelas: condicao.parcelas,
+      taxa_mensal: condicao.taxa_mensal,
     },
     parametros,
-    fator_pior_cenario: fatorPiorCenario,
     contribuinte: input.contribuinte,
     desconto_comercial_percent: input.desconto_comercial_percent || 0,
     desconto_da_comissao_percent: input.desconto_da_comissao_percent || 0,
@@ -165,7 +130,6 @@ async function simular(input, usuario) {
       comissao_percent: equipamento.comissao_percent,
       assistencia_percent: equipamento.assistencia_percent,
       margem_lucro_percent: equipamento.margem_lucro_percent,
-      ipi_percent: equipamento.ipi_percent,
     },
     tributacao: tributacaoRaw
       ? {

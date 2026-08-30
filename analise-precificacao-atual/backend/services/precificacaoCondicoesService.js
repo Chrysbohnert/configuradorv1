@@ -35,15 +35,15 @@ async function create(data) {
   const descricao = (data.descricao || '').trim();
   const entradaPercent = data.entrada_percent === '' ? 0 : Number(data.entrada_percent) || 0;
   const parcelas = Number(data.parcelas) || 1;
-  const taxaAnualPercent = data.taxa_anual_percent === '' ? 0 : Number(data.taxa_anual_percent) || 0;
+  const taxaMensal = data.taxa_mensal === '' ? 0 : Number(data.taxa_mensal) || 0;
   const ativo = data.ativo === undefined ? true : !!data.ativo;
 
   const { rows } = await query(
     `INSERT INTO public.precificacao_condicoes
-       (descricao, entrada_percent, parcelas, taxa_anual_percent, ativo)
+       (descricao, entrada_percent, parcelas, taxa_mensal, ativo)
      VALUES ($1, $2, $3, $4, $5)
      RETURNING *`,
-    [descricao, entradaPercent, parcelas, taxaAnualPercent, ativo]
+    [descricao, entradaPercent, parcelas, taxaMensal, ativo]
   );
   return rows[0];
 }
@@ -67,9 +67,9 @@ async function update(id, data) {
     params.push(Number(data.parcelas) || 1);
     sets.push(`parcelas = $${params.length}`);
   }
-  if (data.taxa_anual_percent !== undefined) {
-    params.push(data.taxa_anual_percent === '' ? 0 : Number(data.taxa_anual_percent) || 0);
-    sets.push(`taxa_anual_percent = $${params.length}`);
+  if (data.taxa_mensal !== undefined) {
+    params.push(data.taxa_mensal === '' ? 0 : Number(data.taxa_mensal) || 0);
+    sets.push(`taxa_mensal = $${params.length}`);
   }
   if (data.ativo !== undefined) {
     params.push(!!data.ativo);

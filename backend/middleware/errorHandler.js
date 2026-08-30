@@ -2,7 +2,8 @@ const PG_ERRORS = {
   '23505': { status: 409, message: 'Registro duplicado' },
   '23503': { status: 400, message: 'Violação de chave estrangeira' },
   '23502': { status: 400, message: 'Campo obrigatório ausente' },
-  '42P01': { status: 500, message: 'Tabela não encontrada no banco' },
+  '42P01': { status: 500, message: 'Schema incompleto: tabela não encontrada. Execute as migrations pendentes.' },
+  '42703': { status: 500, message: 'Schema incompleto: coluna não encontrada. Execute as migrations pendentes.' },
   '28P01': { status: 500, message: 'Credenciais do banco inválidas' },
   ECONNREFUSED: { status: 503, message: 'Banco de dados indisponível' },
 };

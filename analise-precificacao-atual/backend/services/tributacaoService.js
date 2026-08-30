@@ -5,8 +5,6 @@
 
 const { query } = require('../db/pool');
 
-const NCM_PADRAO = 'PADRAO';
-
 const UF_LIST = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
@@ -52,7 +50,7 @@ async function create(data) {
      RETURNING *`,
     [
       (uf || '').toUpperCase().trim(),
-      (ncm || '').trim() || NCM_PADRAO,
+      (ncm || '').trim(),
       data.icms_contribuinte_percent === '' ? 0 : Number(icms_contribuinte_percent) || 0,
       data.icms_nao_contribuinte_percent === '' ? 0 : Number(icms_nao_contribuinte_percent) || 0,
       data.pis_cofins_percent === '' ? 0 : Number(pis_cofins_percent) || 0,
@@ -63,7 +61,8 @@ async function create(data) {
 
 async function createAllUFsForNCM(data) {
   const { ncm, icms_contribuinte_percent, icms_nao_contribuinte_percent, pis_cofins_percent } = data;
-  const ncmLimpo = (ncm || '').trim() || NCM_PADRAO;
+  const ncmLimpo = (ncm || '').trim();
+  if (!ncmLimpo) throw new Error('NCM é obrigatório');
 
   const vContribuinte = data.icms_contribuinte_percent === '' ? 0 : Number(icms_contribuinte_percent) || 0;
   const vNaoContribuinte = data.icms_nao_contribuinte_percent === '' ? 0 : Number(icms_nao_contribuinte_percent) || 0;
@@ -104,7 +103,7 @@ async function update(id, data) {
     sets.push(`uf = $${params.length}`);
   }
   if (data.ncm !== undefined) {
-    params.push((data.ncm || '').trim() || NCM_PADRAO);
+    params.push((data.ncm || '').trim());
     sets.push(`ncm = $${params.length}`);
   }
   if (data.icms_contribuinte_percent !== undefined) {
@@ -139,7 +138,6 @@ async function remove(id) {
 }
 
 module.exports = {
-  NCM_PADRAO,
   UF_LIST,
   findAll,
   findById,
