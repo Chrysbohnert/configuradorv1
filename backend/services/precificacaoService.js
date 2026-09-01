@@ -200,14 +200,35 @@ async function importarAtomico(payload) {
     await client.query('BEGIN');
     for (const item of equipamentos) {
       const guindasteId = numeroValido(item.guindaste_id, 'guindaste_id', { padrao: null });
-      const atual = await client.query('SELECT * FROM public.precificacao WHERE guindaste_id = $1', [guindasteId]);
-      const valores = normalizarPrecificacao({ ...atual.rows[0], ...item, guindaste_id: guindasteId });
-      const existe = await client.query('SELECT 1 FROM public.guindastes WHERE id = $1', [valores.guindaste_id]);
+      const existe = await client.query('SELECT 1 FROM public.guindastes WHERE id = $1', [guindasteId]);
       if (!existe.rowCount) {
-        const error = new Error(`Equipamento ${valores.guindaste_id} não encontrado`);
+        const error = new Error(`Equipamento ${guindasteId} não encontrado`);
         error.status = 400;
         throw error;
       }
+
+      const custoMp = item.custo_mp !== undefined ? numeroValido(item.custo_mp, 'custo_mp') : undefined;
+      const custoMo = item.custo_mo !== undefined ? numeroValido(item.custo_mo, 'custo_mo') : undefined;
+      if (custoMp !== undefined || custoMo !== undefined) {
+        const sets = [];
+        const params = [];
+        if (custoMp !== undefined) {
+          params.push(custoMp);
+          sets.push(`custo_mp = $${params.length}`);
+        }
+        if (custoMo !== undefined) {
+          params.push(custoMo);
+          sets.push(`custo_mo = $${params.length}`);
+        }
+        params.push(guindasteId);
+        await client.query(
+          `UPDATE public.guindastes SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${params.length}`,
+          params
+        );
+      }
+
+      const atual = await client.query('SELECT * FROM public.precificacao WHERE guindaste_id = $1', [guindasteId]);
+      const valores = normalizarPrecificacao({ ...atual.rows[0], ...item, guindaste_id: guindasteId });
       await client.query(
         `INSERT INTO public.precificacao
            (guindaste_id, custo_fixo_percent, comissao_percent, assistencia_percent, margem_lucro_percent, ipi_percent)

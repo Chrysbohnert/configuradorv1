@@ -15,6 +15,7 @@ const number = (input) => {
 };
 
 const percent = (input) => {
+  
   const raw = String(input ?? '').trim();
   const parsed = number(raw.replace('%', ''));
   if (raw.endsWith('%')) return parsed;
@@ -53,7 +54,7 @@ export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tribu
   const workbook = new ExcelJS.Workbook();
   addSheet(workbook, 'Produtos', [
     'CODIGO', 'DESCRICAO', 'NCM', 'VALOR MP', 'VALOR MO', 'CUSTO FIXO %',
-    'COMISSAO %', 'ASSISTENCIA %', 'IPI %', 'MARGEM LUCRO %',
+    'COMISSAO %', 'ASSISTENCIA %', 'MARGEM LUCRO %',
   ], equipamentos.map((item) => ({
     CODIGO: item.codigo_referencia,
     DESCRICAO: [item.modelo, item.subgrupo].filter(Boolean).join(' '),
@@ -63,7 +64,6 @@ export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tribu
     'CUSTO FIXO %': percentCell(item.custo_fixo_percent),
     'COMISSAO %': percentCell(item.comissao_percent),
     'ASSISTENCIA %': percentCell(item.assistencia_percent),
-    'IPI %': item.ipi_percent === null ? '' : percentCell(item.ipi_percent),
     'MARGEM LUCRO %': percentCell(item.margem_lucro_percent),
   })));
   addSheet(workbook, 'Condicoes', ['ID', 'ENTRADA %', 'TAXA ANUAL %'], condicoes.map((item) => ({
@@ -81,12 +81,11 @@ export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tribu
     'PIS COFINS %': percentCell(item.pis_cofins_percent),
   })));
   addSheet(workbook, 'Parametros', [
-    'IRPJ %', 'CSLL %', 'IPI PADRAO %', 'DESCONTO COMERCIAL MAX %',
+    'IRPJ %', 'CSLL %', 'DESCONTO COMERCIAL MAX %',
     'PASSO DESCONTO POR PARCELA %', 'COMISSAO BASE %', 'DESCONTO MAX COMISSAO %',
   ], [{
     'IRPJ %': percentCell(parametros.irpj_percent),
     'CSLL %': percentCell(parametros.csll_percent),
-    'IPI PADRAO %': percentCell(parametros.ipi_padrao_percent),
     'DESCONTO COMERCIAL MAX %': percentCell(parametros.desconto_comercial_max_percent),
     'PASSO DESCONTO POR PARCELA %': percentCell(parametros.passo_desconto_parcela_percent),
     'COMISSAO BASE %': percentCell(parametros.comissao_base_vendedor_percent),
@@ -100,6 +99,10 @@ export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tribu
   link.download = 'banco-de-dados-precificacao.xlsx';
   link.click();
   URL.revokeObjectURL(link.href);
+}
+
+function colunaPresente(row, principal, alternativo) {
+  return Object.hasOwn(row, principal) || Object.hasOwn(row, alternativo);
 }
 
 export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, tributacoes, parametrosAtuais) {
@@ -118,13 +121,15 @@ export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, t
         ['margem_lucro_percent', 'MARGEM LUCRO %', 'MARGEM LUCRO'],
       ];
       campos.forEach(([field, principal, alternativo]) => {
-        if (Object.hasOwn(row, principal) || Object.hasOwn(row, alternativo)) {
+        if (colunaPresente(row, principal, alternativo)) {
           item[field] = percent(row[principal] ?? row[alternativo]);
         }
       });
-      if (Object.hasOwn(row, 'IPI %') || Object.hasOwn(row, 'IPI')) {
-        const ipi = row['IPI %'] ?? row.IPI;
-        item.ipi_percent = String(ipi ?? '').trim() === '' ? null : percent(ipi);
+      if (colunaPresente(row, 'VALOR MP', 'VALOR_MP')) {
+        item.custo_mp = number(row['VALOR MP'] ?? row.VALOR_MP);
+      }
+      if (colunaPresente(row, 'VALOR MO', 'VALOR_MO')) {
+        item.custo_mo = number(row['VALOR MO'] ?? row.VALOR_MO);
       }
       return item;
     });
@@ -134,7 +139,22 @@ export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, t
   const produtosUnicos = [...new Map(produtos.map((item) => [item.codigo, item])).values()];
   const equipamentosEncontrados = produtosUnicos
     .filter((item) => equipamentosPorCodigo.has(item.codigo))
-    .map((item) => ({ ...item, guindaste_id: equipamentosPorCodigo.get(item.codigo).id }));
+    .map((item) => {
+      const atual = equipamentosPorCodigo.get(item.codigo);
+      return {
+        ...item,
+        guindaste_id: atual.id,
+        atual: {
+          custo_mp: Number(atual.custo_mp || 0),
+          custo_mo: Number(atual.custo_mo || 0),
+          custo_fixo_percent: Number(atual.custo_fixo_percent || 0),
+          comissao_percent: Number(atual.comissao_percent || 0),
+          assistencia_percent: Number(atual.assistencia_percent || 0),
+          margem_lucro_percent: Number(atual.margem_lucro_percent || 0),
+          ipi_percent: atual.ipi_percent,
+        },
+      };
+    });
   const codigosNaoEncontrados = produtosUnicos
     .filter((item) => !equipamentosPorCodigo.has(item.codigo))
     .map((item) => item.codigo);
@@ -169,7 +189,7 @@ export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, t
   const parametros = parametro ? {
     irpj_percent: importedPercent(parametro['IRPJ %'], parametrosAtuais.irpj_percent),
     csll_percent: importedPercent(parametro['CSLL %'], parametrosAtuais.csll_percent),
-    ipi_padrao_percent: importedPercent(parametro['IPI PADRAO %'], parametrosAtuais.ipi_padrao_percent),
+    ipi_padrao_percent: number(parametrosAtuais.ipi_padrao_percent),
     desconto_comercial_max_percent: importedPercent(parametro['DESCONTO COMERCIAL MAX %'], parametrosAtuais.desconto_comercial_max_percent),
     passo_desconto_parcela_percent: importedPercent(parametro['PASSO DESCONTO POR PARCELA %'], parametrosAtuais.passo_desconto_parcela_percent),
     comissao_base_vendedor_percent: importedPercent(parametro['COMISSAO BASE %'], parametrosAtuais.comissao_base_vendedor_percent),

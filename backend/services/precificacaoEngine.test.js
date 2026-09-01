@@ -60,3 +60,52 @@ test('usa IPI padrão somente quando o equipamento não possui IPI', () => {
     equipamento: { ...base.equipamento, ipi_percent: 0 },
   }).tributacao.ipi_percent, 0);
 });
+
+test('EXPORT zera ICMS e PIS/COFINS na simulação', () => {
+  const resultado = engine.calcularPreco({
+    custo_mp: 100000,
+    custo_mo: 20000,
+    equipamento: { custo_fixo_percent: 8, comissao_percent: 5, assistencia_percent: 1, margem_lucro_percent: 12 },
+    tributacao: { icms_percent: 0, pis_cofins_percent: 0 },
+    condicao: { parcelas: 1 },
+    parametros: {
+      comissao_base_vendedor_percent: 5,
+      desconto_comercial_max_percent: 6,
+      comissao_cedivel_max_percent: 1,
+      passo_desconto_parcela_percent: 1,
+      irpj_percent: 25,
+      csll_percent: 9,
+      ipi_padrao_percent: 0,
+    },
+  });
+
+  assert.equal(resultado.tributacao.icms_percent, 0);
+  assert.equal(resultado.tributacao.pis_cofins_percent, 0);
+  assert.equal(resultado.tributacao.icms_valor, 0);
+  assert.equal(resultado.tributacao.pis_cofins_valor, 0);
+});
+
+test('limita desconto comercial e da comissão aos máximos parametrizados', () => {
+  const resultado = engine.calcularPreco({
+    custo_mp: 100000,
+    custo_mo: 20000,
+    equipamento: { custo_fixo_percent: 8, comissao_percent: 5, assistencia_percent: 1, margem_lucro_percent: 12 },
+    tributacao: { icms_percent: 8.8, pis_cofins_percent: 9.25 },
+    condicao: { parcelas: 3 },
+    parametros: {
+      comissao_base_vendedor_percent: 5,
+      desconto_comercial_max_percent: 6,
+      comissao_cedivel_max_percent: 1,
+      passo_desconto_parcela_percent: 1,
+      irpj_percent: 25,
+      csll_percent: 9,
+      ipi_padrao_percent: 0,
+    },
+    desconto_comercial_percent: 10,
+    desconto_da_comissao_percent: 5,
+  });
+
+  const limiteDesconto = engine.limiteDescontoComercial(0.06, 3, 0.01);
+  assert.equal(resultado.desconto_comercial.percentual, Number((limiteDesconto * 100).toFixed(4)));
+  assert.equal(resultado.comissao.cedida_percent_sobre_base, 1);
+});

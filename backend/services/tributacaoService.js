@@ -12,6 +12,7 @@ const UF_LIST = [
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO',
 ];
+const UF_ESPECIAIS = ['EXPORT'];
 
 async function findAll({ uf, ncm } = {}) {
   let sql = `SELECT * FROM public.tributacao`;
@@ -141,6 +142,7 @@ async function remove(id) {
 module.exports = {
   NCM_PADRAO,
   UF_LIST,
+  UF_ESPECIAIS,
   findAll,
   findById,
   create,

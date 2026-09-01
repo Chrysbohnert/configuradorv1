@@ -35,7 +35,20 @@ async function buscarEquipamento(guindasteId) {
   return rows[0] || null;
 }
 
+const UF_EXPORT = 'EXPORT';
+
 async function buscarTributacao(uf, ncm) {
+  const ufLimpo = String(uf || '').trim().toUpperCase();
+  if (ufLimpo === UF_EXPORT) {
+    return {
+      uf: UF_EXPORT,
+      ncm: (ncm || '').trim() || NCM_PADRAO,
+      icms_contribuinte_percent: 0,
+      icms_nao_contribuinte_percent: 0,
+      pis_cofins_percent: 0,
+    };
+  }
+
   const ncmBusca = (ncm || '').trim() || NCM_PADRAO;
   const { rows } = await query(
     `SELECT
