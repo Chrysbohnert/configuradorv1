@@ -427,14 +427,33 @@ const GerenciarGuindastes = () => {
     const item = erpItems.find((candidate) => `${candidate.referencia} — ${candidate.descricao || 'Sem descrição'}` === value);
     setSelectedErpItemId(item?.id || null);
     if (!item) {
-      setFormData((current) => ({ ...current, codigo_referencia: '', descricao: '', ncm: '', custo_mp: '', custo_mo: '' }));
+      setFormData((current) => ({ ...current, codigo_referencia: '', subgrupo: '', descricao: '', ncm: '', custo_mp: '', custo_mo: '', modelo: '', grupo: '' }));
       return;
     }
+
+    const descricao = item.descricao || '';
+    const descricaoUpper = descricao.toUpperCase();
+    let modelo = '';
+    let grupo = '';
+
+    if (descricaoUpper.includes('GSI')) {
+      modelo = 'GSI';
+      grupo = 'Interno';
+    } else if (descricaoUpper.includes('GSE')) {
+      modelo = 'GSE';
+      grupo = 'Externo';
+    } else {
+      alert('A descrição do ERP não contém GSI nem GSE. Preencha Modelo e Grupo manualmente antes de salvar.');
+    }
+
     setFormData((current) => ({
       ...current,
       codigo_referencia: item.referencia || '',
-      descricao: item.descricao || '',
-      ncm: item.ncm || '',
+      subgrupo: descricao,
+      descricao: current.descricao || '',
+      ncm: current.ncm || '',
+      modelo,
+      grupo,
       custo_mp: item.custo_mp ?? '',
       custo_mo: item.custo_mo ?? ''
     }));
