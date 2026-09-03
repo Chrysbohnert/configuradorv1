@@ -17,6 +17,7 @@ function normalizeHeader(header) {
     .replace(/[\u0300-\u036f]/g, '')
     .trim()
     .toUpperCase()
+    .replace(/\./g, '')
     .replace(/[_-]+/g, ' ')
     .replace(/\s+/g, ' ');
 }
@@ -37,17 +38,41 @@ function firstValue(row, aliases) {
   return '';
 }
 
-async function parseWorkbook(buffer) {
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(buffer);
-  const worksheet = workbook.getWorksheet('Produtos') || workbook.worksheets[0];
-  if (!worksheet || worksheet.rowCount < 2) {
-    const error = new Error('A planilha não possui itens para importar');
-    error.status = 400;
-    throw error;
-  }
+function parseCsvRows(buffer) {
+  const text = buffer.toString('utf8').replace(/^\uFEFF/, '');
+  const rows = [];
+  let row = [];
+  let field = '';
+  let quoted = false;
 
-  const headers = worksheet.getRow(1).values.slice(1).map(normalizeHeader);
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    if (char === '"') {
+      if (quoted && text[index + 1] === '"') {
+        field += '"';
+        index += 1;
+      } else {
+        quoted = !quoted;
+      }
+    } else if (char === ';' && !quoted) {
+      row.push(field);
+      field = '';
+    } else if ((char === '\n' || char === '\r') && !quoted) {
+      if (char === '\r' && text[index + 1] === '\n') index += 1;
+      row.push(field);
+      if (row.some((value) => value.trim() !== '')) rows.push(row);
+      row = [];
+      field = '';
+    } else {
+      field += char;
+    }
+  }
+  row.push(field);
+  if (row.some((value) => value.trim() !== '')) rows.push(row);
+  return rows;
+}
+
+function mapRows(headers, sourceRows) {
   if (!headers.includes('REFERENCIA')) {
     const error = new Error('A coluna REFERÊNCIA é obrigatória');
     error.status = 400;
@@ -55,11 +80,10 @@ async function parseWorkbook(buffer) {
   }
 
   const byReference = new Map();
-  worksheet.eachRow((excelRow, index) => {
-    if (index === 1) return;
+  sourceRows.forEach((values) => {
     const row = {};
     headers.forEach((header, column) => {
-      if (header) row[header] = excelRow.getCell(column + 1).value;
+      if (header) row[header] = values[column];
     });
     const referencia = String(firstValue(row, ['REFERENCIA'])).replace(/\.0$/, '').trim();
     if (!referencia) return;
@@ -79,6 +103,34 @@ async function parseWorkbook(buffer) {
     throw error;
   }
   return items;
+}
+
+async function parseWorkbook(buffer, filename = 'importacao.xlsx') {
+  if (/\.csv$/i.test(filename)) {
+    const rows = parseCsvRows(buffer);
+    if (rows.length < 2) {
+      const error = new Error('O CSV não possui itens para importar');
+      error.status = 400;
+      throw error;
+    }
+    return mapRows(rows[0].map(normalizeHeader), rows.slice(1));
+  }
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const worksheet = workbook.getWorksheet('Produtos') || workbook.worksheets[0];
+  if (!worksheet || worksheet.rowCount < 2) {
+    const error = new Error('A planilha não possui itens para importar');
+    error.status = 400;
+    throw error;
+  }
+  const headers = worksheet.getRow(1).values.slice(1).map(normalizeHeader);
+  const rows = [];
+  worksheet.eachRow((excelRow, index) => {
+    if (index === 1) return;
+    rows.push(headers.map((_, column) => excelRow.getCell(column + 1).value));
+  });
+  return mapRows(headers, rows);
 }
 
 function calculateVariation(previous, next) {
@@ -104,7 +156,7 @@ function buildAlert(reference, field, previous, next) {
 }
 
 async function importSnapshot({ buffer, filename, user }) {
-  const items = await parseWorkbook(buffer);
+  const items = await parseWorkbook(buffer, filename);
   const client = await getClient();
   try {
     await client.query('BEGIN');

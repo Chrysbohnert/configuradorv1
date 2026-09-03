@@ -698,7 +698,7 @@ const GerenciarGuindastes = () => {
                             </svg>
                             {erpImporting ? 'Importando...' : 'Importar ERP'}
                           </BlobButton>
-                          <input ref={erpFileInputRef} type="file" accept=".xlsx" hidden onChange={handleErpFile} />
+                          <input ref={erpFileInputRef} type="file" accept=".csv,.xlsx" hidden onChange={handleErpFile} />
                           <BlobButton onClick={handleAddNew} className="add-btn">
                             <svg viewBox="0 0 24 24" fill="currentColor">
                               <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
@@ -912,7 +912,24 @@ const GerenciarGuindastes = () => {
               <button type="button" onClick={() => setShowErpInstructions(false)} className="gg-erp-instructions-close" aria-label="Fechar">×</button>
             </div>
             <div className="modern-body gg-erp-instructions-body">
-              <img src="/importacao-erp.png" alt="Instruções para gerar o arquivo no Tecnicon" />
+              <div className="gg-erp-instructions-path">
+                <span>PPCP</span><b>›</b><span>Manufatura</span><b>›</b><span>Custo de Produção</span><b>›</b><span>Consultas</span><b>›</b><strong>Custo de Produção por Item</strong>
+              </div>
+              <div className="gg-erp-instructions-settings">
+                <div><span>Grupo inicial/final</span><strong>31</strong></div>
+                <div><span>Subgrupo inicial/final</span><strong>529</strong></div>
+                <div><span>Data</span><strong>{new Date().toLocaleDateString('pt-BR')}</strong></div>
+                <div><span>Qtde. Negociada</span><strong>1</strong></div>
+              </div>
+              <ul className="gg-erp-instructions-checklist">
+                <li>Marcar <strong>Substituir custo entrada p/ custo reposição</strong></li>
+                <li>Marcar <strong>Somente Ativos</strong></li>
+                <li>Clicar em <strong>Custo de Produção por Item</strong> para gerar o arquivo.</li>
+              </ul>
+              <details className="gg-erp-instructions-example">
+                <summary>Ver exemplo da tela</summary>
+                <img src="/importacao-erp.png" alt="Exemplo da tela de importação no Tecnicon" />
+              </details>
               <button
                 type="button"
                 className="btn-modern-save gg-erp-instructions-confirm"

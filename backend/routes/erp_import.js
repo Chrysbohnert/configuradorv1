@@ -10,13 +10,13 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 15 * 1024 * 1024 },
   fileFilter(_req, file, callback) {
-    const validExtension = /\.xlsx$/i.test(file.originalname || '');
+    const validExtension = /\.(csv|xlsx)$/i.test(file.originalname || '');
     callback(null, validExtension);
   },
 });
 
 router.post('/importar', requireAuth, requireAdmin, upload.single('arquivo'), asyncHandler(async (req, res) => {
-  if (!req.file) return res_.badRequest(res, 'Envie um arquivo Excel no formato .xlsx');
+  if (!req.file) return res_.badRequest(res, 'Envie um arquivo ERP no formato .csv ou .xlsx');
   const data = await svc.importSnapshot({
     buffer: req.file.buffer,
     filename: req.file.originalname,
