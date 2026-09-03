@@ -49,23 +49,9 @@ const addSheet = (workbook, name, columns, rows) => {
   worksheet.views = [{ state: 'frozen', ySplit: 1 }];
 };
 
-export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tributacoes, parametros }) {
+export async function exportarPrecificacaoExcel({ condicoes, tributacoes, parametros }) {
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
-  addSheet(workbook, 'Produtos', [
-    'CODIGO', 'DESCRICAO', 'NCM', 'VALOR MP', 'VALOR MO', 'CUSTO FIXO %',
-    'COMISSAO %', 'ASSISTENCIA %', 'MARGEM LUCRO %',
-  ], equipamentos.map((item) => ({
-    CODIGO: item.codigo_referencia,
-    DESCRICAO: [item.modelo, item.subgrupo].filter(Boolean).join(' '),
-    NCM: item.ncm,
-    'VALOR MP': number(item.custo_mp),
-    'VALOR MO': number(item.custo_mo),
-    'CUSTO FIXO %': percentCell(item.custo_fixo_percent),
-    'COMISSAO %': percentCell(item.comissao_percent),
-    'ASSISTENCIA %': percentCell(item.assistencia_percent),
-    'MARGEM LUCRO %': percentCell(item.margem_lucro_percent),
-  })));
   addSheet(workbook, 'Condicoes', ['ID', 'ENTRADA %', 'TAXA ANUAL %'], condicoes.map((item) => ({
     ID: item.id,
     'ENTRADA %': percentCell(item.entrada_percent),
@@ -101,64 +87,10 @@ export async function exportarPrecificacaoExcel({ equipamentos, condicoes, tribu
   URL.revokeObjectURL(link.href);
 }
 
-function colunaPresente(row, principal, alternativo) {
-  return Object.hasOwn(row, principal) || Object.hasOwn(row, alternativo);
-}
-
-export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, tributacoes, parametrosAtuais) {
+export async function analisarPrecificacaoExcel(file, condicoes, tributacoes, parametrosAtuais) {
   const { default: ExcelJS } = await import('exceljs');
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(await file.arrayBuffer());
-  const produtosSheet = workbook.getWorksheet('Produtos') || workbook.worksheets[0];
-  const produtos = rowsFromSheet(produtosSheet)
-    .filter((row) => String(row.CODIGO ?? '').trim())
-    .map((row) => {
-      const item = { codigo: String(row.CODIGO).replace(/\.0$/, '').trim() };
-      const campos = [
-        ['custo_fixo_percent', 'CUSTO FIXO %', 'CUSTO FIXO'],
-        ['comissao_percent', 'COMISSAO %', 'COMISSAO'],
-        ['assistencia_percent', 'ASSISTENCIA %', 'ASSISTENCIA'],
-        ['margem_lucro_percent', 'MARGEM LUCRO %', 'MARGEM LUCRO'],
-      ];
-      campos.forEach(([field, principal, alternativo]) => {
-        if (colunaPresente(row, principal, alternativo)) {
-          item[field] = percent(row[principal] ?? row[alternativo]);
-        }
-      });
-      if (colunaPresente(row, 'VALOR MP', 'VALOR_MP')) {
-        item.custo_mp = number(row['VALOR MP'] ?? row.VALOR_MP);
-      }
-      if (colunaPresente(row, 'VALOR MO', 'VALOR_MO')) {
-        item.custo_mo = number(row['VALOR MO'] ?? row.VALOR_MO);
-      }
-      return item;
-    });
-  const equipamentosPorCodigo = new Map(equipamentos.map((item) => [String(item.codigo_referencia), item]));
-  const ocorrencias = produtos.reduce((map, item) => map.set(item.codigo, (map.get(item.codigo) || 0) + 1), new Map());
-  const codigosDuplicados = [...ocorrencias.entries()].filter(([, total]) => total > 1).map(([codigo]) => codigo);
-  const produtosUnicos = [...new Map(produtos.map((item) => [item.codigo, item])).values()];
-  const equipamentosEncontrados = produtosUnicos
-    .filter((item) => equipamentosPorCodigo.has(item.codigo))
-    .map((item) => {
-      const atual = equipamentosPorCodigo.get(item.codigo);
-      return {
-        ...item,
-        guindaste_id: atual.id,
-        atual: {
-          custo_mp: Number(atual.custo_mp || 0),
-          custo_mo: Number(atual.custo_mo || 0),
-          custo_fixo_percent: Number(atual.custo_fixo_percent || 0),
-          comissao_percent: Number(atual.comissao_percent || 0),
-          assistencia_percent: Number(atual.assistencia_percent || 0),
-          margem_lucro_percent: Number(atual.margem_lucro_percent || 0),
-          ipi_percent: atual.ipi_percent,
-        },
-      };
-    });
-  const codigosNaoEncontrados = produtosUnicos
-    .filter((item) => !equipamentosPorCodigo.has(item.codigo))
-    .map((item) => item.codigo);
-
   const condicoesRows = rowsFromSheet(workbook.getWorksheet('Condicoes'));
   const condicoesPorId = new Map(condicoes.map((item) => [String(item.id), item]));
   const condicoesImportadas = condicoesRows.map((row) => ({
@@ -198,9 +130,6 @@ export async function analisarPrecificacaoExcel(file, equipamentos, condicoes, t
 
   return {
     arquivo: file.name,
-    equipamentos: equipamentosEncontrados,
-    codigosNaoEncontrados,
-    codigosDuplicados,
     erros: errosCondicoes,
     condicoes: condicoesImportadas,
     tributacoes: tributacoesImportadas,

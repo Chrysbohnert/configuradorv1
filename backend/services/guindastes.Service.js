@@ -3,7 +3,7 @@
  * Queries SQL para a tabela `guindastes`.
  */
 
-const { query } = require('../db/pool');
+const { query, getClient } = require('../db/pool');
 const { normalizarRegiao } = require('../utils/regiaoHelper');
 
 /** Campos leves para listagem inicial (Nova Proposta) — sem imagem/descrição/base64 */
@@ -90,6 +90,56 @@ async function create(data) {
     params
   );
   return rows[0];
+}
+
+async function createFromErp(data, erpItemId) {
+  const client = await getClient();
+  try {
+    await client.query('BEGIN');
+    const { rows: erpRows } = await client.query(
+      `SELECT i.id, i.referencia, i.descricao, i.ncm, i.custo_mp, i.custo_mo
+       FROM public.erp_import_itens i
+       INNER JOIN public.erp_import_lotes l ON l.id = i.lote_id
+       WHERE i.id = $1 AND l.atual = TRUE AND l.status = 'concluido'
+       LIMIT 1`,
+      [erpItemId]
+    );
+    const erpItem = erpRows[0];
+    if (!erpItem) {
+      const error = new Error('Item ERP inválido ou não pertencente ao lote atual');
+      error.status = 400;
+      throw error;
+    }
+
+    const authoritativeData = {
+      ...data,
+      codigo_referencia: erpItem.referencia,
+      descricao: erpItem.descricao,
+      ncm: erpItem.ncm,
+      custo_mp: erpItem.custo_mp,
+      custo_mo: erpItem.custo_mo,
+    };
+    const cols = [], vals = [], params = [];
+    KNOWN_FIELDS.forEach((field) => {
+      if (authoritativeData[field] !== undefined) {
+        cols.push(`"${field}"`);
+        params.push(authoritativeData[field] === '' ? null : authoritativeData[field]);
+        vals.push(`$${params.length}`);
+      }
+    });
+    if (cols.length === 0) throw new Error('Nenhum campo fornecido');
+    const { rows } = await client.query(
+      `INSERT INTO guindastes (${cols.join(', ')}) VALUES (${vals.join(', ')}) RETURNING *`,
+      params
+    );
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
 }
 
 async function update(id, data) {
@@ -261,6 +311,7 @@ module.exports = {
   findById,
   findImagemById,
   create,
+  createFromErp,
   update,
   remove,
   findPrecoPorRegiao,

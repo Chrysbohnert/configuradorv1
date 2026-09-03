@@ -2650,3 +2650,242 @@ textarea:focus {
     border-top: 1px solid #f1f3f5;
   }
 }
+
+.erp-product-selector {
+  padding: 16px;
+  border: 1px solid #f0d36f;
+  border-radius: 12px;
+  background: #fffaf0;
+}
+
+.erp-product-selector small {
+  margin-top: 6px;
+  color: #78601a;
+  display: block;
+  font-size: 11px;
+}
+
+.erp-product-message {
+  padding: 12px;
+  border-radius: 8px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 12px;
+}
+
+.erp-product-message.error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.modern-input[readonly],
+.modern-textarea[readonly] {
+  background: #f3f4f6;
+  color: #4b5563;
+  cursor: not-allowed;
+}
+
+.gg-btn-erp {
+  --blob-color: #4b5563;
+  color: #374151;
+}
+
+.gg-erp-current {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e7eb;
+  border-left: 3px solid #eab308;
+  border-radius: 10px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.gg-erp-current > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gg-erp-current span {
+  color: #9ca3af;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.gg-erp-current strong {
+  max-width: 300px;
+  color: #374151;
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gg-erp-current button {
+  margin-left: auto;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+  background: #f9fafb;
+  color: #4b5563;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.gg-erp-instructions-modal {
+  max-width: 760px;
+}
+
+.gg-erp-instructions-close {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.gg-erp-instructions-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.gg-erp-instructions-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.gg-erp-instructions-body img {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 65vh;
+  object-fit: contain;
+}
+
+.gg-erp-instructions-confirm {
+  align-self: flex-end;
+}
+
+.gg-erp-summary-modal {
+  max-width: 760px;
+}
+
+.gg-erp-summary-modal .modern-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.gg-erp-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.gg-erp-summary-grid > div {
+  padding: 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gg-erp-summary-grid span {
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.gg-erp-summary-grid strong {
+  color: #111827;
+  font-size: 22px;
+}
+
+.gg-erp-lot-details {
+  margin: 14px 0;
+  display: flex;
+  gap: 12px;
+  color: #6b7280;
+  font-size: 10px;
+}
+
+.gg-erp-alerts h3 {
+  margin: 0 0 10px;
+  color: #374151;
+  font-size: 13px;
+}
+
+.gg-erp-alerts > p {
+  margin: 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 11px;
+}
+
+.gg-erp-alert-list {
+  max-height: 280px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  overflow-y: auto;
+}
+
+.gg-erp-alert-list > div {
+  padding: 10px 12px;
+  border-bottom: 1px solid #f0f1f2;
+  display: grid;
+  grid-template-columns: 1fr 50px 2fr 80px;
+  gap: 10px;
+  align-items: center;
+  color: #4b5563;
+  font-size: 10px;
+}
+
+.gg-erp-alert-list > div:last-child {
+  border-bottom: none;
+}
+
+.gg-erp-alert-list b {
+  color: #b45309;
+  text-align: right;
+}
+
+@media (max-width: 760px) {
+  .gg-erp-current {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .gg-erp-current button {
+    margin-left: 0;
+  }
+
+  .gg-erp-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .gg-erp-alert-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .gg-erp-alert-list b {
+    text-align: left;
+  }
+}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import BlobButton from '../../components/BlobButton';
@@ -6,7 +6,7 @@ import ImageUpload from '../../components/ImageUpload';
 import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 
 import { db } from '../../config/supabase';
-import { getGuindastesLite, getGuindasteById, createGuindaste, updateGuindaste, deleteGuindaste } from '../../api/guindastes';
+import { getGuindastesLite, getGuindasteById, getErpImportAtual, importarErp, createGuindaste, updateGuindaste, deleteGuindaste } from '../../api/guindastes';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarGuindastes.css';
@@ -41,6 +41,17 @@ const GerenciarGuindastes = () => {
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const [showModal, setShowModal] = useState(false);
   const [editingGuindaste, setEditingGuindaste] = useState(null);
+  const [erpItems, setErpItems] = useState([]);
+  const [selectedErpItemId, setSelectedErpItemId] = useState(null);
+  const [erpSelection, setErpSelection] = useState('');
+  const [erpLoading, setErpLoading] = useState(false);
+  const [erpError, setErpError] = useState('');
+  const [erpCurrentLot, setErpCurrentLot] = useState(null);
+  const [erpImportSummary, setErpImportSummary] = useState(null);
+  const [erpImporting, setErpImporting] = useState(false);
+  const [showErpInstructions, setShowErpInstructions] = useState(false);
+  const [showErpSummary, setShowErpSummary] = useState(false);
+  const erpFileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('guindastes');
 
   const [formData, setFormData] = useState({
@@ -109,6 +120,13 @@ const GerenciarGuindastes = () => {
       loadData(1, false); // Usar cache quando possível para melhor performance
     }
   }, [user]);
+
+  useEffect(() => {
+    if (!user || isAdminConcessionaria) return;
+    getErpImportAtual()
+      .then((data) => setErpCurrentLot(data?.lote || null))
+      .catch(() => setErpCurrentLot(null));
+  }, [user, isAdminConcessionaria]);
 
   const loadData = async (pageToLoad = page, forceRefresh = false) => {
     try {
@@ -304,6 +322,10 @@ const GerenciarGuindastes = () => {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingGuindaste(null);
+    setErpItems([]);
+    setSelectedErpItemId(null);
+    setErpSelection('');
+    setErpError('');
     setFormData({
       subgrupo: '',
       modelo: '',
@@ -332,12 +354,35 @@ const GerenciarGuindastes = () => {
     document.body.classList.remove('modal-open');
   };
 
-  const handleAddNew = () => {
+  const handleErpFile = async (event) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setErpImporting(true);
+    try {
+      const summary = await importarErp(file);
+      setErpImportSummary(summary);
+      setErpCurrentLot(summary?.lote || null);
+      setShowErpSummary(true);
+      setToast({ visible: true, message: 'Base ERP importada com sucesso!', type: 'success' });
+      loadData(page, true);
+    } catch (error) {
+      setToast({ visible: true, message: error.message || 'Erro ao importar base ERP', type: 'error' });
+    } finally {
+      setErpImporting(false);
+    }
+  };
+
+  const handleAddNew = async () => {
     if (isAdminConcessionaria) {
       alert('Apenas o Admin Stark pode cadastrar novos guindastes.');
       return;
     }
     setEditingGuindaste(null);
+    setErpItems([]);
+    setSelectedErpItemId(null);
+    setErpSelection('');
+    setErpError('');
     setFormData({
       subgrupo: '',
       modelo: '',
@@ -365,6 +410,34 @@ const GerenciarGuindastes = () => {
     });
     setShowModal(true);
     document.body.classList.add('modal-open');
+    setErpLoading(true);
+    try {
+      const data = await getErpImportAtual();
+      setErpItems(data?.itens || []);
+      if (!data?.itens?.length) setErpError('A base ERP atual não possui produtos disponíveis.');
+    } catch (error) {
+      setErpError(error.message || 'A base ERP precisa ser importada antes de cadastrar um guindaste.');
+    } finally {
+      setErpLoading(false);
+    }
+  };
+
+  const handleErpSelection = (value) => {
+    setErpSelection(value);
+    const item = erpItems.find((candidate) => `${candidate.referencia} — ${candidate.descricao || 'Sem descrição'}` === value);
+    setSelectedErpItemId(item?.id || null);
+    if (!item) {
+      setFormData((current) => ({ ...current, codigo_referencia: '', descricao: '', ncm: '', custo_mp: '', custo_mo: '' }));
+      return;
+    }
+    setFormData((current) => ({
+      ...current,
+      codigo_referencia: item.referencia || '',
+      descricao: item.descricao || '',
+      ncm: item.ncm || '',
+      custo_mp: item.custo_mp ?? '',
+      custo_mo: item.custo_mo ?? ''
+    }));
   };
 
   const openPrecoConcessionaria = async (guindaste) => {
@@ -444,6 +517,11 @@ const GerenciarGuindastes = () => {
     setIsLoading(true);
 
     try {
+      if (!editingGuindaste && !selectedErpItemId) {
+        alert('Selecione um produto da base ERP atual antes de cadastrar o guindaste.');
+        return;
+      }
+
       const requiredFields = [
         { field: 'subgrupo', name: 'Subgrupo' },
         { field: 'modelo', name: 'Modelo' },
@@ -504,7 +582,7 @@ const GerenciarGuindastes = () => {
         await updateGuindaste(editingGuindaste.id, guindasteData);
         setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
-        const result = await createGuindaste(guindasteData);
+        await createGuindaste({ ...guindasteData, erp_import_item_id: selectedErpItemId });
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
@@ -613,15 +691,33 @@ const GerenciarGuindastes = () => {
                         Atualizar
                       </BlobButton>
                       {!isAdminConcessionaria && (
-                        <BlobButton onClick={handleAddNew} className="add-btn">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
-                          </svg>
-                          Novo Guindaste
-                        </BlobButton>
+                        <>
+                          <BlobButton onClick={() => setShowErpInstructions(true)} className="gg-btn-erp" disabled={erpImporting}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M12 3v12m0 0 4-4m-4 4-4-4" /><path d="M5 21h14" />
+                            </svg>
+                            {erpImporting ? 'Importando...' : 'Importar ERP'}
+                          </BlobButton>
+                          <input ref={erpFileInputRef} type="file" accept=".xlsx" hidden onChange={handleErpFile} />
+                          <BlobButton onClick={handleAddNew} className="add-btn">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" />
+                            </svg>
+                            Novo Guindaste
+                          </BlobButton>
+                        </>
                       )}
                     </div>
                   </div>
+
+                  {!isAdminConcessionaria && erpCurrentLot && (
+                    <div className="gg-erp-current">
+                      <div><span>Última importação ERP</span><strong>{new Date(erpCurrentLot.importado_em).toLocaleString('pt-BR')}</strong></div>
+                      <div><span>Arquivo / lote</span><strong>{erpCurrentLot.arquivo} · #{erpCurrentLot.id}</strong></div>
+                      <div><span>Total de itens</span><strong>{erpCurrentLot.total_importado || 0}</strong></div>
+                      {erpImportSummary && <button type="button" onClick={() => setShowErpSummary(true)}>Ver resumo</button>}
+                    </div>
+                  )}
 
                   {/* Barra de filtro e busca */}
                   <div className="gg-filter-bar">
@@ -808,6 +904,68 @@ const GerenciarGuindastes = () => {
         </div>
       </div>
 
+      {showErpInstructions && (
+        <div className="modern-modal-overlay" onClick={() => setShowErpInstructions(false)}>
+          <div className="modern-modal gg-erp-instructions-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modern-header">
+              <h2>Como gerar o arquivo no Tecnicon</h2>
+              <button type="button" onClick={() => setShowErpInstructions(false)} className="gg-erp-instructions-close" aria-label="Fechar">×</button>
+            </div>
+            <div className="modern-body gg-erp-instructions-body">
+              <img src="/importacao-erp.png" alt="Instruções para gerar o arquivo no Tecnicon" />
+              <button
+                type="button"
+                className="btn-modern-save gg-erp-instructions-confirm"
+                onClick={() => {
+                  setShowErpInstructions(false);
+                  erpFileInputRef.current?.click();
+                }}
+              >
+                OK, selecionar arquivo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showErpSummary && erpImportSummary && (
+        <div className="modern-modal-overlay" onClick={() => setShowErpSummary(false)}>
+          <div className="modern-modal gg-erp-summary-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modern-header">
+              <div><h2>Importação ERP concluída</h2><p>{erpImportSummary.lote?.arquivo}</p></div>
+              <button type="button" onClick={() => setShowErpSummary(false)} className="btn-modern-cancel">Fechar</button>
+            </div>
+            <div className="modern-body">
+              <div className="gg-erp-summary-grid">
+                <div><span>Total importado</span><strong>{erpImportSummary.total_importado || 0}</strong></div>
+                <div><span>Guindastes atualizados</span><strong>{erpImportSummary.guindastes_existentes_atualizados || 0}</strong></div>
+                <div><span>Produtos novos disponíveis</span><strong>{erpImportSummary.produtos_novos_disponiveis || 0}</strong></div>
+                <div><span>Alertas MP/MO</span><strong>{erpImportSummary.alertas_variacao?.length || 0}</strong></div>
+              </div>
+              <div className="gg-erp-lot-details">
+                <span>{new Date(erpImportSummary.lote?.importado_em).toLocaleString('pt-BR')}</span>
+                <span>Lote #{erpImportSummary.lote?.id}</span>
+              </div>
+              <div className="gg-erp-alerts">
+                <h3>Variações relevantes de MP/MO</h3>
+                {erpImportSummary.alertas_variacao?.length > 0 ? (
+                  <div className="gg-erp-alert-list">
+                    {erpImportSummary.alertas_variacao.map((alert, index) => (
+                      <div key={`${alert.referencia}-${alert.campo}-${index}`}>
+                        <strong>{alert.referencia}</strong>
+                        <span>{alert.campo === 'custo_mp' ? 'MP' : 'MO'}</span>
+                        <span>{formatCurrency(alert.valor_anterior || 0)} → {formatCurrency(alert.valor_novo || 0)}</span>
+                        <b>{alert.variacao_percentual == null ? 'Base anterior zero' : `${alert.variacao_percentual}%`}</b>
+                      </div>
+                    ))}
+                  </div>
+                ) : <p>Nenhuma variação igual ou superior a {erpImportSummary.limite_variacao_percentual || 10}%.</p>}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {showModal && (
         <div className="modern-modal-overlay" onClick={handleCloseModal}>
           <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
@@ -817,13 +975,41 @@ const GerenciarGuindastes = () => {
                 <button type="button" onClick={handleCloseModal} className="btn-modern-cancel">
                   Cancelar
                 </button>
-                <button type="submit" form="guindaste-form" className="btn-modern-save" disabled={isLoading}>
+                <button type="submit" form="guindaste-form" className="btn-modern-save" disabled={isLoading || (!editingGuindaste && (erpLoading || !selectedErpItemId))}>
                   {isLoading ? 'Salvando...' : 'Salvar produto'}
                 </button>
               </div>
             </div>
 
             <form id="guindaste-form" onSubmit={handleSubmit} className="modern-body">
+              {!editingGuindaste && (
+                <div className="modern-form-group modern-nome-full erp-product-selector">
+                  <label>Produto da base ERP *</label>
+                  {erpLoading ? (
+                    <div className="erp-product-message">Carregando último lote concluído...</div>
+                  ) : erpError ? (
+                    <div className="erp-product-message error">{erpError} Importe uma base ERP antes de continuar.</div>
+                  ) : (
+                    <>
+                      <input
+                        type="text"
+                        list="erp-products"
+                        value={erpSelection}
+                        onChange={(e) => handleErpSelection(e.target.value)}
+                        placeholder="Digite a referência ou descrição para pesquisar"
+                        className="modern-input"
+                        autoComplete="off"
+                      />
+                      <datalist id="erp-products">
+                        {erpItems.map((item) => (
+                          <option key={item.id} value={`${item.referencia} — ${item.descricao || 'Sem descrição'}`} />
+                        ))}
+                      </datalist>
+                      <small>Somente produtos do último lote ERP concluído podem ser selecionados.</small>
+                    </>
+                  )}
+                </div>
+              )}
               
               <div className="modern-form-group modern-nome-full">
                 <label>Nome / Subgrupo *</label>
@@ -872,7 +1058,8 @@ const GerenciarGuindastes = () => {
                         type="text"
                         value={formData.codigo_referencia}
                         onChange={e => handleInputChange('codigo_referencia', e.target.value)}
-                        placeholder="Ex: GSI65001"
+                        readOnly={!editingGuindaste}
+                        placeholder="Selecione um produto ERP"
                         required
                         className="modern-input"
                       />
@@ -919,7 +1106,8 @@ const GerenciarGuindastes = () => {
                         type="text"
                         value={formData.ncm}
                         onChange={e => handleInputChange('ncm', e.target.value)}
-                        placeholder="Ex: 84264100"
+                        readOnly={!editingGuindaste}
+                        placeholder="Preenchido pelo ERP"
                         required
                         className="modern-input"
                       />
@@ -939,7 +1127,8 @@ const GerenciarGuindastes = () => {
                         step="0.01"
                         value={formData.custo_mp}
                         onChange={e => handleInputChange('custo_mp', e.target.value)}
-                        placeholder="0,00"
+                        readOnly={!editingGuindaste}
+                        placeholder="Preenchido pelo ERP"
                         className="modern-input"
                       />
                     </div>
@@ -951,7 +1140,8 @@ const GerenciarGuindastes = () => {
                         step="0.01"
                         value={formData.custo_mo}
                         onChange={e => handleInputChange('custo_mo', e.target.value)}
-                        placeholder="0,00"
+                        readOnly={!editingGuindaste}
+                        placeholder="Preenchido pelo ERP"
                         className="modern-input"
                       />
                     </div>
@@ -1023,7 +1213,8 @@ const GerenciarGuindastes = () => {
                     <textarea
                       value={formData.descricao}
                       onChange={e => handleInputChange('descricao', e.target.value)}
-                      placeholder="Descreva as características técnicas do guindaste..."
+                      readOnly={!editingGuindaste}
+                      placeholder="Preenchida pelo ERP"
                       required
                       className="modern-textarea"
                     />

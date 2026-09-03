@@ -1,5 +1,6 @@
 import { API_URL } from './config.js';
 const BASE_URL = `${API_URL}/api/guindastes`;
+const ERP_IMPORT_URL = `${API_URL}/api/erp-import`;
 
 const _cache = new Map();
 
@@ -61,6 +62,27 @@ export async function getGuindasteImagemById(id) {
     throw new Error(json.error || 'Erro ao carregar imagem do guindaste');
   }
   return json.data?.imagem_url ?? null;
+}
+
+export async function importarErp(file) {
+  const formData = new FormData();
+  formData.append('arquivo', file);
+  const token = localStorage.getItem('authToken');
+  const res = await fetch(`${ERP_IMPORT_URL}/importar`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao importar base ERP');
+  return json.data;
+}
+
+export async function getErpImportAtual() {
+  const res = await fetch(`${ERP_IMPORT_URL}/atual`, { headers: authHeaders() });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Base ERP não disponível');
+  return json.data;
 }
 
 export async function createGuindaste(data) {

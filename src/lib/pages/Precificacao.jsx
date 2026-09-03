@@ -49,24 +49,6 @@ const EMPTY_FORM_PREC = {
   ipi_percent: '',
 };
 
-function formatarFrete(item) {
-  const min = Number(item.frete_min);
-  const max = Number(item.frete_max);
-  if (min > 0 && max > 0) {
-    return `${formatCurrency(min)} - ${formatCurrency(max)}`;
-  }
-  if (min > 0) return formatCurrency(min);
-  if (max > 0) return formatCurrency(max);
-  return '—';
-}
-
-function formatarInstalacao(cliente, incluso) {
-  const partes = [];
-  if (Number(cliente) > 0) partes.push(`Cliente: ${formatCurrency(cliente)}`);
-  if (Number(incluso) > 0) partes.push(`Incluso: ${formatCurrency(incluso)}`);
-  return partes.length > 0 ? partes.join(' / ') : '—';
-}
-
 function formatarPercent(v) {
   return `${Number(v || 0).toFixed(2)}%`;
 }
@@ -211,8 +193,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                 <th className="numeric">Custo MP</th>
                 <th className="numeric">Custo MO</th>
                 <th className="numeric">Custo fixo %</th>
-                <th className="numeric">Frete</th>
-                <th className="numeric">Instalação</th>
                 <th className="numeric">Comissão %</th>
                 <th className="numeric">Assistência %</th>
                 <th className="numeric">Margem %</th>
@@ -248,8 +228,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                             className="precificacao-input"
                           />
                         </td>
-                        <td className="numeric">—</td>
-                        <td className="numeric">—</td>
                         <td className="numeric">
                           <input
                             type="number"
@@ -304,13 +282,6 @@ function PrecificacaoEquipamentos({ showToast }) {
                       <>
                         <td className="numeric">
                           {Number(item.custo_fixo_percent || 0).toFixed(2)}%
-                        </td>
-                        <td className="numeric">{formatarFrete(item)}</td>
-                        <td
-                          className="numeric"
-                          title="Fonte: guindastes.valor_instalacao_*"
-                        >
-                          {formatarInstalacao(item.valor_instalacao_cliente, item.valor_instalacao_incluso)}
                         </td>
                         <td className="numeric">
                           {Number(item.comissao_percent || 0).toFixed(2)}%
@@ -1597,13 +1568,12 @@ function ExcelActions({ showToast, onApplied }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const carregarBase = async () => {
-    const [equipamentos, condicoes, tributacoes, parametros] = await Promise.all([
-      getEquipamentosComPrecificacao(),
+    const [condicoes, tributacoes, parametros] = await Promise.all([
       listarCondicoes({ ativo: true }),
       getRegrasTributacao(),
       getParametros(),
     ]);
-    return { equipamentos, condicoes, tributacoes, parametros };
+    return { condicoes, tributacoes, parametros };
   };
 
   const handleExport = async () => {
@@ -1627,7 +1597,6 @@ function ExcelActions({ showToast, onApplied }) {
       const base = await carregarBase();
       setPreview(await analisarPrecificacaoExcel(
         file,
-        base.equipamentos,
         base.condicoes,
         base.tributacoes,
         base.parametros
@@ -1648,14 +1617,14 @@ function ExcelActions({ showToast, onApplied }) {
         return;
       }
       const relatorio = await importarPrecificacao({
-        equipamentos: preview.equipamentos,
+        equipamentos: [],
         condicoes: preview.condicoes,
         tributacoes: preview.tributacoes,
         parametros: preview.parametros,
       });
       setPreview(null);
       onApplied();
-      showToast('success', `Importação atômica concluída: ${relatorio.equipamentos} equipamentos, ${relatorio.condicoes} condições e ${relatorio.tributacoes} tributações.`);
+      showToast('success', `Importação concluída: ${relatorio.condicoes} condições e ${relatorio.tributacoes} tributações.`);
     } catch (error) {
       showToast('error', error.message || 'Erro ao aplicar importação.');
     } finally {
@@ -1667,10 +1636,10 @@ function ExcelActions({ showToast, onApplied }) {
     <>
       <div className="precificacao-toolbar">
         <button className="precificacao-btn" onClick={() => inputRef.current?.click()} disabled={isLoading}>
-          Importar Excel
+          Importar regras Excel
         </button>
         <button className="precificacao-btn" onClick={handleExport} disabled={isLoading}>
-          Exportar Excel
+          Exportar regras Excel
         </button>
         <input ref={inputRef} type="file" accept=".xlsx" hidden onChange={handleFile} />
       </div>
@@ -1680,58 +1649,16 @@ function ExcelActions({ showToast, onApplied }) {
             <h3>Validar importação</h3>
             <p className="precificacao-section-subtitle">{preview.arquivo}</p>
             <div className="precificacao-summary-grid">
-              <div><strong>{preview.equipamentos.length}</strong><span>equipamentos encontrados</span></div>
               <div><strong>{preview.condicoes.length}</strong><span>condições</span></div>
               <div><strong>{preview.tributacoes.length}</strong><span>regras tributárias</span></div>
               <div><strong>{preview.parametros ? 1 : 0}</strong><span>conjunto de parâmetros</span></div>
             </div>
-            {preview.codigosNaoEncontrados.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Códigos não encontrados — não serão criados:</strong>
-                <p>{preview.codigosNaoEncontrados.join(', ')}</p>
-              </div>
-            )}
-            {preview.codigosDuplicados.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Códigos repetidos no arquivo — será considerada a última linha:</strong>
-                <p>{preview.codigosDuplicados.join(', ')}</p>
-              </div>
-            )}
             {preview.erros.length > 0 && (
               <div className="precificacao-import-warning">
                 <strong>Erros que bloqueiam a importação:</strong>
                 <p>{preview.erros.join('; ')}</p>
               </div>
             )}
-            <div className="precificacao-table-wrap precificacao-import-list">
-              <table className="precificacao-table">
-                <thead>
-                  <tr>
-                    <th>Código</th>
-                    <th className="numeric">Custo MP</th>
-                    <th className="numeric">Custo MO</th>
-                    <th>Atualização</th>
-                  </tr>
-                </thead>
-                <tbody>{preview.equipamentos.map((item) => {
-                  const atual = item.atual || {};
-                  const novoMp = item.custo_mp !== undefined ? item.custo_mp : null;
-                  const novoMo = item.custo_mo !== undefined ? item.custo_mo : null;
-                  return (
-                    <tr key={item.codigo}>
-                      <td>{item.codigo}</td>
-                      <td className="numeric">
-                        {novoMp !== null ? `${formatCurrency(atual.custo_mp || 0)} → ${formatCurrency(novoMp)}` : formatCurrency(atual.custo_mp || 0)}
-                      </td>
-                      <td className="numeric">
-                        {novoMo !== null ? `${formatCurrency(atual.custo_mo || 0)} → ${formatCurrency(novoMo)}` : formatCurrency(atual.custo_mo || 0)}
-                      </td>
-                      <td>Custo fixo, comissão, assistência, margem, MP e MO</td>
-                    </tr>
-                  );
-                })}</tbody>
-              </table>
-            </div>
             <div className="precificacao-modal-actions">
               <button className="precificacao-btn" onClick={() => setPreview(null)} disabled={isLoading}>Cancelar</button>
               <button className="precificacao-btn primary" onClick={handleApply} disabled={isLoading || preview.erros.length > 0}>
