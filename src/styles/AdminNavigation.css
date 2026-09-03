@@ -3,9 +3,9 @@
    ============================================ */
 
 .admin-navigation {
-  width: 280px;
+  width: var(--erp-sidebar-width);
   height: 100vh;
-  background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+  background: var(--erp-surface-800);
   color: white;
   display: flex;
   flex-direction: column;
@@ -13,9 +13,9 @@
   left: 0;
   top: 0;
   z-index: 100;
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
-  border-right: 1px solid rgba(255, 193, 7, 0.15);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 2px 0 12px rgba(0, 0, 0, 0.18);
+  border-right: 1px solid var(--erp-surface-700);
+  transition: all 0.25s ease;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -66,8 +66,8 @@
    ============================================ */
 
 .nav-header {
-  padding: 22px 18px 16px;
-  background: rgba(255, 193, 7, 0.03);
+  padding: 16px 14px 12px;
+  background: transparent;
 }
 
 .admin-info {
@@ -77,19 +77,19 @@
 }
 
 .admin-avatar {
-  width: 44px;
-  height: 44px;
-  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
-  border-radius: 14px;
+  width: 38px;
+  height: 38px;
+  background: var(--erp-primary);
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 700;
-  color: #000000;
+  color: var(--erp-primary-text);
   position: relative;
-  box-shadow: 0 3px 10px rgba(255, 193, 7, 0.35);
-  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   overflow: hidden;
 }
 
@@ -118,10 +118,10 @@
 }
 
 .admin-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: #ffffff;
-  margin-bottom: 3px;
+  font-size: var(--erp-text-md);
+  font-weight: var(--erp-weight-bold);
+  color: var(--erp-text-inverse);
+  margin-bottom: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -130,10 +130,10 @@
 .admin-role {
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 600;
-  color: #ffc107;
+  gap: 4px;
+  font-size: var(--erp-text-2xs);
+  font-weight: var(--erp-weight-bold);
+  color: var(--erp-primary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -153,7 +153,7 @@
 
 .nav-menu {
   flex: 1;
-  padding: 6px 10px;
+  padding: 4px 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -170,17 +170,17 @@
 
 .nav-group-toggle {
   width: 100%;
-  padding: 9px 12px;
+  padding: 8px 11px;
   border: none;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   background: transparent;
   color: rgba(255, 255, 255, 0.58);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--erp-text-2xs);
+  font-weight: var(--erp-weight-bold);
   letter-spacing: 0.09em;
   text-align: left;
   text-transform: uppercase;
@@ -213,9 +213,9 @@
 }
 
 .nav-child-item {
-  padding: 8px 10px;
+  padding: 7px 9px;
   margin-bottom: 1px;
-  font-size: 12px;
+  font-size: var(--erp-text-base);
 }
 
 .nav-direct-item {
@@ -240,14 +240,14 @@
 
 .nav-pricing-item {
   width: 100%;
-  padding: 6px 8px;
+  padding: 5px 7px;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   display: block;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   text-align: left;
   transition: color 0.2s ease, background 0.2s ease;
 }
@@ -283,20 +283,20 @@
 
 .nav-item {
   width: 100%;
-  padding: 10px 12px;
+  padding: 9px 11px;
   margin-bottom: 2px;
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.75);
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 9px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: color 0.2s ease, background 0.2s ease, transform 0.2s ease;
   text-align: left;
-  font-size: 13px;
-  font-weight: 500;
-  border-radius: 9px;
+  font-size: var(--erp-text-base);
+  font-weight: var(--erp-weight-medium);
+  border-radius: var(--erp-radius-sm);
   position: relative;
   overflow: hidden;
 }
@@ -335,20 +335,20 @@
 }
 
 .nav-icon {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   position: relative;
   z-index: 1;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .nav-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   stroke-width: 2;
 }
 
@@ -404,19 +404,19 @@
 
 .logout-button {
   width: 100%;
-  padding: 11px 16px;
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.08) 100%);
-  border: 1px solid rgba(220, 53, 69, 0.25);
-  border-radius: 10px;
-  color: #ff4d4d;
+  padding: 9px 12px;
+  background: var(--erp-error-soft);
+  border: 1px solid var(--erp-error-soft);
+  border-radius: var(--erp-radius-md);
+  color: var(--erp-error);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 12px;
-  font-weight: 600;
+  transition: all 0.2s ease;
+  font-size: var(--erp-text-base);
+  font-weight: var(--erp-weight-semibold);
   position: relative;
   overflow: hidden;
 }
@@ -435,10 +435,11 @@
 }
 
 .logout-button:hover {
-  background: linear-gradient(135deg, rgba(220, 53, 69, 0.2) 0%, rgba(220, 53, 69, 0.15) 100%);
-  border-color: rgba(220, 53, 69, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.25);
+  background: var(--erp-error-soft);
+  border-color: var(--erp-error);
+  color: var(--erp-error);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(152, 80, 80, 0.15);
 }
 
 .logout-button:active {

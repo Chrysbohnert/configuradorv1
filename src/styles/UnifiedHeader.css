@@ -8,25 +8,17 @@
   position: sticky;
   top: 0;
   width: 100%;
-  height: 90px;
-  background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #0f0f0f 100%);
-  border-bottom: 1px solid rgba(255, 193, 7, 0.15);
-  box-shadow: 
-    0 4px 20px rgba(0, 0, 0, 0.4),
-    0 1px 0 rgba(255, 193, 7, 0.1) inset;
+  height: var(--erp-header-height);
+  background: var(--erp-surface-800);
+  border-bottom: 1px solid var(--erp-surface-700);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
   overflow: hidden;
   z-index: 50;
 }
 
 /* Decorative Lines */
 .header-decoration {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
 .deco-line {
@@ -63,7 +55,7 @@
   height: 100%;
   max-width: 1600px;
   margin: 0 auto;
-  padding: 0 32px;
+  padding: 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -84,17 +76,17 @@
 .back-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
+  gap: 7px;
+  padding: 8px 14px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
+  border: 1px solid var(--erp-surface-600);
+  border-radius: var(--erp-radius-sm);
+  color: var(--erp-text-inverse);
+  font-size: var(--erp-text-md);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
 }
 
 .back-button:hover {
@@ -128,7 +120,7 @@
 }
 
 .brand-title {
-  font-size: 24px;
+  font-size: var(--erp-text-3xl);
   font-weight: 700;
   margin: 0;
   background: linear-gradient(135deg, #ffffff 0%, #e0e0e0 100%);
@@ -144,9 +136,9 @@
   align-items: center;
   gap: 8px;
   margin: 0;
-  font-size: 13px;
+  font-size: var(--erp-text-base);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.65);
   letter-spacing: 0.2px;
 }
 
@@ -172,17 +164,17 @@
   position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 7px;
+  padding: 8px 14px;
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 193, 7, 0.2);
-  border-radius: 10px;
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
+  border: 1px solid var(--erp-surface-600);
+  border-radius: var(--erp-radius-sm);
+  color: var(--erp-text-inverse);
+  font-size: var(--erp-text-md);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(6px);
   overflow: hidden;
 }
 

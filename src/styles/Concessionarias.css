@@ -1,88 +1,103 @@
 .concessionarias-page {
-  width: min(1120px, calc(100% - 48px));
-  min-height: calc(100vh - 80px);
+  width: min(var(--erp-page-max), calc(100% - var(--erp-page-gutter)));
+  min-height: calc(100vh - var(--erp-header-height));
   margin: 0 auto;
-  padding: 34px 0 64px;
-  color: #191919;
+  padding: var(--erp-space-6) 0 64px;
+  color: var(--erp-text-main);
+  background: var(--erp-bg-page);
 }
 
 .concessionarias-heading {
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: var(--erp-space-5);
+  margin-bottom: var(--erp-space-5);
 }
 
 .concessionarias-heading h1 {
   margin: 0;
-  color: #171717;
-  font-size: clamp(29px, 4vw, 38px);
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-4xl);
   line-height: 1.1;
   letter-spacing: -0.025em;
 }
 
 .concessionarias-heading p {
   margin: 8px 0 0;
-  color: #717171;
-  font-size: 14px;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-lg);
 }
 
 .concessionarias-primary {
   min-height: 46px;
   padding: 0 20px;
-  border: 1px solid #e9af00;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #ffd028, #ffc107);
-  color: #211a00;
+  border: 1px solid var(--erp-primary-border);
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-primary-cta);
+  color: var(--erp-primary-text);
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 800;
+  font-size: var(--erp-text-md);
+  font-weight: var(--erp-weight-bold);
   white-space: nowrap;
-  box-shadow: 0 7px 18px rgba(182, 135, 0, 0.2);
+  box-shadow: var(--erp-shadow-cta);
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+.concessionarias-primary:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+  box-shadow: var(--erp-shadow-cta-hover);
 }
 
 .concessionarias-toolbar {
   min-height: 54px;
   padding: 8px 12px;
-  border: 1px solid #e2e2df;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: var(--erp-space-4);
   margin-bottom: 14px;
+  box-shadow: var(--erp-shadow-sm);
 }
 
 .concessionarias-toolbar > span {
-  color: #313131;
-  font-size: 12px;
-  font-weight: 800;
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-md);
+  font-weight: var(--erp-weight-bold);
 }
 
 .concessionarias-toolbar small {
-  color: #8a8a88;
-  font-size: 10px;
+  color: var(--erp-text-weak);
+  font-size: var(--erp-text-2xs);
 }
 
 .concessionarias-toolbar label {
   display: flex;
   align-items: center;
-  gap: 7px;
-  color: #555;
+  gap: var(--erp-space-2);
+  color: var(--erp-text-body);
   cursor: pointer;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-bold);
+}
+
+.concessionarias-toolbar input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--erp-primary-border);
 }
 
 .concessionarias-table-shell {
   min-height: 260px;
-  border: 1px solid #e2e2df;
-  border-radius: 12px;
-  background: #fff;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-surface);
   overflow: hidden;
-  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.035);
+  box-shadow: var(--erp-shadow-card);
 }
 
 .concessionarias-table-scroll {
@@ -97,27 +112,35 @@
 }
 
 .concessionarias-table th {
-  padding: 12px 16px;
-  border-bottom: 1px solid #e7e7e4;
-  background: #f8f8f6;
-  color: #858585;
-  font-size: 9px;
-  font-weight: 800;
+  padding: 12px var(--erp-space-4);
+  border-bottom: 1px solid var(--erp-border-light);
+  background: var(--erp-bg-subtle);
+  color: var(--erp-text-weak);
+  font-size: var(--erp-text-2xs);
+  font-weight: var(--erp-weight-bold);
   letter-spacing: 0.09em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .concessionarias-table td {
-  padding: 11px 16px;
-  border-bottom: 1px solid #eeeeeb;
-  color: #555;
-  font-size: 12px;
+  padding: var(--erp-space-4) var(--erp-space-4);
+  border-bottom: 1px solid var(--erp-divider);
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-base);
   vertical-align: middle;
 }
 
+.concessionarias-table tbody tr {
+  transition: background 0.18s ease;
+}
+
 .concessionarias-table tbody tr:hover {
-  background: #fffdf6;
+  background: var(--erp-bg-hover);
+}
+
+.concessionarias-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .concessionarias-table td strong,
@@ -126,33 +149,33 @@
 }
 
 .concessionarias-table td strong {
-  color: #292929;
-  font-size: 12px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-base);
 }
 
 .concessionarias-table td small {
   margin-top: 3px;
-  color: #969696;
-  font-size: 9px;
+  color: var(--erp-text-weak);
+  font-size: var(--erp-text-2xs);
 }
 
 .concessionarias-status {
   padding: 4px 8px;
-  border-radius: 10px;
+  border-radius: var(--erp-radius-md);
   display: inline-flex;
-  font-size: 9px;
-  font-weight: 800;
+  font-size: var(--erp-text-2xs);
+  font-weight: var(--erp-weight-bold);
   text-transform: uppercase;
 }
 
 .concessionarias-status.active {
-  background: #e8f5ed;
-  color: #287249;
+  background: var(--erp-success-soft);
+  color: var(--erp-success);
 }
 
 .concessionarias-status.inactive {
-  background: #f3eeee;
-  color: #985050;
+  background: var(--erp-error-soft);
+  color: var(--erp-error);
 }
 
 .concessionarias-actions {
@@ -164,19 +187,20 @@
 .concessionarias-actions button {
   min-height: 30px;
   padding: 0 10px;
-  border: 1px solid #e2e2df;
-  border-radius: 7px;
-  background: #fff;
-  color: #555;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-sm);
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-body);
   cursor: pointer;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--erp-text-2xs);
+  font-weight: var(--erp-weight-bold);
+  transition: border-color 0.18s ease, color 0.18s ease, background 0.18s ease;
 }
 
 .concessionarias-actions button:hover {
-  border-color: #d1a300;
-  background: #fff9e6;
-  color: #755a00;
+  border-color: var(--erp-primary-border);
+  background: var(--erp-primary-soft);
+  color: var(--erp-warning);
 }
 
 .concessionarias-feedback {
@@ -184,13 +208,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #858585;
-  font-size: 12px;
+  color: var(--erp-text-weak);
+  font-size: var(--erp-text-base);
 }
 
 @media (max-width: 700px) {
   .concessionarias-page {
-    width: min(100% - 28px, 1120px);
+    width: min(100% - 28px, var(--erp-page-max));
     padding: 25px 0 45px;
   }
 
@@ -202,5 +226,10 @@
 
   .concessionarias-primary {
     width: 100%;
+  }
+
+  .concessionarias-toolbar {
+    flex-direction: column;
+    align-items: stretch;
   }
 }
