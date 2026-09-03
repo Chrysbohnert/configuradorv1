@@ -14,7 +14,8 @@ const TypeIcon = ({ type }) => {
     concessionarias: <><path d="M3 21h18" /><path d="M5 21V7l7-4 7 4v14" /><path d="M9 21v-6h6v6" /><path d="M9 10h.01M15 10h.01" /></>,
     'vendedores-concessionaria': <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 21a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9" r="2.5" /><path d="M17 15a5 5 0 0 1 4.5 3" /></>,
     instaladoras: <><path d="M3 21h18" /><path d="M5 21V9l7-5 7 5v12" /><path d="M9 21v-7h6v7" /><path d="m16 4 2-2 4 4-2 2" /></>,
-    guindastes: <><path d="M2 20h20" /><path d="M8 20V8l8-4v16" /><path d="M16 8l4-2" /><path d="M8 12h8" /><path d="M8 16h8" /></>
+    guindastes: <><path d="M2 20h20" /><path d="M8 20V8l8-4v16" /><path d="M16 8l4-2" /><path d="M8 12h8" /><path d="M8 16h8" /></>,
+    'graficos-carga': <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></>
   };
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[type]}</svg>;
 };
@@ -28,7 +29,8 @@ const TYPES = [
 ];
 
 const SPECIAL_TYPES = [
-  { id: 'guindastes', label: 'Guindastes', path: '/gerenciar-guindastes', profiles: ['admin', 'admin_concessionaria'] }
+  { id: 'guindastes', label: 'Guindastes', path: '/gerenciar-guindastes', profiles: ['admin', 'admin_concessionaria'] },
+  { id: 'graficos-carga', label: 'Gráficos de Carga', path: '/gerenciar-graficos-carga', profiles: ['admin'] }
 ];
 
 const TABS = [{ id: 'todos', label: 'Todos' }, ...TYPES.map(({ id, label }) => ({ id, label }))];

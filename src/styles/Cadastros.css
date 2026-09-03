@@ -268,6 +268,11 @@
   --type-soft: #e0f4f7;
 }
 
+.cadastro-card--graficos-carga {
+  --type-color: #5d4a8b;
+  --type-soft: #ede9f5;
+}
+
 .cadastros-special-shell {
   margin-bottom: 24px;
 }
