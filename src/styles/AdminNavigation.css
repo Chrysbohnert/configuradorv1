@@ -158,6 +158,107 @@
   overflow-x: hidden;
 }
 
+.nav-group {
+  margin-bottom: 6px;
+  border-radius: 12px;
+  transition: background 0.25s ease;
+}
+
+.nav-group.active {
+  background: rgba(255, 193, 7, 0.045);
+}
+
+.nav-group-toggle {
+  width: 100%;
+  padding: 12px 14px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-align: left;
+  text-transform: uppercase;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.nav-group-toggle:hover,
+.nav-group.active > .nav-group-toggle {
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.07);
+}
+
+.nav-chevron {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform 0.25s ease;
+}
+
+.nav-chevron.expanded {
+  transform: rotate(90deg);
+}
+
+.nav-group-items {
+  margin: 2px 0 8px 11px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.nav-child-item {
+  padding: 11px 13px;
+  margin-bottom: 2px;
+  font-size: 13px;
+}
+
+.nav-direct-item {
+  margin: 7px 0;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.nav-direct-item .nav-child-item {
+  padding: 13px 16px;
+  font-size: 14px;
+}
+
+.nav-pricing-submenu {
+  margin: 2px 0 8px 26px;
+  padding: 3px 0 3px 12px;
+  border-left: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.nav-pricing-item {
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: block;
+  font-size: 12px;
+  text-align: left;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.nav-pricing-item:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-pricing-item.active {
+  color: #ffc107;
+  background: rgba(255, 193, 7, 0.09);
+  font-weight: 600;
+}
+
 /* Scrollbar customizada para o menu */
 .nav-menu::-webkit-scrollbar {
   width: 6px;

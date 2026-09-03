@@ -78,7 +78,7 @@ const GerenciarEstoque = () => {
   });
 
   return (
-    <div className="gerenciar-estoque-container">
+    <div className="estoque-page">
       <UnifiedHeader
         title="Gerenciar Estoque"
         subtitle="Controle de quantidade disponivel dos equipamentos"
@@ -86,42 +86,67 @@ const GerenciarEstoque = () => {
         showSupportButton={true}
       />
 
-      <div className="estoque-content">
-        <div className="estoque-toolbar">
-          <input
-            type="text"
-            placeholder="Buscar por codigo, modelo ou descricao..."
-            value={busca}
-            onChange={e => setBusca(e.target.value)}
-            className="estoque-busca"
-          />
-          <span className="estoque-total">
-            {equipamentosFiltrados.length} equipamento(s)
-          </span>
+      <main className="estoque-container">
+        <div className="estoque-heading">
+          <div className="estoque-heading-copy">
+            <span className="estoque-eyebrow">Gestão de equipamentos</span>
+            <h1>Estoque</h1>
+            <p>Atualize a quantidade disponivel dos itens de forma rapida e centralizada.</p>
+          </div>
         </div>
 
-        {loading ? (
-          <div className="estoque-loading">Carregando estoque...</div>
-        ) : (
-          <div className="estoque-table-wrapper">
-            <table className="estoque-table">
-              <thead>
-                <tr>
-                  <th>Codigo</th>
-                  <th>Modelo / Descricao</th>
-                  <th className="col-qtd">Qtde. Disponivel</th>
-                  <th className="col-acoes">Acoes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {equipamentosFiltrados.length === 0 ? (
+        <section className="estoque-toolbar" aria-label="Filtros de estoque">
+          <label className="estoque-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              type="search"
+              placeholder="Buscar por codigo, modelo ou descricao..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </label>
+          <span className="estoque-total">{equipamentosFiltrados.length} equipamento(s)</span>
+        </section>
+
+        <div className="estoque-list-heading">
+          <span>Itens em estoque</span>
+          <small>{equipamentosFiltrados.length} {equipamentosFiltrados.length === 1 ? 'registro' : 'registros'}</small>
+        </div>
+
+        <section className="estoque-table-shell" aria-live="polite">
+          {loading ? (
+            <div className="estoque-feedback">
+              <span className="estoque-spinner" />
+              <strong>Carregando estoque...</strong>
+            </div>
+          ) : equipamentosFiltrados.length === 0 ? (
+            <div className="estoque-feedback">
+              <span className="estoque-empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                  <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                  <line x1="12" y1="22.08" x2="12" y2="12" />
+                </svg>
+              </span>
+              <strong>Nenhum equipamento encontrado</strong>
+              <span>Ajuste o termo de busca e tente novamente.</span>
+            </div>
+          ) : (
+            <div className="estoque-table-scroll">
+              <table className="estoque-table">
+                <thead>
                   <tr>
-                    <td colSpan="4" className="estoque-empty">
-                      Nenhum equipamento encontrado
-                    </td>
+                    <th>Codigo</th>
+                    <th>Modelo / Descricao</th>
+                    <th className="col-qtd">Qtde. Disponivel</th>
+                    <th className="col-acoes"><span className="sr-only">Acoes</span></th>
                   </tr>
-                ) : (
-                  equipamentosFiltrados.map(equip => (
+                </thead>
+                <tbody>
+                  {equipamentosFiltrados.map(equip => (
                     <tr key={equip.id} className={equip.quantidade_disponivel === 0 ? 'sem-estoque' : ''}>
                       <td className="col-codigo">{equip.codigo_referencia || '-'}</td>
                       <td className="col-descricao">
@@ -135,8 +160,8 @@ const GerenciarEstoque = () => {
                             min="0"
                             step="1"
                             value={editValue}
-                            onChange={e => setEditValue(e.target.value)}
-                            onKeyDown={e => {
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
                               if (e.key === 'Enter') salvarEdicao(equip.id);
                               if (e.key === 'Escape') cancelarEdicao();
                             }}
@@ -172,18 +197,18 @@ const GerenciarEstoque = () => {
                             className="btn-editar"
                             onClick={() => iniciarEdicao(equip)}
                           >
-                            Editar
+                            Editar <span>›</span>
                           </button>
                         )}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
 
       {toast.visible && (
         <div className={`estoque-toast ${toast.type}`}>

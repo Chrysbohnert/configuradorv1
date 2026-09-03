@@ -105,7 +105,7 @@ export default function Clientes() {
     try {
       const data = await getPropostasDoCliente(cliente.id);
       setHistorico({ open: true, cliente, propostas: data, loading: false });
-    } catch (e) {
+    } catch {
       setHistorico({ open: true, cliente, propostas: [], loading: false });
     }
   };
@@ -121,13 +121,21 @@ export default function Clientes() {
           <button type="button" className="btn-primario" onClick={abrirNovo}>+ Novo Cliente</button>
         </div>
 
-        <input
-          type="text"
-          className="clientes-busca"
-          placeholder="Buscar por nome ou CPF/CNPJ..."
-          value={busca}
-          onChange={(e) => setBusca(e.target.value)}
-        />
+        <div className="clientes-toolbar">
+          <label className="clientes-busca">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por nome ou CPF/CNPJ..."
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+            />
+          </label>
+          <span>{clientes.length} cliente(s)</span>
+        </div>
 
         <div className="clientes-tabela-wrap">
           {loading ? (
@@ -161,25 +169,17 @@ export default function Clientes() {
                       </button>
                     </td>
                     <td>
-                      <button type="button" className="btn-secundario" onClick={() => abrirEdicao(c)}>Editar</button>
-                      <button
-                        type="button"
-                        className="btn-secundario"
-                        onClick={() => iniciarNovaProposta(c)}
-                        style={{ marginLeft: '8px' }}
-                      >
-                        Nova Proposta
-                      </button>
-                      {(isAdmin || String(c.vendedor_id) === String(user?.id)) && (
-                        <button
-                          type="button"
-                          className="btn-secundario"
-                          onClick={() => excluir(c)}
-                          style={{ marginLeft: '8px', color: '#dc2626' }}
-                        >
-                          Excluir
+                      <div className="clientes-acoes">
+                        <button type="button" className="btn-secundario" onClick={() => abrirEdicao(c)}>Editar</button>
+                        <button type="button" className="btn-secundario" onClick={() => iniciarNovaProposta(c)}>
+                          Nova Proposta
                         </button>
-                      )}
+                        {(isAdmin || String(c.vendedor_id) === String(user?.id)) && (
+                          <button type="button" className="btn-secundario btn-perigo" onClick={() => excluir(c)}>
+                            Excluir
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

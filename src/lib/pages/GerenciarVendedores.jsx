@@ -1,14 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getPropostas } from '../../api/propostas';
+import { getAreas, saveAreas } from '../../api/areas';
+import { useMapData } from '../../features/mapa/useMapData';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarVendedores.css';
 
+const resumirAreas = (areas) => Object.entries((areas || []).reduce((acc, area) => {
+  const uf = String(area.uf || '').toUpperCase();
+  if (uf) acc[uf] = (acc[uf] || 0) + 1;
+  return acc;
+}, {})).sort(([a], [b]) => a.localeCompare(b));
+
 const GerenciarVendedores = () => {
-  const navigate = useNavigate();
   const { user } = useOutletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
@@ -22,6 +29,13 @@ const GerenciarVendedores = () => {
   const [metasSaving, setMetasSaving] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
+  const [areaModal, setAreaModal] = useState({ open: false, vendedor: null });
+  const [selectedUF, setSelectedUF] = useState('');
+  const [selectedAreas, setSelectedAreas] = useState(new Map());
+  const [areaLoading, setAreaLoading] = useState(false);
+  const [areaSaving, setAreaSaving] = useState(false);
+  const [areaError, setAreaError] = useState('');
+  const { states, loadMunicipios, municipiosByUF, loadingMunicipios } = useMapData();
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -63,17 +77,26 @@ const GerenciarVendedores = () => {
         );
       });
 
-      const vendedoresComVendas = vendedoresOnly.map((vendedor) => {
+      const vendedoresComVendas = await Promise.all(vendedoresOnly.map(async (vendedor) => {
         const propostasDoVendedor = propostas.filter((p) => p.vendedor_id === vendedor.id);
         const vendas = propostasDoVendedor.length;
         const valorTotal = propostasDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
+        let areas = [];
+        if (!isAdminConcessionaria && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo)) {
+          try {
+            areas = await getAreas('representante', vendedor.id);
+          } catch {
+            areas = [];
+          }
+        }
 
         return {
           ...vendedor,
           vendas,
           valorTotal,
+          areaResumo: resumirAreas(areas),
         };
-      });
+      }));
 
       setVendedores(vendedoresComVendas);
     } catch {
@@ -251,16 +274,7 @@ const GerenciarVendedores = () => {
     });
   }, [vendedores, searchTerm, statusFilter]);
 
-  const resumo = useMemo(() => {
-    const total = vendedores.length;
-    const comVendas = vendedores.filter((v) => (v.vendas || 0) > 0).length;
-    const faturamentoTotal = vendedores.reduce((acc, v) => acc + (v.valorTotal || 0), 0);
-    return {
-      total,
-      comVendas,
-      faturamentoTotal,
-    };
-  }, [vendedores]);
+
 
   const handleOpenMetas = async (vendedor) => {
     const ano = metasAno;
@@ -318,9 +332,89 @@ const GerenciarVendedores = () => {
     }
   };
 
+  const availableUFs = useMemo(() => (states?.features || [])
+    .map((feature) => feature.properties?.sigla_uf)
+    .filter(Boolean)
+    .sort(), [states]);
+  const currentMunicipios = municipiosByUF[selectedUF]?.features || [];
+  const selectedInUF = currentMunicipios.filter((feature) => selectedAreas.has(String(feature.properties?.codigo_ibge))).length;
+
+  const handleOpenAreas = async (vendedor) => {
+    setAreaModal({ open: true, vendedor });
+    setAreaLoading(true);
+    setAreaError('');
+    setSelectedUF('');
+    try {
+      const areas = await getAreas('representante', vendedor.id);
+      setSelectedAreas(new Map((areas || []).map((area) => [String(area.codigo_ibge), {
+        codigo_ibge: String(area.codigo_ibge),
+        nome: area.nome,
+        uf: area.uf
+      }])));
+    } catch (err) {
+      setAreaError(err.message || 'Erro ao carregar área de atuação.');
+      setSelectedAreas(new Map());
+    } finally {
+      setAreaLoading(false);
+    }
+  };
+
+  const handleSelectUF = async (uf) => {
+    setSelectedUF(uf);
+    setAreaError('');
+    if (uf) await loadMunicipios(uf);
+  };
+
+  const handleToggleMunicipio = (feature) => {
+    const { codigo_ibge, nome, sigla_uf } = feature.properties || {};
+    const key = String(codigo_ibge);
+    setSelectedAreas((current) => {
+      const next = new Map(current);
+      if (next.has(key)) next.delete(key);
+      else next.set(key, { codigo_ibge: key, nome, uf: sigla_uf || selectedUF });
+      return next;
+    });
+  };
+
+  const handleToggleAllMunicipios = () => {
+    setSelectedAreas((current) => {
+      const next = new Map(current);
+      const allSelected = currentMunicipios.length > 0 && selectedInUF === currentMunicipios.length;
+      currentMunicipios.forEach((feature) => {
+        const { codigo_ibge, nome, sigla_uf } = feature.properties || {};
+        const key = String(codigo_ibge);
+        if (allSelected) next.delete(key);
+        else next.set(key, { codigo_ibge: key, nome, uf: sigla_uf || selectedUF });
+      });
+      return next;
+    });
+  };
+
+  const handleSaveAreas = async () => {
+    if (!areaModal.vendedor) return;
+    setAreaSaving(true);
+    setAreaError('');
+    try {
+      const areas = Array.from(selectedAreas.values());
+      await saveAreas('representante', areaModal.vendedor.id, areas);
+      setVendedores((current) => current.map((vendedor) => vendedor.id === areaModal.vendedor.id
+        ? { ...vendedor, areaResumo: resumirAreas(areas) }
+        : vendedor));
+      setAreaModal({ open: false, vendedor: null });
+    } catch (err) {
+      setAreaError(err.message || 'Erro ao salvar área de atuação.');
+    } finally {
+      setAreaSaving(false);
+    }
+  };
+
   if (!user) return null;
 
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+  const pageTitle = isAdminConcessionaria ? 'Vendedores da Concessionária' : 'Representantes';
+  const pageSubtitle = isAdminConcessionaria
+    ? 'Gerencie os vendedores vinculados à sua concessionária'
+    : 'Gerencie a equipe de representantes';
 
   const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -331,8 +425,8 @@ const GerenciarVendedores = () => {
         showSupportButton={true}
         showUserInfo={true}
         user={user}
-        title="Vendedores"
-        subtitle="Gerencie a equipe de vendas"
+        title={pageTitle}
+        subtitle={pageSubtitle}
       />
 
       <div className="gerenciar-vendedores-container">
@@ -344,8 +438,8 @@ const GerenciarVendedores = () => {
             <div className="vendedores-hero-top">
               <div className="hero-copy">
                 <span className="hero-eyebrow">Gestão de equipe</span>
-                <h1>Vendedores</h1>
-                <p>Organize contatos, acompanhe a equipe e gerencie cadastros com uma interface mais elegante.</p>
+                <h1>{pageTitle}</h1>
+                <p>{pageSubtitle}</p>
               </div>
 
               <button onClick={handleAddNew} className="add-btn hero-add-btn">
@@ -381,26 +475,7 @@ const GerenciarVendedores = () => {
               </div>
             </div>
 
-            <div className="hero-kpis">
-              <div className="hero-kpi-card">
-                <span className="hero-kpi-label">Total</span>
-                <strong>{resumo.total}</strong>
-                <small>vendedores cadastrados</small>
-              </div>
 
-              <div className="hero-kpi-card">
-                <span className="hero-kpi-label">Ativos em vendas</span>
-                <strong>{resumo.comVendas}</strong>
-                <small>com movimentação</small>
-              </div>
-
-              <div className="hero-kpi-card">
-                <span className="hero-kpi-label">Propostas geradas</span>
-                <strong>{formatCurrency(resumo.faturamentoTotal)}</strong>
-                <small>volume total da equipe</small>
-              </div>
-
-            </div>
           </section>
 
           {isLoading ? (
@@ -409,153 +484,120 @@ const GerenciarVendedores = () => {
               <span>Carregando vendedores...</span>
             </div>
           ) : vendedoresFiltrados.length > 0 ? (
-            <div className="vendedores-grid">
-              {vendedoresFiltrados.map((vendedor) => {
-                const iniciais = vendedor.nome
-                  ?.split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .slice(0, 3)
-                  .toUpperCase();
+            <div className="vendedores-table-wrap">
+              <table className="vendedores-table">
+                <thead>
+                  <tr>
+                    <th>Vendedor</th>
+                    <th>Contato</th>
+                    <th>Categoria</th>
+                    <th>Região</th>
+                    <th>Área de atuação</th>
+                    <th>Propostas</th>
+                    <th>Faturamento</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {vendedoresFiltrados.map((vendedor) => {
+                    const iniciais = vendedor.nome
+                      ?.split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 3)
+                      .toUpperCase();
 
-                return (
-                  <div key={vendedor.id} className="vendedor-card-modern">
-                    <div className="card-glow-line" />
+                    const categoriaLabel =
+                      vendedor.tipo === 'vendedor_exterior'
+                        ? 'Exterior'
+                        : vendedor.tipo === 'vendedor_concessionaria'
+                        ? 'Concessionária'
+                        : 'Vendedor';
 
-                    <div className="card-header">
-                      <div className="vendedor-avatar-modern">
-                        <div className="avatar-circle">{iniciais}</div>
-                        <div className={`status-indicator ${(vendedor.vendas || 0) > 0 ? 'active' : 'idle'}`} />
-                      </div>
-
-                      <div className="vendedor-info-principal">
-                        <div className="vendedor-top-line">
-                          <h3 className="vendedor-nome">{vendedor.nome}</h3>
-                          <span className="vendedor-badge">
-                            {vendedor.tipo === 'vendedor_exterior'
-                              ? 'Vendedor Exterior'
-                              : 'Vendedor'}
-                          </span>
-                        </div>
-
-                        <p className="vendedor-email">{vendedor.email}</p>
-
-                        <div className="vendedor-status-row">
-                          <span className={`soft-status ${(vendedor.vendas || 0) > 0 ? 'success' : 'neutral'}`}>
-                            {(vendedor.vendas || 0) > 0 ? 'Com movimentação' : 'Sem vendas'}
-                          </span>
-
-                          {vendedor.regiao && (
-                            <span className="soft-status info">{vendedor.regiao}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="card-section contact-section">
-                      <h4 className="section-title">
-                        <svg className="section-icon" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
-                        </svg>
-                        Contato
-                      </h4>
-
-                      <div className="info-grid">
-                        <div className="info-item">
-                          <span className="info-label">Telefone</span>
-                          <span className="info-value">{vendedor.telefone || 'Não informado'}</span>
-                        </div>
-
-                        <div className="info-item">
-                          <span className="info-label">CPF</span>
-                          <span className="info-value">{vendedor.cpf || 'Não informado'}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="card-section">
-                      <h4 className="section-title">
-                        <svg className="section-icon" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z" />
-                        </svg>
-                        Performance
-                      </h4>
-
-                      <div className="performance-grid" style={{ justifyContent: 'center' }}>
-                        <div className="performance-item performance-item-highlight">
-                          <div className="performance-number">{vendedor.vendas || 0}</div>
-                          <div className="performance-label">Propostas geradas</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="card-actions">
-                      <button
-                        onClick={() => handleOpenMetas(vendedor)}
-                        className="action-btn-modern blob-btn metas-btn-modern"
-                        title="Definir Metas"
-                      >
-                        <span className="btn-content">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
-                          </svg>
-                          Metas
-                        </span>
-                        <span className="blob-btn__inner">
-                          <span className="blob-btn__blobs">
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                          </span>
-                        </span>
-                      </button>
-
-                      <button
-                        onClick={() => handleEditVendedor(vendedor)}
-                        className="action-btn-modern blob-btn edit-btn-modern"
-                        title="Editar Vendedor"
-                      >
-                        <span className="btn-content">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
-                          </svg>
-                          Editar
-                        </span>
-                        <span className="blob-btn__inner">
-                          <span className="blob-btn__blobs">
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                          </span>
-                        </span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteVendedor(vendedor.id)}
-                        className="action-btn-modern blob-btn delete-btn-modern"
-                        title="Remover Vendedor"
-                      >
-                        <span className="btn-content">
-                          <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
-                          </svg>
-                          Remover
-                        </span>
-                        <span className="blob-btn__inner">
-                          <span className="blob-btn__blobs">
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                            <span className="blob-btn__blob"></span>
-                          </span>
-                        </span>
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+                    return (
+                      <tr key={vendedor.id} className="vendedor-row">
+                        <td>
+                          <div className="vendedor-cell">
+                            <div className="avatar-circle-sm">{iniciais}</div>
+                            <div>
+                              <div className="vendedor-nome-sm">{vendedor.nome}</div>
+                              <div className="vendedor-email-sm">{vendedor.email}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <div className="vendedor-contact-sm">{vendedor.telefone || '—'}</div>
+                          <div className="vendedor-cpf-sm">{vendedor.cpf || '—'}</div>
+                        </td>
+                        <td>
+                          <span className={`vendedor-badge-sm ${vendedor.tipo}`}>{categoriaLabel}</span>
+                        </td>
+                        <td>
+                          <span className="vendedor-regiao-sm">{vendedor.regiao || '—'}</span>
+                        </td>
+                        <td>
+                          {vendedor.areaResumo?.length > 0 ? (
+                            <div className="vendedor-area-summary">
+                              {vendedor.areaResumo.map(([uf, count]) => <span key={uf}>{uf} — {count} {count === 1 ? 'cidade' : 'cidades'}</span>)}
+                            </div>
+                          ) : <span className="vendedor-area-empty">Não configurada</span>}
+                        </td>
+                        <td>
+                          <div className="vendedor-metric-sm">{vendedor.vendas || 0}</div>
+                          <div className="vendedor-metric-label-sm">propostas</div>
+                        </td>
+                        <td>
+                          <div className="vendedor-metric-sm">{formatCurrency(vendedor.valorTotal || 0)}</div>
+                          <div className="vendedor-metric-label-sm">faturamento</div>
+                        </td>
+                        <td>
+                          <div className="row-actions">
+                            {!isAdminConcessionaria && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo) && (
+                              <button
+                                onClick={() => handleOpenAreas(vendedor)}
+                                className="row-action-btn row-action-area"
+                                title="Área de atuação"
+                              >
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z" />
+                                  <circle cx="12" cy="10" r="2.5" />
+                                </svg>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleOpenMetas(vendedor)}
+                              className="row-action-btn row-action-metas"
+                              title="Definir Metas"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleEditVendedor(vendedor)}
+                              className="row-action-btn row-action-edit"
+                              title="Editar"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteVendedor(vendedor.id)}
+                              className="row-action-btn row-action-delete"
+                              title="Remover"
+                            >
+                              <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           ) : (
             <div className="empty-state">
@@ -582,6 +624,78 @@ const GerenciarVendedores = () => {
             </div>
           )}
         </div>
+
+        {areaModal.open && (
+          <div className="modal-overlay" onClick={() => setAreaModal({ open: false, vendedor: null })}>
+            <div className="modal-content modal-content-premium vendedor-area-modal" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-header">
+                <div>
+                  <h2>Área de atuação</h2>
+                  <p className="modal-subtitle">{areaModal.vendedor?.nome}</p>
+                </div>
+                <button type="button" className="close-btn" onClick={() => setAreaModal({ open: false, vendedor: null })} aria-label="Fechar">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
+                </button>
+              </div>
+
+              {areaLoading ? (
+                <div className="vendedor-area-feedback"><div className="loading-spinner-vendedores" /><span>Carregando área...</span></div>
+              ) : (
+                <>
+                  <div className="vendedor-area-toolbar">
+                    <label>
+                      <span>Estado</span>
+                      <select value={selectedUF} onChange={(e) => handleSelectUF(e.target.value)}>
+                        <option value="">Selecione a UF</option>
+                        {availableUFs.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
+                      </select>
+                    </label>
+                    <div className="vendedor-area-total">
+                      <strong>{selectedAreas.size}</strong>
+                      <span>{selectedAreas.size === 1 ? 'município selecionado' : 'municípios selecionados'}</span>
+                    </div>
+                  </div>
+
+                  {areaError && <div className="vendedor-area-error">{areaError}</div>}
+
+                  {selectedUF && (
+                    <div className="vendedor-area-selector">
+                      <div className="vendedor-area-selector-header">
+                        <span>{selectedInUF} de {currentMunicipios.length} em {selectedUF}</span>
+                        <button type="button" onClick={handleToggleAllMunicipios} disabled={loadingMunicipios || currentMunicipios.length === 0}>
+                          {selectedInUF === currentMunicipios.length && currentMunicipios.length > 0 ? 'Desmarcar todos' : 'Selecionar todos'}
+                        </button>
+                      </div>
+                      {loadingMunicipios ? (
+                        <div className="vendedor-area-feedback"><div className="loading-spinner-vendedores" /><span>Carregando municípios...</span></div>
+                      ) : (
+                        <div className="vendedor-municipios-grid">
+                          {currentMunicipios.map((feature) => {
+                            const props = feature.properties || {};
+                            const key = String(props.codigo_ibge);
+                            return (
+                              <label key={key} className={selectedAreas.has(key) ? 'selected' : ''}>
+                                <input type="checkbox" checked={selectedAreas.has(key)} onChange={() => handleToggleMunicipio(feature)} />
+                                <span>{props.nome}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="modal-actions">
+                    <button type="button" className="cancel-btn" onClick={() => setAreaModal({ open: false, vendedor: null })}>Cancelar</button>
+                    <button type="button" className="save-btn" onClick={handleSaveAreas} disabled={areaSaving}>
+                      {areaSaving ? 'Salvando...' : 'Salvar área de atuação'}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {metasModal.open && (
           <div className="modal-overlay">

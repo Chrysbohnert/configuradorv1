@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
-import BlobButton from '../../components/BlobButton';
 import { getTodosFretesAdmin, createFrete, updateFrete, deleteFrete } from '../../api/fretes';
 import { formatCurrency } from '../../utils/formatters';
 import '../../styles/GerenciarFretes.css';
@@ -156,12 +155,13 @@ const GerenciarFretes = () => {
             <h1>Fretes e Pontos de Instalação</h1>
             <p>Gerencie os valores de frete CIF por cidade/UF</p>
           </div>
-          <BlobButton
+          <button
+            type="button"
+            className="fretes-primary"
             onClick={() => { resetForm(); setEditingFrete(null); setShowModal(true); }}
-            style={{ '--blob-color': '#ffffff', color: '#ffffff' }}
           >
             + Novo Frete
-          </BlobButton>
+          </button>
         </div>
 
         {isLoading && (
@@ -179,52 +179,62 @@ const GerenciarFretes = () => {
         )}
 
         {!isLoading && fretes.length > 0 && (
-          <div className="fretes-grid">
-            {fretes.map((frete) => (
-              <div key={frete.id} className="frete-card">
-                <div className="frete-header">
-                  <div className="frete-location">
-                    <span className="cidade">{frete.cidade}</span>
-                    <span className="uf">{frete.uf}</span>
-                  </div>
-                  <span className="oficina">{frete.oficina || 'OFICINA'}</span>
-                </div>
-                <div className="frete-values">
-                  <div className="value-item">
-                    <span className="label">Prioridade</span>
-                    <span className="value">{formatCurrency(frete.valor_prioridade || 0)}</span>
-                  </div>
-                  <div className="value-item">
-                    <span className="label">Reaproveitamento</span>
-                    <span className="value">{formatCurrency(frete.valor_reaproveitamento || 0)}</span>
-                  </div>
-                </div>
-                <div className="frete-actions">
-                  <BlobButton onClick={() => handleEdit(frete)}>Editar</BlobButton>
-                  <BlobButton onClick={() => handleDelete(frete.id)}>Excluir</BlobButton>
-                </div>
-              </div>
-            ))}
+          <div className="fretes-table-shell">
+            <div className="fretes-list-heading">
+              <span>Instaladoras e valores</span>
+              <small>{fretes.length} registro(s)</small>
+            </div>
+            <div className="fretes-table-scroll">
+              <table className="fretes-table">
+                <thead>
+                  <tr>
+                    <th>Oficina / Ponto</th>
+                    <th>Cidade</th>
+                    <th>UF</th>
+                    <th>Prioridade</th>
+                    <th>Reaproveitamento</th>
+                    <th>Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fretes.map((frete) => (
+                    <tr key={frete.id}>
+                      <td><strong>{frete.oficina || 'OFICINA'}</strong></td>
+                      <td>{frete.cidade}</td>
+                      <td><span className="fretes-uf">{frete.uf}</span></td>
+                      <td>{formatCurrency(frete.valor_prioridade || 0)}</td>
+                      <td>{formatCurrency(frete.valor_reaproveitamento || 0)}</td>
+                      <td>
+                        <div className="frete-actions">
+                          <button type="button" onClick={() => handleEdit(frete)}>Editar</button>
+                          <button type="button" className="danger" onClick={() => handleDelete(frete.id)}>Excluir</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
+        <div className="fretes-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="fretes-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="fretes-modal-header">
               <h2>{editingFrete ? 'Editar Frete' : 'Novo Frete'}</h2>
-              <button className="close-btn" onClick={() => setShowModal(false)}>
+              <button className="fretes-close-btn" onClick={() => setShowModal(false)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="18" y1="6" x2="6" y2="18"/>
                   <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
               </button>
             </div>
-            <div className="modal-form">
+            <div className="fretes-modal-form">
               <form onSubmit={handleSubmit}>
-                <div className="form-grid">
-                  <div className="form-group">
+                <div className="fretes-form-grid">
+                  <div className="fretes-form-group">
                     <label>Oficina / Ponto de Instalação *</label>
                     <input
                       type="text"
@@ -234,7 +244,7 @@ const GerenciarFretes = () => {
                       required
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="fretes-form-group">
                     <label>Cidade *</label>
                     <input
                       type="text"
@@ -244,7 +254,7 @@ const GerenciarFretes = () => {
                       required
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="fretes-form-group">
                     <label>UF *</label>
                     <select
                       value={formData.uf}
@@ -257,7 +267,7 @@ const GerenciarFretes = () => {
                       ))}
                     </select>
                   </div>
-                  <div className="form-group">
+                  <div className="fretes-form-group">
                     <label>Valor Prioridade (CIF) *</label>
                     <input
                       type="number"
@@ -269,7 +279,7 @@ const GerenciarFretes = () => {
                       required
                     />
                   </div>
-                  <div className="form-group">
+                  <div className="fretes-form-group">
                     <label>Valor Reaproveitamento (CIF) *</label>
                     <input
                       type="number"
@@ -282,7 +292,7 @@ const GerenciarFretes = () => {
                     />
                   </div>
                 </div>
-                <div className="modal-actions">
+                <div className="fretes-modal-actions">
                   <button type="button" className="cancel-btn" onClick={() => setShowModal(false)}>Cancelar</button>
                   <button type="submit" className="save-btn" disabled={isLoading}>
                     {isLoading ? 'Salvando...' : (editingFrete ? 'Atualizar' : 'Salvar')}

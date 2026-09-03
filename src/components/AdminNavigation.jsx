@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/AdminNavigation.css';
 
@@ -37,6 +37,18 @@ const AdminNavigation = ({ user }) => {
       }
     ] : []),
     {
+      path: '/cadastros',
+      label: 'Visão Geral',
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="3" width="7" height="7" />
+          <rect x="14" y="3" width="7" height="7" />
+          <rect x="3" y="14" width="7" height="7" />
+          <rect x="14" y="14" width="7" height="7" />
+        </svg>
+      )
+    },
+    {
       path: '/clientes',
       label: 'Clientes',
       icon: (
@@ -50,7 +62,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/gerenciar-vendedores',
-      label: 'Gerenciar Vendedores',
+      label: 'Representantes',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -62,7 +74,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/gerenciar-guindastes',
-      label: 'Gerenciar Guindastes',
+      label: 'Guindastes',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M2 20h20"/>
@@ -75,7 +87,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/gerenciar-estoque',
-      label: 'Gerenciar Estoque',
+      label: 'Estoque',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -86,7 +98,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/gerenciar-graficos-carga',
-      label: 'Gerenciar Gráficos',
+      label: 'Gráficos de Carga',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -99,7 +111,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/gerenciar-fretes',
-      label: 'Gerenciar Fretes',
+      label: 'Instaladoras',
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="1" y="3" width="15" height="13"/>
@@ -221,6 +233,114 @@ const AdminNavigation = ({ user }) => {
     return !['/logistica', '/gerenciar-graficos-carga', '/aprovacoes-descontos', '/cotacao-dolar'].includes(item.path);
   });
 
+  const findItem = (path) => filteredNavItems.find((item) => item.path === path);
+  const groups = [
+    { id: 'dashboard', label: 'Dashboard', items: [findItem('/dashboard-admin')] },
+    {
+      id: 'comercial',
+      label: 'Comercial',
+      items: [
+        findItem('/nova-proposta-concessionaria'),
+        findItem('/relatorio-completo'),
+        findItem('/aprovacoes-descontos')
+      ]
+    },
+    {
+      id: 'cadastros',
+      label: 'Cadastros',
+      items: [
+        findItem('/cadastros'),
+        findItem('/clientes'),
+        findItem('/gerenciar-vendedores'),
+        findItem('/gerenciar-guindastes'),
+        findItem('/gerenciar-estoque'),
+        findItem('/gerenciar-graficos-carga'),
+        findItem('/gerenciar-fretes'),
+        findItem('/concessionarias')
+      ]
+    },
+    { id: 'mapa', direct: true, item: findItem('/mapa-territorial') },
+    {
+      id: 'gestao',
+      label: 'Gestão',
+      items: [
+        findItem('/planos-pagamento'),
+        findItem('/cotacao-dolar'),
+        findItem('/precificacao')
+      ]
+    },
+    { id: 'configuracoes', direct: true, item: findItem('/admin/configuracoes') }
+  ].map((group) => ({
+    ...group,
+    items: group.items?.filter(Boolean)
+  }));
+  const pricingSections = [
+    { key: 'precificacao', label: 'Equipamentos' },
+    { key: 'tributacao', label: 'Tributação' },
+    { key: 'condicoes', label: 'Condições' },
+    { key: 'parametros', label: 'Parâmetros' },
+    { key: 'simulador', label: 'Simulador' },
+    { key: 'historico', label: 'Histórico' }
+  ];
+  const isPathActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const activeGroupId = groups.find((group) => group.direct
+    ? group.item && isPathActive(group.item.path)
+    : group.items.some((item) => isPathActive(item.path)))?.id;
+  const [expandedGroups, setExpandedGroups] = useState(() => new Set(['dashboard']));
+  const pricingExpanded = isPathActive('/precificacao');
+  const activePricingSection = new URLSearchParams(location.search).get('secao') || 'precificacao';
+
+  useEffect(() => {
+    if (!activeGroupId) return;
+    setExpandedGroups((current) => {
+      if (current.has(activeGroupId)) return current;
+      const next = new Set(current);
+      next.add(activeGroupId);
+      return next;
+    });
+  }, [activeGroupId]);
+
+  const toggleGroup = (groupId) => {
+    if (groupId === activeGroupId) return;
+    setExpandedGroups((current) => {
+      const next = new Set(current);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
+  };
+
+  const renderItem = (item) => {
+    const active = isPathActive(item.path);
+    return (
+      <React.Fragment key={item.path}>
+        <button
+          className={`nav-item nav-child-item ${active ? 'active' : ''}`}
+          onClick={() => onNavigate(item.path)}
+        >
+          <span className="nav-icon">{item.icon}</span>
+          <span className="nav-label">{item.label}</span>
+          {active && <span className="nav-indicator"></span>}
+        </button>
+        {item.path === '/precificacao' && pricingExpanded && (
+          <div className="nav-pricing-submenu">
+            {pricingSections.map((section) => (
+              <button
+                key={section.key}
+                className={`nav-pricing-item ${activePricingSection === section.key ? 'active' : ''}`}
+                onClick={() => onNavigate(section.key === 'precificacao'
+                  ? '/precificacao'
+                  : `/precificacao?secao=${section.key}`)}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+        )}
+      </React.Fragment>
+    );
+  };
+
   return (
     <>
       <button 
@@ -288,19 +408,37 @@ const AdminNavigation = ({ user }) => {
         </div>
 
         <nav className="nav-menu">
-          {filteredNavItems.map((item) => (
-            <button
-              key={item.path}
-              className={`nav-item ${location.pathname === item.path ? 'active' : ''}`}
-              onClick={() => onNavigate(item.path)}
-            >
-              <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.label}</span>
-              {location.pathname === item.path && (
-                <span className="nav-indicator"></span>
-              )}
-            </button>
-          ))}
+          {groups.map((group) => {
+            if (group.direct) {
+              return group.item ? (
+                <div className="nav-direct-item" key={group.id}>
+                  {renderItem(group.item)}
+                </div>
+              ) : null;
+            }
+
+            const expanded = expandedGroups.has(group.id);
+            const active = activeGroupId === group.id;
+            return (
+              <div className={`nav-group ${active ? 'active' : ''}`} key={group.id}>
+                <button
+                  className="nav-group-toggle"
+                  onClick={() => toggleGroup(group.id)}
+                  aria-expanded={expanded}
+                >
+                  <span>{group.label}</span>
+                  <svg className={`nav-chevron ${expanded ? 'expanded' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </button>
+                {expanded && (
+                  <div className="nav-group-items">
+                    {group.items.map(renderItem)}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className="nav-footer">

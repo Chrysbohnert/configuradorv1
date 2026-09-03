@@ -42,7 +42,7 @@ async function listarEntidades(tipo) {
   const { rows } = await query(
     `SELECT id, nome, cidade, uf, cor
      FROM public.app_users
-     WHERE tipo = 'representante'
+     WHERE tipo IN ('vendedor', 'vendedor_exterior')
      ORDER BY nome ASC`
   );
   return rows.map((r) => ({ ...r, tipo: 'representante' }));

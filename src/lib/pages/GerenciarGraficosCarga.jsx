@@ -1,7 +1,6 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
-import BlobButton from '../../components/BlobButton';
 import { db } from '../../config/supabase';
 import '../../styles/GerenciarGraficosCarga.css';
 
@@ -10,6 +9,7 @@ const GerenciarGraficosCarga = () => {
   const { user } = useOutletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [graficos, setGraficos] = useState([]);
+  const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [editingGrafico, setEditingGrafico] = useState(null);
   const [formData, setFormData] = useState({
@@ -46,10 +46,6 @@ const GerenciarGraficosCarga = () => {
 
     try {
       setIsLoading(true);
-
-      // 🚫 LOGIN SUPABASE DESATIVADO TEMPORARIAMENTE
-      // Durante migração Supabase -> PostgreSQL
-      // O sistema agora usa autenticação via API REST/PostgreSQL
 
       let arquivoUrl = '';
 
@@ -170,10 +166,16 @@ const GerenciarGraficosCarga = () => {
     }
   };
 
+  const filteredGraficos = graficos.filter((grafico) => {
+    const term = search.trim().toLocaleLowerCase('pt-BR');
+    if (!term) return true;
+    return (grafico.nome || '').toLocaleLowerCase('pt-BR').includes(term);
+  });
+
   if (!user) return null;
 
   return (
-    <>
+    <div className="graficos-page">
       <UnifiedHeader
         showBackButton={false}
         showSupportButton={true}
@@ -183,69 +185,114 @@ const GerenciarGraficosCarga = () => {
         subtitle="Upload e gestão de gráficos técnicos"
       />
 
-      <div className="gerenciar-graficos-container">
-        <div className="header-section">
-          <div className="header-info">
+      <main className="graficos-container">
+        <div className="graficos-heading">
+          <div className="graficos-heading-copy">
+            <span className="graficos-eyebrow">Documentos técnicos</span>
             <h1>Gráficos de Carga</h1>
-            <p>Gerencie os gráficos técnicos dos guindastes</p>
+            <p>Gerencie os gráficos técnicos dos guindastes em um único local.</p>
           </div>
-          <BlobButton
+          <button
+            className="graficos-new-button"
             onClick={() => { resetForm(); setEditingGrafico(null); setShowModal(true); }}
           >
-            + Novo Gráfico
-          </BlobButton>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Novo Gráfico
+          </button>
         </div>
 
-        {isLoading && (
-          <div className="loading-container">
-            <div className="spinner"></div>
-            <p>Carregando...</p>
-          </div>
-        )}
+        <section className="graficos-toolbar" aria-label="Filtros de gráficos">
+          <label className="graficos-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-4-4" />
+            </svg>
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar gráficos"
+            />
+          </label>
+        </section>
 
-        {!isLoading && graficos.length === 0 && (
-          <div className="empty-state">
-            <h3>Nenhum gráfico cadastrado</h3>
-            <p>Clique em "+ Novo Gráfico" para adicionar o primeiro.</p>
-          </div>
-        )}
+        <div className="graficos-list-heading">
+          <span>Gráficos cadastrados</span>
+          <small>{filteredGraficos.length} {filteredGraficos.length === 1 ? 'registro' : 'registros'}</small>
+        </div>
 
-        {!isLoading && graficos.length > 0 && (
-          <div className="graficos-grid">
-            {graficos.map((grafico) => (
-              <div key={grafico.id} className="grafico-item">
-                <div className="grafico-info">
-                  <div className="grafico-header">
-                    <div className="grafico-icon">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14 2 14 8 20 8"/>
-                      </svg>
-                    </div>
-                    <div className="grafico-details">
-                      <h3>{grafico.nome}</h3>
-                    </div>
-                  </div>
-                  {grafico.arquivo_url && (
-                    <a href={grafico.arquivo_url} target="_blank" rel="noopener noreferrer" className="pdf-chip">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                        <polyline points="15 3 21 3 21 9"/>
-                        <line x1="10" y1="14" x2="21" y2="3"/>
-                      </svg>
-                      Ver PDF
-                    </a>
-                  )}
-                </div>
-                <div className="grafico-actions">
-                  <BlobButton onClick={() => handleEdit(grafico)}>Editar</BlobButton>
-                  <BlobButton onClick={() => handleDelete(grafico.id)}>Excluir</BlobButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        <section className="graficos-table-shell" aria-live="polite">
+          {isLoading ? (
+            <div className="graficos-feedback">
+              <span className="graficos-spinner" />
+              <strong>Carregando gráficos...</strong>
+            </div>
+          ) : filteredGraficos.length === 0 ? (
+            <div className="graficos-feedback">
+              <span className="graficos-empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </span>
+              <strong>Nenhum gráfico cadastrado</strong>
+              <span>Clique em "Novo Gráfico" para adicionar o primeiro.</span>
+            </div>
+          ) : (
+            <div className="graficos-table-scroll">
+              <table className="graficos-table">
+                <thead>
+                  <tr>
+                    <th>Nome</th>
+                    <th className="col-pdf">PDF</th>
+                    <th className="col-acoes"><span className="sr-only">Acoes</span></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredGraficos.map((grafico) => (
+                    <tr key={grafico.id}>
+                      <td>
+                        <strong className="grafico-name">{grafico.nome}</strong>
+                      </td>
+                      <td className="col-pdf">
+                        {grafico.arquivo_url ? (
+                          <a
+                            href={grafico.arquivo_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="grafico-pdf-link"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                              <polyline points="15 3 21 3 21 9" />
+                              <line x1="10" y1="14" x2="21" y2="3" />
+                            </svg>
+                            Ver PDF
+                          </a>
+                        ) : (
+                          <span className="grafico-muted">Não anexado</span>
+                        )}
+                      </td>
+                      <td className="col-acoes">
+                        <div className="grafico-actions">
+                          <button className="btn-editar" onClick={() => handleEdit(grafico)}>
+                            Editar <span>›</span>
+                          </button>
+                          <button className="btn-excluir" onClick={() => handleDelete(grafico.id)}>
+                            Excluir
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      </main>
 
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
@@ -254,8 +301,8 @@ const GerenciarGraficosCarga = () => {
               <h2>{editingGrafico ? 'Editar Gráfico' : 'Novo Gráfico'}</h2>
               <button className="close-btn" onClick={() => setShowModal(false)}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
@@ -295,11 +342,8 @@ const GerenciarGraficosCarga = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
 export default GerenciarGraficosCarga;
-
-
-

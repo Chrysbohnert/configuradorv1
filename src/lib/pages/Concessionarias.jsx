@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
+import '../../styles/Concessionarias.css';
 
 const Concessionarias = () => {
   const navigate = useNavigate();
@@ -237,8 +238,6 @@ const Concessionarias = () => {
 
   if (!user) return null;
 
-  const btnBase = { border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', padding: '5px 12px' };
-
   return (
     <>
       <UnifiedHeader
@@ -250,112 +249,62 @@ const Concessionarias = () => {
         subtitle="Cadastre e gerencie concessionárias"
       />
 
-      <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '28px', fontWeight: '700', margin: '0 0 6px 0', color: '#111' }}>
-            Concessionárias
-          </h1>
-          <p style={{ color: '#6b7280', fontSize: '14px', margin: 0 }}>
-            Cadastre e gerencie as concessionárias parceiras
-          </p>
+      <main className="concessionarias-page">
+        <div className="concessionarias-heading">
+          <div>
+            <h1>Concessionárias</h1>
+            <p>Cadastre e gerencie as concessionárias parceiras.</p>
+          </div>
+          <button className="concessionarias-primary" onClick={handleOpenCreate} disabled={isLoading}>
+            + Nova Concessionária
+          </button>
         </div>
 
-        {/* Card principal */}
-        <div style={{ background: 'white', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.08)', overflow: 'hidden' }}>
+        <section className="concessionarias-toolbar" aria-label="Filtros de concessionárias">
+          <span>Listagem <small>({concessionarias.length})</small></span>
+          <label>
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={(e) => setShowInactive(e.target.checked)}
+              disabled={isLoading}
+            />
+            Mostrar inativas
+          </label>
+        </section>
 
-          {/* Barra de ações */}
-          <div style={{ padding: '13px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-            <span style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
-              Listagem <span style={{ color: '#9ca3af', fontWeight: 500 }}>({concessionarias.length})</span>
-            </span>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#374151', cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={showInactive}
-                  onChange={(e) => setShowInactive(e.target.checked)}
-                  disabled={isLoading}
-                  style={{ cursor: 'pointer' }}
-                />
-                Mostrar inativas
-              </label>
-              <button
-                onClick={handleOpenCreate}
-                disabled={isLoading}
-                style={{ ...btnBase, padding: '7px 16px', background: '#111827', color: '#fff', fontSize: '13px' }}
-              >
-                + Nova Concessionária
-              </button>
-            </div>
-          </div>
-
-          {/* Tabela */}
+        <div className="concessionarias-table-shell">
           {isLoading ? (
-            <div style={{ padding: '32px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>Carregando...</div>
+            <div className="concessionarias-feedback">Carregando...</div>
           ) : concessionarias.length === 0 ? (
-            <div style={{ padding: '48px 20px', textAlign: 'center', color: '#9ca3af', fontSize: '14px' }}>
-              Nenhuma concessionária cadastrada.
-            </div>
+            <div className="concessionarias-feedback">Nenhuma concessionária cadastrada.</div>
           ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', minWidth: '640px', borderCollapse: 'collapse' }}>
+            <div className="concessionarias-table-scroll">
+              <table className="concessionarias-table">
                 <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Nome</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Região</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Status</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Email</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Telefone</th>
-                    <th style={{ padding: '10px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>Ações</th>
+                  <tr>
+                    <th>Nome</th>
+                    <th>Região</th>
+                    <th>Status</th>
+                    <th>Email</th>
+                    <th>Telefone</th>
+                    <th>Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {concessionarias.map((c) => (
-                    <tr
-                      key={c.id}
-                      style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.12s' }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                    >
-                      <td style={{ padding: '11px 16px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>{c.nome}</div>
-                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>ID: {c.id}</div>
-                      </td>
-                      <td style={{ padding: '11px 16px', fontSize: '13px', color: '#374151', fontWeight: '600', whiteSpace: 'nowrap' }}>
-                        {c.regiao_preco}
-                      </td>
-                      <td style={{ padding: '11px 16px' }}>
-                        <span style={{
-                          padding: '3px 9px', borderRadius: '999px', fontSize: '11px', fontWeight: '700',
-                          background: c.ativo === false ? '#fef2f2' : '#ecfdf5',
-                          color: c.ativo === false ? '#991b1b' : '#065f46',
-                          border: `1px solid ${c.ativo === false ? '#fecaca' : '#a7f3d0'}`
-                        }}>
-                          {c.ativo === false ? 'Inativa' : 'Ativa'}
-                        </span>
-                      </td>
-                      <td style={{ padding: '11px 16px', fontSize: '13px', color: '#374151' }}>{c.email || '-'}</td>
-                      <td style={{ padding: '11px 16px', fontSize: '13px', color: '#374151' }}>{c.telefone || '-'}</td>
-                      <td style={{ padding: '11px 16px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEdit(c)}
-                            disabled={isLoading}
-                            style={{ ...btnBase, background: '#d3d3d3', color: '#000' }}
-                          >Editar</button>
-                          <button
-                            type="button"
-                            onClick={() => handleToggleAtivo(c)}
-                            disabled={isLoading}
-                            style={{
-                              ...btnBase,
-                              background: c.ativo === false ? '#d1fae5' : '#fef3c7',
-                              color: c.ativo === false ? '#065f46' : '#92400e'
-                            }}
-                          >{c.ativo === false ? 'Ativar' : 'Inativar'}</button>
+                    <tr key={c.id}>
+                      <td><strong>{c.nome}</strong><small>ID: {c.id}</small></td>
+                      <td>{c.regiao_preco}</td>
+                      <td><span className={`concessionarias-status ${c.ativo === false ? 'inactive' : 'active'}`}>{c.ativo === false ? 'Inativa' : 'Ativa'}</span></td>
+                      <td>{c.email || '-'}</td>
+                      <td>{c.telefone || '-'}</td>
+                      <td>
+                        <div className="concessionarias-actions">
+                          <button type="button" onClick={() => handleOpenEdit(c)} disabled={isLoading}>Editar</button>
+                          <button type="button" onClick={() => handleToggleAtivo(c)} disabled={isLoading}>
+                            {c.ativo === false ? 'Ativar' : 'Inativar'}
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -365,7 +314,7 @@ const Concessionarias = () => {
             </div>
           )}
         </div>
-      </div>
+      </main>
 
       {/* Modal */}
       {showModal && (

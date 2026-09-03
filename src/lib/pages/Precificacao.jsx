@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { formatCurrency } from '../../utils/formatters';
 import {
@@ -1750,7 +1750,21 @@ function ExcelActions({ showToast, onApplied }) {
 // =============================
 export default function Precificacao() {
   const { user } = useOutletContext();
-  const [activeTab, setActiveTab] = useState('precificacao');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabs = [
+    { key: 'precificacao', label: 'Equipamentos' },
+    { key: 'tributacao', label: 'Tributação' },
+    { key: 'condicoes', label: 'Condições' },
+    { key: 'parametros', label: 'Parâmetros' },
+    { key: 'simulador', label: 'Simulador' },
+    { key: 'historico', label: 'Histórico' },
+  ];
+  const requestedTab = searchParams.get('secao');
+  const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab : 'precificacao';
+  const setActiveTab = (tab) => {
+    if (tab === 'precificacao') setSearchParams({});
+    else setSearchParams({ secao: tab });
+  };
   const [refreshKey, setRefreshKey] = useState(0);
   const [toast, setToast] = useState({ type: '', message: '' });
 
@@ -1803,14 +1817,7 @@ export default function Precificacao() {
           </div>
 
           <div className="precificacao-tabs">
-            {[
-              { key: 'precificacao', label: 'Equipamentos' },
-              { key: 'tributacao', label: 'Tributação' },
-              { key: 'condicoes', label: 'Condições' },
-              { key: 'parametros', label: 'Parâmetros' },
-              { key: 'simulador', label: 'Simulador' },
-              { key: 'historico', label: 'Histórico' },
-            ].map((tab) => (
+            {tabs.map((tab) => (
               <button
                 key={tab.key}
                 className={`precificacao-tab ${activeTab === tab.key ? 'active' : ''}`}
