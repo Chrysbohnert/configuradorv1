@@ -263,6 +263,15 @@
   --type-soft: #faeee9;
 }
 
+.cadastro-card--guindastes {
+  --type-color: #166c7d;
+  --type-soft: #e0f4f7;
+}
+
+.cadastros-special-shell {
+  margin-bottom: 24px;
+}
+
 .cadastro-card:hover {
   transform: translateY(-2px);
   border-color: color-mix(in srgb, var(--type-color) 48%, #e2e2df);

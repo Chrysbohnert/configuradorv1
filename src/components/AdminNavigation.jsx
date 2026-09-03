@@ -49,19 +49,6 @@ const AdminNavigation = ({ user }) => {
       )
     },
     {
-      path: '/gerenciar-guindastes',
-      label: 'Guindastes',
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M2 20h20"/>
-          <path d="M8 20V8l8-4v16"/>
-          <path d="M16 8l4-2"/>
-          <path d="M8 12h8"/>
-          <path d="M8 16h8"/>
-        </svg>
-      )
-    },
-    {
       path: '/gerenciar-estoque',
       label: 'Estoque',
       icon: (
