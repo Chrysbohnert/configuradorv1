@@ -4,7 +4,6 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import { formatCurrency } from '../../utils/formatters';
 import {
   getEquipamentosComPrecificacao,
-  importarPrecificacao,
   salvarPrecificacao,
 } from '../../api/precificacao';
 import {
@@ -30,7 +29,6 @@ import {
   listarHistorico,
   excluirHistorico,
 } from '../../api/precificacaoSimulador';
-import { analisarPrecificacaoExcel, exportarPrecificacaoExcel } from '../precificacaoExcel';
 import '../../styles/Precificacao.css';
 
 const UFS_BR = [
@@ -1562,115 +1560,7 @@ function Historico({ showToast }) {
   );
 }
 
-function ExcelActions({ showToast, onApplied }) {
-  const inputRef = useRef(null);
-  const [preview, setPreview] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const carregarBase = async () => {
-    const [condicoes, tributacoes, parametros] = await Promise.all([
-      listarCondicoes({ ativo: true }),
-      getRegrasTributacao(),
-      getParametros(),
-    ]);
-    return { condicoes, tributacoes, parametros };
-  };
-
-  const handleExport = async () => {
-    setIsLoading(true);
-    try {
-      await exportarPrecificacaoExcel(await carregarBase());
-      showToast('success', 'Banco de dados da precificação exportado.');
-    } catch (error) {
-      showToast('error', error.message || 'Erro ao exportar Excel.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleFile = async (event) => {
-    const file = event.target.files?.[0];
-    event.target.value = '';
-    if (!file) return;
-    setIsLoading(true);
-    try {
-      const base = await carregarBase();
-      setPreview(await analisarPrecificacaoExcel(
-        file,
-        base.condicoes,
-        base.tributacoes,
-        base.parametros
-      ));
-    } catch (error) {
-      showToast('error', error.message || 'Arquivo Excel inválido.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleApply = async () => {
-    if (!preview) return;
-    setIsLoading(true);
-    try {
-      if (preview.erros.length > 0) {
-        showToast('error', 'Corrija os erros apontados antes de importar.');
-        return;
-      }
-      const relatorio = await importarPrecificacao({
-        equipamentos: [],
-        condicoes: preview.condicoes,
-        tributacoes: preview.tributacoes,
-        parametros: preview.parametros,
-      });
-      setPreview(null);
-      onApplied();
-      showToast('success', `Importação concluída: ${relatorio.condicoes} condições e ${relatorio.tributacoes} tributações.`);
-    } catch (error) {
-      showToast('error', error.message || 'Erro ao aplicar importação.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  return (
-    <>
-      <div className="precificacao-toolbar">
-        <button className="precificacao-btn" onClick={() => inputRef.current?.click()} disabled={isLoading}>
-          Importar regras Excel
-        </button>
-        <button className="precificacao-btn" onClick={handleExport} disabled={isLoading}>
-          Exportar regras Excel
-        </button>
-        <input ref={inputRef} type="file" accept=".xlsx" hidden onChange={handleFile} />
-      </div>
-      {preview && (
-        <div className="precificacao-import-overlay" role="dialog" aria-modal="true">
-          <div className="precificacao-import-modal">
-            <h3>Validar importação</h3>
-            <p className="precificacao-section-subtitle">{preview.arquivo}</p>
-            <div className="precificacao-summary-grid">
-              <div><strong>{preview.condicoes.length}</strong><span>condições</span></div>
-              <div><strong>{preview.tributacoes.length}</strong><span>regras tributárias</span></div>
-              <div><strong>{preview.parametros ? 1 : 0}</strong><span>conjunto de parâmetros</span></div>
-            </div>
-            {preview.erros.length > 0 && (
-              <div className="precificacao-import-warning">
-                <strong>Erros que bloqueiam a importação:</strong>
-                <p>{preview.erros.join('; ')}</p>
-              </div>
-            )}
-            <div className="precificacao-modal-actions">
-              <button className="precificacao-btn" onClick={() => setPreview(null)} disabled={isLoading}>Cancelar</button>
-              <button className="precificacao-btn primary" onClick={handleApply} disabled={isLoading || preview.erros.length > 0}>
-                {isLoading ? 'Importando...' : 'Confirmar atualizações'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
-}
 
 // =============================
 // Página principal
@@ -1729,11 +1619,6 @@ export default function Precificacao() {
           {toast.message && (
             <div className={`precificacao-status ${toast.type}`}>{toast.message}</div>
           )}
-
-          <ExcelActions
-            showToast={showToast}
-            onApplied={() => setRefreshKey((current) => current + 1)}
-          />
 
           <div className="precificacao-info-box">
             <p>

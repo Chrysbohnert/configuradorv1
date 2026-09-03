@@ -66,29 +66,29 @@
    ============================================ */
 
 .nav-header {
-  padding: 32px 24px 24px;
+  padding: 22px 18px 16px;
   background: rgba(255, 193, 7, 0.03);
 }
 
 .admin-info {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .admin-avatar {
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
-  border-radius: 18px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 700;
   color: #000000;
   position: relative;
-  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.4);
+  box-shadow: 0 3px 10px rgba(255, 193, 7, 0.35);
   transition: all 0.3s ease;
   overflow: hidden;
 }
@@ -118,10 +118,10 @@
 }
 
 .admin-name {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #ffffff;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -130,8 +130,8 @@
 .admin-role {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
+  gap: 5px;
+  font-size: 10px;
   font-weight: 600;
   color: #ffc107;
   text-transform: uppercase;
@@ -153,14 +153,14 @@
 
 .nav-menu {
   flex: 1;
-  padding: 8px 12px;
+  padding: 6px 10px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
 .nav-group {
-  margin-bottom: 6px;
-  border-radius: 12px;
+  margin-bottom: 4px;
+  border-radius: 10px;
   transition: background 0.25s ease;
 }
 
@@ -170,16 +170,16 @@
 
 .nav-group-toggle {
   width: 100%;
-  padding: 12px 14px;
+  padding: 9px 12px;
   border: none;
-  border-radius: 10px;
+  border-radius: 8px;
   background: transparent;
   color: rgba(255, 255, 255, 0.58);
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-align: left;
@@ -194,8 +194,8 @@
 }
 
 .nav-chevron {
-  width: 15px;
-  height: 15px;
+  width: 13px;
+  height: 13px;
   flex-shrink: 0;
   transition: transform 0.25s ease;
 }
@@ -205,45 +205,49 @@
 }
 
 .nav-group-items {
-  margin: 2px 0 8px 11px;
-  padding-left: 8px;
+  margin: 1px 0 6px 10px;
+  padding: 2px 0 2px 6px;
   border-left: 1px solid rgba(255, 193, 7, 0.2);
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
 }
 
 .nav-child-item {
-  padding: 11px 13px;
-  margin-bottom: 2px;
-  font-size: 13px;
+  padding: 8px 10px;
+  margin-bottom: 1px;
+  font-size: 12px;
 }
 
 .nav-direct-item {
-  margin: 7px 0;
-  padding: 6px 0;
+  margin: 5px 0;
+  padding: 4px 0;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .nav-direct-item .nav-child-item {
-  padding: 13px 16px;
-  font-size: 14px;
+  padding: 10px 13px;
+  font-size: 13px;
 }
 
 .nav-pricing-submenu {
-  margin: 2px 0 8px 26px;
-  padding: 3px 0 3px 12px;
+  margin: 1px 0 6px 18px;
+  padding: 2px 0 2px 10px;
   border-left: 1px solid rgba(255, 255, 255, 0.12);
+  max-height: min(35vh, 260px);
+  overflow-y: auto;
 }
 
 .nav-pricing-item {
   width: 100%;
-  padding: 8px 10px;
+  padding: 6px 8px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: rgba(255, 255, 255, 0.5);
   cursor: pointer;
   display: block;
-  font-size: 12px;
+  font-size: 11px;
   text-align: left;
   transition: color 0.2s ease, background 0.2s ease;
 }
@@ -279,20 +283,20 @@
 
 .nav-item {
   width: 100%;
-  padding: 14px 16px;
-  margin-bottom: 4px;
+  padding: 10px 12px;
+  margin-bottom: 2px;
   background: transparent;
   border: none;
   color: rgba(255, 255, 255, 0.75);
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 11px;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
-  border-radius: 12px;
+  border-radius: 9px;
   position: relative;
   overflow: hidden;
 }
@@ -331,8 +335,8 @@
 }
 
 .nav-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -343,8 +347,8 @@
 }
 
 .nav-icon svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   stroke-width: 2;
 }
 
@@ -368,12 +372,12 @@
 
 .nav-indicator {
   position: absolute;
-  right: 12px;
-  width: 6px;
-  height: 6px;
+  right: 10px;
+  width: 5px;
+  height: 5px;
   background: #ffc107;
   border-radius: 50%;
-  box-shadow: 0 0 12px rgba(255, 193, 7, 0.8);
+  box-shadow: 0 0 10px rgba(255, 193, 7, 0.7);
   animation: pulse-indicator 2s ease-in-out infinite;
 }
 
@@ -393,25 +397,25 @@
    ============================================ */
 
 .nav-footer {
-  padding: 16px 16px 24px;
+  padding: 12px 12px 18px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(220, 53, 69, 0.02);
 }
 
 .logout-button {
   width: 100%;
-  padding: 14px 20px;
+  padding: 11px 16px;
   background: linear-gradient(135deg, rgba(220, 53, 69, 0.12) 0%, rgba(220, 53, 69, 0.08) 100%);
   border: 1px solid rgba(220, 53, 69, 0.25);
-  border-radius: 12px;
+  border-radius: 10px;
   color: #ff4d4d;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   position: relative;
   overflow: hidden;
