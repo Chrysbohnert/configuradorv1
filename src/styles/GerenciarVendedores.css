@@ -4,8 +4,8 @@
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(245, 158, 11, 0.06), transparent 22%),
-    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    var(--erp-bg-page);
+  font-family: var(--erp-font);
 }
 
 .gerenciar-vendedores-content {
@@ -24,9 +24,9 @@
   background:
     radial-gradient(circle at top left, rgba(245,158,11,0.16), transparent 24%),
     radial-gradient(circle at bottom right, rgba(59,130,246,0.12), transparent 30%),
-    linear-gradient(135deg, #0f172a 0%, #111827 45%, #1f2937 100%);
+    linear-gradient(135deg, var(--erp-text-heading) 0%, #111827 45%, #1f2937 100%);
   box-shadow: 0 24px 60px rgba(2, 6, 23, 0.2);
-  color: #fff;
+  color: var(--erp-bg-surface);
 }
 
 .vendedores-hero-glow {
@@ -79,14 +79,14 @@
   font-size: clamp(30px, 3vw, 46px);
   line-height: 1;
   font-weight: 800;
-  color: #fff;
+  color: var(--erp-bg-surface);
 }
 
 .hero-copy p {
   margin: 0;
   max-width: 760px;
   color: rgba(255,255,255,0.76);
-  font-size: 15px;
+  font-size: var(--erp-text-xl);
   line-height: 1.6;
 }
 
@@ -98,8 +98,8 @@
   margin-bottom: 14px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.08);
-  color: #fff;
-  font-size: 12px;
+  color: var(--erp-bg-surface);
+  font-size: var(--erp-text-base);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -107,7 +107,7 @@
 
 .hero-add-btn {
   min-height: 48px;
-  border-radius: 14px !important;
+  border-radius: var(--erp-radius-xl) !important;
   box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
 }
 
@@ -126,7 +126,7 @@
   display: flex;
   align-items: center;
   min-height: 52px;
-  border-radius: 16px;
+  border-radius: var(--erp-radius-lg);
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.08);
   backdrop-filter: blur(8px);
@@ -149,8 +149,8 @@
   width: 100%;
   border: none;
   background: transparent;
-  color: #fff;
-  font-size: 14px;
+  color: var(--erp-bg-surface);
+  font-size: var(--erp-text-lg);
   outline: none;
 }
 
@@ -176,11 +176,11 @@
   justify-content: center;
   gap: 8px;
   background: linear-gradient(135deg, #cccccc 0%, #cccccc 100%);
-  color: white;
+  color: var(--erp-bg-surface);
   border: none;
   padding: 12px 20px;
-  border-radius: 12px;
-  font-size: 14px;
+  border-radius: var(--erp-radius-lg);
+  font-size: var(--erp-text-lg);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.22s ease;
@@ -203,8 +203,8 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: #fff;
-  border-radius: 24px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.06);
   color: #475569;
   font-weight: 700;
@@ -227,8 +227,8 @@
 
 /* GRID */
 .vendedores-table-wrap {
-  background: #fff;
-  border-radius: 20px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
   border: 1px solid rgba(148, 163, 184, 0.14);
   overflow-x: auto;
@@ -243,28 +243,28 @@
 .vendedores-table thead {
   position: sticky;
   top: 0;
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
 }
 
 .vendedores-table th {
   padding: 14px 16px;
   text-align: left;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 800;
-  color: #64748b;
+  color: var(--erp-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid var(--erp-border);
 }
 
 .vendedores-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--erp-divider);
   vertical-align: middle;
 }
 
 .vendedor-row:hover {
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
 }
 
 .vendedor-cell {
@@ -276,34 +276,34 @@
 .avatar-circle-sm {
   width: 40px;
   height: 40px;
-  background: #0f172a;
+  background: var(--erp-text-heading);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 13px;
+  color: var(--erp-bg-surface);
+  font-size: var(--erp-text-md);
   font-weight: 800;
   flex-shrink: 0;
 }
 
 .vendedor-nome-sm {
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
 }
 
 .vendedor-email-sm,
 .vendedor-cpf-sm,
 .vendedor-metric-label-sm {
-  font-size: 12px;
-  color: #64748b;
+  font-size: var(--erp-text-base);
+  color: var(--erp-text-muted);
 }
 
 .vendedor-contact-sm {
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
   font-weight: 600;
-  color: #0f172a;
+  color: var(--erp-text-heading);
 }
 
 .vendedor-badge-sm {
@@ -311,11 +311,11 @@
   align-items: center;
   padding: 4px 10px;
   border-radius: 6px;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  background: #f1f5f9;
+  background: var(--erp-divider);
   color: #334155;
 }
 
@@ -330,23 +330,23 @@
 }
 
 .vendedor-badge-sm.vendedor_concessionaria {
-  background: #fffbeb;
+  background: var(--erp-bg-surface)beb;
   color: #b45309;
 }
 
 .vendedor-regiao-sm {
-  font-size: 13px;
+  font-size: var(--erp-text-md);
   color: #475569;
 }
 
 .vendedor-metric-sm {
-  font-size: 15px;
+  font-size: var(--erp-text-xl);
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
 }
 
 .vendedor-metric-label-sm {
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -359,13 +359,13 @@
 .row-action-btn {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #fff;
+  color: var(--erp-bg-surface);
   transition: all 0.2s ease;
 }
 
@@ -379,11 +379,11 @@
 }
 
 .row-action-edit {
-  background: #0f172a;
+  background: var(--erp-text-heading);
 }
 
 .row-action-delete {
-  background: #dc2626;
+  background: var(--erp-error);
 }
 
 .row-action-btn:hover {
@@ -404,11 +404,11 @@
   .avatar-circle-sm {
     width: 32px;
     height: 32px;
-    font-size: 11px;
+    font-size: var(--erp-text-sm);
   }
 
   .vendedor-nome-sm {
-    font-size: 13px;
+    font-size: var(--erp-text-md);
   }
 
   .row-action-btn {
@@ -424,8 +424,8 @@
 
 /* CARD */
 .vendedor-card-modern {
-  background: #fff;
-  border-radius: 24px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   padding: 0;
   box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
   transition: all 0.28s ease;
@@ -445,13 +445,13 @@
 .card-glow-line {
   height: 3px;
   width: 100%;
-  background: #0f172a;
+  background: var(--erp-text-heading);
 }
 
 .card-header {
   padding: 20px 20px 16px;
-  background: #fff;
-  border-bottom: 1px solid #f1f5f9;
+  background: var(--erp-bg-surface);
+  border-bottom: 1px solid var(--erp-divider);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -464,12 +464,12 @@
 .avatar-circle {
   width: 64px;
   height: 64px;
-  background: #0f172a;
+  background: var(--erp-text-heading);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--erp-bg-surface);
   font-size: 18px;
   font-weight: 800;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.22);
@@ -482,7 +482,7 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  border: 3px solid white;
+  border: 3px solid var(--erp-bg-surface);
 }
 
 .status-indicator.active {
@@ -490,7 +490,7 @@
 }
 
 .status-indicator.idle {
-  background: #94a3b8;
+  background: var(--erp-text-weak);
 }
 
 .vendedor-info-principal {
@@ -508,14 +508,14 @@
 .vendedor-nome {
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
   margin: 0;
   line-height: 1.1;
 }
 
 .vendedor-email {
-  font-size: 14px;
-  color: #64748b;
+  font-size: var(--erp-text-lg);
+  color: var(--erp-text-muted);
   margin: 0 0 10px 0;
   word-break: break-word;
 }
@@ -524,13 +524,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: #f1f5f9;
+  background: var(--erp-divider);
   color: #334155;
   font-size: 10px;
   font-weight: 700;
   padding: 4px 10px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--erp-border);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -548,7 +548,7 @@
   min-height: 28px;
   padding: 0 10px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 700;
 }
 
@@ -559,21 +559,21 @@
 }
 
 .soft-status.neutral {
-  background: #f8fafc;
-  color: #64748b;
-  border: 1px solid #e2e8f0;
+  background: var(--erp-bg-subtle);
+  color: var(--erp-text-muted);
+  border: 1px solid var(--erp-border);
 }
 
 .soft-status.info {
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--erp-border);
 }
 
 /* SECTIONS */
 .card-section {
   padding: 20px 24px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--erp-divider);
 }
 
 .card-section:last-of-type {
@@ -584,7 +584,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--erp-text-md);
   font-weight: 800;
   color: #334155;
   margin: 0 0 16px 0;
@@ -595,7 +595,7 @@
 .section-icon {
   width: 15px;
   height: 15px;
-  color: #94a3b8;
+  color: var(--erp-text-weak);
 }
 
 /* INFO GRID */
@@ -610,23 +610,23 @@
   flex-direction: column;
   gap: 4px;
   padding: 12px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border);
 }
 
 .info-label {
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 800;
-  color: #94a3b8;
+  color: var(--erp-text-weak);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
 .info-value {
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
   font-weight: 700;
-  color: #0f172a;
+  color: var(--erp-text-heading);
   word-break: break-word;
 }
 
@@ -640,29 +640,29 @@
 .performance-item {
   text-align: center;
   padding: 14px 10px;
-  background: #f8fafc;
-  border-radius: 10px;
-  border: 1px solid #e2e8f0;
+  background: var(--erp-bg-subtle);
+  border-radius: var(--erp-radius-md);
+  border: 1px solid var(--erp-border);
 }
 
 .performance-item-highlight {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: var(--erp-bg-subtle);
+  border-color: var(--erp-border);
 }
 
 .performance-number {
   font-size: 18px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
   margin-bottom: 6px;
   line-height: 1.2;
   word-break: break-word;
 }
 
 .performance-label {
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 700;
-  color: #64748b;
+  color: var(--erp-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -670,8 +670,8 @@
 /* ACTIONS */
 .card-actions {
   padding: 16px 20px;
-  background: #fff;
-  border-top: 1px solid #f1f5f9;
+  background: var(--erp-bg-surface);
+  border-top: 1px solid var(--erp-divider);
   display: flex;
   gap: 10px;
   margin-top: auto;
@@ -685,8 +685,8 @@
   gap: 7px;
   min-height: 46px;
   padding: 0 16px;
-  border-radius: 10px;
-  font-size: 13px;
+  border-radius: var(--erp-radius-md);
+  font-size: var(--erp-text-md);
   font-weight: 700;
   cursor: pointer;
   letter-spacing: 0.02em;
@@ -709,13 +709,13 @@
   top: 0;
   width: 100%;
   height: 100%;
-  border: 2px solid var(--blob-color, #0f172a);
+  border: 2px solid var(--blob-color, var(--erp-text-heading));
   border-radius: inherit;
   pointer-events: none;
 }
 
 .blob-btn:hover {
-  color: #fff;
+  color: var(--erp-bg-surface);
 }
 
 .btn-content {
@@ -757,7 +757,7 @@
   top: 2px;
   width: 25%;
   height: 100%;
-  background: var(--blob-color, #0f172a);
+  background: var(--blob-color, var(--erp-text-heading));
   border-radius: 100%;
   transform: translate3d(0, 150%, 0) scale(1.7);
   transition: transform 0.45s;
@@ -791,27 +791,27 @@
 }
 
 .edit-btn-modern {
-  --blob-color: #0f172a;
-  color: #0f172a;
+  --blob-color: var(--erp-text-heading);
+  color: var(--erp-text-heading);
 }
 
 .delete-btn-modern {
-  --blob-color: #dc2626;
-  color: #dc2626;
+  --blob-color: var(--erp-error);
+  color: var(--erp-error);
 }
 
 /* EMPTY STATE */
 .empty-state {
   text-align: center;
   padding: 70px 20px;
-  background: #fff;
-  border-radius: 24px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--erp-border);
 }
 
 .empty-icon {
-  color: #94a3b8;
+  color: var(--erp-text-weak);
   opacity: 0.75;
   margin-bottom: 20px;
 }
@@ -824,13 +824,13 @@
 .empty-state h3 {
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
   margin-bottom: 8px;
 }
 
 .empty-state p {
-  font-size: 15px;
-  color: #64748b;
+  font-size: var(--erp-text-xl);
+  color: var(--erp-text-muted);
   margin-bottom: 24px;
 }
 
@@ -848,8 +848,8 @@
 }
 
 .modal-content {
-  background: white;
-  border-radius: 24px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   width: 100%;
   max-width: 760px;
   max-height: 92vh;
@@ -858,7 +858,7 @@
 }
 
 .modal-content-premium {
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--erp-border);
 }
 
 .modal-sm {
@@ -877,31 +877,31 @@
 .modal-header h2 {
   font-size: 22px;
   font-weight: 800;
-  color: #0f172a;
+  color: var(--erp-text-heading);
   margin: 0;
 }
 
 .modal-subtitle {
   margin: 8px 0 0;
-  font-size: 14px;
-  color: #64748b;
+  font-size: var(--erp-text-lg);
+  color: var(--erp-text-muted);
 }
 
 .close-btn {
   width: 38px;
   height: 38px;
   border: none;
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
   color: #334155;
   cursor: pointer;
-  border-radius: 12px;
+  border-radius: var(--erp-radius-lg);
   transition: all 0.2s ease;
   flex-shrink: 0;
 }
 
 .close-btn:hover {
   background: #eef2f7;
-  color: #0f172a;
+  color: var(--erp-text-heading);
 }
 
 .close-btn svg {
@@ -929,7 +929,7 @@
 
 .form-group label {
   display: block;
-  font-size: 13px;
+  font-size: var(--erp-text-md);
   font-weight: 800;
   color: #334155;
   margin-bottom: 8px;
@@ -941,17 +941,17 @@
   min-height: 48px;
   padding: 0 14px;
   border: 1.5px solid #dbe4ee;
-  border-radius: 14px;
-  font-size: 15px;
+  border-radius: var(--erp-radius-xl);
+  font-size: var(--erp-text-xl);
   transition: all 0.2s ease;
-  background: white;
-  color: #0f172a;
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #94a3b8;
+  border-color: var(--erp-text-weak);
   box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.15);
 }
 
@@ -976,7 +976,7 @@
   cursor: pointer;
   font-size: 18px;
   padding: 4px;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   transition: background-color 0.2s ease;
   z-index: 1;
 }
@@ -993,8 +993,8 @@
 .form-help {
   display: block;
   margin-top: 8px;
-  color: #000000;
-  font-size: 12px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-base);
   line-height: 1.5;
 }
 
@@ -1010,9 +1010,9 @@
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #fff 0%, #fafafa 100%);
+  border-radius: var(--erp-radius-lg);
+  border: 1px solid var(--erp-border);
+  background: linear-gradient(180deg, var(--erp-bg-surface) 0%, #fafafa 100%);
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -1022,8 +1022,8 @@
 }
 
 .regiao-card.active {
-  border-color: #000000;
-  background: #f8fafc;
+  border-color: var(--erp-text-heading);
+  background: var(--erp-bg-subtle);
   box-shadow: none;
 }
 
@@ -1035,15 +1035,15 @@
 
 .regiao-card-text strong {
   display: block;
-  color: #0f172a;
-  font-size: 13px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-md);
   margin-bottom: 4px;
 }
 
 .regiao-card-text span {
   display: block;
-  color: #000000;
-  font-size: 12px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-base);
   line-height: 1.4;
 }
 
@@ -1057,8 +1057,8 @@
 .save-btn {
   flex: 1;
   min-height: 48px;
-  border-radius: 14px;
-  font-size: 14px;
+  border-radius: var(--erp-radius-xl);
+  font-size: var(--erp-text-lg);
   font-weight: 800;
   cursor: pointer;
   transition: all 0.22s ease;
@@ -1066,18 +1066,18 @@
 
 .cancel-btn {
   border: 1px solid #dbe4ee;
-  background: #fff;
-  color: #000000;
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
 }
 
 .cancel-btn:hover {
   border-color: #cbd5e1;
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
 }
 
 .save-btn {
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
-  color: #000000;
+  background: linear-gradient(135deg, var(--erp-bg-surface)fff 0%, var(--erp-bg-surface)fff 100%);
+  color: var(--erp-text-heading);
   border: none;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
 }
@@ -1088,7 +1088,7 @@
 }
 
 .danger-btn {
-  background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+  background: linear-gradient(135deg, var(--erp-error) 0%, #ef4444 100%);
   box-shadow: 0 10px 22px rgba(239, 68, 68, 0.18);
 }
 
@@ -1098,7 +1098,7 @@
 
 .confirm-delete-copy {
   padding: 0 24px 6px 24px;
-  color: #000000;
+  color: var(--erp-text-heading);
   line-height: 1.6;
 }
 
@@ -1144,7 +1144,7 @@
 @media (max-width: 680px) {
   .vendedores-hero {
     padding: 20px;
-    border-radius: 24px;
+    border-radius: var(--erp-radius-lg);
   }
 
   .hero-kpis {
@@ -1179,7 +1179,7 @@
 
 .vendedor-area-summary span {
   padding: 3px 7px;
-  border-radius: 10px;
+  border-radius: var(--erp-radius-md);
   background: #eef5f2;
   color: #326451;
   font-size: 9px;
@@ -1214,7 +1214,7 @@
   flex-direction: column;
   gap: 6px;
   color: #475569;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
   font-weight: 700;
 }
 
@@ -1223,7 +1223,7 @@
   padding: 0 12px;
   border: 1px solid #dfe3e8;
   border-radius: 9px;
-  background: #fff;
+  background: var(--erp-bg-surface);
   color: #1f2937;
   outline: none;
 }
@@ -1232,8 +1232,8 @@
   display: flex;
   align-items: baseline;
   gap: 7px;
-  color: #64748b;
-  font-size: 11px;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-sm);
 }
 
 .vendedor-area-total strong {
@@ -1243,20 +1243,20 @@
 
 .vendedor-area-selector {
   margin: 0 24px 18px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
   overflow: hidden;
 }
 
 .vendedor-area-selector-header {
   padding: 10px 12px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--erp-border);
+  background: var(--erp-bg-subtle);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  color: #64748b;
+  color: var(--erp-text-muted);
   font-size: 10px;
   font-weight: 700;
 }
@@ -1265,7 +1265,7 @@
   padding: 6px 9px;
   border: 1px solid #d6dde5;
   border-radius: 7px;
-  background: #fff;
+  background: var(--erp-bg-surface);
   color: #475569;
   cursor: pointer;
   font-size: 10px;
@@ -1284,7 +1284,7 @@
 .vendedor-municipios-grid label {
   padding: 8px 9px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1294,12 +1294,12 @@
 }
 
 .vendedor-municipios-grid label:hover {
-  background: #f8fafc;
+  background: var(--erp-bg-subtle);
 }
 
 .vendedor-municipios-grid label.selected {
   border-color: #ead27e;
-  background: #fff9e5;
+  background: var(--erp-bg-surface)9e5;
   color: #5f4900;
 }
 
@@ -1314,17 +1314,17 @@
   justify-content: center;
   flex-direction: column;
   gap: 10px;
-  color: #64748b;
-  font-size: 11px;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-sm);
 }
 
 .vendedor-area-error {
   margin: 0 24px 14px;
   padding: 9px 11px;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   background: #fef2f2;
   color: #991b1b;
-  font-size: 11px;
+  font-size: var(--erp-text-sm);
 }
 
 @media (max-width: 600px) {

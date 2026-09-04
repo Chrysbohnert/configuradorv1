@@ -5,19 +5,19 @@
 }
 
 .precos-venda-card {
-  background: white;
-  border-radius: 12px;
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  padding: 24px;
+  padding: var(--erp-space-5);
 }
 
 .precos-venda-info {
   display: flex;
   gap: 32px;
-  padding: 16px;
-  background: #f8f9fa;
-  border-radius: 8px;
-  margin-bottom: 24px;
+  padding: var(--erp-space-4);
+  background: var(--erp-bg-subtle);
+  border-radius: var(--erp-radius-sm);
+  margin-bottom: var(--erp-space-5);
 }
 
 .info-item {
@@ -27,16 +27,16 @@
 }
 
 .info-label {
-  font-size: 12px;
-  color: #6c757d;
+  font-size: var(--erp-text-base);
+  color: var(--erp-text-muted);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .info-value {
-  font-size: 16px;
-  color: #212529;
+  font-size: var(--erp-text-2xl);
+  color: var(--erp-text-heading);
   font-weight: 600;
 }
 
@@ -44,14 +44,14 @@
   background: #e7f3ff;
   border-left: 4px solid #0066cc;
   padding: 16px 20px;
-  border-radius: 8px;
-  margin-bottom: 24px;
+  border-radius: var(--erp-radius-sm);
+  margin-bottom: var(--erp-space-5);
 }
 
 .precos-venda-instrucoes h3 {
   margin: 0 0 12px 0;
   color: #0066cc;
-  font-size: 16px;
+  font-size: var(--erp-text-2xl);
 }
 
 .precos-venda-instrucoes ol {
@@ -61,36 +61,36 @@
 
 .precos-venda-instrucoes li {
   margin-bottom: 8px;
-  color: #495057;
-  font-size: 14px;
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-lg);
   line-height: 1.5;
 }
 
 .precos-venda-instrucoes strong {
-  color: #212529;
+  color: var(--erp-text-heading);
 }
 
 .aviso {
   margin: 12px 0 0 0;
   padding: 12px;
-  background: #fff3cd;
-  border-left: 4px solid #ffc107;
+  background: var(--erp-warning-soft);
+  border-left: 4px solid var(--erp-primary);
   border-radius: 4px;
-  color: #856404;
+  color: var(--erp-warning);
   font-weight: 600;
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
 }
 
 .precos-venda-loading,
 .precos-venda-empty {
   text-align: center;
   padding: 48px 20px;
-  color: #6c757d;
+  color: var(--erp-text-muted);
 }
 
 .precos-venda-empty p {
   margin: 8px 0;
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
 }
 
 .precos-venda-table {
@@ -102,31 +102,31 @@
 .precos-venda-row {
   display: grid;
   grid-template-columns: 2fr 1.2fr 1.5fr 0.8fr 1.5fr;
-  gap: 16px;
+  gap: var(--erp-space-4);
   align-items: center;
-  padding: 16px;
-  border-radius: 8px;
+  padding: var(--erp-space-4);
+  border-radius: var(--erp-radius-sm);
   transition: background 0.2s;
 }
 
 .precos-venda-row--header {
-  background: #f8f9fa;
-  font-weight: 700;
-  font-size: 13px;
-  color: #495057;
+  background: var(--erp-bg-subtle);
+  font-weight: var(--erp-weight-bold);
+  font-size: var(--erp-text-md);
+  color: var(--erp-text-body);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 2px solid var(--erp-border);
 }
 
 .precos-venda-row:not(.precos-venda-row--header) {
-  background: #ffffff;
-  border: 1px solid #e9ecef;
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
 }
 
 .precos-venda-row:not(.precos-venda-row--header):hover {
-  background: #f8f9fa;
-  border-color: #dee2e6;
+  background: var(--erp-bg-subtle);
+  border-color: var(--erp-border);
 }
 
 .precos-venda-guindaste {
@@ -137,13 +137,13 @@
 
 .guindaste-nome {
   font-weight: 600;
-  color: #212529;
-  font-size: 14px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-lg);
 }
 
 .guindaste-codigo {
-  font-size: 12px;
-  color: #6c757d;
+  font-size: var(--erp-text-base);
+  color: var(--erp-text-muted);
   font-family: 'Courier New', monospace;
 }
 
@@ -155,29 +155,29 @@
 }
 
 .valor-compra {
-  font-size: 15px;
+  font-size: var(--erp-text-xl);
   font-weight: 600;
-  color: #dc3545;
+  color: var(--erp-error);
   padding: 6px 12px;
-  background: #fff5f5;
-  border-radius: 6px;
-  border: 1px solid #f8d7da;
+  background: var(--erp-error-soft);
+  border-radius: var(--erp-radius-sm);
+  border: 1px solid var(--erp-border);
 }
 
 .valor-venda {
-  font-size: 15px;
+  font-size: var(--erp-text-xl);
   font-weight: 600;
-  color: #28a745;
+  color: var(--erp-success);
   padding: 6px 12px;
-  background: #f1f9f3;
-  border-radius: 6px;
-  border: 1px solid #c3e6cb;
+  background: var(--erp-success-soft);
+  border-radius: var(--erp-radius-sm);
+  border: 1px solid var(--erp-border);
 }
 
 .valor-venda--vazio {
-  color: #6c757d;
-  background: #f8f9fa;
-  border-color: #dee2e6;
+  color: var(--erp-text-muted);
+  background: var(--erp-bg-subtle);
+  border-color: var(--erp-border);
   font-weight: 500;
   font-style: italic;
 }
@@ -187,10 +187,10 @@
   max-width: 150px;
   padding: 8px 12px;
   border: 2px solid #0066cc;
-  border-radius: 6px;
-  font-size: 15px;
+  border-radius: var(--erp-radius-sm);
+  font-size: var(--erp-text-xl);
   font-weight: 600;
-  color: #212529;
+  color: var(--erp-text-heading);
   transition: border-color 0.2s;
 }
 
@@ -201,34 +201,34 @@
 }
 
 .input-preco:disabled {
-  background: #e9ecef;
+  background: var(--erp-bg-muted);
   cursor: not-allowed;
 }
 
 .markup {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--erp-text-lg);
+  font-weight: var(--erp-weight-bold);
   padding: 6px 12px;
-  border-radius: 6px;
+  border-radius: var(--erp-radius-sm);
   display: inline-block;
 }
 
 .markup--ok {
-  color: #28a745;
-  background: #d4edda;
-  border: 1px solid #c3e6cb;
+  color: var(--erp-success);
+  background: var(--erp-success-soft);
+  border: 1px solid var(--erp-border);
 }
 
 .markup--baixo {
-  color: #ffc107;
-  background: #fff3cd;
-  border: 1px solid #ffeaa7;
+  color: var(--erp-warning);
+  background: var(--erp-warning-soft);
+  border: 1px solid var(--erp-border);
 }
 
 .markup--negativo {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c6cb;
+  color: var(--erp-error);
+  background: var(--erp-error-soft);
+  border: 1px solid var(--erp-border);
 }
 
 .precos-venda-acoes {
@@ -242,8 +242,8 @@
 .btn-cancelar {
   padding: 8px 16px;
   border: none;
-  border-radius: 6px;
-  font-size: 13px;
+  border-radius: var(--erp-radius-sm);
+  font-size: var(--erp-text-md);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
@@ -252,7 +252,7 @@
 
 .btn-editar {
   background: #0066cc;
-  color: white;
+  color: var(--erp-text-inverse);
 }
 
 .btn-editar:hover {
@@ -261,8 +261,8 @@
 }
 
 .btn-salvar {
-  background: #28a745;
-  color: white;
+  background: var(--erp-success);
+  color: var(--erp-text-inverse);
 }
 
 .btn-salvar:hover:not(:disabled) {
@@ -272,7 +272,7 @@
 
 .btn-cancelar {
   background: #6c757d;
-  color: white;
+  color: var(--erp-text-inverse);
 }
 
 .btn-cancelar:hover:not(:disabled) {
@@ -289,37 +289,37 @@
 @media (max-width: 1024px) {
   .precos-venda-row {
     grid-template-columns: 1.5fr 1fr 1.2fr 0.8fr 1.3fr;
-    gap: 12px;
-    font-size: 13px;
+    gap: var(--erp-space-3);
+    font-size: var(--erp-text-md);
   }
 
   .guindaste-nome {
-    font-size: 13px;
+    font-size: var(--erp-text-md);
   }
 
   .guindaste-codigo {
-    font-size: 11px;
+    font-size: var(--erp-text-sm);
   }
 }
 
 @media (max-width: 768px) {
   .precos-venda-container {
-    padding: 12px;
+    padding: var(--erp-space-3);
   }
 
   .precos-venda-card {
-    padding: 16px;
+    padding: var(--erp-space-4);
   }
 
   .precos-venda-info {
     flex-direction: column;
-    gap: 16px;
+    gap: var(--erp-space-4);
   }
 
   .precos-venda-row {
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 16px;
+    gap: var(--erp-space-3);
+    padding: var(--erp-space-4);
   }
 
   .precos-venda-row--header {
@@ -335,8 +335,8 @@
   .precos-venda-row > div::before {
     content: attr(data-label);
     font-weight: 600;
-    color: #6c757d;
-    font-size: 12px;
+    color: var(--erp-text-muted);
+    font-size: var(--erp-text-sm);
     text-transform: uppercase;
   }
 

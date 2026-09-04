@@ -4,8 +4,8 @@
 
 .gerenciar-graficos-container {
   min-height: 100vh;
-  background: #f1f5f9;
-  padding: 24px;
+  background: var(--erp-bg-page);
+  padding: var(--erp-space-5);
 }
 
 .gerenciar-content {
@@ -18,24 +18,24 @@
    ===================================================== */
 
 .header-section {
-  background: #3e3e3e;
-  color: white;
+  background: var(--erp-surface-600);
+  color: var(--erp-text-inverse);
   padding: 28px 32px;
-  border-radius: 16px;
+  border-radius: var(--erp-radius-xl);
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 20px;
   box-shadow: 0 4px 24px rgba(15, 23, 42, 0.18);
-  margin-bottom: 24px;
+  margin-bottom: var(--erp-space-5);
 }
 
 .header-info h1 {
   font-size: clamp(1.5rem, 2.5vw, 2rem);
   font-weight: 700;
   margin: 0 0 6px 0;
-  color: #ffffff;
+  color: var(--erp-text-inverse);
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
@@ -51,7 +51,7 @@
   --blob-color: #000000;
   color: #000000;
   padding: 11px 20px;
-  border-radius: 10px;
+  border-radius: var(--erp-radius-md);
   font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
@@ -70,7 +70,7 @@
   gap: 12px;
   background: rgba(255, 255, 255, 0.1);
   padding: 10px 16px;
-  border-radius: 12px;
+  border-radius: var(--erp-radius-lg);
   border: 1px solid rgba(255, 255, 255, 0.2);
   min-width: 300px;
 }
@@ -84,7 +84,7 @@
 .search-box input {
   background: transparent;
   border: none;
-  color: rgb(0, 0, 0);
+  color: var(--erp-text-inverse);
   font-size: 0.95rem;
   width: 100%;
   outline: none;
@@ -100,7 +100,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 700;
-  color: white;
+  color: var(--erp-text-inverse);
 }
 
 /* =====================================================
@@ -114,7 +114,7 @@
 .graficos-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 16px;
+  gap: var(--erp-space-4);
 }
 
 /* =====================================================
@@ -124,19 +124,19 @@
 .empty-state {
   text-align: center;
   padding: 80px 24px;
-  color: #64748b;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 16px;
+  color: var(--erp-text-muted);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-xl);
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
 
 .empty-icon {
   width: 72px;
   height: 72px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,43 +146,43 @@
 .empty-icon svg {
   width: 36px;
   height: 36px;
-  color: #000000;
+  color: var(--erp-text-heading);
 }
 
 .empty-state h3 {
   font-size: 1.25rem;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #000000;
+  color: var(--erp-text-heading);
 }
 
 .empty-state p {
   font-size: 0.9rem;
   margin: 0;
-  color: #94a3b8;
+  color: var(--erp-text-weak);
 }
 
 .gc-retry-btn {
-  margin-top: 16px;
+  margin-top: var(--erp-space-4);
   padding: 10px 20px;
-  background: #000000;
-  color: #ffffff;
+  background: var(--erp-surface-900);
+  color: var(--erp-text-inverse);
   border: none;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
 }
 
 .gc-retry-btn:hover {
-  background: #1e293b;
+  background: var(--erp-surface-800);
 }
 
 .grafico-item {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-top: 3px solid #000000;
-  border-radius: 12px;
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  border-top: 3px solid var(--erp-text-heading);
+  border-radius: var(--erp-radius-lg);
   padding: 20px;
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   display: flex;
@@ -198,7 +198,7 @@
 
 .grafico-info {
   flex: 1;
-  margin-bottom: 16px;
+  margin-bottom: var(--erp-space-4);
 }
 
 .grafico-header {
@@ -211,8 +211,8 @@
 .grafico-icon {
   width: 44px;
   height: 44px;
-  background: #000000;
-  border-radius: 10px;
+  background: var(--erp-surface-900);
+  border-radius: var(--erp-radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -222,7 +222,7 @@
 .grafico-icon svg {
   width: 20px;
   height: 20px;
-  color: #ffffff;
+  color: var(--erp-text-inverse);
 }
 
 .grafico-details {
@@ -232,7 +232,7 @@
 .grafico-details h3 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #000000;
+  color: var(--erp-text-heading);
   margin: 0 0 8px 0;
   line-height: 1.2;
   letter-spacing: -0.01em;
@@ -243,20 +243,20 @@
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: var(--erp-radius-sm);
   font-size: 0.75rem;
   font-weight: 600;
-  color: #000000;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  color: var(--erp-text-heading);
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border);
   text-decoration: none;
   transition: all 0.15s ease;
 }
 
 .pdf-chip:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #000000;
+  background: var(--erp-bg-page);
+  border-color: var(--erp-border);
+  color: var(--erp-text-heading);
 }
 
 .pdf-chip svg {
@@ -267,7 +267,7 @@
 .grafico-meta {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--erp-divider);
 }
 
 .meta-item {
@@ -279,14 +279,14 @@
 
 .meta-item .label {
   font-weight: 500;
-  color: #000000;
+  color: var(--erp-text-heading);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
 .meta-item .value {
-  color: #000000;
+  color: var(--erp-text-heading);
   font-size: 0.82rem;
   font-weight: 600;
 }
@@ -299,7 +299,7 @@
   display: flex;
   gap: 8px;
   padding-top: 14px;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--erp-divider);
 }
 
 .edit-btn,
@@ -308,7 +308,7 @@
   flex: 1;
   min-height: 42px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: var(--erp-radius-sm);
   font-size: 0.8rem;
   font-weight: 700;
   cursor: pointer;
@@ -319,9 +319,9 @@
   letter-spacing: 0.01em;
 }
 
-.edit-btn  { --blob-color: #000000; color: #000000; }
-.delete-btn { --blob-color: #dc2626; color: #dc2626; }
-.view-btn  { --blob-color: #000000; color: #000000; }
+.edit-btn  { --blob-color: #000000; color: var(--erp-text-heading); }
+.delete-btn { --blob-color: #dc2626; color: var(--erp-error); }
+.view-btn  { --blob-color: #000000; color: var(--erp-text-heading); }
 
 /* =====================================================
    RESPONSIVIDADE
@@ -329,7 +329,7 @@
 
 @media (max-width: 900px) {
   .gerenciar-graficos-container {
-    padding: 16px;
+    padding: var(--erp-space-4);
   }
 
   .header-section {

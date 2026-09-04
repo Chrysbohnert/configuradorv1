@@ -6,7 +6,7 @@
   font-family: Arial, sans-serif;
   font-size: 8.5pt; /* Arial 8.5 conforme solicitado */
   line-height: 1.2;
-  color: #000;
+  color: var(--erp-text-heading);
   
 }
 
@@ -17,8 +17,8 @@
   text-align: center;
   margin-bottom: 20px;
   text-transform: uppercase;
-  color: #000;
-  border-bottom: 1px solid #000;
+  color: var(--erp-text-heading);
+  border-bottom: 1px solid var(--erp-text-heading);
   padding-bottom: 10px;
 }
 
@@ -33,7 +33,7 @@
   font-family: Arial, sans-serif;
   font-size: 8.5pt;
   line-height: 1.2;
-  color: #000;
+  color: var(--erp-text-heading);
 }
 
 /* Estilos específicos para PDF */
@@ -61,18 +61,18 @@
 /* Estilos para visualização na tela */
 @media screen {
   .clausulas-contratuais {
-    background: #f9f9f9;
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    background: var(--erp-bg-subtle);
+    border: 1px solid var(--erp-border);
+    border-radius: var(--erp-radius-sm);
     margin: 20px 0;
   }
   
   .clausulas-titulo {
-    color: #333;
-    border-bottom-color: #666;
+    color: var(--erp-text-body);
+    border-bottom-color: var(--erp-text-muted);
   }
   
   .clausulas-lista p {
-    color: #333;
+    color: var(--erp-text-body);
   }
 }

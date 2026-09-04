@@ -9,9 +9,9 @@
 }
 
 .configuracoes-content {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+  background: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-card);
   overflow: hidden;
 }
 
@@ -21,8 +21,8 @@
 
 .config-tabs {
   display: flex;
-  border-bottom: 1px solid #e5e7eb;
-  background: #f9fafb;
+  border-bottom: 1px solid var(--erp-border);
+  background: var(--erp-bg-subtle);
 }
 
 .config-tab {
@@ -32,8 +32,8 @@
   background: transparent;
   border: none;
   border-bottom: 3px solid transparent;
-  color: #6b7280;
-  font-size: 15px;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-xl);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -50,13 +50,13 @@
 
 .config-tab:hover {
   background: rgba(255, 193, 7, 0.05);
-  color: #000000;
+  color: var(--erp-text-heading);
 }
 
 .config-tab.active {
-  background: white;
-  color: #000000;
-  border-bottom-color: #000000;
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
+  border-bottom-color: var(--erp-text-heading);
   font-weight: 600;
 }
 
@@ -67,11 +67,11 @@
 .config-message {
   margin: 24px 24px 0;
   padding: 14px 18px;
-  border-radius: 12px;
+  border-radius: var(--erp-radius-lg);
   display: flex;
   align-items: center;
   gap: 12px;
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
   font-weight: 500;
   animation: slideDown 0.3s ease;
 }
@@ -116,10 +116,10 @@
 .config-panel h2 {
   font-size: 22px;
   font-weight: 700;
-  color: #111827;
+  color: var(--erp-text-heading);
   margin-bottom: 32px;
   padding-bottom: 16px;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid var(--erp-divider);
 }
 
 /* ============================================
@@ -132,8 +132,8 @@
   gap: 32px;
   margin-bottom: 40px;
   padding: 24px;
-  background: linear-gradient(135deg, #d3d3d3 0%, #dadada 100%);
-  border-radius: 16px;
+  background: var(--erp-bg-subtle);
+  border-radius: var(--erp-radius-lg);
 }
 
 .photo-preview {
@@ -141,9 +141,9 @@
   height: 120px;
   border-radius: 50%;
   overflow: hidden;
-  background: white;
+  background: var(--erp-bg-surface);
   box-shadow: 0 8px 20px rgba(255, 193, 7, 0.3);
-  border: 4px solid white;
+  border: 4px solid var(--erp-bg-surface);
   flex-shrink: 0;
 }
 
@@ -159,13 +159,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+  background: linear-gradient(135deg, var(--erp-divider) 0%, var(--erp-border) 100%);
 }
 
 .photo-placeholder svg {
   width: 50px;
   height: 50px;
-  color: #9ca3af;
+  color: var(--erp-text-weak);
 }
 
 .photo-actions {
@@ -177,11 +177,11 @@
   align-items: center;
   gap: 10px;
   padding: 12px 24px;
-  background: white;
+  background: var(--erp-bg-surface);
   border: 2px solid #8e8e8e;
-  border-radius: 12px;
-  color: #000;
-  font-size: 15px;
+  border-radius: var(--erp-radius-lg);
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-xl);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -189,7 +189,7 @@
 }
 
 .upload-btn:hover {
-  background: #000000;
+  background: var(--erp-text-heading);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(189, 189, 189, 0.3);
 }
@@ -201,8 +201,8 @@
 
 .photo-hint {
   margin-top: 12px;
-  font-size: 13px;
-  color: #000000;
+  font-size: var(--erp-text-md);
+  color: var(--erp-text-heading);
 }
 
 /* ============================================
@@ -225,37 +225,37 @@
 
 .form-group label {
   display: block;
-  font-size: 14px;
+  font-size: var(--erp-text-lg);
   font-weight: 600;
-  color: #000000;
+  color: var(--erp-text-heading);
   margin-bottom: 8px;
 }
 
 .form-group input {
   width: 100%;
   padding: 12px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 15px;
-  color: #111827;
+  border: 2px solid var(--erp-border);
+  border-radius: var(--erp-radius-md);
+  font-size: var(--erp-text-xl);
+  color: var(--erp-text-heading);
   transition: all 0.3s ease;
-  background: white;
+  background: var(--erp-bg-surface);
 }
 
 .form-group input:focus {
   outline: none;
-  border-color: #000000;
+  border-color: var(--erp-text-heading);
   box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
 }
 
 .form-group input:disabled {
-  background: #f3f4f6;
-  color: #9ca3af;
+  background: var(--erp-divider);
+  color: var(--erp-text-weak);
   cursor: not-allowed;
 }
 
 .form-group input::placeholder {
-  color: #9ca3af;
+  color: var(--erp-text-weak);
 }
 
 /* ============================================
@@ -269,10 +269,10 @@
   gap: 10px;
   padding: 14px 32px;
   background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
-  border: 1px solid #000;
-  border-radius: 12px;
-  color: #000;
-  font-size: 15px;
+  border: 1px solid var(--erp-text-heading);
+  border-radius: var(--erp-radius-lg);
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-xl);
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -304,7 +304,7 @@
   width: 16px;
   height: 16px;
   border: 2px solid rgba(0, 0, 0, 0.2);
-  border-top-color: #000;
+  border-top-color: var(--erp-text-heading);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -330,12 +330,12 @@
 }
 
 .config-section-title {
-  font-size: 18px;
+  font-size: var(--erp-text-3xl);
   font-weight: 600;
-  color: #111827;
+  color: var(--erp-text-heading);
   margin-bottom: 24px;
   padding-bottom: 12px;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid var(--erp-divider);
 }
 
 /* ============================================
@@ -347,9 +347,9 @@
   align-items: center;
   gap: 24px;
   padding: 24px;
-  background: #f9fafb;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
+  background: var(--erp-bg-subtle);
+  border-radius: var(--erp-radius-lg);
+  border: 1px solid var(--erp-border);
 }
 
 .photo-upload .photo-preview {
@@ -357,9 +357,9 @@
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
-  background: white;
+  background: var(--erp-bg-surface);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 2px solid #e5e7eb;
+  border: 2px solid var(--erp-border);
   flex-shrink: 0;
 }
 
@@ -375,13 +375,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: var(--erp-divider);
 }
 
 .photo-upload .photo-placeholder svg {
   width: 32px;
   height: 32px;
-  color: #9ca3af;
+  color: var(--erp-text-weak);
 }
 
 .photo-upload .photo-actions {
@@ -393,19 +393,19 @@
   align-items: center;
   gap: 8px;
   padding: 10px 16px;
-  background: white;
+  background: var(--erp-bg-surface);
   border: 2px solid #d1d5db;
-  border-radius: 8px;
-  color: #000000;
-  font-size: 14px;
+  border-radius: var(--erp-radius-sm);
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-lg);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .photo-upload-btn:hover {
-  border-color: #000000;
-  color: #000000;
+  border-color: var(--erp-text-heading);
+  color: var(--erp-text-heading);
 }
 
 .photo-upload-btn svg {
@@ -420,7 +420,7 @@
 .config-actions {
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--erp-border);
 }
 
 .config-save-btn {
@@ -429,15 +429,15 @@
   justify-content: center;
   gap: 8px;
   padding: 12px 24px;
-  background: linear-gradient(135deg, #ffc107 0%, #ffb300 100%);
+  background: var(--erp-primary-cta);
   border: none;
-  border-radius: 8px;
-  color: #000;
-  font-size: 14px;
+  border-radius: var(--erp-radius-sm);
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-lg);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(255, 193, 7, 0.2);
+  box-shadow: var(--erp-shadow-cta);
 }
 
 .config-save-btn:hover:not(:disabled) {
@@ -490,7 +490,7 @@
   .config-tab {
     flex: 1;
     min-width: 150px;
-    font-size: 14px;
+    font-size: var(--erp-text-lg);
     padding: 16px 20px;
   }
 
@@ -508,7 +508,7 @@
   }
 
   .config-section-title {
-    font-size: 16px;
+    font-size: var(--erp-text-2xl);
     margin-bottom: 20px;
   }
 
@@ -536,7 +536,7 @@
   .config-save-btn {
     width: 100%;
     padding: 14px 20px;
-    font-size: 15px;
+    font-size: var(--erp-text-xl);
   }
 }
 
@@ -552,7 +552,7 @@
   }
 
   .config-message {
-    font-size: 13px;
+    font-size: var(--erp-text-md);
     padding: 12px 14px;
   }
 }
