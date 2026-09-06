@@ -48,38 +48,3 @@ UPDATE public.app_users
   SET canal = 'interno'
   WHERE tipo = 'admin_canal_interno'
     AND (canal IS NULL OR canal = '');
-
--- 4. Ajusta RLS das tabelas que referenciavam admin_stark para admin_full
-DROP POLICY IF EXISTS concessionaria_precos_admin_stark_manage ON public.concessionaria_precos;
-CREATE POLICY concessionaria_precos_admin_full_manage ON public.concessionaria_precos
-  FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.app_users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin_full'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.app_users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin_full'
-    )
-  );
-
-DROP POLICY IF EXISTS estoque_concessionaria_admin_stark_manage ON public.estoque_concessionaria;
-CREATE POLICY estoque_concessionaria_admin_full_manage ON public.estoque_concessionaria
-  FOR ALL
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM public.app_users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin_full'
-    )
-  )
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.app_users u
-      WHERE u.email = auth.email() AND u.tipo = 'admin_full'
-    )
-  );
