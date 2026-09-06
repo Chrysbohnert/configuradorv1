@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
+import { isAdminFull } from '../../utils/permissions';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
 import PaymentPolicy from '../../features/payment/PaymentPolicy';
@@ -31,9 +32,9 @@ const NovoPedido = () => {
   const location = useLocation();
   const { propostaId } = useParams(); // Captura ID da proposta para edição
   const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
-  const isConcessionariaUser = user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
+  const isConcessionariaUser = user?.canal === 'concessionarias' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
-  const isAdminStark = user?.tipo === 'admin';
+  const isAdminStark = isAdminFull(user);
   const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
   // Mapa para o fluxo vendedor Stark comum: 4 etapas
   // 1=Guindaste, 2=Pagamento, 3=Estudo Veicular, 4=Finalizar

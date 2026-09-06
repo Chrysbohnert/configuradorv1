@@ -3,6 +3,8 @@
  * do PostgreSQL. Devem ser aplicados nos services antes de retornar dados ao controller.
  */
 
+const { canalDoUsuario } = require('./permissions');
+
 /**
  * Garante que o valor retornado seja um array.
  * Aceita: array, string JSON, string JSON escapada, {}, null, undefined
@@ -114,6 +116,10 @@ function normalizarUsuario(row) {
   // Garante que tipo sempre exista (fallback para compatibilidade)
   if (!user.tipo) {
     user.tipo = user.role || 'vendedor';
+  }
+  // Canal legado: se não preenchido, infere do tipo
+  if (!user.canal) {
+    user.canal = canalDoUsuario(user);
   }
   return user;
 }

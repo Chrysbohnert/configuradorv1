@@ -3,6 +3,7 @@ import { useOutletContext, useNavigate } from 'react-router-dom';
 import { getClientes, createCliente, updateCliente, deleteCliente, getPropostasDoCliente } from '../../api/clientes';
 import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency } from '../../utils/formatters';
+import { isAdmin } from '../../utils/permissions';
 import ClienteFormFields from '../../components/Clientes/ClienteFormFields';
 import '../../styles/Clientes.css';
 
@@ -16,7 +17,7 @@ const CLIENTE_VAZIO = {
 export default function Clientes() {
   const { user } = useOutletContext();
   const navigate = useNavigate();
-  const isAdmin = ['admin_stark', 'admin', 'admin_concessionaria'].includes(user?.tipo);
+  const userIsAdmin = isAdmin(user);
 
   const [clientes, setClientes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +117,7 @@ export default function Clientes() {
         <div className="clientes-header">
           <div>
             <h1>Clientes</h1>
-            <p>{isAdmin ? 'Todos os clientes cadastrados, com o vendedor responsável' : 'Seus clientes cadastrados'}</p>
+            <p>{userIsAdmin ? 'Todos os clientes cadastrados, com o vendedor responsável' : 'Seus clientes cadastrados'}</p>
           </div>
           <button type="button" className="btn-primario" onClick={abrirNovo}>+ Novo Cliente</button>
         </div>
@@ -150,7 +151,7 @@ export default function Clientes() {
                   <th>CPF/CNPJ</th>
                   <th>Região</th>
                   <th>Tipo de Venda</th>
-                  {isAdmin && <th>Vendedor</th>}
+                  {userIsAdmin && <th>Vendedor</th>}
                   <th>Propostas</th>
                   <th></th>
                 </tr>
@@ -162,7 +163,7 @@ export default function Clientes() {
                     <td>{c.documento}</td>
                     <td>{c.regiao || '-'}</td>
                     <td>{c.tipo_venda === 'revenda' ? 'Revenda' : c.tipo_venda === 'cliente' ? 'Cliente' : '-'}</td>
-                    {isAdmin && <td>{c.vendedor_nome || '-'}</td>}
+                    {userIsAdmin && <td>{c.vendedor_nome || '-'}</td>}
                     <td>
                       <button type="button" className="btn-link" onClick={() => abrirHistorico(c)}>
                         {c.total_propostas || 0} proposta(s)
@@ -174,7 +175,7 @@ export default function Clientes() {
                         <button type="button" className="btn-secundario" onClick={() => iniciarNovaProposta(c)}>
                           Nova Proposta
                         </button>
-                        {(isAdmin || String(c.vendedor_id) === String(user?.id)) && (
+                        {(userIsAdmin || String(c.vendedor_id) === String(user?.id)) && (
                           <button type="button" className="btn-secundario btn-perigo" onClick={() => excluir(c)}>
                             Excluir
                           </button>

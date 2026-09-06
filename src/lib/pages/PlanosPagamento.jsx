@@ -4,6 +4,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getGuindastesLite, getGuindasteById } from '../../api/guindastes';
 import { getPaymentPlans } from '../../services/paymentPlans';
+import { isAdminFull } from '../../utils/permissions';
 import '../../styles/PlanosPagamento.css';
 
 const AUDIENCES = [
@@ -35,10 +36,9 @@ export default function PlanosPagamento() {
   const navigate = useNavigate();
   const { user } = useOutletContext();
 
-  const isAdminStark = user?.tipo === 'admin';
-  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+  const fullAccess = isAdminFull(user);
 
-  const scope = isAdminConcessionaria ? 'concessionaria' : 'stark';
+  const scope = 'stark';
   const concessionariaId = user?.concessionaria_id || null;
 
   const [isLoading, setIsLoading] = useState(false);
@@ -87,7 +87,7 @@ export default function PlanosPagamento() {
 
   useEffect(() => {
     if (!user) return;
-    if (!isAdminStark && !isAdminConcessionaria) {
+    if (!fullAccess) {
       navigate('/dashboard-admin');
       return;
     }
@@ -96,7 +96,7 @@ export default function PlanosPagamento() {
 
   useEffect(() => {
     if (!user) return;
-    if (!isAdminStark) return;
+    if (!fullAccess) return;
 
     const loadProtoGuindastes = async () => {
       try {
@@ -133,10 +133,10 @@ export default function PlanosPagamento() {
 
     loadProtoGuindastes();
     loadVendedores();
-  }, [user, isAdminStark]);
+  }, [user, fullAccess]);
 
   useEffect(() => {
-    if (!isAdminStark) return;
+    if (!fullAccess) return;
     if (!protoIsEditing) return;
     if (!protoDraftSetId) {
       setProtoItems([]);
@@ -159,7 +159,7 @@ export default function PlanosPagamento() {
       }
     };
     load();
-  }, [protoDraftSetId, protoIsEditing, audience, entryFilter, isAdminStark]);
+  }, [protoDraftSetId, protoIsEditing, audience, entryFilter, fullAccess]);
 
   const handleSelectProto = async (id) => {
     const val = String(id || '');
@@ -403,7 +403,7 @@ export default function PlanosPagamento() {
     if (!user) return;
     if (isEditing) return;
     loadPublishedItems();
-  }, [user, isEditing, audience, entryFilter, isAdminConcessionaria, concessionariaId]);
+  }, [user, isEditing, audience, entryFilter, fullAccess, concessionariaId]);
 
   const loadSets = async () => {
     try {
@@ -688,7 +688,7 @@ export default function PlanosPagamento() {
           <div className={`status ${statusInfo.type || ''}`}>{statusInfo.message}</div>
         ) : null}
 
-        {isAdminStark && (
+        {fullAccess && (
           <div className="table-wrap" style={{ marginBottom: 14 }}>
             <div style={{ padding: 14 }}>
               <div style={{ fontWeight: 800, marginBottom: 10 }}>Protótipo — Planos de Pagamento + Visibilidade</div>

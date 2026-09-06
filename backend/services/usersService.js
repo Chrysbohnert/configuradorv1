@@ -7,7 +7,7 @@
 const { query } = require('../db/pool');
 const { normalizarUsuario, serializarArray } = require('../utils/normalizadores');
 
-const COLS_PUBLIC = `id, nome, email, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf`;
+const COLS_PUBLIC = `id, nome, email, tipo, regiao, concessionaria_id, canal, regioes_operacao, telefone, cpf`;
 
 async function findAll(filter = {}) {
   const conditions = [];
@@ -16,6 +16,10 @@ async function findAll(filter = {}) {
   if (filter.concessionaria_id) {
     params.push(filter.concessionaria_id);
     conditions.push(`concessionaria_id = $${params.length}`);
+  }
+  if (filter.canal) {
+    params.push(filter.canal);
+    conditions.push(`canal = $${params.length}`);
   }
 
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -36,7 +40,7 @@ async function findById(id) {
 
 async function findByEmail(email) {
   const { rows } = await query(
-    `SELECT id, nome, email, senha, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf
+    `SELECT id, nome, email, senha, tipo, regiao, concessionaria_id, canal, regioes_operacao, telefone, cpf
      FROM app_users
      WHERE LOWER(email) = $1`,
     [email.toLowerCase().trim()]
@@ -44,21 +48,21 @@ async function findByEmail(email) {
   return normalizarUsuario(rows[0]) || null;
 }
 
-async function create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf }) {
+async function create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf, canal }) {
   const regioesSerializado = serializarArray(regioes_operacao);
   const { rows } = await query(
-    `INSERT INTO app_users (nome, email, senha, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+    `INSERT INTO app_users (nome, email, senha, tipo, regiao, concessionaria_id, canal, regioes_operacao, telefone, cpf)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
      RETURNING ${COLS_PUBLIC}`,
-    [nome, email.toLowerCase().trim(), senhaHash, tipo || 'vendedor', regiao || null, concessionaria_id || null, regioesSerializado, telefone || null, cpf || null]
+    [nome, email.toLowerCase().trim(), senhaHash, tipo || 'vendedor', regiao || null, concessionaria_id || null, canal || null, regioesSerializado, telefone || null, cpf || null]
   );
   return normalizarUsuario(rows[0]);
 }
 
 async function update(id, fields) {
-  const { nome, email, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf } = fields;
+  const { nome, email, tipo, regiao, concessionaria_id, canal, regioes_operacao, telefone, cpf } = fields;
   const regioesSerializado = regioes_operacao !== undefined ? serializarArray(regioes_operacao) : undefined;
-  
+
   const { rows } = await query(
     `UPDATE app_users
      SET nome             = COALESCE($1, nome),
@@ -66,12 +70,13 @@ async function update(id, fields) {
          tipo             = COALESCE($3, tipo),
          regiao           = COALESCE($4, regiao),
          concessionaria_id = COALESCE($5, concessionaria_id),
-         regioes_operacao = COALESCE($6, regioes_operacao),
-         telefone         = COALESCE($7, telefone),
-         cpf              = COALESCE($8, cpf)
-     WHERE id = $9
+         canal            = COALESCE($6, canal),
+         regioes_operacao = COALESCE($7, regioes_operacao),
+         telefone         = COALESCE($8, telefone),
+         cpf              = COALESCE($9, cpf)
+     WHERE id = $10
      RETURNING ${COLS_PUBLIC}`,
-    [nome, email, tipo, regiao, concessionaria_id, regioesSerializado, telefone, cpf, id]
+    [nome, email, tipo, regiao, concessionaria_id, canal, regioesSerializado, telefone, cpf, id]
   );
   return normalizarUsuario(rows[0]) || null;
 }

@@ -98,7 +98,7 @@ export const userSchema = z.object({
   cpf: z.string()
     .regex(CPF_REGEX, 'CPF inválido. Use o formato XXX.XXX.XXX-XX'),
   
-  tipo: z.enum(['admin', 'vendedor', 'vendedor_exterior', 'admin_concessionaria', 'vendedor_concessionaria'], {
+  tipo: z.enum(['admin_full', 'admin_concessionarias', 'admin_concessionaria', 'admin_representantes', 'admin_canal_interno', 'admin_comercio_exterior', 'vendedor', 'vendedor_exterior', 'vendedor_concessionaria'], {
     errorMap: () => ({ message: 'Tipo inválido' })
   }),
   

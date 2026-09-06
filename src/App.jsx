@@ -180,36 +180,44 @@ function App() {
                   <Route
                     path="/gerenciar-guindastes"
                     element={
-                      <LazyRoute loadingMessage="Carregando Guindastes...">
-                        <GerenciarGuindastes />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Guindastes...">
+                          <GerenciarGuindastes />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/gerenciar-estoque"
                     element={
-                      <LazyRoute loadingMessage="Carregando Estoque...">
-                        <GerenciarEstoque />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Estoque...">
+                          <GerenciarEstoque />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/gerenciar-graficos-carga"
                     element={
-                      <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
-                        <GerenciarGraficosCarga />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Gráficos de Carga...">
+                          <GerenciarGraficosCarga />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/gerenciar-fretes"
                     element={
-                      <LazyRoute loadingMessage="Carregando Fretes...">
-                        <GerenciarFretes />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Fretes...">
+                          <GerenciarFretes />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
@@ -225,27 +233,33 @@ function App() {
                   <Route
                     path="/aprovacoes-descontos"
                     element={
-                      <LazyRoute loadingMessage="Carregando Aprovações...">
-                        <AprovacoesDescontos />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Aprovações...">
+                          <AprovacoesDescontos />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/planos-pagamento"
                     element={
-                      <LazyRoute loadingMessage="Carregando Planos...">
-                        <PlanosPagamento />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Planos...">
+                          <PlanosPagamento />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/cotacao-dolar"
                     element={
-                      <LazyRoute loadingMessage="Carregando Cotação...">
-                        <CotacaoDolar />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Cotação...">
+                          <CotacaoDolar />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
@@ -261,18 +275,22 @@ function App() {
                   <Route
                     path="/precificacao"
                     element={
-                      <LazyRoute loadingMessage="Carregando Precificação...">
-                        <Precificacao />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Precificação...">
+                          <Precificacao />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
                   <Route
                     path="/admin/configuracoes"
                     element={
-                      <LazyRoute loadingMessage="Carregando Configurações...">
-                        <Configuracoes />
-                      </LazyRoute>
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Configurações...">
+                          <Configuracoes />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 

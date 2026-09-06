@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import VendedorNavigation from './VendedorNavigation';
 import WelcomeLoading from './WelcomeLoading';
+import { isAdmin, isVendedor } from '../utils/permissions';
 import '../styles/VendedorLayout.css';
 
 const VendedorLayout = () => {
@@ -15,7 +16,7 @@ const VendedorLayout = () => {
     if (userData) {
       const parsedUser = JSON.parse(userData);
       // Verificar se é vendedor
-      if (parsedUser.tipo === 'vendedor' || parsedUser.tipo === 'vendedor_concessionaria' || parsedUser.tipo === 'vendedor_exterior') {
+      if (isVendedor(parsedUser)) {
         setUser(parsedUser);
         // Mostrar loading de boas-vindas apenas uma vez por sessão
         const hasShown = sessionStorage.getItem('welcomeShownVendedor');
@@ -24,7 +25,7 @@ const VendedorLayout = () => {
         }
       } else {
         console.warn('Usuário não é vendedor, redirecionando...');
-        if (parsedUser.tipo === 'admin' || parsedUser.tipo === 'admin_concessionaria') {
+        if (isAdmin(parsedUser)) {
           navigate('/dashboard-admin');
         } else {
           navigate('/');

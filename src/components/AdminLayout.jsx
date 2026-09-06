@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import AdminNavigation from './AdminNavigation';
 import WelcomeLoading from './WelcomeLoading';
 import { useAuth } from '../contexts/AuthContext';
+import { isAdmin } from '../utils/permissions';
 import '../styles/AdminLayout.css';
 
 const AdminLayout = () => {
@@ -19,7 +20,7 @@ const AdminLayout = () => {
       return;
     }
 
-    if (user.tipo !== 'admin' && user.tipo !== 'admin_concessionaria') {
+    if (!isAdmin(user)) {
       console.warn('Usuário não é admin, redirecionando...');
       navigate('/');
       return;

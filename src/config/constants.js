@@ -4,8 +4,15 @@
 
 // Tipos de usuário
 export const USER_TYPES = {
-  ADMIN: 'admin',
-  VENDEDOR: 'vendedor'
+  ADMIN_FULL: 'admin_full',
+  ADMIN_CONCESSIONARIAS: 'admin_concessionarias',
+  ADMIN_CONCESSIONARIA: 'admin_concessionaria',
+  ADMIN_REPRESENTANTES: 'admin_representantes',
+  ADMIN_CANAL_INTERNO: 'admin_canal_interno',
+  ADMIN_COMERCIO_EXTERIOR: 'admin_comercio_exterior',
+  VENDEDOR: 'vendedor',
+  VENDEDOR_EXTERIOR: 'vendedor_exterior',
+  VENDEDOR_CONCESSIONARIA: 'vendedor_concessionaria'
 };
 
 // Status de pedidos

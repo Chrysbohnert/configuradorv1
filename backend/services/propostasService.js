@@ -26,7 +26,7 @@ function buildConditions(filters) {
   const conditions = [];
   const params = [];
 
-  const { vendedor_id, status, tipo, concessionaria_id, cliente_id } = filters;
+  const { vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda } = filters;
 
   if (Array.isArray(vendedor_id) && vendedor_id.length) {
     params.push(vendedor_id);
@@ -44,6 +44,13 @@ function buildConditions(filters) {
   if (cliente_id) {
     params.push(cliente_id);
     conditions.push(`cliente_id = $${params.length}`);
+  }
+  if (Array.isArray(canal_venda) && canal_venda.length) {
+    params.push(canal_venda);
+    conditions.push(`canal_venda = ANY($${params.length})`);
+  } else if (canal_venda) {
+    params.push(canal_venda);
+    conditions.push(`canal_venda = $${params.length}`);
   }
 
   return { conditions, params };

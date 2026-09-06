@@ -7,7 +7,7 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/configuracoesService');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdminFull } = require('../middleware/auth');
 
 const router = Router();
 
@@ -19,7 +19,7 @@ router.get('/:chave', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/configuracoes/:chave — apenas admin Stark pode escrever
-router.put('/:chave', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.put('/:chave', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { valor_numero } = req.body;
   if (valor_numero === undefined) {
     return res_.badRequest(res, 'valor_numero é obrigatório');

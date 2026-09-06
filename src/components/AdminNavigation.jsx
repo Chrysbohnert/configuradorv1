@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import {
+  isAdminFull,
+  isAdminConcessionarias,
+  isAdminConcessionaria,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+} from '../utils/permissions';
 import '../styles/AdminNavigation.css';
 
 const AdminNavigation = ({ user }) => {
@@ -7,13 +15,18 @@ const AdminNavigation = ({ user }) => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  const isAdminStark = user?.tipo === 'admin';
-  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+  const fullAccess = isAdminFull(user);
+  const adminConcSede = isAdminConcessionarias(user);
+  const adminConc = isAdminConcessionaria(user);
+  const adminRep = isAdminCanalRepresentantes(user);
+  const adminInterno = isAdminCanalInterno(user);
+  const adminExt = isAdminComercioExterior(user);
 
   const navItems = [
     {
       path: '/dashboard-admin',
       label: 'Dashboard',
+      visible: true,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7"/>
@@ -23,22 +36,35 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
-    ...(isAdminConcessionaria ? [
-      {
-        path: '/nova-proposta-concessionaria',
-        label: 'Novo Pedido',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="16" />
-            <line x1="8" y1="12" x2="16" y2="12" />
-          </svg>
-        )
-      }
-    ] : []),
+    {
+      path: '/nova-proposta-concessionaria',
+      label: 'Novo Pedido',
+      visible: adminConc,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="16" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+        </svg>
+      )
+    },
+    {
+      path: '/gerenciar-vendedores',
+      label: 'Gerenciar Vendedores',
+      visible: true,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="9" cy="7" r="4" />
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+        </svg>
+      )
+    },
     {
       path: '/cadastros',
       label: 'Cadastros',
+      visible: fullAccess || adminConcSede,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="3" y="3" width="7" height="7" />
@@ -51,6 +77,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/gerenciar-estoque',
       label: 'Estoque',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -62,6 +89,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/gerenciar-fretes',
       label: 'Instaladoras',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <rect x="1" y="3" width="15" height="13"/>
@@ -71,23 +99,23 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
-    ...(isAdminStark ? [
-      {
-        path: '/concessionarias',
-        label: 'Concessionárias',
-        icon: (
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 21h18" />
-            <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14" />
-            <path d="M9 21v-8h6v8" />
-            <path d="M9 9h6" />
-          </svg>
-        )
-      }
-    ] : []),
+    {
+      path: '/concessionarias',
+      label: 'Concessionárias',
+      visible: fullAccess || adminConcSede,
+      icon: (
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 21h18" />
+          <path d="M5 21V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v14" />
+          <path d="M9 21v-8h6v8" />
+          <path d="M9 9h6" />
+        </svg>
+      )
+    },
     {
       path: '/mapa-territorial',
       label: 'Mapa Territorial',
+      visible: true,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6"/>
@@ -99,6 +127,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/relatorio-completo',
       label: 'Relatório Completo',
+      visible: true,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="20" x2="18" y2="10"/>
@@ -110,6 +139,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/aprovacoes-descontos',
       label: 'Aprovações de Desconto',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 11l3 3L22 4"/>
@@ -120,6 +150,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/planos-pagamento',
       label: 'Planos de Pagamento',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -132,6 +163,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/cotacao-dolar',
       label: 'Cotação do Dólar',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 1v22" />
@@ -142,6 +174,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/precificacao',
       label: 'Precificação',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
@@ -152,6 +185,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/admin/configuracoes',
       label: 'Configurações',
+      visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="3"/>
@@ -178,10 +212,7 @@ const AdminNavigation = ({ user }) => {
     setIsOpen(false);
   };
 
-  const filteredNavItems = navItems.filter((item) => {
-    if (!isAdminConcessionaria) return true;
-    return !['/logistica', '/gerenciar-graficos-carga', '/aprovacoes-descontos', '/cotacao-dolar'].includes(item.path);
-  });
+  const filteredNavItems = navItems.filter((item) => item.visible !== false);
 
   const findItem = (path) => filteredNavItems.find((item) => item.path === path);
   const groups = [
@@ -195,6 +226,7 @@ const AdminNavigation = ({ user }) => {
         findItem('/aprovacoes-descontos')
       ]
     },
+    { id: 'vendedores', direct: true, item: findItem('/gerenciar-vendedores') },
     { id: 'cadastros', direct: true, item: findItem('/cadastros') },
     { id: 'mapa', direct: true, item: findItem('/mapa-territorial') },
     {
@@ -209,8 +241,9 @@ const AdminNavigation = ({ user }) => {
     { id: 'configuracoes', direct: true, item: findItem('/admin/configuracoes') }
   ].map((group) => ({
     ...group,
-    items: group.items?.filter(Boolean)
-  }));
+    items: group.items?.filter(Boolean),
+    item: group.item?.visible !== false ? group.item : undefined
+  })).filter((group) => (group.direct ? group.item : group.items.length > 0));
   const pricingSections = [
     { key: 'precificacao', label: 'Equipamentos' },
     { key: 'tributacao', label: 'Tributação' },
@@ -327,7 +360,19 @@ const AdminNavigation = ({ user }) => {
                 <svg viewBox="0 0 24 24" fill="currentColor" width="12" height="12">
                   <path d="M12 0L15.708 7.604L24 8.852L18 14.696L19.416 23L12 19.104L4.584 23L6 14.696L0 8.852L8.292 7.604L12 0Z" />
                 </svg>
-                Administrador
+                {fullAccess
+                  ? 'Administrador Master'
+                  : adminConcSede
+                  ? 'Admin Concessionárias'
+                  : adminConc
+                  ? 'Admin Concessionária'
+                  : adminRep
+                  ? 'Admin Representantes'
+                  : adminInterno
+                  ? 'Admin Canal Interno'
+                  : adminExt
+                  ? 'Admin Comércio Exterior'
+                  : 'Administrador'}
               </div>
             </div>
           </div>

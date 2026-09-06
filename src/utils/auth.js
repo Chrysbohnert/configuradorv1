@@ -1,4 +1,9 @@
 // Utilitários de autenticação
+import {
+  isAdmin as checkAdmin,
+  isVendedor as checkVendedor,
+  isAdminFull as checkAdminFull,
+} from './permissions';
 
 // Verificar se o usuário está autenticado
 export const isAuthenticated = () => {
@@ -24,13 +29,19 @@ export const getCurrentUser = () => {
 // Verificar se o usuário é admin
 export const isAdmin = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
+  return checkAdmin(user);
+};
+
+// Verificar se o usuário é admin_full
+export const isAdminFull = () => {
+  const user = getCurrentUser();
+  return checkAdminFull(user);
 };
 
 // Verificar se o usuário é vendedor (inclui admin_concessionaria para acesso ao Novo Pedido)
 export const isVendedor = () => {
   const user = getCurrentUser();
-  return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior' || user?.tipo === 'admin_concessionaria';
+  return checkVendedor(user);
 };
 
 // Fazer logout

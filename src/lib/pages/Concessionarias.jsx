@@ -4,6 +4,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getAreas, saveAreas } from '../../api/areas';
 import AreaSelector from '../../features/mapa/AreaSelector';
+import { isAdminFull, isAdminConcessionarias } from '../../utils/permissions';
 import '../../styles/Concessionarias.css';
 
 const Concessionarias = () => {
@@ -54,9 +55,11 @@ const Concessionarias = () => {
     }
   };
 
+  const canManage = isAdminFull(user) || isAdminConcessionarias(user);
+
   useEffect(() => {
     if (!user) return;
-    if (user.tipo !== 'admin') {
+    if (!canManage) {
       navigate('/dashboard-admin');
       return;
     }
@@ -138,7 +141,7 @@ const Concessionarias = () => {
   };
 
   const handleToggleAtivo = async (c) => {
-    if (user?.tipo !== 'admin') {
+    if (!canManage) {
       alert('Apenas Admin Stark pode ativar/inativar concessionárias.');
       return;
     }
@@ -187,7 +190,7 @@ const Concessionarias = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (user?.tipo !== 'admin') {
+    if (!canManage) {
       alert('Apenas Admin Stark pode cadastrar concessionárias.');
       return;
     }
@@ -249,6 +252,7 @@ const Concessionarias = () => {
         email: formData.admin_email.trim(),
         senha: formData.admin_senha,
         tipo: 'admin_concessionaria',
+        canal: 'concessionarias',
         concessionaria_id: concessionariaId
       });
 

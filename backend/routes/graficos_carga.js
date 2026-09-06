@@ -13,7 +13,7 @@ const multer = require('multer');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/graficosCargaService');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdminFull } = require('../middleware/auth');
 
 const router = Router();
 
@@ -42,7 +42,7 @@ function isLocalFile(url) {
 }
 
 // ─── POST /upload ──────────────────────────────────────────────────────────────
-router.post('/upload', requireAuth, requireAdmin, upload.single('arquivo'), asyncHandler(async (req, res) => {
+router.post('/upload', requireAuth, requireAdminFull, upload.single('arquivo'), asyncHandler(async (req, res) => {
   if (!req.file) {
     return res_.badRequest(res, 'Nenhum arquivo PDF enviado');
   }
@@ -69,7 +69,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // ─── POST / (criar registro) ───────────────────────────────────────────────────
-router.post('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { nome } = req.body;
   if (!nome || !nome.trim()) {
     return res_.badRequest(res, 'nome é obrigatório');
@@ -79,14 +79,14 @@ router.post('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
 }));
 
 // ─── PUT /:id ──────────────────────────────────────────────────────────────────
-router.put('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const updated = await svc.update(req.params.id, req.body);
   if (!updated) return res_.notFound(res, 'Gráfico de carga não encontrado');
   return res_.ok(res, updated);
 }));
 
 // ─── DELETE /:id ───────────────────────────────────────────────────────────────
-router.delete('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   // Busca o registro antes de remover para poder apagar o arquivo local, se houver
   const grafico = await svc.findById(req.params.id);
   if (!grafico) return res_.notFound(res, 'Gráfico de carga não encontrado');

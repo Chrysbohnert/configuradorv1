@@ -1,6 +1,7 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { isAdmin } from '../../utils/permissions';
 import { showError } from '../../utils/errorHandler';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../../utils/rateLimiter';
 import { API_URL } from '../../api/config.js';
@@ -25,7 +26,7 @@ const Login = () => {
   const validarConcessionariaAtiva = async (user) => {
     if (!user) return true;
 
-    const isConcessionariaUser = user.tipo === 'admin_concessionaria' || user.tipo === 'vendedor_concessionaria';
+    const isConcessionariaUser = user.canal === 'concessionarias' || user.tipo === 'admin_concessionaria' || user.tipo === 'vendedor_concessionaria';
     if (!isConcessionariaUser) return true;
 
     if (!user.concessionaria_id) {
@@ -104,8 +105,7 @@ const Login = () => {
 
       recordLoginAttempt(clientIP, email, true);
 
-      const tipo = user.tipo || user.role || '';
-      if (tipo === 'admin' || tipo === 'admin_concessionaria') {
+      if (isAdmin(user)) {
         navigate('/dashboard-admin');
       } else {
         navigate('/dashboard');

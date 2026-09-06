@@ -10,16 +10,33 @@ const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/clientesService');
 const { requireAuth } = require('../middleware/auth');
+const {
+  isAdmin,
+  isAdminConcessionarias,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+  CANAIS,
+} = require('../utils/permissions');
 
 const router = Router();
 
-const isAdmin = (req) => ['admin_stark', 'admin', 'admin_concessionaria'].includes(req.user?.tipo);
-
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const { search } = req.query;
-  const vendedor_id = isAdmin(req) ? (req.query.vendedor_id || undefined) : req.user.id;
+  const vendedor_id = isAdmin(req.user) ? (req.query.vendedor_id || undefined) : req.user.id;
 
-  const data = await svc.findAll({ vendedor_id, search });
+  let canal;
+  if (isAdminCanalRepresentantes(req.user)) {
+    canal = CANAIS.REPRESENTANTES;
+  } else if (isAdminCanalInterno(req.user)) {
+    canal = CANAIS.INTERNO;
+  } else if (isAdminComercioExterior(req.user)) {
+    canal = CANAIS.COMERCIO_EXTERIOR;
+  } else if (isAdminConcessionarias(req.user)) {
+    canal = CANAIS.CONCESSIONARIAS;
+  }
+
+  const data = await svc.findAll({ vendedor_id, search, canal });
   return res_.ok(res, data);
 }));
 
@@ -27,7 +44,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const data = await svc.findById(req.params.id);
   if (!data) return res_.notFound(res, 'Cliente não encontrado');
 
-  if (!isAdmin(req) && String(data.vendedor_id) !== String(req.user.id)) {
+  if (!isAdmin(req.user) && String(data.vendedor_id) !== String(req.user.id)) {
     return res_.forbidden(res, 'Acesso negado');
   }
 
@@ -38,7 +55,7 @@ router.get('/:id/propostas', requireAuth, asyncHandler(async (req, res) => {
   const cliente = await svc.findById(req.params.id);
   if (!cliente) return res_.notFound(res, 'Cliente não encontrado');
 
-  if (!isAdmin(req) && String(cliente.vendedor_id) !== String(req.user.id)) {
+  if (!isAdmin(req.user) && String(cliente.vendedor_id) !== String(req.user.id)) {
     return res_.forbidden(res, 'Acesso negado');
   }
 
@@ -50,7 +67,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   const payload = { ...req.body };
 
   // Vendedor comum: vincula automaticamente ao usuário logado
-  if (!isAdmin(req)) {
+  if (!isAdmin(req.user)) {
     payload.vendedor_id = req.user.id;
   }
 
@@ -58,7 +75,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   // quando vendedor comum), reaproveita o cadastro em vez de criar outro.
   if (payload.documento) {
     const existente = await svc.findByDocumento(payload.documento);
-    if (existente && (isAdmin(req) || String(existente.vendedor_id) === String(req.user.id))) {
+    if (existente && (isAdmin(req.user) || String(existente.vendedor_id) === String(req.user.id))) {
       const atualizado = await svc.update(existente.id, payload);
       return res_.ok(res, atualizado || existente);
     }
@@ -72,12 +89,12 @@ router.put('/:id', requireAuth, asyncHandler(async (req, res) => {
   const existente = await svc.findById(req.params.id);
   if (!existente) return res_.notFound(res, 'Cliente não encontrado');
 
-  if (!isAdmin(req) && String(existente.vendedor_id) !== String(req.user.id)) {
+  if (!isAdmin(req.user) && String(existente.vendedor_id) !== String(req.user.id)) {
     return res_.forbidden(res, 'Acesso negado');
   }
 
   const payload = { ...req.body };
-  if (!isAdmin(req)) delete payload.vendedor_id; // vendedor comum não troca o responsável
+  if (!isAdmin(req.user)) delete payload.vendedor_id; // vendedor comum não troca o responsável
 
   const data = await svc.update(req.params.id, payload);
   return res_.ok(res, data);
@@ -87,7 +104,7 @@ router.delete('/:id', requireAuth, asyncHandler(async (req, res) => {
   const existente = await svc.findById(req.params.id);
   if (!existente) return res_.notFound(res, 'Cliente não encontrado');
 
-  if (!isAdmin(req) && String(existente.vendedor_id) !== String(req.user.id)) {
+  if (!isAdmin(req.user) && String(existente.vendedor_id) !== String(req.user.id)) {
     return res_.forbidden(res, 'Acesso negado');
   }
 

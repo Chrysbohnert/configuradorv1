@@ -7,7 +7,7 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/precificacaoParametrosService');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdminFull } = require('../middleware/auth');
 
 const router = Router();
 
@@ -18,7 +18,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // PUT /api/precificacao-parametros
-router.put('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.put('/', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const data = await svc.salvarParametros(req.body);
   return res_.ok(res, data);
 }));

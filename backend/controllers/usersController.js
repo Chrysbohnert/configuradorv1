@@ -21,14 +21,33 @@ function verificarSenha(senhaInput, senhaArmazenada) {
   return false;
 }
 
+const {
+  isAdminFull,
+  isAdminConcessionarias,
+  isAdminConcessionaria,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+  canalDoUsuario,
+  CANAIS,
+} = require('../utils/permissions');
+
 const getUsers = asyncHandler(async (req, res) => {
   const { ativo } = req.query;
   const filter = {};
   if (typeof ativo !== 'undefined') filter.ativo = ativo === 'true';
 
   // Admin Concessionária vê apenas usuários da própria concessionária
-  if (req.user?.tipo === 'admin_concessionaria') {
+  if (isAdminConcessionaria(req.user)) {
     filter.concessionaria_id = req.user.concessionaria_id;
+  } else if (isAdminCanalRepresentantes(req.user)) {
+    filter.canal = CANAIS.REPRESENTANTES;
+  } else if (isAdminCanalInterno(req.user)) {
+    filter.canal = CANAIS.INTERNO;
+  } else if (isAdminComercioExterior(req.user)) {
+    filter.canal = CANAIS.COMERCIO_EXTERIOR;
+  } else if (isAdminConcessionarias(req.user)) {
+    filter.canal = CANAIS.CONCESSIONARIAS;
   }
 
   const users = await svc.findAll(filter);
@@ -42,27 +61,109 @@ const getUserById = asyncHandler(async (req, res) => {
 });
 
 const createUser = asyncHandler(async (req, res) => {
-  const { nome, email, senha, tipo, regiao, regioes_operacao, concessionaria_id, telefone, cpf } = req.body;
+  const { nome, email, senha, tipo, regiao, regioes_operacao, concessionaria_id, telefone, cpf, canal } = req.body;
 
   if (!nome || !email || !senha) {
     return res_.badRequest(res, 'nome, email e senha são obrigatórios');
+  }
+
+  // Validação de permissão para criação de usuários por canal/perfil
+  const targetCanal = canal || canalDoUsuario({ tipo });
+  if (!isAdminFull(req.user)) {
+    if (tipo === 'admin_full') {
+      return res_.forbidden(res, 'Acesso negado: apenas admin_full cria admin_full');
+    }
+    if (isAdminConcessionarias(req.user)) {
+      if (tipo !== 'admin_concessionaria' && targetCanal !== CANAIS.CONCESSIONARIAS) {
+        return res_.forbidden(res, 'Acesso negado: apenas usuários do canal concessionárias');
+      }
+      if (tipo === 'admin_concessionaria' && !concessionaria_id) {
+        return res_.badRequest(res, 'concessionaria_id obrigatório para admin_concessionaria');
+      }
+    } else if (isAdminCanalRepresentantes(req.user) && targetCanal !== CANAIS.REPRESENTANTES) {
+      return res_.forbidden(res, 'Acesso negado: apenas usuários do canal representantes');
+    } else if (isAdminCanalInterno(req.user) && targetCanal !== CANAIS.INTERNO) {
+      return res_.forbidden(res, 'Acesso negado: apenas usuários do canal interno');
+    } else if (isAdminComercioExterior(req.user) && targetCanal !== CANAIS.COMERCIO_EXTERIOR) {
+      return res_.forbidden(res, 'Acesso negado: apenas usuários do canal comércio exterior');
+    } else if (isAdminConcessionaria(req.user)) {
+      // admin_concessionaria pode criar apenas vendedores da própria concessionária
+      if (targetCanal !== CANAIS.CONCESSIONARIAS) {
+        return res_.forbidden(res, 'Acesso negado: apenas usuários do canal concessionárias');
+      }
+      if (String(concessionaria_id) !== String(req.user.concessionaria_id)) {
+        return res_.forbidden(res, 'Acesso negado: concessionária inválida');
+      }
+    }
   }
 
   const existe = await svc.findByEmail(email);
   if (existe) return res_.conflict(res, 'E-mail já cadastrado');
 
   const senhaHash = sha256Hex(senha);
-  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf });
+  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf, canal });
   return res_.created(res, user);
 });
 
 const updateUser = asyncHandler(async (req, res) => {
+  const target = await svc.findById(req.params.id);
+  if (!target) return res_.notFound(res, 'Usuário não encontrado');
+
+  if (!isAdminFull(req.user)) {
+    const targetCanal = target.canal || canalDoUsuario(target);
+    if (isAdminConcessionaria(req.user) && String(target.concessionaria_id) !== String(req.user.concessionaria_id)) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminConcessionarias(req.user) && targetCanal !== CANAIS.CONCESSIONARIAS) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminCanalRepresentantes(req.user) && targetCanal !== CANAIS.REPRESENTANTES) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminCanalInterno(req.user) && targetCanal !== CANAIS.INTERNO) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminComercioExterior(req.user) && targetCanal !== CANAIS.COMERCIO_EXTERIOR) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    // Impedir que admins de canal alterem perfis para admin_full
+    if (req.body.tipo === 'admin_full') {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+  }
+
   const updated = await svc.update(req.params.id, req.body);
   if (!updated) return res_.notFound(res, 'Usuário não encontrado');
   return res_.ok(res, updated);
 });
 
 const deleteUser = asyncHandler(async (req, res) => {
+  const target = await svc.findById(req.params.id);
+  if (!target) return res_.notFound(res, 'Usuário não encontrado');
+
+  if (!isAdminFull(req.user)) {
+    const targetCanal = target.canal || canalDoUsuario(target);
+    if (isAdminConcessionaria(req.user) && String(target.concessionaria_id) !== String(req.user.concessionaria_id)) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminConcessionarias(req.user) && targetCanal !== CANAIS.CONCESSIONARIAS) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminCanalRepresentantes(req.user) && targetCanal !== CANAIS.REPRESENTANTES) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminCanalInterno(req.user) && targetCanal !== CANAIS.INTERNO) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    if (isAdminComercioExterior(req.user) && targetCanal !== CANAIS.COMERCIO_EXTERIOR) {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+    // Proteger contra exclusão de admin_full
+    if (target.tipo === 'admin_full') {
+      return res_.forbidden(res, 'Acesso negado');
+    }
+  }
+
   const deleted = await svc.remove(req.params.id);
   if (!deleted) return res_.notFound(res, 'Usuário não encontrado');
   return res_.ok(res, { message: 'Usuário removido com sucesso' });
@@ -95,7 +196,14 @@ const login = async (req, res) => {
 
     const secret = process.env.JWT_SECRET || 'stark-dev-secret-fallback';
     const token = jwt.sign(
-      { id: user.id, email: user.email, tipo: user.tipo, nome: user.nome, concessionaria_id: user.concessionaria_id },
+      {
+        id: user.id,
+        email: user.email,
+        tipo: user.tipo,
+        nome: user.nome,
+        concessionaria_id: user.concessionaria_id,
+        canal: user.canal || canalDoUsuario(user),
+      },
       secret,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );

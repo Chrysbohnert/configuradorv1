@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getCurrentUser, validateSession } from '../utils/auth';
+import { isAdmin, isAdminFull, isVendedor } from '../utils/permissions';
 
 export const useAuth = () => {
   const [user, setUser] = useState(null);
@@ -43,8 +44,9 @@ export const useAuth = () => {
     user,
     isLoading,
     isAuthenticated,
-    isAdmin: user?.tipo === 'admin',
-    isVendedor: user?.tipo === 'vendedor',
+    isAdmin: isAdmin(user),
+    isAdminFull: isAdminFull(user),
+    isVendedor: isVendedor(user),
     logout,
     refreshAuth: checkAuth
   };

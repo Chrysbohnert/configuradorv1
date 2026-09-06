@@ -68,7 +68,7 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // GET /api/solicitacoes-desconto/pendentes — listar pendentes (admin)
-router.get('/pendentes', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
+router.get('/pendentes', requireAuth, requireRole('admin_full'), asyncHandler(async (req, res) => {
   const solicitacoes = await svc.listarPendentes();
   return res_.ok(res, solicitacoes);
 }));
@@ -87,7 +87,7 @@ router.get('/vendedor/:vendedorId', requireAuth, asyncHandler(async (req, res) =
 }));
 
 // PUT /api/solicitacoes-desconto/:id/aprovar — aprovar (admin Stark)
-router.put('/:id/aprovar', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
+router.put('/:id/aprovar', requireAuth, requireRole('admin_full'), asyncHandler(async (req, res) => {
   const { desconto_aprovado, observacao } = req.body;
 
   if (desconto_aprovado == null || isNaN(Number(desconto_aprovado))) {
@@ -107,7 +107,7 @@ router.put('/:id/aprovar', requireAuth, requireRole('admin'), asyncHandler(async
 }));
 
 // PUT /api/solicitacoes-desconto/:id/negar — negar (admin Stark)
-router.put('/:id/negar', requireAuth, requireRole('admin'), asyncHandler(async (req, res) => {
+router.put('/:id/negar', requireAuth, requireRole('admin_full'), asyncHandler(async (req, res) => {
   const { observacao } = req.body;
 
   if (!observacao || !observacao.trim()) {

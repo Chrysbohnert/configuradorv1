@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { checkLoginLimit, recordLoginAttempt, getClientIP } from '../utils/rateLimiter';
 import { normalizarArray, normalizarObjeto } from '../utils/normalizadores';
+import { isAdmin, isAdminFull, isVendedor } from '../utils/permissions';
 
 import { API_URL } from '../api/config.js';
 import { fetchJson } from '../api/fetchHelper.js';
@@ -15,9 +16,12 @@ function _clearStorage() {
 
 function _normalizarUser(user) {
   if (!user) return user;
+  const tipo = user.tipo || user.role || 'vendedor';
+  const canal = user.canal || (tipo === 'vendedor' ? 'representantes' : null);
   return {
     ...user,
-    tipo: user.tipo || user.role || 'vendedor',
+    tipo,
+    canal,
     regioes_operacao: normalizarArray(user.regioes_operacao),
   };
 }
@@ -138,13 +142,18 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // Verificar se é admin
-  const isAdmin = useCallback(() => {
-    return user?.tipo === 'admin' || user?.tipo === 'admin_concessionaria';
+  const isAdminFn = useCallback(() => {
+    return isAdmin(user);
+  }, [user]);
+
+  // Verificar se é admin_full
+  const isAdminFullFn = useCallback(() => {
+    return isAdminFull(user);
   }, [user]);
 
   // Verificar se é vendedor
-  const isVendedor = useCallback(() => {
-    return user?.tipo === 'vendedor' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'vendedor_exterior';
+  const isVendedorFn = useCallback(() => {
+    return isVendedor(user);
   }, [user]);
 
   // Verificar se está autenticado
@@ -176,8 +185,9 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     initSession,
-    isAdmin,
-    isVendedor,
+    isAdmin: isAdminFn,
+    isAdminFull: isAdminFullFn,
+    isVendedor: isVendedorFn,
     isAuthenticated,
     updateUser,
     setError

@@ -3,6 +3,7 @@ import { useNavigate, useOutletContext, useSearchParams } from 'react-router-dom
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { getTodosFretesAdmin, createFrete, updateFrete, deleteFrete } from '../../api/fretes';
 import { formatCurrency } from '../../utils/formatters';
+import { isAdminFull } from '../../utils/permissions';
 import '../../styles/GerenciarFretes.css';
 
 const GerenciarFretes = () => {
@@ -27,7 +28,7 @@ const GerenciarFretes = () => {
   ];
 
   useEffect(() => {
-    if (user?.tipo !== 'admin') {
+    if (!isAdminFull(user)) {
       navigate('/dashboard-admin');
       return;
     }

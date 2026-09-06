@@ -5,6 +5,15 @@ import { db } from '../../config/supabase';
 import { getGuindastesCountForDashboard } from '../../api/guindastes';
 import { getPropostas } from '../../api/propostas';
 import { formatCurrency } from '../../utils/formatters';
+import {
+  isAdminFull,
+  isAdminConcessionarias,
+  isAdminConcessionaria,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+  CANAIS,
+} from '../../utils/permissions';
 import '../../styles/DashboardAdmin.css';
 import '../../styles/Dashboard.css';
 
@@ -133,14 +142,21 @@ const DashboardAdmin = () => {
       try {
         setIsLoading(true);
 
-        const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+        const isConc = isAdminConcessionaria(user);
+        const isConcSede = isAdminConcessionarias(user);
+        const isRep = isAdminCanalRepresentantes(user);
+        const isInterno = isAdminCanalInterno(user);
+        const isExt = isAdminComercioExterior(user);
+        const fullAccess = isAdminFull(user);
         const concessionariaId = user?.concessionaria_id;
 
-        console.log(`[DashboardAdmin] tipo=${user?.tipo} | concessionaria_id=${concessionariaId} | isAdminConcessionaria=${isAdminConcessionaria}`);
+        console.log(`[DashboardAdmin] tipo=${user?.tipo} | canal=${user?.canal} | concessionaria_id=${concessionariaId}`);
 
-        const usersPromise = isAdminConcessionaria
+        const usersPromise = isConc
           ? db.getUsers({ concessionaria_id: concessionariaId })
-          : db.getUsers();
+          : fullAccess
+          ? db.getUsers()
+          : db.getUsers({ canal: user?.canal });
 
         const [usersResp, guindastesCountResp] = await Promise.all([
           usersPromise.catch((err) => {
@@ -154,15 +170,24 @@ const DashboardAdmin = () => {
         ]);
 
         const idsVendedores = (usersResp || [])
-          .filter((u) => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
+          .filter((u) => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria' || u?.tipo === 'vendedor_exterior')
           .map((u) => u.id);
 
         console.log(`[DashboardAdmin] vendedoresCarregados=${usersResp?.length} | idsVendedores=${idsVendedores.length}`);
 
         // ⚡ includeDadosSerializados:true necessário para analytics de GSI/GSE, topProdutos e região
-        const propostasFilters = isAdminConcessionaria
-          ? { vendedor_id: idsVendedores, concessionaria_id: concessionariaId, includeDadosSerializados: true }
-          : { includeDadosSerializados: true };
+        let propostasFilters = { includeDadosSerializados: true };
+        if (isConc) {
+          propostasFilters = { vendedor_id: idsVendedores, concessionaria_id: concessionariaId, includeDadosSerializados: true };
+        } else if (isConcSede) {
+          propostasFilters = { canal_venda: ['Concessionária Nacional', 'Concessionária Internacional'], includeDadosSerializados: true };
+        } else if (isRep) {
+          propostasFilters = { canal_venda: ['Representante'], includeDadosSerializados: true };
+        } else if (isInterno) {
+          propostasFilters = { canal_venda: ['Vendedor Interno'], includeDadosSerializados: true };
+        } else if (isExt) {
+          propostasFilters = { canal_venda: ['Concessionária Internacional'], includeDadosSerializados: true };
+        }
 
         console.log(`[DashboardAdmin] propostasFilters=${JSON.stringify(propostasFilters)}`);
 
@@ -226,7 +251,7 @@ const DashboardAdmin = () => {
 
   const kpis = useMemo(() => {
     const totalVendedores = users.filter(
-      (u) => u.tipo === 'vendedor' || u.tipo === 'vendedor_concessionaria'
+      (u) => u.tipo === 'vendedor' || u.tipo === 'vendedor_concessionaria' || u.tipo === 'vendedor_exterior'
     ).length;
 
     const totalGuindastes = guindastesCount;

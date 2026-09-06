@@ -7,6 +7,16 @@ import { getPropostas } from '../../api/propostas';
 import { getAreas, saveAreas } from '../../api/areas';
 import AreaSelector from '../../features/mapa/AreaSelector';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
+import {
+  isAdminFull,
+  isAdminConcessionarias,
+  isAdminConcessionaria,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+  canalDoUsuario,
+  CANAIS,
+} from '../../utils/permissions';
 import '../../styles/GerenciarVendedores.css';
 
 const resumirAreas = (areas) => Object.entries((areas || []).reduce((acc, area) => {
@@ -35,6 +45,21 @@ const GerenciarVendedores = () => {
   const [areaSaving, setAreaSaving] = useState(false);
   const [areaError, setAreaError] = useState('');
 
+  const userCanal = canalDoUsuario(user);
+  const isFull = isAdminFull(user);
+  const isConcSede = isAdminConcessionarias(user);
+  const isConc = isAdminConcessionaria(user);
+  const isRep = isAdminCanalRepresentantes(user);
+  const isInterno = isAdminCanalInterno(user);
+  const isExt = isAdminComercioExterior(user);
+  const isCanalOnly = isRep || isInterno || isExt || isConc;
+
+  const defaultTipo = (() => {
+    if (isConc) return 'vendedor_concessionaria';
+    if (isExt) return 'vendedor_exterior';
+    return 'vendedor';
+  })();
+
   const [formData, setFormData] = useState({
     nome: '',
     email: '',
@@ -42,7 +67,7 @@ const GerenciarVendedores = () => {
     cpf: '',
     regiao: '',
     regioes_operacao: [],
-    tipo: 'vendedor',
+    tipo: defaultTipo,
     senha: 'vendedor123',
   });
 
@@ -56,18 +81,19 @@ const GerenciarVendedores = () => {
     try {
       setIsLoading(true);
 
-      const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
       const concessionariaId = user?.concessionaria_id;
 
       const [vendedoresData, propostas] = await Promise.all([
-        isAdminConcessionaria
+        isConc
           ? db.getUsers({ concessionaria_id: concessionariaId })
-          : db.getUsers(),
+          : db.getUsers({ canal: userCanal }),
         getPropostas(),
       ]);
 
       const vendedoresOnly = vendedoresData.filter((v) => {
-        if (isAdminConcessionaria) return v.tipo === 'vendedor_concessionaria';
+        if (isConc) return v.tipo === 'vendedor_concessionaria';
+        if (isExt) return v.tipo === 'vendedor_exterior';
+        if (isRep || isInterno) return v.tipo === 'vendedor';
         return (
           v.tipo === 'vendedor' ||
           v.tipo === 'vendedor_concessionaria' ||
@@ -80,7 +106,7 @@ const GerenciarVendedores = () => {
         const vendas = propostasDoVendedor.length;
         const valorTotal = propostasDoVendedor.reduce((soma, p) => soma + (p.valor_total || 0), 0);
         let areas = [];
-        if (!isAdminConcessionaria && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo)) {
+        if (!isConc && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo)) {
           try {
             areas = await getAreas('representante', vendedor.id);
           } catch {
@@ -112,13 +138,12 @@ const GerenciarVendedores = () => {
     e.preventDefault();
 
     try {
-      const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
       const concessionariaId = user?.concessionaria_id;
 
       let regiaoConcessionaria = '';
       let regioesOperacaoConcessionaria = [];
 
-      if (isAdminConcessionaria) {
+      if (isConc) {
         if (!concessionariaId) {
           alert('Erro: este admin não está vinculado a nenhuma concessionária.');
           return;
@@ -139,14 +164,26 @@ const GerenciarVendedores = () => {
         regioesOperacaoConcessionaria = [regiaoConcessionaria];
       }
 
+      const tipoFinal = isConc
+        ? 'vendedor_concessionaria'
+        : isExt
+        ? 'vendedor_exterior'
+        : formData.tipo || 'vendedor';
+      const canalFinal = isConc || tipoFinal === 'vendedor_concessionaria'
+        ? CANAIS.CONCESSIONARIAS
+        : tipoFinal === 'vendedor_exterior'
+        ? CANAIS.COMERCIO_EXTERIOR
+        : formData.canal || userCanal || CANAIS.REPRESENTANTES;
+
       const vendedorData = {
         ...formData,
-        tipo: isAdminConcessionaria ? 'vendedor_concessionaria' : formData.tipo || 'vendedor',
-        concessionaria_id: isAdminConcessionaria
+        tipo: tipoFinal,
+        canal: canalFinal,
+        concessionaria_id: isConc
           ? concessionariaId
           : formData.concessionaria_id ?? null,
-        regiao: isAdminConcessionaria ? regiaoConcessionaria : formData.regiao,
-        regioes_operacao: isAdminConcessionaria
+        regiao: isConc ? regiaoConcessionaria : formData.regiao,
+        regioes_operacao: isConc
           ? regioesOperacaoConcessionaria
           : formData.regioes_operacao,
       };
@@ -180,7 +217,7 @@ const GerenciarVendedores = () => {
       cpf: '',
       regiao: '',
       regioes_operacao: [],
-      tipo: 'vendedor',
+      tipo: defaultTipo,
       senha: 'vendedor123',
     });
   };
@@ -194,7 +231,7 @@ const GerenciarVendedores = () => {
       cpf: '',
       regiao: '',
       regioes_operacao: [],
-      tipo: 'vendedor',
+      tipo: defaultTipo,
       senha: 'vendedor123',
     });
     setShowPassword(false);
@@ -227,7 +264,8 @@ const GerenciarVendedores = () => {
       cpf: vendedor.cpf || '',
       regiao: vendedor.regiao || '',
       regioes_operacao: regioesNormalizadas,
-      tipo: vendedor.tipo || 'vendedor',
+      tipo: vendedor.tipo || defaultTipo,
+      canal: vendedor.canal || userCanal,
       senha: '',
     });
     setShowPassword(false);
@@ -373,10 +411,19 @@ const GerenciarVendedores = () => {
 
   if (!user) return null;
 
-  const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
-  const pageTitle = isAdminConcessionaria ? 'Vendedores da Concessionária' : 'Representantes';
-  const pageSubtitle = isAdminConcessionaria
+  const pageTitle = isConc
+    ? 'Vendedores da Concessionária'
+    : isExt
+    ? 'Representantes do Comércio Exterior'
+    : isInterno
+    ? 'Vendedores do Canal Interno'
+    : 'Representantes';
+  const pageSubtitle = isConc
     ? 'Gerencie os vendedores vinculados à sua concessionária'
+    : isExt
+    ? 'Gerencie os representantes de comércio exterior'
+    : isInterno
+    ? 'Gerencie os vendedores do canal interno'
     : 'Gerencie a equipe de representantes';
 
   const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -515,7 +562,7 @@ const GerenciarVendedores = () => {
                         </td>
                         <td>
                           <div className="row-actions">
-                            {!isAdminConcessionaria && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo) && (
+                            {!isConc && ['vendedor', 'vendedor_exterior'].includes(vendedor.tipo) && (
                               <button
                                 onClick={() => handleOpenAreas(vendedor)}
                                 className="row-action-btn row-action-area"
@@ -754,22 +801,41 @@ const GerenciarVendedores = () => {
                   </div>
 
 
-                  {!isAdminConcessionaria && (
+                  {(fullAccess || isConcSede || isExt || isInterno) && (
                     <div className="form-group">
                       <label htmlFor="tipo">Tipo de Usuário *</label>
                       <select
                         id="tipo"
-                        value={formData.tipo || 'vendedor'}
+                        value={formData.tipo || defaultTipo}
                         onChange={(e) => handleInputChange('tipo', e.target.value)}
                         required
                       >
-                        <option value="vendedor">Vendedor</option>
-                        <option value="vendedor_exterior">Vendedor Exterior (USD)</option>
+                        {fullAccess && (
+                          <>
+                            <option value="vendedor">Vendedor / Representante</option>
+                            <option value="vendedor_exterior">Vendedor Exterior (USD)</option>
+                            <option value="vendedor_concessionaria">Vendedor Concessionária</option>
+                            <option value="admin_full">Admin Full</option>
+                            <option value="admin_concessionarias">Admin Concessionárias</option>
+                            <option value="admin_concessionaria">Admin Concessionária</option>
+                            <option value="admin_representantes">Admin Representantes</option>
+                            <option value="admin_canal_interno">Admin Canal Interno</option>
+                            <option value="admin_comercio_exterior">Admin Comércio Exterior</option>
+                          </>
+                        )}
+                        {isConcSede && (
+                          <>
+                            <option value="admin_concessionaria">Admin Concessionária</option>
+                            <option value="vendedor_concessionaria">Vendedor Concessionária</option>
+                          </>
+                        )}
+                        {isExt && <option value="vendedor_exterior">Vendedor Exterior (USD)</option>}
+                        {isInterno && <option value="vendedor">Vendedor Interno</option>}
                       </select>
                     </div>
                   )}
 
-                  {!isAdminConcessionaria && (
+                  {!isConc && (
                     <div className="form-group form-group-full">
                       <label htmlFor="regiao">Região Principal * (Grupo de Região)</label>
                       <select
@@ -792,7 +858,7 @@ const GerenciarVendedores = () => {
                     </div>
                   )}
 
-                  {!isAdminConcessionaria && (
+                  {!isConc && (
                     <div className="form-group form-group-full">
                       <label>Regiões de Operação (para vendedores internos)</label>
                       <div className="regiao-cards">

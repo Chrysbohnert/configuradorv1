@@ -22,7 +22,7 @@ const COLS_BASE = `
   c.participacao_revenda, c.tipo_cliente, c.created_at, c.updated_at
 `;
 
-function buildConditions({ vendedor_id, search } = {}) {
+function buildConditions({ vendedor_id, search, canal } = {}) {
   const conditions = [];
   const params = [];
 
@@ -34,6 +34,11 @@ function buildConditions({ vendedor_id, search } = {}) {
     }
   }
 
+  if (canal) {
+    params.push(canal);
+    conditions.push(`v.canal = $${params.length}`);
+  }
+
   if (search && search.trim()) {
     params.push(`%${search.trim()}%`);
     conditions.push(`(c.nome ILIKE $${params.length} OR c.documento ILIKE $${params.length})`);
@@ -42,8 +47,8 @@ function buildConditions({ vendedor_id, search } = {}) {
   return { conditions, params };
 }
 
-async function findAll({ vendedor_id, search } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, search });
+async function findAll({ vendedor_id, search, canal } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, search, canal });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const { rows } = await query(

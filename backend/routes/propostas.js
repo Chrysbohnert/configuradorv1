@@ -8,16 +8,23 @@ const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/propostasService');
 const { requireAuth } = require('../middleware/auth');
+const {
+  isAdmin,
+  isAdminConcessionarias,
+  isAdminConcessionaria,
+  isAdminCanalRepresentantes,
+  isAdminCanalInterno,
+  isAdminComercioExterior,
+  CANAIS,
+} = require('../utils/permissions');
 
 const router = Router();
-
-const isAdmin = (req) => ['admin_stark', 'admin', 'admin_concessionaria'].includes(req.user?.tipo);
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
   const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id } = req.query;
 
   let vendedor_id;
-  if (isAdmin(req)) {
+  if (isAdmin(req.user)) {
     if (qVendedor) {
       vendedor_id = qVendedor.includes(',') ? qVendedor.split(',') : qVendedor;
     }
@@ -35,12 +42,20 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     includeDadosSerializados: includeDadosSerializados === 'true',
   };
 
-  // Admin Concessionária: forçar filtro pela própria concessionária
-  if (req.user?.tipo === 'admin_concessionaria') {
+  // Restrição de visibilidade por perfil admin
+  if (isAdminConcessionaria(req.user)) {
     filters.concessionaria_id = req.user.concessionaria_id;
+  } else if (isAdminConcessionarias(req.user)) {
+    filters.canal_venda = ['Concessionária Nacional', 'Concessionária Internacional'];
+  } else if (isAdminCanalRepresentantes(req.user)) {
+    filters.canal_venda = ['Representante'];
+  } else if (isAdminCanalInterno(req.user)) {
+    filters.canal_venda = ['Vendedor Interno'];
+  } else if (isAdminComercioExterior(req.user)) {
+    filters.canal_venda = ['Concessionária Internacional'];
   }
 
-  console.log(`📋 [GET /propostas] user=${req.user.id} tipo=${req.user.tipo} filtros=${JSON.stringify({ vendedor_id, status, tipo, limit, offset, includeDadosSerializados, concessionaria_id: filters.concessionaria_id })}`);
+  console.log(`📋 [GET /propostas] user=${req.user.id} tipo=${req.user.tipo} filtros=${JSON.stringify({ vendedor_id, status, tipo, limit, offset, includeDadosSerializados, canal_venda: filters.canal_venda, concessionaria_id: filters.concessionaria_id })}`);
 
   const [data, total] = await Promise.all([svc.findAll(filters), svc.count(filters)]);
 

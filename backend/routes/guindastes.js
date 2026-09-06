@@ -8,7 +8,7 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/guindastes.Service');
-const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { requireAuth, requireAdminFull } = require('../middleware/auth');
 
 const router = Router();
 
@@ -23,12 +23,12 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
 }));
 
 // --- Estoque ---
-router.get('/estoque', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.get('/estoque', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const data = await svc.findAllEstoque();
   return res_.ok(res, data);
 }));
 
-router.patch('/:id/estoque', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.patch('/:id/estoque', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { quantidade_disponivel } = req.body;
   if (quantidade_disponivel === undefined || quantidade_disponivel === null) {
     return res_.badRequest(res, 'quantidade_disponivel é obrigatória');
@@ -67,7 +67,7 @@ router.get('/:id/precos-compra', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, precos);
 }));
 
-router.post('/:id/precos', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.post('/:id/precos', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { precos } = req.body;
   if (!Array.isArray(precos)) return res_.badRequest(res, 'precos deve ser um array');
 
@@ -75,7 +75,7 @@ router.post('/:id/precos', requireAuth, requireAdmin, asyncHandler(async (req, r
   return res_.ok(res, { message: 'Preços salvos com sucesso' });
 }));
 
-router.post('/:id/precos-compra', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.post('/:id/precos-compra', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { precos } = req.body;
   if (!Array.isArray(precos)) return res_.badRequest(res, 'precos deve ser um array');
 
@@ -95,7 +95,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   return res_.ok(res, data);
 }));
 
-router.post('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.post('/', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { erp_import_item_id } = req.body;
   if (!erp_import_item_id) return res_.badRequest(res, 'erp_import_item_id é obrigatório para novos guindastes');
   if (!/^\d+$/.test(String(erp_import_item_id))) return res_.badRequest(res, 'erp_import_item_id inválido');
@@ -103,13 +103,13 @@ router.post('/', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
   return res_.created(res, data);
 }));
 
-router.put('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.put('/:id', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const data = await svc.update(req.params.id, req.body);
   if (!data) return res_.notFound(res, 'Guindaste não encontrado');
   return res_.ok(res, data);
 }));
 
-router.delete('/:id', requireAuth, requireAdmin, asyncHandler(async (req, res) => {
+router.delete('/:id', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const deleted = await svc.remove(req.params.id);
   if (!deleted) return res_.notFound(res, 'Guindaste não encontrado');
   return res_.ok(res, { message: 'Guindaste removido' });

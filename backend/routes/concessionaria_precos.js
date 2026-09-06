@@ -7,24 +7,32 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/concessionariaPrecosService');
-const { requireAuth } = require('../middleware/auth');
+const { requireAuth, requireAdminFull } = require('../middleware/auth');
+const { isAdminFull, isAdminConcessionaria } = require('../utils/permissions');
 
 const router = Router();
 
+function requireAdminConcessionariaOwner(req, res, next) {
+  if (!req.user) return res.status(401).json({ success: false, error: 'Não autenticado' });
+  if (isAdminFull(req.user)) return next();
+  if (isAdminConcessionaria(req.user)) return next();
+  return res.status(403).json({ success: false, error: 'Acesso negado' });
+}
+
 // GET /api/concessionaria-precos/:concessionariaId
-router.get('/:concessionariaId', requireAuth, asyncHandler(async (req, res) => {
+router.get('/:concessionariaId', requireAuth, requireAdminConcessionariaOwner, asyncHandler(async (req, res) => {
   const data = await svc.findByConcessionaria(req.params.concessionariaId);
   return res_.ok(res, data);
 }));
 
 // GET /api/concessionaria-precos/:concessionariaId/:guindasteId
-router.get('/:concessionariaId/:guindasteId', requireAuth, asyncHandler(async (req, res) => {
+router.get('/:concessionariaId/:guindasteId', requireAuth, requireAdminConcessionariaOwner, asyncHandler(async (req, res) => {
   const preco = await svc.findOne(req.params.concessionariaId, req.params.guindasteId);
   return res_.ok(res, { preco_override: preco });
 }));
 
 // PUT /api/concessionaria-precos (upsert)
-router.put('/', requireAuth, asyncHandler(async (req, res) => {
+router.put('/', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { concessionaria_id, guindaste_id, preco_override, updated_by } = req.body;
 
   if (!concessionaria_id || !guindaste_id) {
