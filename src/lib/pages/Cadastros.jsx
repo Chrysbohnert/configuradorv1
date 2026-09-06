@@ -1,315 +1,677 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useOutletContext } from 'react-router-dom';
+/**
+ * Cadastros.jsx — Unified territorial registrations.
+ *
+ * Supports standalone (/cadastros) and embedded (inside Mapa Territorial tabs)
+ * modes via the `embedded` prop. List-first UX: search text, type filter,
+ * Novo Cadastro button. Form appears only when creating or editing.
+ * Two-column form + map for representante/concessionaria; cliente has no area map.
+ * No instaladora create/edit actions.
+ */
+
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
-import { getClientes } from '../../api/clientes';
-import { getConcessionarias } from '../../api/concessionarias';
-import { getTodosFretesAdmin } from '../../api/fretes';
-import { db } from '../../config/supabase';
+import { TerritorialMap } from '../../features/mapa/TerritorialMap.jsx';
+import { colorOf, TIPOS, UFS, temArea, tipoLabel } from '../../features/mapa/constants.js';
+import { ufOfMunicipio, normalizeCidade } from '../../features/mapa/utils.js';
+import { useMunicipioLists, useMunicipioNames } from '../../features/mapa/hooks.js';
+import { getCadastros, createCadastro, updateCadastro, deleteCadastro, saveAreas } from '../../api/territorial.js';
 import '../../styles/Cadastros.css';
 
-const TypeIcon = ({ type }) => {
-  const paths = {
-    clientes: <><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /></>,
-    representantes: <><circle cx="12" cy="8" r="4" /><path d="M4 21a8 8 0 0 1 16 0" /><path d="M16 3.5 18 2l2 2" /></>,
-    concessionarias: <><path d="M3 21h18" /><path d="M5 21V7l7-4 7 4v14" /><path d="M9 21v-6h6v6" /><path d="M9 10h.01M15 10h.01" /></>,
-    'vendedores-concessionaria': <><circle cx="9" cy="8" r="3.5" /><path d="M2.5 21a6.5 6.5 0 0 1 13 0" /><circle cx="17" cy="9" r="2.5" /><path d="M17 15a5 5 0 0 1 4.5 3" /></>,
-    instaladoras: <><path d="M3 21h18" /><path d="M5 21V9l7-5 7 5v12" /><path d="M9 21v-7h6v7" /><path d="m16 4 2-2 4 4-2 2" /></>,
-    guindastes: <><path d="M2 20h20" /><path d="M8 20V8l8-4v16" /><path d="M16 8l4-2" /><path d="M8 12h8" /><path d="M8 16h8" /></>,
-    'graficos-carga': <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /><polyline points="10 9 9 9 8 9" /></>
-  };
-  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[type]}</svg>;
-};
-
-const TYPES = [
-  { id: 'clientes', label: 'Clientes', path: '/clientes', profiles: ['admin', 'admin_concessionaria'] },
-  { id: 'representantes', label: 'Representantes', path: '/gerenciar-vendedores', profiles: ['admin'] },
-  { id: 'concessionarias', label: 'Concessionárias', path: '/concessionarias', profiles: ['admin'] },
-  { id: 'vendedores-concessionaria', label: 'Vendedores da Concessionária', path: '/gerenciar-vendedores', profiles: ['admin', 'admin_concessionaria'] },
-  { id: 'instaladoras', label: 'Instaladoras', path: '/gerenciar-fretes', profiles: ['admin'] }
-];
-
-const SPECIAL_TYPES = [
-  { id: 'guindastes', label: 'Guindastes', path: '/gerenciar-guindastes', profiles: ['admin', 'admin_concessionaria'] },
-  { id: 'graficos-carga', label: 'Gráficos de Carga', path: '/gerenciar-graficos-carga', profiles: ['admin'] }
-];
-
-const TABS = [{ id: 'todos', label: 'Todos' }, ...TYPES.map(({ id, label }) => ({ id, label }))];
-
-const normalizeCliente = (item) => ({
-  key: `clientes-${item.id}`,
-  id: item.id,
-  type: 'clientes',
-  typeLabel: 'Cliente',
-  name: item.nome || 'Sem nome',
-  city: item.cidade,
-  uf: item.uf,
-  contact: item.telefone || item.email,
-  secondaryContact: item.telefone && item.email ? item.email : '',
-  status: null,
-  path: '/clientes'
+const vazio = () => ({
+  id: '',
+  tipo: 'concessionaria',
+  nome: '',
+  documento: '',
+  contato: '',
+  email: '',
+  endereco: '',
+  uf: 'RS',
+  municipioId: '',
+  municipioNome: '',
+  municipios: [],
+  password: '',
 });
 
-const normalizeConcessionaria = (item) => ({
-  key: `concessionarias-${item.id}`,
-  id: item.id,
-  type: 'concessionarias',
-  typeLabel: 'Concessionária',
-  name: item.nome || 'Sem nome',
-  city: item.cidade,
-  uf: item.uf,
-  contact: item.telefone || item.email,
-  secondaryContact: item.telefone && item.email ? item.email : '',
-  status: item.ativo === false ? 'inativo' : 'ativo',
-  path: '/concessionarias'
-});
-
-const normalizeInstaladora = (item) => ({
-  key: `instaladoras-${item.id}`,
-  id: item.id,
-  type: 'instaladoras',
-  typeLabel: 'Instaladora',
-  name: item.oficina || 'Sem nome',
-  city: item.cidade,
-  uf: item.uf,
-  contact: null,
-  secondaryContact: '',
-  status: null,
-  path: '/gerenciar-fretes'
-});
-
-const normalizeUsuario = (item) => {
-  const concessionaria = item.tipo === 'vendedor_concessionaria';
-  const type = concessionaria ? 'vendedores-concessionaria' : 'representantes';
-  return {
-    key: `${type}-${item.id}`,
-    id: item.id,
-    type,
-    typeLabel: concessionaria ? 'Vendedor da Concessionária' : 'Representante',
-    name: item.nome || 'Sem nome',
-    city: item.cidade || item.regiao,
-    uf: item.uf,
-    contact: item.telefone || item.email,
-    secondaryContact: item.telefone && item.email ? item.email : '',
-    status: null,
-    path: '/gerenciar-vendedores'
-  };
-};
-
-export default function Cadastros() {
+export default function Cadastros({ embedded = false, onSwitchToMap }) {
   const { user } = useOutletContext();
-  const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('todos');
-  const [statusFilter, setStatusFilter] = useState('todos');
-  const [search, setSearch] = useState('');
-  const [records, setRecords] = useState([]);
+
+  const [view, setView] = useState('lista'); // 'lista' | 'form'
+  const [allCadastros, setAllCadastros] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showTypeSelector, setShowTypeSelector] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [apiError, setApiError] = useState('');
 
-  const availableTypes = useMemo(
-    () => TYPES.filter((type) => type.profiles.includes(user?.tipo)),
-    [user?.tipo]
+  const [form, setForm] = useState(vazio());
+  const [search, setSearch] = useState('');
+  const [filtroTipo, setFiltroTipo] = useState('todos');
+  const [geoFiltro, setGeoFiltro] = useState('');
+
+  const [ufSel, setUfSel] = useState('RS');
+  const [busca, setBusca] = useState('');
+  const [munSel, setMunSel] = useState('');
+  const [mapUf, setMapUf] = useState('RS');
+
+  const { listByUf, loadList, loadingList } = useMunicipioLists();
+
+  useEffect(() => { if (form.uf) loadList(form.uf); }, [form.uf, loadList]);
+  useEffect(() => { if (ufSel) loadList(ufSel); }, [ufSel, loadList]);
+
+  const listaBase = useMemo(
+    () => listByUf[form.uf?.toUpperCase()] || [],
+    [listByUf, form.uf]
   );
-
-  const availableSpecialTypes = useMemo(
-    () => SPECIAL_TYPES.filter((type) => type.profiles.includes(user?.tipo)),
-    [user?.tipo]
+  const listaAtuacao = useMemo(
+    () => listByUf[ufSel?.toUpperCase()] || [],
+    [listByUf, ufSel]
   );
 
   useEffect(() => {
-    if (!user) return;
-    let active = true;
+    if (form.municipioId || !form.municipioNome || !listaBase.length) return;
+    const municipio = listaBase.find((item) => normalizeCidade(item.nome) === normalizeCidade(form.municipioNome));
+    if (municipio) setForm((current) => ({ ...current, municipioId: String(municipio.id) }));
+  }, [form.municipioId, form.municipioNome, listaBase]);
 
-    const loadRecords = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const usersFilter = user.tipo === 'admin_concessionaria'
-          ? { concessionaria_id: user.concessionaria_id }
-          : {};
-        const requests = [getClientes(), db.getUsers(usersFilter)];
-        if (user.tipo === 'admin') requests.push(getConcessionarias(true), getTodosFretesAdmin());
-        const [clientes, usuarios, concessionarias = [], instaladoras = []] = await Promise.all(requests);
-        if (!active) return;
-        const usuariosPermitidos = usuarios.filter((item) => user.tipo === 'admin_concessionaria'
-          ? item.tipo === 'vendedor_concessionaria'
-          : ['vendedor', 'vendedor_exterior', 'vendedor_concessionaria'].includes(item.tipo));
-        setRecords([
-          ...clientes.map(normalizeCliente),
-          ...usuariosPermitidos.map(normalizeUsuario),
-          ...concessionarias.map(normalizeConcessionaria),
-          ...instaladoras.map(normalizeInstaladora)
-        ]);
-      } catch (loadError) {
-        if (active) setError(loadError.message || 'Não foi possível carregar os cadastros.');
-      } finally {
-        if (active) setLoading(false);
-      }
-    };
+  const selectedUfs = useMemo(
+    () => [...new Set(form.municipios.map(ufOfMunicipio).filter(Boolean))],
+    [form.municipios]
+  );
+  const { names: selectedNames } = useMunicipioNames(selectedUfs);
 
-    loadRecords();
-    return () => { active = false; };
-  }, [user]);
+  const nomesAtuacao = useMemo(() => {
+    const m = new Map(selectedNames);
+    listaAtuacao.forEach((x) => m.set(String(x.id), x.nome));
+    listaBase.forEach((x) => m.set(String(x.id), x.nome));
+    return m;
+  }, [selectedNames, listaAtuacao, listaBase]);
 
-  const visibleTabs = TABS.filter(
-    (tab) => tab.id === 'todos' || availableTypes.some((type) => type.id === tab.id)
+  const opcoes = useMemo(() => {
+    const q = normalizeCidade(busca.trim());
+    return listaAtuacao
+      .filter((m) => !form.municipios.includes(String(m.id)))
+      .filter((m) => (q ? normalizeCidade(m.nome).startsWith(q) : true))
+      .slice(0, 300);
+  }, [listaAtuacao, busca, form.municipios]);
+
+  const fetchAll = useCallback(async () => {
+    setLoading(true);
+    setApiError('');
+    try {
+      const data = await getCadastros();
+      setAllCadastros(data || []);
+    } catch (err) {
+      setApiError(err.message || 'Erro ao carregar cadastros.');
+      console.error('Erro ao carregar cadastros:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchAll(); }, [fetchAll]);
+
+  const registros = useMemo(() => {
+    let list = filtroTipo === 'todos'
+      ? allCadastros
+      : allCadastros.filter((c) => c.tipo === filtroTipo);
+
+    const q = normalizeCidade(search.trim());
+    if (q) {
+      list = list.filter(
+        (c) =>
+          normalizeCidade(c.nome).includes(q) ||
+          normalizeCidade(c.documento || '').includes(q) ||
+          normalizeCidade(c.cidade || '').includes(q)
+      );
+    }
+
+    if (geoFiltro) {
+      list = list.filter(
+        (c) =>
+          c.uf === geoFiltro ||
+          (c.municipios || []).some((code) => ufOfMunicipio(code) === geoFiltro)
+      );
+    }
+
+    return list;
+  }, [allCadastros, filtroTipo, search, geoFiltro]);
+
+  const pares = useMemo(
+    () => allCadastros.filter((c) => c.tipo === form.tipo && temArea(c.tipo)),
+    [allCadastros, form.tipo]
   );
 
-  const filteredRecords = records.filter((record) => {
-    const matchesType = activeTab === 'todos' || record.type === activeTab;
-    const matchesStatus = statusFilter === 'todos' || record.status === statusFilter;
-    const term = search.trim().toLocaleLowerCase('pt-BR');
-    const searchable = `${record.typeLabel} ${record.name} ${record.city || ''} ${record.uf || ''} ${record.contact || ''} ${record.secondaryContact || ''}`;
-    return matchesType && matchesStatus && (!term || searchable.toLocaleLowerCase('pt-BR').includes(term));
-  });
+  const cores = useMemo(() => {
+    const m = new Map();
+    pares.forEach((c, i) => m.set(c.id, c.cor || colorOf(i)));
+    return m;
+  }, [pares]);
 
-  const selectTab = (tab) => {
-    setActiveTab(tab);
-    if (tab !== 'todos' && tab !== 'concessionarias') setStatusFilter('todos');
-  };
+  const paint = useMemo(() => {
+    const m = new Map();
+    pares.forEach((c) => {
+      if (c.id === form.id) return;
+      const color = cores.get(c.id) || colorOf(0);
+      (c.municipios || []).forEach((code) =>
+        m.set(code, { color, parceiroId: c.id, parceiroNome: c.nome })
+      );
+    });
+    return m;
+  }, [pares, cores, form.id]);
 
-  const openCadastro = (type) => {
-    setShowTypeSelector(false);
-    navigate(type.path);
-  };
+  const donoPorMunicipio = useMemo(() => {
+    const m = new Map();
+    pares.forEach((c) => {
+      if (c.id === form.id) return;
+      (c.municipios || []).forEach((code) => m.set(code, c));
+    });
+    return m;
+  }, [pares, form.id]);
+
+  function set(k, v) {
+    setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  function resolverConflito(code) {
+    const dono = donoPorMunicipio.get(code);
+    if (!dono) return true;
+    const nome = nomesAtuacao.get(code) || code;
+    return window.confirm(
+      `O municipio ${nome} ja pertence a ${dono.nome}.\n\nDeseja transferir para ${form.nome || 'este cadastro'}?`
+    );
+  }
+
+  function alternarMunicipio(code) {
+    if (form.municipios.includes(code)) {
+      setForm((f) => ({ ...f, municipios: f.municipios.filter((c) => c !== code) }));
+      return;
+    }
+    if (!resolverConflito(code)) return;
+    setForm((f) => ({ ...f, municipios: [...f.municipios, code] }));
+  }
+
+  function adicionarMunicipio() {
+    if (!munSel) return;
+    if (form.municipios.includes(munSel)) return;
+    if (!resolverConflito(munSel)) return;
+    setForm((f) => ({ ...f, municipios: [...f.municipios, munSel] }));
+    setMunSel('');
+  }
+
+  function novo() {
+    setForm(vazio());
+    setUfSel('RS');
+    setMapUf('RS');
+    setBusca('');
+    setMunSel('');
+    setView('form');
+  }
+
+  function editar(c) {
+    const munId = c.municipioId || '';
+    setForm({
+      id: c.id,
+      tipo: c.tipo,
+      nome: c.nome,
+      documento: c.documento || '',
+      contato: c.contato || '',
+      email: c.email || '',
+      endereco: c.endereco || '',
+      uf: c.uf || 'RS',
+      municipioId: munId,
+      municipioNome: c.municipioNome || c.cidade || '',
+      municipios: c.municipios || [],
+      password: '',
+    });
+    setUfSel(c.uf || 'RS');
+    setMapUf(c.uf || 'RS');
+    setBusca('');
+    setMunSel('');
+    setView('form');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function excluir(c) {
+    if (!window.confirm(`Deseja realmente excluir ${c.nome}?`)) return;
+    try {
+      await deleteCadastro(c.tipo, c.id);
+      await fetchAll();
+    } catch (err) {
+      alert(err.message || 'Erro ao excluir');
+    }
+  }
+
+  async function salvar(e) {
+    e.preventDefault();
+    if (!form.nome.trim()) return;
+    setSaving(true);
+    try {
+      let entityId = form.id;
+      const body = {
+        nome: form.nome,
+        documento: form.documento,
+        contato: form.contato,
+        email: form.email,
+        endereco: form.endereco,
+        cidade: form.municipioNome || '',
+        uf: form.uf,
+        cor: form.cor || undefined,
+      };
+
+      if (form.id) {
+        await updateCadastro(form.tipo, form.id, body);
+      } else {
+        if (form.tipo === 'representante' && form.password) {
+          body.password = form.password;
+        }
+        const result = await createCadastro({ tipo: form.tipo, ...body });
+        entityId = result.id;
+        setForm((current) => ({ ...current, id: entityId }));
+      }
+
+      if (temArea(form.tipo) && entityId) {
+        const areaItems = form.municipios.map((code) => ({
+          codigo_ibge: code,
+          nome: nomesAtuacao.get(code) || code,
+          uf: ufOfMunicipio(code),
+        }));
+
+        try {
+          await saveAreas(form.tipo, entityId, areaItems, { transfer: false });
+        } catch (err) {
+          if (err.status === 409) {
+            const shouldTransfer = window.confirm(
+              `${err.message || 'Conflito de areas'}\n\nDeseja transferir os municipios conflitantes?`
+            );
+            if (shouldTransfer) {
+              await saveAreas(form.tipo, entityId, areaItems, { transfer: true });
+            } else {
+              throw new Error('Transferencia cancelada. O cadastro foi mantido aberto para revisao.');
+            }
+          } else {
+            throw err;
+          }
+        }
+      }
+
+      setForm(vazio());
+      setView('lista');
+      await fetchAll();
+      if (onSwitchToMap) onSwitchToMap();
+    } catch (err) {
+      console.error('Erro ao salvar:', err);
+      alert(err.message || 'Erro ao salvar cadastro');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function cancelar() {
+    setForm(vazio());
+    setView('lista');
+  }
 
   if (!user) return null;
 
-  return (
-    <div className="cadastros-page">
-      <UnifiedHeader
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title="Cadastros"
-        subtitle="Central de cadastros administrativos"
-      />
+  const isCreating = !form.id;
+  const showPassword = isCreating && form.tipo === 'representante';
+  const showAreas = temArea(form.tipo);
 
-      <main className="cadastros-container">
-        <div className="cadastros-heading">
-          <div className="cadastros-heading-copy">
-            <span className="cadastros-eyebrow">Gestão centralizada</span>
-            <h1>Cadastros</h1>
-            <p>Consulte os registros disponíveis e acesse os fluxos atuais de manutenção.</p>
-          </div>
-          <button className="cadastros-new-button" onClick={() => setShowTypeSelector(true)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M12 5v14M5 12h14" /></svg>
-            Novo Cadastro
-          </button>
-        </div>
-
-        {availableSpecialTypes.length > 0 && (
-          <section className="cadastros-special-shell" aria-label="Módulos especiais">
-            <div className="cadastros-list-heading">
-              <span>Módulos</span>
-            </div>
-            <div className="cadastros-list">
-              {availableSpecialTypes.map((type) => (
-                <button
-                  key={type.id}
-                  className={`cadastro-card cadastro-card--${type.id}`}
-                  onClick={() => navigate(type.path)}
-                >
-                  <span className="cadastro-card-accent" />
-                  <span className="cadastro-card-icon"><TypeIcon type={type.id} /></span>
-                  <span className="cadastro-card-content">
-                    <small>{type.label}</small>
-                    <strong>Gerenciar Guindastes</strong>
-                    <span>Acessar o módulo de guindastes</span>
-                  </span>
-                  <span className="cadastro-card-action">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+  if (view === 'lista') {
+    return (
+      <div className={`cadastros-page ${embedded ? 'cadastros-embedded' : ''}`}>
+        {!embedded && (
+          <UnifiedHeader
+            showBackButton={false}
+            showSupportButton={true}
+            showUserInfo={true}
+            user={user}
+            title="Cadastros"
+            subtitle="Painel unificado para perfis da operacao"
+          />
         )}
 
-        <section className="cadastros-toolbar" aria-label="Filtros de cadastros">
-          <div className="cadastros-tabs" role="tablist">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab.id}
-                className={activeTab === tab.id ? 'active' : ''}
-                onClick={() => selectTab(tab.id)}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-              >
-                {tab.label}
-                {tab.id === 'todos' && <span>{records.length}</span>}
-              </button>
-            ))}
+        <div className="cadastros-container">
+          <div className="cadastros-list-header">
+            <h1 className="cadastros-list-title">Cadastros</h1>
+            <button type="button" className="cadastros-new-btn" onClick={novo}>
+              + Novo Cadastro
+            </button>
           </div>
-          <div className="cadastros-toolbar-actions">
-            {(activeTab === 'todos' || activeTab === 'concessionarias') && user.tipo === 'admin' && (
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filtrar por status">
-                <option value="todos">Todos os status</option>
-                <option value="ativo">Ativos</option>
-                <option value="inativo">Inativos</option>
-              </select>
-            )}
-            <label className="cadastros-search">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" /></svg>
-              <input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar registros" />
-            </label>
+
+          <div className="cadastros-list-toolbar">
+            <input
+              type="text"
+              className="cadastros-input cadastros-search"
+              placeholder="Buscar por nome, documento ou cidade..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <select
+              className="cadastros-input cadastros-tipo-filter"
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value)}
+            >
+              <option value="todos">Todos os tipos</option>
+              {TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+            <select
+              className="cadastros-input cadastros-geo-filter"
+              value={geoFiltro}
+              onChange={(e) => setGeoFiltro(e.target.value)}
+            >
+              <option value="">Todo o Brasil</option>
+              {UFS.map((u) => (
+                <option key={u.sigla} value={u.sigla}>{u.sigla}</option>
+              ))}
+            </select>
           </div>
-        </section>
 
-        <div className="cadastros-list-heading">
-          <span>{activeTab === 'todos' ? 'Todos os cadastros' : visibleTabs.find((tab) => tab.id === activeTab)?.label}</span>
-          <small>{filteredRecords.length} {filteredRecords.length === 1 ? 'registro' : 'registros'}</small>
-        </div>
+          {apiError && <div className="cadastros-api-error">{apiError}</div>}
 
-        <section className="cadastros-table-shell" aria-live="polite">
           {loading ? (
-            <div className="cadastros-feedback"><span className="cadastros-spinner" /><strong>Carregando cadastros...</strong></div>
-          ) : error ? (
-            <div className="cadastros-feedback cadastros-feedback--error"><strong>Não foi possível carregar os dados</strong><span>{error}</span></div>
-          ) : filteredRecords.length === 0 ? (
-            <div className="cadastros-feedback"><span className="cadastros-empty-icon"><TypeIcon type="clientes" /></span><strong>Nenhum cadastro encontrado</strong><span>Ajuste a busca ou os filtros selecionados.</span></div>
+            <div className="cadastros-feedback">
+              <span className="cadastros-spinner" />
+              <strong>Carregando...</strong>
+            </div>
           ) : (
-            <div className="cadastros-table-scroll">
-              <table className="cadastros-table">
-                <thead><tr><th>Tipo</th><th>Nome</th><th>Cidade/UF</th><th>Contato</th><th>Status</th><th><span className="sr-only">Ações</span></th></tr></thead>
-                <tbody>
-                  {filteredRecords.map((record) => (
-                    <tr key={record.key}>
-                      <td><span className={`cadastro-type-badge cadastro-card--${record.type}`}><span className="cadastro-type-icon"><TypeIcon type={record.type} /></span>{record.typeLabel}</span></td>
-                      <td><strong className="cadastro-record-name">{record.name}</strong></td>
-                      <td>{record.city || record.uf ? <span>{record.city || '—'}{record.uf ? ` / ${record.uf}` : ''}</span> : <span className="cadastro-muted">Não informado</span>}</td>
-                      <td><span className="cadastro-contact">{record.contact || 'Não informado'}{record.secondaryContact && <small>{record.secondaryContact}</small>}</span></td>
-                      <td>{record.status ? <span className={`cadastro-status cadastro-status--${record.status}`}>{record.status === 'ativo' ? 'Ativo' : 'Inativo'}</span> : <span className="cadastro-muted">—</span>}</td>
-                      <td><button className="cadastro-edit-button" onClick={() => navigate(record.path)}>Editar <span>›</span></button></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <ul className="cadastros-record-list">
+              {registros.map((c) => (
+                <li key={`${c.tipo}-${c.id}`} className="cadastros-record-item">
+                  <div className="cadastros-record-info">
+                    <p className="cadastros-record-name">{c.nome}</p>
+                    <p className="cadastros-record-meta">
+                      {tipoLabel(c.tipo)} · {c.municipioNome || c.cidade || ''}/{c.uf}
+                      {temArea(c.tipo) ? ` · ${(c.municipios || []).length} municipio(s)` : ''}
+                    </p>
+                  </div>
+                  <div className="cadastros-record-actions">
+                    <button onClick={() => editar(c)} className="cadastros-edit-btn">Editar</button>
+                    <button onClick={() => excluir(c)} className="cadastros-delete-btn">Excluir</button>
+                  </div>
+                </li>
+              ))}
+              {!registros.length && (
+                <li className="cadastros-empty-row">Nenhum cadastro encontrado.</li>
+              )}
+            </ul>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={`cadastros-page ${embedded ? 'cadastros-embedded' : ''}`}>
+      {!embedded && (
+        <UnifiedHeader
+          showBackButton={false}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={user}
+          title="Cadastros"
+          subtitle="Painel unificado para perfis da operacao"
+        />
+      )}
+
+      <div className="cadastros-two-col">
+        <form onSubmit={salvar} className="cadastros-form-card">
+          <div className="cadastros-form-header">
+            <h1 className="cadastros-form-title">{form.id ? 'Editar cadastro' : 'Novo cadastro'}</h1>
+            <button type="button" className="cadastros-back-btn" onClick={cancelar}>
+              &larr; Voltar para lista
+            </button>
+          </div>
+
+          <div className="cadastros-field">
+            <span className="cadastros-label">Tipo de perfil</span>
+            <select
+              value={form.tipo}
+              onChange={(e) => set('tipo', e.target.value)}
+              className="cadastros-input"
+              required
+              disabled={Boolean(form.id)}
+            >
+              {TIPOS.map((t) => (
+                <option key={t.value} value={t.value}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="cadastros-row">
+            <div className="cadastros-field">
+              <span className="cadastros-label">Nome / Razao social</span>
+              <input
+                className="cadastros-input"
+                value={form.nome}
+                onChange={(e) => set('nome', e.target.value)}
+                required
+              />
+            </div>
+            <div className="cadastros-field">
+              <span className="cadastros-label">CNPJ / CPF</span>
+              <input
+                className="cadastros-input"
+                value={form.documento}
+                onChange={(e) => set('documento', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="cadastros-row">
+            <div className="cadastros-field">
+              <span className="cadastros-label">Contato</span>
+              <input
+                className="cadastros-input"
+                value={form.contato}
+                onChange={(e) => set('contato', e.target.value)}
+              />
+            </div>
+            <div className="cadastros-field">
+              <span className="cadastros-label">E-mail</span>
+              <input
+                type="email"
+                className="cadastros-input"
+                value={form.email}
+                onChange={(e) => set('email', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="cadastros-field">
+            <span className="cadastros-label">Endereco</span>
+            <input
+              className="cadastros-input"
+              value={form.endereco}
+              onChange={(e) => set('endereco', e.target.value)}
+            />
+          </div>
+
+          {showPassword && (
+            <div className="cadastros-field">
+              <span className="cadastros-label">Senha (obrigatoria para novo usuario)</span>
+              <input
+                type="password"
+                className="cadastros-input"
+                value={form.password}
+                onChange={(e) => set('password', e.target.value)}
+                minLength={6}
+                required={isCreating && form.tipo === 'representante'}
+              />
             </div>
           )}
-        </section>
-      </main>
 
-      {showTypeSelector && (
-        <div className="cadastros-modal-overlay" onClick={() => setShowTypeSelector(false)}>
-          <div className="cadastros-modal" role="dialog" aria-modal="true" aria-labelledby="cadastros-modal-title" onClick={(event) => event.stopPropagation()}>
-            <div className="cadastros-modal-header">
-              <div><span className="cadastros-eyebrow">Novo cadastro</span><h2 id="cadastros-modal-title">O que deseja cadastrar?</h2><p>Selecione um tipo para acessar o fluxo correspondente.</p></div>
-              <button className="cadastros-modal-close" onClick={() => setShowTypeSelector(false)} aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m6 6 12 12M18 6 6 18" /></svg></button>
+          <div className="cadastros-row cadastros-row-uf">
+            <div className="cadastros-field" style={{ maxWidth: 120 }}>
+              <span className="cadastros-label">Estado</span>
+              <select
+                className="cadastros-input"
+                value={form.uf}
+                onChange={(e) => {
+                  set('uf', e.target.value);
+                  set('municipioId', '');
+                  set('municipioNome', '');
+                }}
+              >
+                {UFS.map((u) => (
+                  <option key={u.sigla} value={u.sigla}>{u.sigla}</option>
+                ))}
+              </select>
             </div>
-            <div className="cadastros-type-list">
-              {availableTypes.map((type) => (
-                <button className={`cadastro-type cadastro-card--${type.id}`} key={type.id} onClick={() => openCadastro(type)}>
-                  <span className="cadastro-card-icon"><TypeIcon type={type.id} /></span>
-                  <span><strong>{type.label}</strong><small>Abrir módulo existente</small></span>
-                  <svg className="cadastro-type-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6" /></svg>
-                </button>
-              ))}
+            <div className="cadastros-field" style={{ flex: 1 }}>
+              <span className="cadastros-label">Cidade</span>
+              <select
+                className="cadastros-input"
+                value={form.municipioId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  set('municipioId', id);
+                  const mun = listaBase.find((m) => String(m.id) === id);
+                  set('municipioNome', mun?.nome || '');
+                }}
+                required
+              >
+                <option value="">{loadingList ? 'Carregando...' : 'Selecione a cidade'}</option>
+                {listaBase.map((m) => (
+                  <option key={m.id} value={String(m.id)}>{m.nome}</option>
+                ))}
+              </select>
             </div>
           </div>
+
+          {showAreas && (
+            <div className="cadastros-area-box">
+              <h2 className="cadastros-area-title">Municipios de atuacao</h2>
+
+              <div className="cadastros-row cadastros-row-uf">
+                <div className="cadastros-field" style={{ maxWidth: 110 }}>
+                  <span className="cadastros-label">Estado</span>
+                  <select
+                    className="cadastros-input"
+                    value={ufSel}
+                    onChange={(e) => {
+                      setUfSel(e.target.value);
+                      setMapUf(e.target.value);
+                      setMunSel('');
+                      setBusca('');
+                    }}
+                  >
+                    {UFS.map((u) => (
+                      <option key={u.sigla} value={u.sigla}>{u.sigla}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="cadastros-field" style={{ flex: 1 }}>
+                  <span className="cadastros-label">Buscar municipio</span>
+                  <input
+                    className="cadastros-input"
+                    placeholder="Ex.: San..."
+                    value={busca}
+                    onChange={(e) => setBusca(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="cadastros-area-add-row">
+                <select
+                  className="cadastros-input"
+                  value={munSel}
+                  onChange={(e) => setMunSel(e.target.value)}
+                >
+                  <option value="">{loadingList ? 'Carregando...' : `Municipios de ${ufSel}`}</option>
+                  {opcoes.map((m) => (
+                    <option key={m.id} value={String(m.id)}>{m.nome}</option>
+                  ))}
+                </select>
+                <button type="button" className="cadastros-add-btn" onClick={adicionarMunicipio}>
+                  Adicionar
+                </button>
+              </div>
+
+              <div className="cadastros-chips">
+                {form.municipios.length === 0 && (
+                  <p className="mapa-empty-text">Nenhum municipio na cesta ainda.</p>
+                )}
+                {form.municipios.map((code) => (
+                  <span key={code} className="cadastros-chip">
+                    {nomesAtuacao.get(code) || code}
+                    <span className="cadastros-chip-uf">{ufOfMunicipio(code)}</span>
+                    <button
+                      type="button"
+                      aria-label="Remover"
+                      onClick={() => setForm((f) => ({ ...f, municipios: f.municipios.filter((c) => c !== code) }))}
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="cadastros-form-actions">
+            <button type="submit" className="cadastros-submit-btn" disabled={saving}>
+              {saving ? 'Salvando...' : form.id ? 'Salvar alteracoes' : 'Cadastrar'}
+            </button>
+            <button type="button" className="cadastros-cancel-btn" onClick={cancelar}>
+              Cancelar
+            </button>
+          </div>
+        </form>
+
+        <div className="cadastros-right-col">
+          {showAreas && (
+            <section className="cadastros-map-section">
+              <div className="cadastros-map-header">
+                <h2 className="cadastros-map-title">
+                  Selecionar municipios no mapa
+                  {form.nome ? <span className="cadastros-map-nome"> · {form.nome}</span> : null}
+                </h2>
+                <span className="cadastros-map-count">
+                  {form.municipios.length} selecionado(s) · clique para adicionar/remover
+                </span>
+              </div>
+              <div className="cadastros-map-container">
+                <TerritorialMap
+                  focusUf={mapUf}
+                  onFocusUf={(uf) => {
+                    setMapUf(uf);
+                    if (uf) setUfSel(uf);
+                  }}
+                  paint={paint}
+                  pins={[]}
+                  onSelectRegion={() => {}}
+                  extraUfs={mapUf ? [mapUf] : []}
+                  selectable
+                  selected={form.municipios}
+                  onToggleMunicipio={alternarMunicipio}
+                />
+              </div>
+              <div className="cadastros-map-legend">
+                <span className="cadastros-legend-item">
+                  <span
+                    className="cadastros-legend-dot"
+                    style={{ backgroundColor: 'var(--erp-primary, #ffc928)' }}
+                  />
+                  {form.nome || 'Cadastro atual'}
+                </span>
+                {pares
+                  .filter((c) => c.id !== form.id && (c.municipios || []).length > 0)
+                  .map((c) => (
+                    <span key={c.id} className="cadastros-legend-item cadastros-legend-other">
+                      <span
+                        className="cadastros-legend-dot"
+                        style={{ backgroundColor: cores.get(c.id), opacity: 0.8 }}
+                      />
+                      {c.nome} ({(c.municipios || []).length})
+                    </span>
+                  ))}
+              </div>
+            </section>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -29,6 +29,7 @@ const precificacaoCondicoesRouter = require('./precificacaoCondicoes');
 const precificacaoSimuladorRouter = require('./precificacaoSimulador');
 const precificacaoParametrosRouter = require('./precificacaoParametros');
 const erpImportRouter       = require('./erp_import');
+const territorialRouter     = require('./territorial');
 
 const router = Router();
 
@@ -53,5 +54,6 @@ router.use('/precificacao-condicoes', precificacaoCondicoesRouter);
 router.use('/precificacao-simulador', precificacaoSimuladorRouter);
 router.use('/precificacao-parametros', precificacaoParametrosRouter);
 router.use('/erp-import',      erpImportRouter);
+router.use('/territorial',    territorialRouter);
 
 module.exports = router;

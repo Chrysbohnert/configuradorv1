@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
+import { getAreas, saveAreas } from '../../api/areas';
+import AreaSelector from '../../features/mapa/AreaSelector';
 import '../../styles/Concessionarias.css';
 
 const Concessionarias = () => {
@@ -23,6 +25,8 @@ const Concessionarias = () => {
   const [showModal, setShowModal] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedAreas, setSelectedAreas] = useState([]);
+  const [areaError, setAreaError] = useState('');
   const [formData, setFormData] = useState({
     nome: '',
     regiao_preco: '',
@@ -69,6 +73,8 @@ const Concessionarias = () => {
     setShowModal(false);
     setIsEditMode(false);
     setEditingId(null);
+    setSelectedAreas([]);
+    setAreaError('');
     setFormData({
       nome: '',
       regiao_preco: '',
@@ -87,6 +93,8 @@ const Concessionarias = () => {
   const handleOpenCreate = () => {
     setIsEditMode(false);
     setEditingId(null);
+    setSelectedAreas([]);
+    setAreaError('');
     setFormData({
       nome: '',
       regiao_preco: '',
@@ -103,7 +111,7 @@ const Concessionarias = () => {
     setShowModal(true);
   };
 
-  const handleOpenEdit = (c) => {
+  const handleOpenEdit = async (c) => {
     setIsEditMode(true);
     setEditingId(c.id);
     setFormData({
@@ -120,6 +128,13 @@ const Concessionarias = () => {
       admin_senha: ''
     });
     setShowModal(true);
+    setAreaError('');
+    try {
+      setSelectedAreas(await getAreas('concessionaria', c.id));
+    } catch (error) {
+      setSelectedAreas([]);
+      setAreaError(error.message || 'Erro ao carregar área de atuação.');
+    }
   };
 
   const handleToggleAtivo = async (c) => {
@@ -150,6 +165,22 @@ const Concessionarias = () => {
       alert(`Erro ao ${acao}: ${e?.message || 'erro desconhecido'}${detailsMsg}${hintMsg}`);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const saveConcessionariaAreas = async (id, transfer = false) => {
+    try {
+      await saveAreas('concessionaria', id, selectedAreas, { transfer });
+    } catch (error) {
+      if (error.status === 409 && !transfer) {
+        const conflicts = error.data?.conflicts || [];
+        const owners = [...new Set(conflicts.map((item) => item.owner?.nome).filter(Boolean))];
+        const detail = owners.length ? `\nConcessionárias afetadas: ${owners.join(', ')}` : '';
+        if (window.confirm(`${error.message}${detail}\n\nDeseja transferir esses municípios?`)) {
+          return saveConcessionariaAreas(id, true);
+        }
+      }
+      throw error;
     }
   };
 
@@ -186,6 +217,7 @@ const Concessionarias = () => {
           desconto_base: formData.desconto_base !== '' ? Number(formData.desconto_base) : null,
           desconto_compra: formData.desconto_compra !== '' ? Number(formData.desconto_compra) : null
         });
+        await saveConcessionariaAreas(editingId);
 
         handleCloseModal();
         await loadConcessionarias();
@@ -209,6 +241,8 @@ const Concessionarias = () => {
       if (!concessionariaCriada?.id) {
         throw new Error('Falha ao criar concessionária: ID não retornado pelo banco.');
       }
+
+      await saveConcessionariaAreas(concessionariaId);
 
       await db.createUser({
         nome: formData.admin_nome.trim(),
@@ -323,7 +357,7 @@ const Concessionarias = () => {
           onClick={handleCloseModal}
         >
           <div
-            style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', width: '100%', maxWidth: '600px', maxHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
+            style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', width: '100%', maxWidth: '1000px', maxHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
@@ -399,6 +433,17 @@ const Concessionarias = () => {
                       </div>
                     </>
                   )}
+                  <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Área de atuação</div>
+                    {areaError && <div className="area-selector-error">{areaError}</div>}
+                    <AreaSelector
+                      tipo="concessionaria"
+                      entidadeId={editingId}
+                      areas={selectedAreas}
+                      onChange={setSelectedAreas}
+                      disabled={isLoading}
+                    />
+                  </div>
                 </div>
               </div>
 

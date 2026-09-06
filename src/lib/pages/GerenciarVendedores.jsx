@@ -5,7 +5,7 @@ import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getPropostas } from '../../api/propostas';
 import { getAreas, saveAreas } from '../../api/areas';
-import { useMapData } from '../../features/mapa/useMapData';
+import AreaSelector from '../../features/mapa/AreaSelector';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarVendedores.css';
 
@@ -30,12 +30,10 @@ const GerenciarVendedores = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [areaModal, setAreaModal] = useState({ open: false, vendedor: null });
-  const [selectedUF, setSelectedUF] = useState('');
-  const [selectedAreas, setSelectedAreas] = useState(new Map());
+  const [selectedAreas, setSelectedAreas] = useState([]);
   const [areaLoading, setAreaLoading] = useState(false);
   const [areaSaving, setAreaSaving] = useState(false);
   const [areaError, setAreaError] = useState('');
-  const { states, loadMunicipios, municipiosByUF, loadingMunicipios } = useMapData();
 
   const [formData, setFormData] = useState({
     nome: '',
@@ -332,76 +330,41 @@ const GerenciarVendedores = () => {
     }
   };
 
-  const availableUFs = useMemo(() => (states?.features || [])
-    .map((feature) => feature.properties?.sigla_uf)
-    .filter(Boolean)
-    .sort(), [states]);
-  const currentMunicipios = municipiosByUF[selectedUF]?.features || [];
-  const selectedInUF = currentMunicipios.filter((feature) => selectedAreas.has(String(feature.properties?.codigo_ibge))).length;
-
   const handleOpenAreas = async (vendedor) => {
     setAreaModal({ open: true, vendedor });
     setAreaLoading(true);
     setAreaError('');
-    setSelectedUF('');
     try {
-      const areas = await getAreas('representante', vendedor.id);
-      setSelectedAreas(new Map((areas || []).map((area) => [String(area.codigo_ibge), {
-        codigo_ibge: String(area.codigo_ibge),
-        nome: area.nome,
-        uf: area.uf
-      }])));
+      setSelectedAreas(await getAreas('representante', vendedor.id));
     } catch (err) {
       setAreaError(err.message || 'Erro ao carregar área de atuação.');
-      setSelectedAreas(new Map());
+      setSelectedAreas([]);
     } finally {
       setAreaLoading(false);
     }
   };
 
-  const handleSelectUF = async (uf) => {
-    setSelectedUF(uf);
-    setAreaError('');
-    if (uf) await loadMunicipios(uf);
-  };
-
-  const handleToggleMunicipio = (feature) => {
-    const { codigo_ibge, nome, sigla_uf } = feature.properties || {};
-    const key = String(codigo_ibge);
-    setSelectedAreas((current) => {
-      const next = new Map(current);
-      if (next.has(key)) next.delete(key);
-      else next.set(key, { codigo_ibge: key, nome, uf: sigla_uf || selectedUF });
-      return next;
-    });
-  };
-
-  const handleToggleAllMunicipios = () => {
-    setSelectedAreas((current) => {
-      const next = new Map(current);
-      const allSelected = currentMunicipios.length > 0 && selectedInUF === currentMunicipios.length;
-      currentMunicipios.forEach((feature) => {
-        const { codigo_ibge, nome, sigla_uf } = feature.properties || {};
-        const key = String(codigo_ibge);
-        if (allSelected) next.delete(key);
-        else next.set(key, { codigo_ibge: key, nome, uf: sigla_uf || selectedUF });
-      });
-      return next;
-    });
-  };
-
-  const handleSaveAreas = async () => {
+  const handleSaveAreas = async (transfer = false) => {
     if (!areaModal.vendedor) return;
     setAreaSaving(true);
     setAreaError('');
     try {
-      const areas = Array.from(selectedAreas.values());
-      await saveAreas('representante', areaModal.vendedor.id, areas);
+      const areas = selectedAreas;
+      await saveAreas('representante', areaModal.vendedor.id, areas, { transfer });
       setVendedores((current) => current.map((vendedor) => vendedor.id === areaModal.vendedor.id
         ? { ...vendedor, areaResumo: resumirAreas(areas) }
         : vendedor));
       setAreaModal({ open: false, vendedor: null });
     } catch (err) {
+      if (err.status === 409 && !transfer) {
+        const conflicts = err.data?.conflicts || [];
+        const owners = [...new Set(conflicts.map((item) => item.owner?.nome).filter(Boolean))];
+        const detail = owners.length ? `\nEntidades afetadas: ${owners.join(', ')}` : '';
+        if (window.confirm(`${err.message}${detail}\n\nDeseja transferir esses municípios para este representante?`)) {
+          setAreaSaving(false);
+          return handleSaveAreas(true);
+        }
+      }
       setAreaError(err.message || 'Erro ao salvar área de atuação.');
     } finally {
       setAreaSaving(false);
@@ -642,52 +605,18 @@ const GerenciarVendedores = () => {
                 <div className="vendedor-area-feedback"><div className="loading-spinner-vendedores" /><span>Carregando área...</span></div>
               ) : (
                 <>
-                  <div className="vendedor-area-toolbar">
-                    <label>
-                      <span>Estado</span>
-                      <select value={selectedUF} onChange={(e) => handleSelectUF(e.target.value)}>
-                        <option value="">Selecione a UF</option>
-                        {availableUFs.map((uf) => <option key={uf} value={uf}>{uf}</option>)}
-                      </select>
-                    </label>
-                    <div className="vendedor-area-total">
-                      <strong>{selectedAreas.size}</strong>
-                      <span>{selectedAreas.size === 1 ? 'município selecionado' : 'municípios selecionados'}</span>
-                    </div>
-                  </div>
-
                   {areaError && <div className="vendedor-area-error">{areaError}</div>}
-
-                  {selectedUF && (
-                    <div className="vendedor-area-selector">
-                      <div className="vendedor-area-selector-header">
-                        <span>{selectedInUF} de {currentMunicipios.length} em {selectedUF}</span>
-                        <button type="button" onClick={handleToggleAllMunicipios} disabled={loadingMunicipios || currentMunicipios.length === 0}>
-                          {selectedInUF === currentMunicipios.length && currentMunicipios.length > 0 ? 'Desmarcar todos' : 'Selecionar todos'}
-                        </button>
-                      </div>
-                      {loadingMunicipios ? (
-                        <div className="vendedor-area-feedback"><div className="loading-spinner-vendedores" /><span>Carregando municípios...</span></div>
-                      ) : (
-                        <div className="vendedor-municipios-grid">
-                          {currentMunicipios.map((feature) => {
-                            const props = feature.properties || {};
-                            const key = String(props.codigo_ibge);
-                            return (
-                              <label key={key} className={selectedAreas.has(key) ? 'selected' : ''}>
-                                <input type="checkbox" checked={selectedAreas.has(key)} onChange={() => handleToggleMunicipio(feature)} />
-                                <span>{props.nome}</span>
-                              </label>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <AreaSelector
+                    tipo="representante"
+                    entidadeId={areaModal.vendedor?.id}
+                    areas={selectedAreas}
+                    onChange={setSelectedAreas}
+                    disabled={areaSaving}
+                  />
 
                   <div className="modal-actions">
                     <button type="button" className="cancel-btn" onClick={() => setAreaModal({ open: false, vendedor: null })}>Cancelar</button>
-                    <button type="button" className="save-btn" onClick={handleSaveAreas} disabled={areaSaving}>
+                    <button type="button" className="save-btn" onClick={() => handleSaveAreas()} disabled={areaSaving}>
                       {areaSaving ? 'Salvando...' : 'Salvar área de atuação'}
                     </button>
                   </div>

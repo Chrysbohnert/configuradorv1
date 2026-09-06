@@ -7,7 +7,7 @@
 const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
-const { getAreas, replaceAreas } = require('../services/areasAtuacaoService');
+const { getAreas, getOccupiedAreas, replaceAreas } = require('../services/areasAtuacaoService');
 const { listarEntidades, listarTodasEntidades, listarInstaladorasComAreaComum } = require('../services/territorioService');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
 
@@ -38,6 +38,12 @@ router.get('/:tipo/entidades', requireAuth, validateType, asyncHandler(async (re
   return res_.ok(res, data, { count: data.length });
 }));
 
+// GET /api/areas/:tipo/ocupadas — áreas de outras entidades do mesmo tipo
+router.get('/:tipo/ocupadas', requireAuth, validateType, asyncHandler(async (req, res) => {
+  const data = await getOccupiedAreas(req.entityType, req.query.excludeEntidadeId);
+  return res_.ok(res, data, { count: data.length });
+}));
+
 // GET /api/areas/:tipo/:entidadeId/instaladoras-comuns — instaladoras com municípios em comum
 router.get('/:tipo/:entidadeId/instaladoras-comuns', requireAuth, validateType, asyncHandler(async (req, res) => {
   const data = await listarInstaladorasComAreaComum(req.entityType, req.params.entidadeId);
@@ -53,7 +59,9 @@ router.get('/:tipo/:entidadeId', requireAuth, validateType, asyncHandler(async (
 // PUT /api/areas/:tipo/:entidadeId — substitui toda a área
 router.put('/:tipo/:entidadeId', requireAuth, requireAdmin, validateType, asyncHandler(async (req, res) => {
   const areas = Array.isArray(req.body?.areas) ? req.body.areas : [];
-  const data = await replaceAreas(req.entityType, req.params.entidadeId, areas);
+  const data = await replaceAreas(req.entityType, req.params.entidadeId, areas, {
+    transfer: req.body?.transfer === true,
+  });
   return res_.ok(res, data);
 }));
 

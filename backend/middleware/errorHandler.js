@@ -32,6 +32,7 @@ function errorHandler(err, req, res, _next) {
   res.status(status).json({
     success: false,
     error: err.message || 'Erro interno do servidor',
+    ...(err.conflicts && { conflicts: err.conflicts }),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 }

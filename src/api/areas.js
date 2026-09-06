@@ -18,13 +18,17 @@ function authHeaders() {
 async function handleResponse(response) {
   if (!response.ok) {
     let message = `Erro ${response.status}`;
+    let data = null;
     try {
-      const data = await response.json();
+      data = await response.json();
       message = data.message || data.error || message;
     } catch {
       // mantém mensagem padrão
     }
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.data = data;
+    throw error;
   }
   const data = await response.json();
   return data.data ?? data;
@@ -57,11 +61,20 @@ export async function getInstaladorasComAreaComum(tipo, entidadeId) {
   return handleResponse(response);
 }
 
-export async function saveAreas(tipo, entidadeId, areas) {
+export async function getOccupiedAreas(tipo, excludeEntidadeId = null) {
+  const query = excludeEntidadeId == null ? '' : `?excludeEntidadeId=${encodeURIComponent(excludeEntidadeId)}`;
+  const response = await fetch(`${BASE_URL}/${encodeURIComponent(tipo)}/ocupadas${query}`, {
+    method: 'GET',
+    headers: authHeaders(),
+  });
+  return handleResponse(response);
+}
+
+export async function saveAreas(tipo, entidadeId, areas, { transfer = false } = {}) {
   const response = await fetch(`${BASE_URL}/${encodeURIComponent(tipo)}/${encodeURIComponent(entidadeId)}`, {
     method: 'PUT',
     headers: authHeaders(),
-    body: JSON.stringify({ areas }),
+    body: JSON.stringify({ areas, transfer }),
   });
   return handleResponse(response);
 }

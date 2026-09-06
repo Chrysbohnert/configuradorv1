@@ -1,8 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 
-const LOCAL_STATES_KEY = 'mapa_territorial_estados_v1';
-const LOCAL_MUNICIPIOS_KEY = (uf) => `mapa_territorial_municipios_${uf.toLowerCase()}_v1`;
-
 const IBGE_MALHAS_BASE = 'https://servicodados.ibge.gov.br/api/v4/malhas';
 const IBGE_LOCALIDADES_BASE = 'https://servicodados.ibge.gov.br/api/v1/localidades';
 
@@ -10,24 +7,6 @@ async function fetchJson(url, label) {
   const res = await fetch(url, { headers: { Accept: 'application/json' } });
   if (!res.ok) throw new Error(`Erro ao carregar ${label}: HTTP ${res.status}`);
   return res.json();
-}
-
-function readLocal(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function writeLocal(key, value) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // Ignora erros de quota excedida
-  }
 }
 
 function normalizeFeatureProperties(geojson, { defaultUF = '' } = {}) {
@@ -128,15 +107,11 @@ export function useMapData() {
       setLoadingStates(true);
       setError(null);
       try {
-        let data = readLocal(LOCAL_STATES_KEY);
-        if (!data) {
-          data = await fetchWithFallback(
-            '/data/mapa/br-states.json',
-            'Malha dos estados',
-            loadStatesFromIbge
-          );
-          writeLocal(LOCAL_STATES_KEY, data);
-        }
+        const data = await fetchWithFallback(
+          '/data/mapa/br-states.json',
+          'Malha dos estados',
+          loadStatesFromIbge
+        );
         if (!cancelled) setStates(normalizeFeatureProperties(data));
       } catch (err) {
         if (!cancelled) setError(err.message);
@@ -157,15 +132,11 @@ export function useMapData() {
 
     setLoadingMunicipios(true);
     try {
-      let data = readLocal(LOCAL_MUNICIPIOS_KEY(key));
-      if (!data) {
-        data = await fetchWithFallback(
-          `/data/mapa/br-municipios/${key.toLowerCase()}.json`,
-          `Municípios de ${key}`,
-          () => loadMunicipiosFromIbge(key)
-        );
-        writeLocal(LOCAL_MUNICIPIOS_KEY(key), data);
-      }
+      const data = await fetchWithFallback(
+        `/data/mapa/br-municipios/${key.toLowerCase()}.json`,
+        `Municípios de ${key}`,
+        () => loadMunicipiosFromIbge(key)
+      );
 
       const normalized = normalizeFeatureProperties(data, { defaultUF: key });
       setMunicipiosByUF((prev) => ({ ...prev, [key]: normalized }));
