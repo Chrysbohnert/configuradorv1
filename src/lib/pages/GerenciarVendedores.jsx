@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
 import { useOutletContext } from 'react-router-dom';
-import UnifiedHeader from '../../components/UnifiedHeader';
 import { db } from '../../config/supabase';
 import { getPropostas } from '../../api/propostas';
 import { getAreas, saveAreas } from '../../api/areas';
@@ -52,7 +51,6 @@ const GerenciarVendedores = () => {
   const isRep = isAdminCanalRepresentantes(user);
   const isInterno = isAdminCanalInterno(user);
   const isExt = isAdminComercioExterior(user);
-  const isCanalOnly = isRep || isInterno || isExt || isConc;
 
   const defaultTipo = (() => {
     if (isConc) return 'vendedor_concessionaria';
@@ -86,6 +84,8 @@ const GerenciarVendedores = () => {
       const [vendedoresData, propostas] = await Promise.all([
         isConc
           ? db.getUsers({ concessionaria_id: concessionariaId })
+          : isFull
+          ? db.getUsers()
           : db.getUsers({ canal: userCanal }),
         getPropostas(),
       ]);
@@ -430,15 +430,6 @@ const GerenciarVendedores = () => {
 
   return (
     <>
-      <UnifiedHeader
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title={pageTitle}
-        subtitle={pageSubtitle}
-      />
-
       <div className="gerenciar-vendedores-container">
         <div className="gerenciar-vendedores-content">
           <section className="vendedores-hero">
@@ -801,7 +792,7 @@ const GerenciarVendedores = () => {
                   </div>
 
 
-                  {(fullAccess || isConcSede || isExt || isInterno) && (
+                  {(isFull || isConcSede || isExt || isInterno) && (
                     <div className="form-group">
                       <label htmlFor="tipo">Tipo de Usuário *</label>
                       <select
@@ -810,7 +801,7 @@ const GerenciarVendedores = () => {
                         onChange={(e) => handleInputChange('tipo', e.target.value)}
                         required
                       >
-                        {fullAccess && (
+                        {isFull && (
                           <>
                             <option value="vendedor">Vendedor / Representante</option>
                             <option value="vendedor_exterior">Vendedor Exterior (USD)</option>

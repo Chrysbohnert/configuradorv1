@@ -56,8 +56,8 @@ function buildConditions(filters) {
   return { conditions, params };
 }
 
-async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_id, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id });
+async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const selectCols = includeDadosSerializados ? '*' : COLS_RESUMO.join(', ');
 
@@ -73,8 +73,8 @@ async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_i
   return rows;
 }
 
-async function count({ vendedor_id, status, tipo, concessionaria_id, cliente_id } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id });
+async function count({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await query(`SELECT COUNT(*)::int AS total FROM propostas ${where}`, params);
   return rows[0]?.total || 0;

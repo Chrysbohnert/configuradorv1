@@ -169,6 +169,28 @@ function App() {
                   />
 
                   <Route
+                    path="/admin/nova-proposta/:propostaId?"
+                    element={
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Proposta Comercial...">
+                          <NovoPedido />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/admin/propostas"
+                    element={
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Propostas...">
+                          <HistoricoPropostas />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
                     path="/relatorio-completo"
                     element={
                       <LazyRoute loadingMessage="Carregando Relatório...">

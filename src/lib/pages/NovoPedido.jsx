@@ -31,10 +31,13 @@ const NovoPedido = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { propostaId } = useParams(); // Captura ID da proposta para edição
-  const { user } = useOutletContext(); // Pega o usuário do VendedorLayout
+  const { user: authenticatedUser } = useOutletContext(); // Pega o usuário do VendedorLayout
+  const isAdminStark = isAdminFull(authenticatedUser);
+  const [responsaveis, setResponsaveis] = useState([]);
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState(null);
+  const user = isAdminStark ? (responsavelSelecionado || authenticatedUser) : authenticatedUser;
   const isConcessionariaUser = user?.canal === 'concessionarias' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
-  const isAdminStark = isAdminFull(user);
   const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
   // Mapa para o fluxo vendedor Stark comum: 4 etapas
   // 1=Guindaste, 2=Pagamento, 3=Estudo Veicular, 4=Finalizar
@@ -402,11 +405,14 @@ const NovoPedido = () => {
   }, [isModoConcessionaria, user?.concessionaria_id]);
 
   useEffect(() => {
-    if (location.pathname !== '/nova-proposta-concessionaria') return;
-    if (isAdminStark) {
-      navigate('/dashboard-admin');
-    }
-  }, [location.pathname, isAdminStark, navigate]);
+    if (!isAdminStark) return;
+    db.getUsers()
+      .then((data) => setResponsaveis((data || []).filter((item) => ['vendedor', 'vendedor_concessionaria', 'vendedor_exterior'].includes(item.tipo))))
+      .catch((error) => {
+        console.error('Erro ao carregar responsáveis comerciais:', error);
+        setResponsaveis([]);
+      });
+  }, [isAdminStark]);
 
   useEffect(() => {
     if (!user) return;
@@ -1957,6 +1963,43 @@ const NovoPedido = () => {
 
   if (!user) {
     return null;
+  }
+
+  if (isAdminStark && !responsavelSelecionado) {
+    return (
+      <div className="novo-pedido-container">
+        <UnifiedHeader
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={authenticatedUser}
+          title="Proposta Comercial"
+          subtitle="Selecione o responsável comercial para iniciar"
+        />
+        <main className="novo-pedido-content">
+          <section className="step-content">
+            <div className="step-header">
+              <h2>Responsável comercial</h2>
+              <p>A autoria ficará vinculada ao seu login e a proposta ao vendedor ou representante selecionado.</p>
+            </div>
+            <div className="form-group">
+              <label htmlFor="responsavel-comercial">Vendedor ou representante *</label>
+              <select
+                id="responsavel-comercial"
+                value=""
+                onChange={(event) => setResponsavelSelecionado(responsaveis.find((item) => String(item.id) === event.target.value) || null)}
+              >
+                <option value="">Selecione o responsável</option>
+                {responsaveis.map((item) => (
+                  <option key={item.id} value={item.id}>{item.nome} — {item.canal || item.tipo}</option>
+                ))}
+              </select>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
   }
 
   return (

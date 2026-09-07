@@ -7,9 +7,11 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/propostasService');
+const usersService = require('../services/usersService');
 const { requireAuth } = require('../middleware/auth');
 const {
   isAdmin,
+  isAdminFull,
   isAdminConcessionarias,
   isAdminConcessionaria,
   isAdminCanalRepresentantes,
@@ -21,7 +23,7 @@ const {
 const router = Router();
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id } = req.query;
+  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id, canal_venda: qCanalVenda } = req.query;
 
   let vendedor_id;
   if (isAdmin(req.user)) {
@@ -40,6 +42,9 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     limit:     limit !== undefined ? (parseInt(limit) || 0) : 0,
     offset:    parseInt(offset) || 0,
     includeDadosSerializados: includeDadosSerializados === 'true',
+    canal_venda: isAdminFull(req.user) && qCanalVenda
+      ? (qCanalVenda.includes(',') ? qCanalVenda.split(',') : qCanalVenda)
+      : undefined,
   };
 
   // Restrição de visibilidade por perfil admin
@@ -68,7 +73,7 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
   const data = await svc.findById(req.params.id);
   if (!data) return res_.notFound(res, 'Proposta não encontrada');
 
-  if (!isAdmin(req) && String(data.vendedor_id) !== String(req.user.id)) {
+  if (!isAdmin(req.user) && String(data.vendedor_id) !== String(req.user.id)) {
     console.warn(`⛔ [GET /propostas/${req.params.id}] Acesso negado: user=${req.user.id} dono=${data.vendedor_id}`);
     return res_.forbidden(res, 'Acesso negado');
   }
@@ -78,7 +83,26 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
 
 router.post('/', requireAuth, asyncHandler(async (req, res) => {
   console.log(`📋 [POST /propostas] user=${req.user.id} numero=${req.body.numero_proposta}`);
-  const data = await svc.create(req.body);
+  const payload = { ...req.body };
+
+  if (isAdminFull(req.user)) {
+    if (!payload.vendedor_id) return res_.badRequest(res, 'Responsável comercial obrigatório');
+    const responsavel = await usersService.findById(payload.vendedor_id);
+    if (!responsavel || !['vendedor', 'vendedor_concessionaria', 'vendedor_exterior'].includes(responsavel.tipo)) {
+      return res_.badRequest(res, 'Responsável comercial inválido');
+    }
+    payload.vendedor_nome = responsavel.nome;
+    payload.dados_serializados = {
+      ...(payload.dados_serializados || {}),
+      autoria: { usuario_id: req.user.id, usuario_nome: req.user.nome },
+      responsavel_comercial: { usuario_id: responsavel.id, usuario_nome: responsavel.nome },
+    };
+  } else {
+    payload.vendedor_id = req.user.id;
+    payload.vendedor_nome = req.user.nome;
+  }
+
+  const data = await svc.create(payload);
   console.log(`✅ [POST /propostas] Criada: id=${data.id} numero=${data.numero_proposta}`);
   return res_.created(res, data);
 }));
