@@ -2953,14 +2953,35 @@ textarea:focus {
   overflow-y: auto;
 }
 
-.gg-erp-alert-list > div {
+.gg-erp-alert-item {
   padding: 10px 12px;
   border-bottom: 1px solid #f0f1f2;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #4b5563;
+  font-size: var(--erp-text-xs);
+}
+
+.gg-erp-alert-item.gg-erp-alert-pendente {
+  background: #fef9c3;
+}
+
+.gg-erp-alert-info {
   display: grid;
-  grid-template-columns: 1fr 50px 2fr 80px;
+  grid-template-columns: 1fr 60px 2fr 80px;
   gap: 10px;
   align-items: center;
-  color: #4b5563;
+}
+
+.gg-erp-alert-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.gg-erp-alert-actions button {
+  padding: 4px 10px;
   font-size: var(--erp-text-xs);
 }
 
@@ -2988,7 +3009,7 @@ textarea:focus {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .gg-erp-alert-list > div {
+  .gg-erp-alert-info {
     grid-template-columns: 1fr;
   }
 

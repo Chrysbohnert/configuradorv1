@@ -129,6 +129,7 @@ export function useGuindasteConfigurador({
   });
   const [precoExibido, setPrecoExibido] = useState(null);
   const [loadingPreco, setLoadingPreco] = useState(false);
+  const [precoErro, setPrecoErro] = useState(null);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
@@ -203,6 +204,7 @@ export function useGuindasteConfigurador({
     const carregarPreco = async () => {
       setLoadingPreco(true);
       setPrecoExibido(null);
+      setPrecoErro(null);
 
       try {
         const preco = await fetchPreco(guindasteId, regiaoLabel);
@@ -225,8 +227,9 @@ export function useGuindasteConfigurador({
               : prev
           );
         }
-      } catch {
+      } catch (err) {
         if (cancelled || String(activeVariantIdRef.current) !== String(guindasteId)) return;
+        setPrecoErro(err?.message || 'Erro ao carregar preço');
         setPrecoExibido(null);
       } finally {
         if (!cancelled && String(activeVariantIdRef.current) === String(guindasteId)) {
@@ -287,6 +290,7 @@ export function useGuindasteConfigurador({
     setSelectedGuindaste(null);
     setPrecoExibido(null);
     setLoadingPreco(false);
+    setPrecoErro(null);
     setPreviewImageUrl(null);
     setLoadingPreview(false);
   }, []);
@@ -351,6 +355,7 @@ export function useGuindasteConfigurador({
     // Preço / imagem
     precoExibido,
     loadingPreco,
+    precoErro,
     previewImageUrl,
     loadingPreview,
 

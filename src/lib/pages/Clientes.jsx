@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useOutletContext, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { getClientes, createCliente, updateCliente, deleteCliente, getPropostasDoCliente } from '../../api/clientes';
 import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency } from '../../utils/formatters';
@@ -15,7 +16,7 @@ const CLIENTE_VAZIO = {
 };
 
 export default function Clientes() {
-  const { user } = useOutletContext();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const userIsAdmin = isAdmin(user);
 
@@ -35,6 +36,7 @@ export default function Clientes() {
     return principal ? [principal] : ['Norte-Nordeste', 'Sul-Sudeste', 'Centro-Oeste', 'Rio Grande do Sul', 'Comércio Exterior'];
   }, [user?.regioes_operacao, user?.regiao]);
 
+ 
   const carregar = async () => {
     try {
       setLoading(true);
@@ -46,7 +48,7 @@ export default function Clientes() {
       setLoading(false);
     }
   };
-
+  
   useEffect(() => {
     const t = setTimeout(carregar, 300);
     return () => clearTimeout(t);

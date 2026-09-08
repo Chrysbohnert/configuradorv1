@@ -83,6 +83,21 @@ router.post('/:id/precos-compra', requireAuth, requireAdminFull, asyncHandler(as
   return res_.ok(res, { message: 'Preços de compra salvos com sucesso' });
 }));
 
+router.patch('/:id/preco/aprovar', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
+  const data = await svc.aprovarPreco(req.params.id, req.user);
+  return res_.ok(res, data);
+}));
+
+router.post('/:id/preco/editar', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
+  const data = await svc.editarPrecoPendente(req.params.id, req.body || {}, req.user);
+  return res_.ok(res, data);
+}));
+
+router.get('/:id/preco/auditoria', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
+  const data = await svc.listarAuditoriaPreco(req.params.id);
+  return res_.ok(res, data);
+}));
+
 router.get('/:id/imagem', requireAuth, asyncHandler(async (req, res) => {
   const data = await svc.findImagemById(req.params.id);
   if (!data) return res_.notFound(res, 'Guindaste não encontrado');

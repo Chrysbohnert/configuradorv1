@@ -55,6 +55,18 @@ function App() {
                 {/* LOGIN */}
                 <Route path="/" element={<Login />} />
 
+                {/* CLIENTES - acessível para admin e vendedor */}
+                <Route
+                  path="/clientes"
+                  element={
+                    <ProtectedRoute>
+                      <LazyRoute loadingMessage="Carregando Clientes...">
+                        <Clientes />
+                      </LazyRoute>
+                    </ProtectedRoute>
+                  }
+                />
+
                 {/* VENDEDOR */}
                 <Route
                   element={
@@ -89,15 +101,6 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Propostas...">
                         <HistoricoPropostas />
-                      </LazyRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/clientes"
-                    element={
-                      <LazyRoute loadingMessage="Carregando Clientes...">
-                        <Clientes />
                       </LazyRoute>
                     }
                   />
@@ -138,15 +141,6 @@ function App() {
                     element={
                       <LazyRoute loadingMessage="Carregando Dashboard Admin...">
                         <DashboardAdmin />
-                      </LazyRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/clientes"
-                    element={
-                      <LazyRoute loadingMessage="Carregando Clientes...">
-                        <Clientes />
                       </LazyRoute>
                     }
                   />

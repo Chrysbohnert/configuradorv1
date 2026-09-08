@@ -127,7 +127,9 @@ export async function fetchPrecoPorRegiao(guindasteId, regiao) {
   });
   const json = await res.json();
   if (!res.ok || !json.success) {
-    throw new Error(json.error || 'Erro ao buscar preço por região');
+    const error = new Error(json.error || 'Erro ao buscar preço por região');
+    error.status = res.status;
+    throw error;
   }
   return json.data?.preco ?? 0;
 }
@@ -176,6 +178,29 @@ export async function savePrecosPorRegiao(guindasteId, precos) {
   if (!res.ok || !json.success) {
     throw new Error(json.error || 'Erro ao salvar preços por região');
   }
+  return json.data;
+}
+
+export async function aprovarPrecoPendente(guindasteId) {
+  const res = await fetch(`${BASE_URL}/${guindasteId}/preco/aprovar`, {
+    method: 'PATCH',
+    headers: authHeaders(),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao aprovar preço');
+  _cache.clear();
+  return json.data;
+}
+
+export async function editarPrecoPendente(guindasteId, data) {
+  const res = await fetch(`${BASE_URL}/${guindasteId}/preco/editar`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(data),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao editar preço');
+  _cache.clear();
   return json.data;
 }
 

@@ -24,11 +24,15 @@ export async function getConfiguracaoGlobal(chave) {
   return json.data;
 }
 
-export async function setConfiguracaoGlobalNumero(chave, valorNumero) {
+export async function setConfiguracaoGlobalNumero(chave, valorNumero, valorTexto) {
+  const body = {};
+  if (valorNumero !== undefined) body.valor_numero = valorNumero;
+  if (valorTexto !== undefined) body.valor_texto = valorTexto;
+
   const res = await fetch(`${BASE_URL}/${chave}`, {
     method: 'PUT',
     headers: authHeaders(),
-    body: JSON.stringify({ valor_numero: valorNumero }),
+    body: JSON.stringify(body),
   });
   const json = await res.json();
   if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao salvar configuração');
@@ -44,5 +48,17 @@ export async function getCotacaoUSD() {
 export async function setCotacaoUSD(valorBRL) {
   const v = Number(valorBRL);
   if (!Number.isFinite(v) || v <= 0) throw new Error('Cotação inválida');
-  return setConfiguracaoGlobalNumero('usd_brl', v);
+  const texto = JSON.stringify({ modo: 'manual' });
+  return setConfiguracaoGlobalNumero('usd_brl', v, texto);
+}
+
+export async function atualizarCotacaoPTAX(reativar = false) {
+  const res = await fetch(`${BASE_URL}/usd_brl/atualizar-ptax`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify({ reativar }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) throw new Error(json.error || 'Erro ao atualizar cotação PTAX');
+  return json.data;
 }

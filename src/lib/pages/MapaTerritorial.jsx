@@ -32,6 +32,8 @@ export default function MapaTerritorial() {
   const [loading, setLoading] = useState(true);
   const [apiError, setApiError] = useState('');
 
+  const [cadastroView, setCadastroView] = useState(null); // null | { mode: 'novo' | 'editar', uf, entidade? }
+
   const loadMapData = useCallback(async () => {
     setLoading(true);
     setApiError('');
@@ -46,14 +48,45 @@ export default function MapaTerritorial() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'mapa') loadMapData();
-  }, [activeTab, mapKey, loadMapData]);
+    if (activeTab === 'mapa' && !cadastroView) loadMapData();
+  }, [activeTab, mapKey, cadastroView, loadMapData]);
 
   const refreshMap = useCallback(() => setMapKey((k) => k + 1), []);
   const switchToMap = useCallback(() => {
     setActiveTab('mapa');
+    setCadastroView(null);
     refreshMap();
   }, [refreshMap]);
+
+  const abrirCadastro = useCallback((mode, uf, entidade = null) => {
+    setCadastroView({ mode, uf: uf || 'RS', entidade });
+  }, []);
+
+  const fecharCadastro = useCallback(() => {
+    setCadastroView(null);
+    refreshMap();
+  }, [refreshMap]);
+
+  const initialForm = useMemo(() => {
+    if (!cadastroView) return null;
+    if (cadastroView.mode === 'novo') return null;
+    const c = cadastroView.entidade;
+    if (!c) return null;
+    return {
+      id: c.id,
+      tipo: c.tipo,
+      nome: c.nome,
+      documento: c.documento || '',
+      contato: c.contato || '',
+      email: c.email || '',
+      endereco: c.endereco || '',
+      uf: c.uf || cadastroView.uf,
+      municipioId: c.municipioId || '',
+      municipioNome: c.municipioNome || c.cidade || '',
+      municipios: c.municipios || [],
+      password: '',
+    };
+  }, [cadastroView]);
 
   return (
     <div className="mapa-territorial-page">
@@ -62,26 +95,35 @@ export default function MapaTerritorial() {
       <div className="mapa-territorial-tab-bar">
         <button
           type="button"
-          className={activeTab === 'mapa' ? 'active' : ''}
-          onClick={() => setActiveTab('mapa')}
+          className={activeTab === 'mapa' && !cadastroView ? 'active' : ''}
+          onClick={() => { setActiveTab('mapa'); setCadastroView(null); }}
         >
           Mapa
         </button>
         <button
           type="button"
-          className={activeTab === 'cadastros' ? 'active' : ''}
-          onClick={() => setActiveTab('cadastros')}
+          className={activeTab === 'cadastros' || cadastroView ? 'active' : ''}
+          onClick={() => { setActiveTab('cadastros'); setCadastroView(null); }}
         >
           Cadastros
         </button>
       </div>
 
-      {activeTab === 'mapa' ? (
+      {cadastroView ? (
+        <Cadastros
+          embedded
+          onVoltar={fecharCadastro}
+          initialView="form"
+          initialUf={cadastroView.uf}
+          initialForm={initialForm}
+        />
+      ) : activeTab === 'mapa' ? (
         <MapaTab
           mapData={mapData}
           loading={loading}
           apiError={apiError}
           onRetry={refreshMap}
+          onAbrirCadastro={abrirCadastro}
         />
       ) : (
         <Cadastros embedded onSwitchToMap={switchToMap} />
@@ -90,7 +132,7 @@ export default function MapaTerritorial() {
   );
 }
 
-function MapaTab({ mapData, loading, apiError, onRetry }) {
+function MapaTab({ mapData, loading, apiError, onRetry, onAbrirCadastro }) {
   const [canal, setCanal] = useState('concessionaria');
   const [selecionados, setSelecionados] = useState([]);
   const [verInstaladoras, setVerInstaladoras] = useState(false);
@@ -162,6 +204,15 @@ function MapaTab({ mapData, loading, apiError, onRetry }) {
     () => (focusUf
       ? doCanal.filter((p) => (areas.get(p.id) || []).some((c) => ufOfMunicipio(c) === focusUf))
       : doCanal),
+    [doCanal, focusUf, areas]
+  );
+
+  const entidadesNaUf = useMemo(
+    () => (focusUf
+      ? doCanal.filter((p) =>
+          (areas.get(p.id) || []).some((c) => ufOfMunicipio(c) === focusUf) ||
+          (p.cidade && p.uf === focusUf))
+      : []),
     [doCanal, focusUf, areas]
   );
 
@@ -331,6 +382,53 @@ function MapaTab({ mapData, loading, apiError, onRetry }) {
             )}
           </div>
         </Painel>
+
+        {focusUf && (
+          <Painel titulo={`Ações em ${focusUf}`}>
+            <button
+              type="button"
+              className="mapa-canal-btn"
+              style={{ width: '100%', marginBottom: 12 }}
+              onClick={() => onAbrirCadastro('novo', focusUf)}
+            >
+              + Novo cadastro em {focusUf}
+            </button>
+            {entidadesNaUf.length > 0 && (
+              <>
+                <p className="mapa-empty-text" style={{ marginBottom: 8 }}>
+                  {entidadesNaUf.length} entidade(s) nesta UF
+                </p>
+                <div className="mapa-check-list">
+                  {entidadesNaUf.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="mapa-link-btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        width: '100%',
+                        textAlign: 'left',
+                        padding: '6px 0',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => onAbrirCadastro('editar', focusUf, p)}
+                    >
+                      <span
+                        className="mapa-check-dot"
+                        style={{ backgroundColor: cores.get(p.id) }}
+                      />
+                      <span className="mapa-check-name">{p.nome}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </Painel>
+        )}
       </aside>
     </div>
   );

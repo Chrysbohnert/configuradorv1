@@ -1,6 +1,7 @@
 /* ================= GERENCIAR VENDEDORES PREMIUM ================= */
 
 .gerenciar-vendedores-container {
+  position: relative;
   min-height: 100vh;
   background:
     radial-gradient(circle at top left, rgba(245, 158, 11, 0.06), transparent 22%),
@@ -1339,5 +1340,271 @@
 
   .vendedor-municipios-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ============== EDITOR DE ÁREA DE ATUAÇÃO ============== */
+.vendedor-area-editor {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: var(--erp-bg-page);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px;
+  overflow: auto;
+}
+
+.vendedor-area-editor-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.vendedor-area-editor-heading h1 {
+  margin: 0;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-3xl);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.vendedor-area-editor-heading p {
+  margin: 8px 0 0;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-lg);
+}
+
+.vendedor-area-back-btn {
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: var(--erp-radius-md);
+  border: 1px solid var(--erp-border);
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-body);
+  cursor: pointer;
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-bold);
+  transition: background .15s, transform .15s;
+  white-space: nowrap;
+}
+
+.vendedor-area-back-btn:hover {
+  background: var(--erp-bg-hover);
+  transform: translateY(-1px);
+}
+
+.vendedor-area-editor-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 420px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+  max-width: 1800px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: 0;
+}
+
+.vendedor-area-editor-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+
+.vendedor-area-editor-map-col {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.vendedor-area-editor-card {
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-surface);
+  padding: 20px;
+  box-shadow: var(--erp-shadow-card);
+}
+
+.vendedor-area-editor-info h3 {
+  margin: 0 0 6px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-xl);
+  font-weight: var(--erp-weight-bold);
+}
+
+.vendedor-area-editor-email {
+  margin: 0 0 14px;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-base);
+}
+
+.vendedor-area-editor-resumo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vendedor-area-editor-resumo span {
+  padding: 6px 10px;
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border-light);
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-bold);
+}
+
+.vendedor-area-editor-help {
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-sm);
+  line-height: 1.6;
+}
+
+.vendedor-area-editor-help strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-md);
+}
+
+.vendedor-area-editor-help ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.vendedor-area-editor-help li {
+  margin-bottom: 6px;
+  color: var(--erp-text-muted);
+}
+
+.vendedor-area-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.vendedor-area-save-btn,
+.vendedor-area-cancel-btn {
+  flex: 1;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: var(--erp-radius-md);
+  font-size: var(--erp-text-md);
+  font-weight: var(--erp-weight-bold);
+  cursor: pointer;
+  transition: background .15s, transform .15s;
+}
+
+.vendedor-area-save-btn {
+  border: none;
+  background: var(--erp-primary-cta);
+  color: var(--erp-primary-text);
+  box-shadow: var(--erp-shadow-cta);
+}
+
+.vendedor-area-save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.vendedor-area-save-btn:disabled,
+.vendedor-area-cancel-btn:disabled,
+.vendedor-area-back-btn:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.vendedor-area-cancel-btn {
+  border: 1px solid var(--erp-border);
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-body);
+}
+
+.vendedor-area-cancel-btn:hover:not(:disabled) {
+  background: var(--erp-bg-hover);
+}
+
+.vendedor-area-editor .area-selector {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.vendedor-area-editor .area-selector-map {
+  flex: 1;
+  min-height: 360px;
+  height: auto;
+}
+
+.vendedor-area-editor .area-selector-basket,
+.vendedor-area-editor .area-selector-legend {
+  flex: none;
+}
+
+@media (max-width: 1100px) {
+  .vendedor-area-editor {
+    padding: 16px;
+  }
+
+  .vendedor-area-editor-layout {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .vendedor-area-editor-map-col {
+    order: -1;
+    min-height: 420px;
+  }
+
+  .vendedor-area-editor-form-col {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 680px) {
+  .vendedor-area-editor {
+    padding: 12px;
+  }
+
+  .vendedor-area-editor-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .vendedor-area-editor-heading h1 {
+    font-size: var(--erp-text-2xl);
+  }
+
+  .vendedor-area-editor-heading p {
+    font-size: var(--erp-text-base);
+  }
+
+  .vendedor-area-back-btn {
+    width: 100%;
+  }
+
+  .vendedor-area-editor-actions {
+    flex-direction: column;
+  }
+
+  .vendedor-area-save-btn,
+  .vendedor-area-cancel-btn {
+    width: 100%;
+  }
+
+  .vendedor-area-editor-map-col {
+    min-height: 360px;
   }
 }

@@ -418,6 +418,7 @@ const GerenciarVendedores = () => {
     setAreaModal({ open: true, vendedor });
     setAreaLoading(true);
     setAreaError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     try {
       setSelectedAreas(await getAreas('representante', vendedor.id));
     } catch (err) {
@@ -426,6 +427,12 @@ const GerenciarVendedores = () => {
     } finally {
       setAreaLoading(false);
     }
+  };
+
+  const closeAreaEditor = () => {
+    setAreaModal({ open: false, vendedor: null });
+    setSelectedAreas([]);
+    setAreaError('');
   };
 
   const handleSaveAreas = async (transfer = false) => {
@@ -438,7 +445,7 @@ const GerenciarVendedores = () => {
       setVendedores((current) => current.map((vendedor) => vendedor.id === areaModal.vendedor.id
         ? { ...vendedor, areaResumo: resumirAreas(areas) }
         : vendedor));
-      setAreaModal({ open: false, vendedor: null });
+      closeAreaEditor();
     } catch (err) {
       if (err.status === 409 && !transfer) {
         const conflicts = err.data?.conflicts || [];
@@ -677,23 +684,78 @@ const GerenciarVendedores = () => {
         </div>
 
         {areaModal.open && (
-          <div className="modal-overlay" onClick={() => setAreaModal({ open: false, vendedor: null })}>
-            <div className="modal-content modal-content-premium vendedor-area-modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-header">
-                <div>
-                  <h2>Área de atuação</h2>
-                  <p className="modal-subtitle">{areaModal.vendedor?.nome}</p>
-                </div>
-                <button type="button" className="close-btn" onClick={() => setAreaModal({ open: false, vendedor: null })} aria-label="Fechar">
-                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" /></svg>
-                </button>
+          <div className="vendedor-area-editor">
+            <div className="vendedor-area-editor-heading">
+              <div>
+                <h1>Área de atuação</h1>
+                <p>{areaModal.vendedor?.nome}</p>
               </div>
+              <button
+                type="button"
+                className="vendedor-area-back-btn"
+                onClick={closeAreaEditor}
+                disabled={areaSaving}
+              >
+                Voltar para lista
+              </button>
+            </div>
 
-              {areaLoading ? (
-                <div className="vendedor-area-feedback"><div className="loading-spinner-vendedores" /><span>Carregando área...</span></div>
-              ) : (
-                <>
+            {areaLoading ? (
+              <div className="vendedor-area-feedback">
+                <div className="loading-spinner-vendedores" />
+                <span>Carregando área...</span>
+              </div>
+            ) : (
+              <div className="vendedor-area-editor-layout">
+                <div className="vendedor-area-editor-form-col">
                   {areaError && <div className="vendedor-area-error">{areaError}</div>}
+
+                  <div className="vendedor-area-editor-card vendedor-area-editor-info">
+                    <h3>{areaModal.vendedor?.nome}</h3>
+                    <p className="vendedor-area-editor-email">{areaModal.vendedor?.email}</p>
+                    <div className="vendedor-area-editor-resumo">
+                      {selectedAreas.length === 0 ? (
+                        <span className="vendedor-area-empty">Nenhum município selecionado</span>
+                      ) : (
+                        resumirAreas(selectedAreas).map(([uf, count]) => (
+                          <span key={uf}>
+                            {uf} — {count} {count === 1 ? 'cidade' : 'cidades'}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="vendedor-area-editor-card vendedor-area-editor-help">
+                    <strong>Como usar</strong>
+                    <ul>
+                      <li>Selecione a UF no mapa para focar o estado.</li>
+                      <li>Clique nos municípios para adicionar ou remover da área.</li>
+                      <li>Áreas coloridas pertencem a outros representantes.</li>
+                    </ul>
+                  </div>
+
+                  <div className="vendedor-area-editor-actions">
+                    <button
+                      type="button"
+                      className="vendedor-area-cancel-btn"
+                      onClick={closeAreaEditor}
+                      disabled={areaSaving}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      className="vendedor-area-save-btn"
+                      onClick={() => handleSaveAreas()}
+                      disabled={areaSaving}
+                    >
+                      {areaSaving ? 'Salvando...' : 'Salvar área de atuação'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="vendedor-area-editor-map-col">
                   <AreaSelector
                     tipo="representante"
                     entidadeId={areaModal.vendedor?.id}
@@ -701,16 +763,9 @@ const GerenciarVendedores = () => {
                     onChange={setSelectedAreas}
                     disabled={areaSaving}
                   />
-
-                  <div className="modal-actions">
-                    <button type="button" className="cancel-btn" onClick={() => setAreaModal({ open: false, vendedor: null })}>Cancelar</button>
-                    <button type="button" className="save-btn" onClick={() => handleSaveAreas()} disabled={areaSaving}>
-                      {areaSaving ? 'Salvando...' : 'Salvar área de atuação'}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

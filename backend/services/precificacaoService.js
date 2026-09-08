@@ -63,7 +63,9 @@ async function listarEquipamentosComCusto() {
        custo_mp,
        custo_mo,
        valor_instalacao_cliente,
-       valor_instalacao_incluso
+       valor_instalacao_incluso,
+       status_preco,
+       preco_pendente_desde
      FROM public.guindastes
      ORDER BY subgrupo ASC, modelo ASC`
   );
@@ -120,6 +122,8 @@ async function listarEquipamentosComCusto() {
       custo_mo: g.custo_mo ?? null,
       valor_instalacao_cliente: g.valor_instalacao_cliente ?? null,
       valor_instalacao_incluso: g.valor_instalacao_incluso ?? null,
+      status_preco: g.status_preco ?? 'aprovado',
+      preco_pendente_desde: g.preco_pendente_desde ?? null,
       precificacao_id: regra?.precificacao_id ?? null,
       custo_fixo_percent: regra?.custo_fixo_percent ?? 0,
       comissao_percent: regra?.comissao_percent ?? 0,

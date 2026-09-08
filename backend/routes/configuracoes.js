@@ -1,6 +1,6 @@
 /**
  * routes/configuracoes.js
- * GET e PUT de configuracoes_globais (ex: cotação USD/BRL).
+ * GET, PUT e POST de configuracoes_globais (ex: cotação USD/BRL).
  */
 
 const { Router } = require('express');
@@ -20,11 +20,19 @@ router.get('/:chave', requireAuth, asyncHandler(async (req, res) => {
 
 // PUT /api/configuracoes/:chave — apenas admin Stark pode escrever
 router.put('/:chave', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
-  const { valor_numero } = req.body;
-  if (valor_numero === undefined) {
-    return res_.badRequest(res, 'valor_numero é obrigatório');
+  const { valor_numero, valor_texto } = req.body;
+  if (valor_numero === undefined && valor_texto === undefined) {
+    return res_.badRequest(res, 'valor_numero ou valor_texto é obrigatório');
   }
-  const cfg = await svc.setConfiguracaoNumero(req.params.chave, valor_numero);
+  const cfg = await svc.setConfiguracaoNumero(req.params.chave, valor_numero, valor_texto);
+  return res_.ok(res, cfg);
+}));
+
+// POST /api/configuracoes/:chave/atualizar-ptax
+// Atualiza a cotação com PTAX, salvo quando o modo atual é manual (a menos que force seja true)
+router.post('/:chave/atualizar-ptax', requireAuth, asyncHandler(async (req, res) => {
+  const { reativar } = req.body || {};
+  const cfg = await svc.atualizarCotacaoPTAX(req.params.chave, reativar === true);
   return res_.ok(res, cfg);
 }));
 

@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS public.erp_import_itens (
   ncm TEXT,
   custo_mp NUMERIC(18, 4),
   custo_mo NUMERIC(18, 4),
+  margem_lucro_percent NUMERIC(10, 4),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CONSTRAINT erp_import_itens_lote_referencia_unico UNIQUE (lote_id, referencia)
 );

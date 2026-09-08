@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { maskPhone, maskCPF, maskCNPJ, onlyDigits } from '../../utils/masks';
 
 const UFs = [
@@ -29,6 +29,38 @@ export default function ClienteFormFields({
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  const [cidades, setCidades] = useState([]);
+  const [loadingCidades, setLoadingCidades] = useState(false);
+
+  const handleUfChange = (uf) => {
+    setFormData((prev) => ({ ...prev, uf, cidade: '' }));
+  };
+
+  const ufAtual = formData.uf || '';
+  useEffect(() => {
+    const key = ufAtual.toUpperCase();
+    if (!key) {
+      setCidades([]);
+      setLoadingCidades(false);
+      return;
+    }
+    let active = true;
+    setLoadingCidades(true);
+    fetch(`/data/mapa/br-municipios/${key.toLowerCase()}.json`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!active || !data || !Array.isArray(data.features)) return;
+        const nomes = data.features
+          .map((f) => f.properties?.nome)
+          .filter(Boolean)
+          .sort((a, b) => a.localeCompare(b, 'pt-BR'));
+        setCidades(nomes);
+      })
+      .catch(() => { if (active) setCidades([]); })
+      .finally(() => { if (active) setLoadingCidades(false); });
+    return () => { active = false; };
+  }, [ufAtual]);
 
   const handleDocumentoTipoChange = (tipo) => {
     setFormData((prev) => ({
@@ -154,6 +186,34 @@ export default function ClienteFormFields({
           </Field>
         )}
 
+        <Field label="UF" error={errors.uf}>
+          <select
+            value={formData.uf || ''}
+            onChange={(e) => handleUfChange(e.target.value)}
+          >
+            <option value="">-- UF --</option>
+            {UFs.map((uf) => (
+              <option key={uf} value={uf}>{uf}</option>
+            ))}
+          </select>
+        </Field>
+
+        <Field label="Cidade" error={errors.cidade}>
+          <input
+            type="text"
+            list="cidades-list"
+            value={formData.cidade || ''}
+            onChange={(e) => handleChange('cidade', e.target.value)}
+            placeholder={formData.uf ? 'Pesquise a cidade' : 'Selecione a UF primeiro'}
+            disabled={!formData.uf || loadingCidades}
+          />
+        </Field>
+        <datalist id="cidades-list">
+          {cidades.map((cidade) => (
+            <option key={cidade} value={cidade} />
+          ))}
+        </datalist>
+
         <Field label="Endereço" error={errors.endereco}>
           <input
             type="text"
@@ -161,27 +221,6 @@ export default function ClienteFormFields({
             onChange={(e) => handleChange('endereco', e.target.value)}
             placeholder="Rua, número, bairro"
           />
-        </Field>
-
-        <Field label="Cidade" error={errors.cidade}>
-          <input
-            type="text"
-            value={formData.cidade || ''}
-            onChange={(e) => handleChange('cidade', e.target.value)}
-            placeholder="Cidade"
-          />
-        </Field>
-
-        <Field label="UF" error={errors.uf}>
-          <select
-            value={formData.uf || ''}
-            onChange={(e) => handleChange('uf', e.target.value)}
-          >
-            <option value="">-- UF --</option>
-            {UFs.map((uf) => (
-              <option key={uf} value={uf}>{uf}</option>
-            ))}
-          </select>
         </Field>
       </div>
 

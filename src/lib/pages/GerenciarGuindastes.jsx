@@ -6,7 +6,7 @@ import ImageUpload from '../../components/ImageUpload';
 import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 
 import { db } from '../../config/supabase';
-import { getGuindastesLite, getGuindasteById, getErpImportAtual, importarErp, createGuindaste, updateGuindaste, deleteGuindaste } from '../../api/guindastes';
+import { getGuindastesLite, getGuindasteById, getErpImportAtual, importarErp, createGuindaste, updateGuindaste, deleteGuindaste, aprovarPrecoPendente, editarPrecoPendente } from '../../api/guindastes';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarGuindastes.css';
@@ -29,6 +29,7 @@ const normalizarArray = (valor) => {
 const GerenciarGuindastes = () => {
   const navigate = useNavigate();
   const { user } = useOutletContext(); // Pega o usuário do AdminLayout
+  const isAdminFull = user?.tipo === 'admin_full';
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
   const [isLoading, setIsLoading] = useState(true);
   const [guindastes, setGuindastes] = useState([]);
@@ -983,19 +984,76 @@ const GerenciarGuindastes = () => {
                 <span>Lote #{erpImportSummary.lote?.id}</span>
               </div>
               <div className="gg-erp-alerts">
-                <h3>Variações relevantes de MP/MO</h3>
+                <h3>Variações relevantes</h3>
                 {erpImportSummary.alertas_variacao?.length > 0 ? (
                   <div className="gg-erp-alert-list">
-                    {erpImportSummary.alertas_variacao.map((alert, index) => (
-                      <div key={`${alert.referencia}-${alert.campo}-${index}`}>
-                        <strong>{alert.referencia}</strong>
-                        <span>{alert.campo === 'custo_mp' ? 'MP' : 'MO'}</span>
-                        <span>{formatCurrency(alert.valor_anterior || 0)} → {formatCurrency(alert.valor_novo || 0)}</span>
-                        <b>{alert.variacao_percentual == null ? 'Base anterior zero' : `${alert.variacao_percentual}%`}</b>
-                      </div>
-                    ))}
+                    {erpImportSummary.alertas_variacao.map((alert, index) => {
+                      const guindaste = guindastes.find((g) => String(g.codigo_referencia) === String(alert.referencia));
+                      const campoLabel = alert.campo === 'custo_mp'
+                        ? 'MP'
+                        : alert.campo === 'custo_mo'
+                          ? 'MO'
+                          : 'Margem';
+                      return (
+                        <div
+                          key={`${alert.referencia}-${alert.campo}-${index}`}
+                          className={`gg-erp-alert-item ${erpImportSummary.referencias_pendentes?.includes(alert.referencia) ? 'gg-erp-alert-pendente' : ''}`}
+                        >
+                          <div className="gg-erp-alert-info">
+                            <strong>{alert.referencia}</strong>
+                            <span>{campoLabel}</span>
+                            <span>{formatCurrency(alert.valor_anterior || 0)} → {formatCurrency(alert.valor_novo || 0)}</span>
+                            <b>{alert.variacao_percentual == null ? 'Base anterior zero' : `${alert.variacao_percentual}%`}</b>
+                          </div>
+                          {erpImportSummary.referencias_pendentes?.includes(alert.referencia) && isAdminFull && guindaste && (
+                            <div className="gg-erp-alert-actions">
+                              <button
+                                type="button"
+                                className="btn-modern-save"
+                                onClick={async () => {
+                                  try {
+                                    setErpImporting(true);
+                                    await aprovarPrecoPendente(guindaste.id);
+                                    setToast({ visible: true, message: `Preço de ${alert.referencia} aprovado.`, type: 'success' });
+                                  } catch (err) {
+                                    setToast({ visible: true, message: err.message || 'Erro ao aprovar.', type: 'error' });
+                                  } finally {
+                                    setErpImporting(false);
+                                  }
+                                }}
+                                disabled={erpImporting}
+                              >
+                                Aprovar
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-modern-cancel"
+                                onClick={async () => {
+                                  const custoMp = window.prompt(`Editar Custo MP para ${alert.referencia}:`, '');
+                                  if (custoMp === null) return;
+                                  const custoMo = window.prompt(`Editar Custo MO para ${alert.referencia}:`, '');
+                                  if (custoMo === null) return;
+                                  try {
+                                    setErpImporting(true);
+                                    await editarPrecoPendente(guindaste.id, { custo_mp: custoMp, custo_mo: custoMo });
+                                    setToast({ visible: true, message: `Preço de ${alert.referencia} atualizado e aprovado.`, type: 'success' });
+                                  } catch (err) {
+                                    setToast({ visible: true, message: err.message || 'Erro ao editar.', type: 'error' });
+                                  } finally {
+                                    setErpImporting(false);
+                                  }
+                                }}
+                                disabled={erpImporting}
+                              >
+                                Editar
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                ) : <p>Nenhuma variação igual ou superior a {erpImportSummary.limite_variacao_percentual || 10}%.</p>}
+                ) : <p>Nenhuma variação igual ou superior a {erpImportSummary.limite_variacao_percentual || 0.5}%.</p>}
               </div>
             </div>
           </div>

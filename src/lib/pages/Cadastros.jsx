@@ -18,7 +18,7 @@ import { useMunicipioLists, useMunicipioNames } from '../../features/mapa/hooks.
 import { getCadastros, createCadastro, updateCadastro, deleteCadastro, saveAreas } from '../../api/territorial.js';
 import '../../styles/Cadastros.css';
 
-const vazio = () => ({
+const vazio = (uf = 'RS') => ({
   id: '',
   tipo: 'concessionaria',
   nome: '',
@@ -26,31 +26,40 @@ const vazio = () => ({
   contato: '',
   email: '',
   endereco: '',
-  uf: 'RS',
+  uf: uf.toUpperCase(),
   municipioId: '',
   municipioNome: '',
   municipios: [],
   password: '',
 });
 
-export default function Cadastros({ embedded = false, onSwitchToMap }) {
+export default function Cadastros({
+  embedded = false,
+  onSwitchToMap,
+  onVoltar,
+  initialView = 'lista',
+  initialUf = 'RS',
+  initialForm = null,
+}) {
   const { user } = useOutletContext();
 
-  const [view, setView] = useState('lista'); // 'lista' | 'form'
+  const initialUfUpper = String(initialUf || 'RS').toUpperCase();
+
+  const [view, setView] = useState(initialView); // 'lista' | 'form'
   const [allCadastros, setAllCadastros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [apiError, setApiError] = useState('');
 
-  const [form, setForm] = useState(vazio());
+  const [form, setForm] = useState(() => initialForm || vazio(initialUfUpper));
   const [search, setSearch] = useState('');
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [geoFiltro, setGeoFiltro] = useState('');
 
-  const [ufSel, setUfSel] = useState('RS');
+  const [ufSel, setUfSel] = useState(initialUfUpper);
   const [busca, setBusca] = useState('');
   const [munSel, setMunSel] = useState('');
-  const [mapUf, setMapUf] = useState('RS');
+  const [mapUf, setMapUf] = useState(initialUfUpper);
 
   const { listByUf, loadList, loadingList } = useMunicipioLists();
 
@@ -198,9 +207,9 @@ export default function Cadastros({ embedded = false, onSwitchToMap }) {
   }
 
   function novo() {
-    setForm(vazio());
-    setUfSel('RS');
-    setMapUf('RS');
+    setForm(vazio(initialUfUpper));
+    setUfSel(initialUfUpper);
+    setMapUf(initialUfUpper);
     setBusca('');
     setMunSel('');
     setView('form');
@@ -293,10 +302,14 @@ export default function Cadastros({ embedded = false, onSwitchToMap }) {
         }
       }
 
-      setForm(vazio());
-      setView('lista');
+      setForm(vazio(initialUfUpper));
       await fetchAll();
-      if (onSwitchToMap) onSwitchToMap();
+      if (onVoltar) {
+        onVoltar();
+      } else {
+        setView('lista');
+        if (onSwitchToMap) onSwitchToMap();
+      }
     } catch (err) {
       console.error('Erro ao salvar:', err);
       alert(err.message || 'Erro ao salvar cadastro');
@@ -306,7 +319,11 @@ export default function Cadastros({ embedded = false, onSwitchToMap }) {
   }
 
   function cancelar() {
-    setForm(vazio());
+    if (onVoltar) {
+      onVoltar();
+      return;
+    }
+    setForm(vazio(initialUfUpper));
     setView('lista');
   }
 
@@ -420,7 +437,7 @@ export default function Cadastros({ embedded = false, onSwitchToMap }) {
           <div className="cadastros-form-header">
             <h1 className="cadastros-form-title">{form.id ? 'Editar cadastro' : 'Novo cadastro'}</h1>
             <button type="button" className="cadastros-back-btn" onClick={cancelar}>
-              &larr; Voltar para lista
+              &larr; {onVoltar ? 'Voltar ao mapa' : 'Voltar para lista'}
             </button>
           </div>
 

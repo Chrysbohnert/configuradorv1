@@ -233,3 +233,135 @@
     align-items: stretch;
   }
 }
+
+.concessionarias-form-page {
+  width: min(var(--erp-page-max), calc(100% - var(--erp-page-gutter)));
+  min-height: calc(100vh - var(--erp-header-height));
+  margin: 0 auto;
+  padding: var(--erp-space-6) 0 64px;
+  color: var(--erp-text-main);
+  background: var(--erp-bg-page);
+}
+
+.concessionarias-form-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--erp-space-5);
+  margin-bottom: var(--erp-space-5);
+}
+
+.concessionarias-form-heading h1 {
+  margin: 0;
+  color: var(--erp-text-heading);
+  font-size: var(--erp-text-4xl);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.concessionarias-form-heading p {
+  margin: 8px 0 0;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-lg);
+}
+
+.concessionarias-form-layout {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.concessionarias-form-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-surface);
+  box-shadow: var(--erp-shadow-card);
+}
+
+.concessionarias-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.concessionarias-form-grid > div {
+  min-width: 0;
+}
+
+.concessionarias-form-grid label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: #374151;
+}
+
+.concessionarias-form-grid input,
+.concessionarias-form-grid select {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 13px;
+  box-sizing: border-box;
+  background: #fff;
+}
+
+.concessionarias-admin-title {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+  font-size: 12px;
+  font-weight: 700;
+  color: #374151;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.concessionarias-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--erp-border-light);
+}
+
+.concessionarias-form-actions button {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: var(--erp-radius-sm);
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-bold);
+  cursor: pointer;
+}
+
+.concessionarias-cancel {
+  border: 1px solid var(--erp-border);
+  background: #fff;
+  color: var(--erp-text-body);
+}
+
+.concessionarias-map-col {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-surface);
+  box-shadow: var(--erp-shadow-card);
+}
+
+@media (max-width: 1024px) {
+  .concessionarias-form-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .concessionarias-map-col {
+    order: 2;
+  }
+}

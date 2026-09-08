@@ -22,6 +22,7 @@ export default function GuindasteConfigurador({
     selectedGuindaste,
     precoExibido,
     loadingPreco,
+    precoErro,
     previewImageUrl,
     loadingPreview,
     handleSerie,
@@ -149,15 +150,19 @@ export default function GuindasteConfigurador({
             {selectedGuindaste ? (
               <div className="gc-price-box">
                 <div className="gc-price-label">Valor do equipamento</div>
-                <div className="gc-price-value">
-                  {loadingPreco
-                    ? 'Carregando preço...'
-                    : precoExibido != null && precoExibido > 0
-                      ? formatCurrency(precoExibido)
-                      : precoExibido === 0
-                        ? 'Preço indisponível para esta região'
-                        : '—'}
-                </div>
+                {precoErro ? (
+                  <div className="gc-price-error">{precoErro}</div>
+                ) : (
+                  <div className="gc-price-value">
+                    {loadingPreco
+                      ? 'Carregando preço...'
+                      : precoExibido != null && precoExibido > 0
+                        ? formatCurrency(precoExibido)
+                        : precoExibido === 0
+                          ? 'Preço indisponível para esta região'
+                          : '—'}
+                  </div>
+                )}
                 <div className="gc-price-code">{selectedGuindaste.codigo_referencia}</div>
               </div>
             ) : (
@@ -168,9 +173,13 @@ export default function GuindasteConfigurador({
 
             <button type="button"
               className="gc-confirm"
-              disabled={!selectedGuindaste || loadingPreco || !(precoExibido > 0)}
+              disabled={!selectedGuindaste || loadingPreco || precoErro || !(precoExibido > 0)}
               onClick={handleConfirmar}>
-              {selectedGuindaste ? '✓ Confirmar Configuração' : 'Selecione uma configuração acima'}
+              {precoErro
+                ? 'Preço bloqueado'
+                : selectedGuindaste
+                  ? '✓ Confirmar Configuração'
+                  : 'Selecione uma configuração acima'}
             </button>
           </div>
         )}

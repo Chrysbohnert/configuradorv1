@@ -287,196 +287,204 @@ const Concessionarias = () => {
         subtitle="Cadastre e gerencie concessionárias"
       />
 
-      <main className="concessionarias-page">
-        <div className="concessionarias-heading">
-          <div>
-            <h1>Concessionárias</h1>
-            <p>Cadastre e gerencie as concessionárias parceiras.</p>
+      {showModal ? (
+        <main className="concessionarias-form-page">
+          <div className="concessionarias-form-heading">
+            <div>
+              <h1>{isEditMode ? 'Editar Concessionária' : 'Nova Concessionária'}</h1>
+              <p>Preencha os dados e selecione as áreas de atuação no mapa.</p>
+            </div>
+            <button className="concessionarias-primary" type="button" onClick={handleCloseModal} disabled={isLoading}>
+              Voltar para lista
+            </button>
           </div>
-          <button className="concessionarias-primary" onClick={handleOpenCreate} disabled={isLoading}>
-            + Nova Concessionária
-          </button>
-        </div>
 
-        <section className="concessionarias-toolbar" aria-label="Filtros de concessionárias">
-          <span>Listagem <small>({concessionarias.length})</small></span>
-          {!isAdminFull(user) && (
-            <label>
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={(e) => setShowInactive(e.target.checked)}
-                disabled={isLoading}
-              />
-              Mostrar inativas
-            </label>
-          )}
-        </section>
+          {areaError && <div className="area-selector-error">{areaError}</div>}
 
-        <div className="concessionarias-table-shell">
-          {isLoading ? (
-            <div className="concessionarias-feedback">Carregando...</div>
-          ) : concessionarias.length === 0 ? (
-            <div className="concessionarias-feedback">Nenhuma concessionária cadastrada.</div>
-          ) : (
-            <div className="concessionarias-table-scroll">
-              <table className="concessionarias-table">
-                <thead>
-                  <tr>
-                    <th>Nome</th>
-                    <th>Região</th>
-                    <th>Status</th>
-                    <th>Email</th>
-                    <th>Telefone</th>
-                    {isAdminFull(user) && <th>Admins vinculados</th>}
-                    {isAdminFull(user) && <th>Vendedores vinculados</th>}
-                    <th>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {concessionarias.map((c) => (
-                    <tr key={c.id}>
-                      <td><strong>{c.nome}</strong><small>ID: {c.id}</small></td>
-                      <td>{c.regiao_preco}</td>
-                      <td><span className={`concessionarias-status ${c.ativo === false ? 'inactive' : 'active'}`}>{c.ativo === false ? 'Inativa' : 'Ativa'}</span></td>
-                      <td>{c.email || '-'}</td>
-                      <td>{c.telefone || '-'}</td>
-                      {isAdminFull(user) && (
-                        <td>{c.admins?.length ? c.admins.map((admin) => admin.nome).join(', ') : '-'}</td>
-                      )}
-                      {isAdminFull(user) && (
-                        <td>{c.vendedores?.length ? c.vendedores.map((vendedor) => vendedor.nome).join(', ') : '-'}</td>
-                      )}
-                      <td>
-                        <div className="concessionarias-actions">
-                          <button type="button" onClick={() => handleOpenEdit(c)} disabled={isLoading}>Editar</button>
-                          <button type="button" onClick={() => handleToggleAtivo(c)} disabled={isLoading}>
-                            {c.ativo === false ? 'Ativar' : 'Inativar'}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Modal */}
-      {showModal && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
-          onClick={handleCloseModal}
-        >
-          <div
-            style={{ background: '#fff', borderRadius: '12px', boxShadow: '0 20px 60px rgba(0,0,0,0.25)', width: '100%', maxWidth: '1000px', maxHeight: 'calc(100vh - 40px)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '15px', fontWeight: '700', color: '#111' }}>
-                {isEditMode ? 'Editar Concessionária' : 'Nova Concessionária'}
-              </span>
-              <button
-                onClick={handleCloseModal}
-                style={{ border: 'none', background: 'none', fontSize: '18px', cursor: 'pointer', color: '#6b7280', lineHeight: 1 }}
-              >×</button>
-            </div>
-
-            {/* Modal Body */}
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', overflowY: 'auto', flex: 1 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Nome da Concessionária *</label>
-                    <input type="text" value={formData.nome} onChange={(e) => handleInputChange('nome', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Região *</label>
-                    <select value={formData.regiao_preco} onChange={(e) => handleInputChange('regiao_preco', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', background: '#fff' }}>
-                      <option value="">Selecione...</option>
-                      {REGIOES_PRECO.map((r) => (
-                        <option key={r.value} value={r.value}>{r.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>CNPJ</label>
-                    <input type="text" value={formData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Telefone</label>
-                    <input type="text" value={formData.telefone} onChange={(e) => handleInputChange('telefone', e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Email</label>
-                    <input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  </div>
-
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Endereço</label>
-                    <input type="text" value={formData.endereco} onChange={(e) => handleInputChange('endereco', e.target.value)} style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                  </div>
-
-                  {!isEditMode && (
-                    <>
-                      <div style={{ gridColumn: '1 / -1', marginTop: '6px', paddingTop: '12px', borderTop: '1px solid #f1f5f9', fontSize: '12px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                        Admin da Concessionária
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Nome do Admin *</label>
-                        <input type="text" value={formData.admin_nome} onChange={(e) => handleInputChange('admin_nome', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Email do Admin *</label>
-                        <input type="email" value={formData.admin_email} onChange={(e) => handleInputChange('admin_email', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                      </div>
-
-                      <div style={{ gridColumn: '1 / -1' }}>
-                        <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '5px', color: '#374151' }}>Senha do Admin *</label>
-                        <input type="password" value={formData.admin_senha} onChange={(e) => handleInputChange('admin_senha', e.target.value)} required style={{ width: '100%', padding: '7px 10px', border: '1px solid #e5e5e5', borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }} />
-                      </div>
-                    </>
-                  )}
-                  <div style={{ gridColumn: '1 / -1', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
-                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>Área de atuação</div>
-                    {areaError && <div className="area-selector-error">{areaError}</div>}
-                    <AreaSelector
-                      tipo="concessionaria"
-                      entidadeId={editingId}
-                      areas={selectedAreas}
-                      onChange={setSelectedAreas}
-                      disabled={isLoading}
-                    />
-                  </div>
+          <form onSubmit={handleSubmit} className="concessionarias-form-layout">
+            <div className="concessionarias-form-col">
+              <div className="concessionarias-form-grid">
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label>Nome da Concessionária *</label>
+                  <input
+                    type="text"
+                    value={formData.nome}
+                    onChange={(e) => handleInputChange('nome', e.target.value)}
+                    required
+                  />
                 </div>
+
+                <div>
+                  <label>Região *</label>
+                  <select value={formData.regiao_preco} onChange={(e) => handleInputChange('regiao_preco', e.target.value)} required>
+                    <option value="">Selecione...</option>
+                    {REGIOES_PRECO.map((r) => (
+                      <option key={r.value} value={r.value}>{r.label}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label>CNPJ</label>
+                  <input type="text" value={formData.cnpj} onChange={(e) => handleInputChange('cnpj', e.target.value)} />
+                </div>
+
+                <div>
+                  <label>Telefone</label>
+                  <input type="text" value={formData.telefone} onChange={(e) => handleInputChange('telefone', e.target.value)} />
+                </div>
+
+                <div>
+                  <label>Email</label>
+                  <input type="email" value={formData.email} onChange={(e) => handleInputChange('email', e.target.value)} />
+                </div>
+
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label>Endereço</label>
+                  <input type="text" value={formData.endereco} onChange={(e) => handleInputChange('endereco', e.target.value)} />
+                </div>
+
+                {!isEditMode && (
+                  <>
+                    <div className="concessionarias-admin-title">
+                      Admin da Concessionária
+                    </div>
+
+                    <div>
+                      <label>Nome do Admin *</label>
+                      <input
+                        type="text"
+                        value={formData.admin_nome}
+                        onChange={(e) => handleInputChange('admin_nome', e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label>Email do Admin *</label>
+                      <input
+                        type="email"
+                        value={formData.admin_email}
+                        onChange={(e) => handleInputChange('admin_email', e.target.value)}
+                        required
+                      />
+                    </div>
+
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <label>Senha do Admin *</label>
+                      <input
+                        type="password"
+                        value={formData.admin_senha}
+                        onChange={(e) => handleInputChange('admin_senha', e.target.value)}
+                        required
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
-              {/* Modal Footer */}
-              <div style={{ padding: '12px 20px', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  style={{ padding: '7px 20px', background: 'white', color: '#374151', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
-                >Cancelar</button>
+              <div className="concessionarias-form-actions">
+                <button type="button" className="concessionarias-cancel" onClick={handleCloseModal}>
+                  Cancelar
+                </button>
                 <button
                   type="submit"
+                  className="concessionarias-primary"
                   disabled={isLoading}
-                  style={{ padding: '7px 20px', background: '#111827', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: '600', cursor: isLoading ? 'not-allowed' : 'pointer', opacity: isLoading ? 0.7 : 1 }}
-                >{isLoading ? 'Salvando...' : (isEditMode ? 'Salvar' : 'Criar')}</button>
+                >
+                  {isLoading ? 'Salvando...' : (isEditMode ? 'Salvar alterações' : 'Criar Concessionária')}
+                </button>
               </div>
-            </form>
+            </div>
+
+            <div className="concessionarias-map-col">
+              <AreaSelector
+                tipo="concessionaria"
+                entidadeId={editingId}
+                areas={selectedAreas}
+                onChange={setSelectedAreas}
+                disabled={isLoading}
+              />
+            </div>
+          </form>
+        </main>
+      ) : (
+        <main className="concessionarias-page">
+          <div className="concessionarias-heading">
+            <div>
+              <h1>Concessionárias</h1>
+              <p>Cadastre e gerencie as concessionárias parceiras.</p>
+            </div>
+            <button className="concessionarias-primary" onClick={handleOpenCreate} disabled={isLoading}>
+              + Nova Concessionária
+            </button>
           </div>
-        </div>
+
+          <section className="concessionarias-toolbar" aria-label="Filtros de concessionárias">
+            <span>Listagem <small>({concessionarias.length})</small></span>
+            {!isAdminFull(user) && (
+              <label>
+                <input
+                  type="checkbox"
+                  checked={showInactive}
+                  onChange={(e) => setShowInactive(e.target.checked)}
+                  disabled={isLoading}
+                />
+                Mostrar inativas
+              </label>
+            )}
+          </section>
+
+          <div className="concessionarias-table-shell">
+            {isLoading ? (
+              <div className="concessionarias-feedback">Carregando...</div>
+            ) : concessionarias.length === 0 ? (
+              <div className="concessionarias-feedback">Nenhuma concessionária cadastrada.</div>
+            ) : (
+              <div className="concessionarias-table-scroll">
+                <table className="concessionarias-table">
+                  <thead>
+                    <tr>
+                      <th>Nome</th>
+                      <th>Região</th>
+                      <th>Status</th>
+                      <th>Email</th>
+                      <th>Telefone</th>
+                      {isAdminFull(user) && <th>Admins vinculados</th>}
+                      {isAdminFull(user) && <th>Vendedores vinculados</th>}
+                      <th>Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {concessionarias.map((c) => (
+                      <tr key={c.id}>
+                        <td><strong>{c.nome}</strong><small>ID: {c.id}</small></td>
+                        <td>{c.regiao_preco}</td>
+                        <td><span className={`concessionarias-status ${c.ativo === false ? 'inactive' : 'active'}`}>{c.ativo === false ? 'Inativa' : 'Ativa'}</span></td>
+                        <td>{c.email || '-'}</td>
+                        <td>{c.telefone || '-'}</td>
+                        {isAdminFull(user) && (
+                          <td>{c.admins?.length ? c.admins.map((admin) => admin.nome).join(', ') : '-'}</td>
+                        )}
+                        {isAdminFull(user) && (
+                          <td>{c.vendedores?.length ? c.vendedores.map((vendedor) => vendedor.nome).join(', ') : '-'}</td>
+                        )}
+                        <td>
+                          <div className="concessionarias-actions">
+                            <button type="button" onClick={() => handleOpenEdit(c)} disabled={isLoading}>Editar</button>
+                            <button type="button" onClick={() => handleToggleAtivo(c)} disabled={isLoading}>
+                              {c.ativo === false ? 'Ativar' : 'Inativar'}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </main>
       )}
     </>
   );

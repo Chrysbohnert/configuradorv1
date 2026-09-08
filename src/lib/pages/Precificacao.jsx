@@ -7,6 +7,10 @@ import {
   salvarPrecificacao,
 } from '../../api/precificacao';
 import {
+  aprovarPrecoPendente,
+  editarPrecoPendente,
+} from '../../api/guindastes';
+import {
   getRegrasTributacao,
   salvarRegraTributacao,
   gerarRegrasParaTodasUFs,
@@ -97,7 +101,8 @@ function TabelaRolavel({ children }) {
 // =============================
 // 1. Equipamentos
 // =============================
-function PrecificacaoEquipamentos({ showToast }) {
+function PrecificacaoEquipamentos({ showToast, user }) {
+  const isAdminFull = user?.tipo === 'admin_full';
   const [isLoading, setIsLoading] = useState(false);
   const [equipamentos, setEquipamentos] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -166,6 +171,43 @@ function PrecificacaoEquipamentos({ showToast }) {
     }
   };
 
+  const handleAprovarPreco = async (item) => {
+    if (!isAdminFull) return;
+    setIsLoading(true);
+    try {
+      await aprovarPrecoPendente(item.id);
+      showToast('success', `Preço do equipamento ${item.codigo_referencia || item.modelo} aprovado.`);
+      await loadEquipamentos();
+    } catch (error) {
+      console.error('Erro ao aprovar preço:', error);
+      showToast('error', error.message || 'Erro ao aprovar preço.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditarPreco = async (item) => {
+    if (!isAdminFull) return;
+    const custoMp = window.prompt(`Editar Custo MP para ${item.codigo_referencia || item.modelo}:`, item.custo_mp ?? '');
+    if (custoMp === null) return;
+    const custoMo = window.prompt(`Editar Custo MO para ${item.codigo_referencia || item.modelo}:`, item.custo_mo ?? '');
+    if (custoMo === null) return;
+    setIsLoading(true);
+    try {
+      await editarPrecoPendente(item.id, {
+        custo_mp: custoMp,
+        custo_mo: custoMo,
+      });
+      showToast('success', `Preço do equipamento ${item.codigo_referencia || item.modelo} atualizado e aprovado.`);
+      await loadEquipamentos();
+    } catch (error) {
+      console.error('Erro ao editar preço:', error);
+      showToast('error', error.message || 'Erro ao editar preço.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <section>
       <h2 className="precificacao-section-title">Precificação por equipamento</h2>
@@ -195,6 +237,7 @@ function PrecificacaoEquipamentos({ showToast }) {
                 <th className="numeric">Assistência %</th>
                 <th className="numeric">Margem %</th>
                 <th className="numeric">Preço base</th>
+                <th>Status</th>
                 <th>Ações</th>
               </tr>
             </thead>
@@ -202,7 +245,7 @@ function PrecificacaoEquipamentos({ showToast }) {
               {equipamentos.map((item) => {
                 const isEditing = String(editingId) === String(item.id);
                 return (
-                  <tr key={item.id}>
+                  <tr key={item.id} className={item.status_preco === 'pendente' ? 'precificacao-pendente' : ''}>
                     <td><strong>{item.codigo_referencia || '-'}</strong></td>
                     <td>{item.ncm || '—'}</td>
                     <td>
@@ -296,12 +339,43 @@ function PrecificacaoEquipamentos({ showToast }) {
                           </strong>
                         </td>
                         <td>
-                          <button
-                            className="precificacao-btn small"
-                            onClick={() => handleEdit(item)}
-                          >
-                            Editar
-                          </button>
+                          {item.status_preco === 'pendente' ? (
+                            <span className="precificacao-status-pendente" title={`Pendente desde: ${new Date(item.preco_pendente_desde).toLocaleString('pt-BR')}`}>
+                              Pendente
+                            </span>
+                          ) : (
+                            <span className="precificacao-status-aprovado">Aprovado</span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="precificacao-row-actions">
+                            {item.status_preco === 'pendente' && isAdminFull && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="precificacao-btn primary small"
+                                  onClick={() => handleAprovarPreco(item)}
+                                  disabled={isLoading}
+                                >
+                                  Aprovar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="precificacao-btn small"
+                                  onClick={() => handleEditarPreco(item)}
+                                  disabled={isLoading}
+                                >
+                                  Editar
+                                </button>
+                              </>
+                            )}
+                            <button
+                              className="precificacao-btn small"
+                              onClick={() => handleEdit(item)}
+                            >
+                              Editar %
+                            </button>
+                          </div>
                         </td>
                       </>
                     )}
@@ -1640,7 +1714,7 @@ export default function Precificacao() {
             ))}
           </div>
 
-          {activeTab === 'precificacao' && <PrecificacaoEquipamentos key={refreshKey} showToast={showToast} />}
+          {activeTab === 'precificacao' && <PrecificacaoEquipamentos key={refreshKey} showToast={showToast} user={user} />}
           {activeTab === 'tributacao' && <Tributacao key={refreshKey} showToast={showToast} />}
           {activeTab === 'condicoes' && <CondicoesPagamento key={refreshKey} showToast={showToast} />}
           {activeTab === 'parametros' && <Parametros key={refreshKey} showToast={showToast} />}

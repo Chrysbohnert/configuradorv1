@@ -80,6 +80,9 @@ function mapRows(headers, sourceRows) {
     throw error;
   }
 
+  const MARGEM_ALIASES = ['MARGEM', 'MARGEM LUCRO', 'MARGEM DE LUCRO', 'MARGEM LUCRO PERCENT'];
+  const hasMargemColumn = MARGEM_ALIASES.some((alias) => headers.includes(alias));
+
   const byReference = new Map();
   sourceRows.forEach((values) => {
     const row = {};
@@ -94,6 +97,8 @@ function mapRows(headers, sourceRows) {
       ncm: normalizeNcm(String(firstValue(row, ['NCM'])).replace(/\.0$/, '')) || null,
       custo_mp: parseNumber(firstValue(row, ['CUSTO MP', 'VALOR MP', 'MP'])),
       custo_mo: parseNumber(firstValue(row, ['CUSTO MO', 'VALOR MO', 'MO'])),
+      margem_lucro_percent: parseNumber(firstValue(row, ['MARGEM', 'MARGEM LUCRO', 'MARGEM DE LUCRO', 'MARGEM LUCRO PERCENT'])),
+      hasMargemColumn,
     });
   });
 
@@ -156,6 +161,22 @@ function buildAlert(reference, field, previous, next) {
   };
 }
 
+function auditoriaPendencia({ client, guindasteId, usuario, campo, anterior, novo }) {
+  return client.query(
+    `INSERT INTO public.preco_auditoria
+       (guindaste_id, usuario_id, usuario_nome, acao, valor_anterior, valor_novo, motivo)
+     VALUES ($1, $2, $3, 'importacao_pendente', $4, $5, $6)`,
+    [
+      guindasteId,
+      usuario?.id || null,
+      usuario?.nome || usuario?.email || null,
+      JSON.stringify(anterior === null || anterior === undefined ? null : Number(anterior)),
+      JSON.stringify(novo === null || novo === undefined ? null : Number(novo)),
+      `Variação percentual igual ou superior a ${VARIACAO_RELEVANTE_PERCENT}% em ${campo}`,
+    ]
+  );
+}
+
 async function importSnapshot({ buffer, filename, user }) {
   const items = await parseWorkbook(buffer, filename);
   const client = await getClient();
@@ -173,9 +194,9 @@ async function importSnapshot({ buffer, filename, user }) {
     for (const item of items) {
       await client.query(
         `INSERT INTO public.erp_import_itens
-           (lote_id, referencia, descricao, ncm, custo_mp, custo_mo)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [lot.id, item.referencia, item.descricao, item.ncm, item.custo_mp, item.custo_mo]
+           (lote_id, referencia, descricao, ncm, custo_mp, custo_mo, margem_lucro_percent)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [lot.id, item.referencia, item.descricao, item.ncm, item.custo_mp, item.custo_mo, item.margem_lucro_percent]
       );
     }
 
@@ -187,7 +208,18 @@ async function importSnapshot({ buffer, filename, user }) {
       [references]
     );
     const existingByReference = new Map(existing.map((item) => [String(item.codigo_referencia), item]));
+
+    const guindasteIds = existing.map((item) => item.id);
+    const { rows: precificacoes } = await client.query(
+      `SELECT guindaste_id, margem_lucro_percent
+       FROM public.precificacao
+       WHERE guindaste_id = ANY($1::bigint[])`,
+      [guindasteIds]
+    );
+    const precificacaoByGuindasteId = new Map(precificacoes.map((p) => [String(p.guindaste_id), p]));
+
     const alerts = [];
+    const pendentes = [];
 
     for (const item of items) {
       const crane = existingByReference.get(item.referencia);
@@ -196,12 +228,70 @@ async function importSnapshot({ buffer, filename, user }) {
       const moAlert = buildAlert(item.referencia, 'custo_mo', crane.custo_mo, item.custo_mo);
       if (mpAlert) alerts.push(mpAlert);
       if (moAlert) alerts.push(moAlert);
-      await client.query(
-        `UPDATE public.guindastes
-         SET custo_mp = $1, custo_mo = $2, updated_at = NOW()
-         WHERE id = $3`,
-        [item.custo_mp, item.custo_mo, crane.id]
-      );
+
+      let margemAlert = null;
+      if (item.hasMargemColumn && item.margem_lucro_percent !== null) {
+        const atual = precificacaoByGuindasteId.get(String(crane.id));
+        const margemAnterior = atual?.margem_lucro_percent ?? null;
+        margemAlert = buildAlert(item.referencia, 'margem_lucro_percent', margemAnterior, item.margem_lucro_percent);
+        if (margemAlert) alerts.push(margemAlert);
+        await client.query(
+          `INSERT INTO public.precificacao (guindaste_id, margem_lucro_percent)
+           VALUES ($1, $2)
+           ON CONFLICT (guindaste_id) DO UPDATE SET
+             margem_lucro_percent = EXCLUDED.margem_lucro_percent,
+             updated_at = NOW()`,
+          [crane.id, item.margem_lucro_percent]
+        );
+      }
+
+      const ficouPendente = mpAlert || moAlert || margemAlert;
+      if (ficouPendente) {
+        pendentes.push(crane.id);
+        await client.query(
+          `UPDATE public.guindastes
+           SET custo_mp = $1, custo_mo = $2, status_preco = 'pendente', preco_pendente_desde = NOW(), updated_at = NOW()
+           WHERE id = $3`,
+          [item.custo_mp, item.custo_mo, crane.id]
+        );
+        if (mpAlert) {
+          await auditoriaPendencia({
+            client,
+            guindasteId: crane.id,
+            usuario: user,
+            campo: 'custo_mp',
+            anterior: crane.custo_mp,
+            novo: item.custo_mp,
+          });
+        }
+        if (moAlert) {
+          await auditoriaPendencia({
+            client,
+            guindasteId: crane.id,
+            usuario: user,
+            campo: 'custo_mo',
+            anterior: crane.custo_mo,
+            novo: item.custo_mo,
+          });
+        }
+        if (margemAlert) {
+          await auditoriaPendencia({
+            client,
+            guindasteId: crane.id,
+            usuario: user,
+            campo: 'margem_lucro_percent',
+            anterior: precificacaoByGuindasteId.get(String(crane.id))?.margem_lucro_percent ?? null,
+            novo: item.margem_lucro_percent,
+          });
+        }
+      } else {
+        await client.query(
+          `UPDATE public.guindastes
+           SET custo_mp = $1, custo_mo = $2, updated_at = NOW()
+           WHERE id = $3`,
+          [item.custo_mp, item.custo_mo, crane.id]
+        );
+      }
     }
 
     const { rows: missingRows } = await client.query(
@@ -230,6 +320,10 @@ async function importSnapshot({ buffer, filename, user }) {
       guindastes_existentes_atualizados: existing.length,
       produtos_novos_disponiveis: items.length - existing.length,
       referencias_cadastro_nao_encontradas: missingRows.map((row) => row.codigo_referencia),
+      referencias_pendentes: [...new Set(pendentes.map((id) => {
+        const entry = [...existingByReference.entries()].find(([, c]) => c.id === id);
+        return entry ? String(entry[0]) : String(id);
+      }))],
       alertas_variacao: alerts,
       limite_variacao_percentual: VARIACAO_RELEVANTE_PERCENT,
     };
@@ -251,7 +345,7 @@ async function findCurrent() {
   );
   if (!lots[0]) return null;
   const { rows: items } = await query(
-    `SELECT id, lote_id, referencia, descricao, ncm, custo_mp, custo_mo, created_at
+    `SELECT id, lote_id, referencia, descricao, ncm, custo_mp, custo_mo, margem_lucro_percent, created_at
      FROM public.erp_import_itens
      WHERE lote_id = $1
      ORDER BY referencia`,

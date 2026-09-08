@@ -30,6 +30,7 @@ const KNOWN_FIELDS = [
   'prototipo_observacoes_pdf', 'is_comercio_exterior', 'valor_instalacao_cliente',
   'valor_instalacao_incluso', 'bloquear_desconto',
   'custo_mp', 'custo_mo',
+  'status_preco', 'preco_pendente_desde',
 ];
 
 async function findAllEstoque() {
@@ -164,6 +165,18 @@ async function remove(id) {
   return rowCount > 0;
 }
 
+async function verificarStatusPreco(guindasteId) {
+  const { rows } = await query(
+    `SELECT status_preco FROM guindastes WHERE id = $1`,
+    [Number(guindasteId)]
+  );
+  if (rows[0]?.status_preco === 'pendente') {
+    const error = new Error('Equipamento com preço pendente de validação. Aprovação ou edição necessária antes de uso em propostas.');
+    error.status = 403;
+    throw error;
+  }
+}
+
 function casarRegiaoPreco(regiaoNorm, regiaoOriginal, regiaoDb) {
   const r = (regiaoDb || '').toLowerCase().trim();
   return (
@@ -175,6 +188,8 @@ function casarRegiaoPreco(regiaoNorm, regiaoOriginal, regiaoDb) {
 
 async function findPrecoPorRegiao(guindasteId, regiao) {
   if (guindasteId == null || guindasteId === '' || !regiao) return 0;
+
+  await verificarStatusPreco(guindasteId);
 
   const regiaoNorm = normalizarRegiao(regiao);
   const id = Number(guindasteId);
@@ -200,6 +215,8 @@ async function findPrecoPorRegiao(guindasteId, regiao) {
 
 async function findPrecoCompraPorRegiao(guindasteId, regiao) {
   if (guindasteId == null || guindasteId === '' || !regiao) return 0;
+
+  await verificarStatusPreco(guindasteId);
 
   const regiaoNorm = normalizarRegiao(regiao);
   const id = Number(guindasteId);
@@ -275,6 +292,116 @@ async function savePrecosPorRegiao(guindasteId, precos) {
   }
 }
 
+async function aprovarPreco(guindasteId, usuario) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) throw Object.assign(new Error('guindaste_id inválido'), { status: 400 });
+
+  const client = await require('../db/pool').getClient();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `UPDATE guindastes
+       SET status_preco = 'aprovado', preco_pendente_desde = NULL, updated_at = NOW()
+       WHERE id = $1
+       RETURNING id, codigo_referencia, status_preco`,
+      [id]
+    );
+    if (!rows.length) throw Object.assign(new Error('Guindaste não encontrado'), { status: 404 });
+
+    await client.query(
+      `INSERT INTO public.preco_auditoria
+         (guindaste_id, usuario_id, usuario_nome, acao, valor_anterior, valor_novo, motivo)
+       VALUES ($1, $2, $3, 'aprovar', NULL, NULL, 'Aprovação manual do preço/custo pendente')`,
+      [id, usuario?.id || null, usuario?.nome || usuario?.email || null]
+    );
+
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function editarPrecoPendente(guindasteId, data, usuario) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) throw Object.assign(new Error('guindaste_id inválido'), { status: 400 });
+
+  const camposPermitidos = ['custo_mp', 'custo_mo'];
+  const sets = [];
+  const params = [];
+  const valores = {};
+
+  camposPermitidos.forEach((f) => {
+    if (data[f] !== undefined && data[f] !== null && data[f] !== '') {
+      const v = Number(data[f]);
+      if (Number.isFinite(v)) {
+        params.push(v);
+        sets.push(`"${f}" = $${params.length}`);
+        valores[f] = v;
+      }
+    }
+  });
+
+  if (sets.length === 0) throw Object.assign(new Error('Nenhum campo de preço válido fornecido'), { status: 400 });
+
+  const client = await require('../db/pool').getClient();
+  try {
+    await client.query('BEGIN');
+    const { rows: current } = await client.query(
+      `SELECT custo_mp, custo_mo FROM guindastes WHERE id = $1`,
+      [id]
+    );
+    if (!current.length) throw Object.assign(new Error('Guindaste não encontrado'), { status: 404 });
+
+    params.push(id);
+    const { rows } = await client.query(
+      `UPDATE guindastes
+       SET ${sets.join(', ')}, status_preco = 'aprovado', preco_pendente_desde = NULL, updated_at = NOW()
+       WHERE id = $${params.length}
+       RETURNING id, codigo_referencia, custo_mp, custo_mo, status_preco`,
+      params
+    );
+
+    await client.query(
+      `INSERT INTO public.preco_auditoria
+         (guindaste_id, usuario_id, usuario_nome, acao, valor_anterior, valor_novo, motivo)
+       VALUES ($1, $2, $3, 'editar', $4, $5, 'Edição manual do preço/custo pendente')`,
+      [
+        id,
+        usuario?.id || null,
+        usuario?.nome || usuario?.email || null,
+        JSON.stringify({ custo_mp: current[0].custo_mp, custo_mo: current[0].custo_mo }),
+        JSON.stringify(valores),
+      ]
+    );
+
+    await client.query('COMMIT');
+    return rows[0];
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+async function listarAuditoriaPreco(guindasteId, limit = 50) {
+  const id = Number(guindasteId);
+  if (Number.isNaN(id)) return [];
+  const { rows } = await query(
+    `SELECT id, guindaste_id, usuario_id, usuario_nome, acao, valor_anterior, valor_novo, motivo, created_at
+     FROM public.preco_auditoria
+     WHERE guindaste_id = $1
+     ORDER BY created_at DESC
+     LIMIT $2`,
+    [id, limit]
+  );
+  return rows;
+}
+
 async function savePrecosCompraPorRegiao(guindasteId, precos) {
   const id = Number(guindasteId);
   console.log('[savePrecosCompraPorRegiao] guindasteId:', guindasteId, '-> id:', id, 'precos:', precos);
@@ -320,4 +447,7 @@ module.exports = {
   findAllPrecosCompraPorRegiao,
   savePrecosPorRegiao,
   savePrecosCompraPorRegiao,
+  aprovarPreco,
+  editarPrecoPendente,
+  listarAuditoriaPreco,
 };
