@@ -732,6 +732,48 @@
   cursor: not-allowed;
 }
 
+.condicoes-comerciais-precificacao {
+  margin: 0 24px 24px;
+  padding: 18px;
+  border: 1px solid var(--erp-divider);
+  border-radius: var(--erp-radius-lg);
+  background: var(--erp-bg-subtle);
+}
+
+.condicoes-comerciais-heading,
+.condicoes-comerciais-resultado > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.condicoes-comerciais-heading h3,
+.condicoes-comerciais-heading p { margin: 0; }
+.condicoes-comerciais-heading p,
+.condicoes-comerciais-heading span,
+.condicoes-comerciais-grid small { color: var(--erp-text-muted); font-size: var(--erp-text-xs); }
+
+.condicoes-comerciais-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.condicoes-comerciais-grid label { display: flex; flex-direction: column; gap: 5px; font-size: var(--erp-text-sm); font-weight: 700; }
+.condicoes-comerciais-grid input,
+.condicoes-comerciais-grid select { padding: 9px 10px; border: 1px solid var(--erp-border); border-radius: var(--erp-radius-sm); background: white; }
+.condicoes-comerciais-calcular { padding: 10px 16px; border: 0; border-radius: var(--erp-radius-sm); background: var(--erp-text-heading); color: white; font-weight: 700; cursor: pointer; }
+.condicoes-comerciais-calcular:disabled { opacity: .6; cursor: wait; }
+.condicoes-comerciais-erro { margin: 8px 0; color: #b91c1c; font-size: var(--erp-text-sm); }
+.condicoes-comerciais-status { margin: 8px 0; color: var(--erp-text-muted); font-size: var(--erp-text-sm); }
+.condicoes-comerciais-comissao { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--erp-divider); }
+.condicoes-comerciais-comissao strong { text-align: right; }
+.condicoes-comerciais-resultado { margin-top: 16px; padding: 14px; background: white; border-radius: var(--erp-radius-md); display: grid; gap: 8px; }
+.condicoes-comerciais-resultado details { margin-top: 8px; }
+.condicoes-comerciais-resultado pre { max-height: 320px; overflow: auto; white-space: pre-wrap; font-size: 11px; }
+
 /* Resumo técnico */
 .resumo-tecnico-section {
   padding: 24px;

@@ -889,6 +889,9 @@ const NovoPedido = () => {
         processedNavKeyRef.current = location.key;
         
         setGuindastesSelecionados([guindaste]);
+        if (isAdminStark && guindaste.precificacaoComercial?.precificacaoMotor) {
+          setPagamentoData(guindaste.precificacaoComercial);
+        }
 
         //  VERIFICAR SE JÁ ESTÁ NO CARRINHO (evitar duplicação - apenas no fluxo normal)
         // Em modo concessionária, múltiplos guindastes são permitidos
@@ -944,7 +947,8 @@ const NovoPedido = () => {
           valor_instalacao_cliente: guindaste.valor_instalacao_cliente ?? null,
           valor_instalacao_incluso: guindaste.valor_instalacao_incluso ?? null,
           bloquear_desconto: !!guindaste.bloquear_desconto,
-          preco: precoGuindaste,
+          preco: guindaste.precificacaoComercial?.valorFinal || precoGuindaste,
+          precificacaoComercial: guindaste.precificacaoComercial || null,
           tipo: 'guindaste'
         };
 
@@ -1148,7 +1152,10 @@ const NovoPedido = () => {
         guindaste: { ...guindasteCompleto, preco: precoGuindaste },
         returnTo: '/novo-pedido',
         step: 2,
-        regiaoClienteSelecionada: regiaoClienteSelecionada
+        regiaoClienteSelecionada: regiaoClienteSelecionada,
+        clienteUf: clienteData?.uf || clienteCadastrado?.uf || '',
+        clienteMunicipio: clienteData?.cidade || clienteCadastrado?.cidade || '',
+        responsavelComercial: user?.nome || ''
       };
       console.log('[STEP_NAVIGATE] Indo para /detalhes-guindaste com state:', {
         step: navState.step,
@@ -1176,6 +1183,9 @@ const NovoPedido = () => {
       baseModel: group.model,
       variants: group.variants,
       regiaoClienteSelecionada: regiaoParaUsar,
+      clienteUf: clienteData?.uf || clienteCadastrado?.uf || '',
+      clienteMunicipio: clienteData?.cidade || clienteCadastrado?.cidade || '',
+      responsavelComercial: user?.nome || '',
       returnTo: '/novo-pedido',
       step: 2,
     };
@@ -1515,7 +1525,9 @@ const NovoPedido = () => {
             <PaymentPolicy
               key={`payment-${carrinho.find(item => item.tipo === 'guindaste')?.id || 'none'}-${regiaoClienteSelecionada}-${getTotalCarrinho()}`}
               precoBase={getTotalCarrinho()}
-              onPaymentComputed={setPagamentoData}
+              onPaymentComputed={(dados) => setPagamentoData((atual) => (
+                isAdminStark && atual?.precificacaoMotor ? atual : dados
+              ))}
               onFinish={handleNext}
               errors={validationErrors}
               user={user}
@@ -1753,6 +1765,7 @@ const NovoPedido = () => {
         }
         break;
       case 2:
+        if (isAdminStark && pagamentoData.precificacaoMotor) break;
         if (!pagamentoData.tipoPagamento) {
           errors.tipoPagamento = 'Selecione o tipo de pagamento';
         }
@@ -1838,6 +1851,7 @@ const NovoPedido = () => {
         if (isVendedorStarkComum && !clienteCadastrado) return false;
         return guindastesSelecionados.length > 0;
       case 2:
+        if (isAdminStark && pagamentoData.precificacaoMotor) return true;
         // Para revenda, apenas tipoPagamento, prazoPagamento e tipoFrete são obrigatórios
         if (pagamentoData.tipoPagamento === 'revenda') {
           return pagamentoData.tipoPagamento && 

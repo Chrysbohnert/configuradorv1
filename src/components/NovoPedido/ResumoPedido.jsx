@@ -900,7 +900,9 @@ const ResumoPedido = ({
           <div style={{ display: 'grid', gap: 0 }}>
             {compactRow(
               'Pagamento',
-              pagamentoData.tipoPagamento === 'revenda_gsi'
+              pagamentoData.tipoPagamento === 'precificacao'
+                ? 'Precificação administrativa'
+                : pagamentoData.tipoPagamento === 'revenda_gsi'
                 ? 'Revenda - GSI'
                 : pagamentoData.tipoPagamento === 'cnpj_cpf_gse'
                 ? 'CNPJ/CPF - GSE'
@@ -915,6 +917,8 @@ const ResumoPedido = ({
               'Prazo',
               pagamentoData.prazoPagamento === 'a_vista'
                 ? 'À Vista'
+                : pagamentoData.tipoPagamento === 'precificacao'
+                ? pagamentoData.prazoPagamento
                 : pagamentoData.prazoPagamento === '30_dias'
                 ? 'Até 30 dias (+3%)'
                 : pagamentoData.prazoPagamento === '60_dias'
@@ -932,6 +936,13 @@ const ResumoPedido = ({
                 : 'Não informado'
             )}
           </div>
+
+          {pagamentoData.precificacaoMotor && (
+            <div style={{ marginTop: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', padding: '10px' }}>
+              <FinancialLine label="Frete — Reaproveitamento de carga" value={formatCurrency(pagamentoData.valorFrete || 0)} />
+              <div style={{ marginTop: '4px', fontSize: '12px', color: '#64748b' }}>Frete mediante fechamento de carga</div>
+            </div>
+          )}
 
           {pagamentoData.condicaoExclusiva && (
             <div style={{ marginTop: '10px', background: '#fffbf0', border: '1px solid #ffd700', borderRadius: '6px', padding: '10px' }}>
@@ -997,7 +1008,7 @@ const ResumoPedido = ({
             </div>
           )}
 
-          {pagamentoData.tipoCliente === 'cliente' && pagamentoData.percentualEntrada > 0 && (
+          {(pagamentoData.tipoCliente === 'cliente' || pagamentoData.precificacaoMotor) && pagamentoData.percentualEntrada > 0 && (
             <div
               style={{
                 marginTop: '14px',

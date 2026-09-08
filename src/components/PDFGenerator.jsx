@@ -1281,6 +1281,7 @@ const renderFinanceiro = async (pedidoData, { inline = false } = {}) => {
             ${p.tipoFrete ? `
               <div style="background:#f5f5f5; border:1px solid #ddd; padding:6px 10px; font-size:12px; font-weight:700; color:#000; white-space:nowrap;">
                 ${t(lang, 'freight')}: ${String(p.tipoFrete).toUpperCase()} — ${valorFreteFinal > 0 ? `${t(lang, 'included')} — ${fmt(convert(valorFreteFinal))}` : t(lang, 'customerPaysDirectly')}
+                ${p.precificacaoMotor && p.observacaoFrete ? `<div style="font-size:10px; font-weight:500; margin-top:3px;">${p.observacaoFrete}</div>` : ''}
               </div>
             ` : ''}
             ${p.tipoInstalacao ? `
@@ -1921,7 +1922,7 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
               ${p.tipoFrete ? `
                 <tr style="border-bottom:1px solid #e0e0e0;">
                   <td style="padding:8px 12px; font-weight:600; color:#000; width:50%;">${t(lang, 'freight')}</td>
-                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')} — ${fmt(convert(valorFreteFinal))}` : ` — ${t(lang, 'customerPaysDirectly')}`}</td>
+                  <td style="padding:8px 12px; font-weight:700; color:#000; text-align:right;">${String(p.tipoFrete).toUpperCase()}${p.valorFrete > 0 ? ` — ${t(lang, 'included')} — ${fmt(convert(valorFreteFinal))}` : ` — ${t(lang, 'customerPaysDirectly')}`}${p.precificacaoMotor && p.observacaoFrete ? `<div style="font-size:10px; font-weight:500; margin-top:3px;">${p.observacaoFrete}</div>` : ''}</td>
                 </tr>
               ` : ''}
               ${p.tipoInstalacao ? `

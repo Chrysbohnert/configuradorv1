@@ -32,6 +32,20 @@ function parseNumber(input) {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function parsePercent(input) {
+  if (input === null || input === undefined || input === '') return null;
+  if (typeof input === 'number') {
+    if (!Number.isFinite(input)) return null;
+    // Excel frequentemente guarda percentuais como fração (0,0645 = 6,45%)
+    if (input > -1 && input < 1 && input !== 0) return Number((input * 100).toFixed(6));
+    return input;
+  }
+  const raw = String(cellValue(input)).trim().replace(/%/g, '').replace(/\s/g, '');
+  const normalized = raw.includes(',') ? raw.replace(/\./g, '').replace(',', '.') : raw;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function firstValue(row, aliases) {
   for (const alias of aliases) {
     if (Object.hasOwn(row, alias) && String(cellValue(row[alias])).trim() !== '') return cellValue(row[alias]);
@@ -80,7 +94,7 @@ function mapRows(headers, sourceRows) {
     throw error;
   }
 
-  const MARGEM_ALIASES = ['MARGEM', 'MARGEM LUCRO', 'MARGEM DE LUCRO', 'MARGEM LUCRO PERCENT'];
+  const MARGEM_ALIASES = ['MARGEM', 'MARGEM LUCRO', 'MARGEM DE LUCRO', 'MARGEM LUCRO PERCENT', 'MARGEM LUCRO %'];
   const hasMargemColumn = MARGEM_ALIASES.some((alias) => headers.includes(alias));
 
   const byReference = new Map();
@@ -97,7 +111,7 @@ function mapRows(headers, sourceRows) {
       ncm: normalizeNcm(String(firstValue(row, ['NCM'])).replace(/\.0$/, '')) || null,
       custo_mp: parseNumber(firstValue(row, ['CUSTO MP', 'VALOR MP', 'MP'])),
       custo_mo: parseNumber(firstValue(row, ['CUSTO MO', 'VALOR MO', 'MO'])),
-      margem_lucro_percent: parseNumber(firstValue(row, ['MARGEM', 'MARGEM LUCRO', 'MARGEM DE LUCRO', 'MARGEM LUCRO PERCENT'])),
+      margem_lucro_percent: parsePercent(firstValue(row, MARGEM_ALIASES)),
       hasMargemColumn,
     });
   });

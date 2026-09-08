@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../../styles/DetalhesGuindaste.css';
 import UnifiedHeader from '../../components/UnifiedHeader';
@@ -7,6 +7,8 @@ import { formatCurrency } from '../../utils/formatters';
 import { normalizarRegiao } from '../../utils/regiaoHelper';
 import { useGuindasteConfigurador } from '../../hooks/useGuindasteConfigurador';
 import { getOpcionalImagesFromVariant } from '../../config/opcionalImages';
+import { isAdminFull } from '../../utils/permissions';
+import CondicoesComerciaisPrecificacao from '../../components/NovoPedido/CondicoesComerciaisPrecificacao';
 
 const DetalhesGuindaste = () => {
   const navigate = useNavigate();
@@ -17,13 +19,14 @@ const DetalhesGuindaste = () => {
   const legacyGuindaste = state.guindaste || null;
 
   // Novo modo: modelo base + variantes para configurar
-  const { baseModel, variants, regiaoClienteSelecionada, returnTo, step, isModoConcessionaria } = state;
+  const { baseModel, variants, regiaoClienteSelecionada, clienteUf, clienteMunicipio, responsavelComercial, returnTo, step, isModoConcessionaria } = state;
 
   const [user, setUser] = useState(null);
   const [detalhesCompletos, setDetalhesCompletos] = useState(null);
   const [loadingDetalhes, setLoadingDetalhes] = useState(false);
   const [selectedImage, setSelectedImage] = useState(0);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [condicoesComerciais, setCondicoesComerciais] = useState(null);
 
   const isLegacyMode = !!legacyGuindaste;
   const hasModelData = !!baseModel && Array.isArray(variants) && variants.length > 0;
@@ -76,9 +79,11 @@ const DetalhesGuindaste = () => {
 
   const handleConfirmarConfiguracao = (guindasteConfigurado) => {
     const destino = returnTo || '/novo-pedido';
+    const precoCalculado = condicoesComerciais?.valorFinal;
     const guindasteFinal = {
       ...(detalhesCompletos || guindasteConfigurado),
-      preco: guindasteConfigurado.preco,
+      preco: precoCalculado || guindasteConfigurado.preco,
+      precificacaoComercial: condicoesComerciais || null,
     };
     navigate(destino, {
       state: {
@@ -190,9 +195,21 @@ const DetalhesGuindaste = () => {
   };
 
   const precoValido = precoExibido != null && precoExibido > 0;
+  const adminPrecificacao = isAdminFull(user) && !isModoConcessionaria;
+  const clienteAtual = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('novoPedido_clienteData') || '{}');
+    } catch {
+      return {};
+    }
+  }, []);
+  const ufCliente = String(clienteUf || clienteAtual?.uf || '').trim().toUpperCase();
+  const contribuinte = String(clienteAtual?.inscricao_estadual || clienteAtual?.inscricaoEstadual || '').trim().toUpperCase() !== 'ISENTO';
+  const handleCondicoesChange = useCallback((dados) => setCondicoesComerciais(dados), []);
   const podeConfirmar = isLegacyMode
-    ? true
-    : !!selectedGuindaste?.id && !loadingPreco && !loadingDetalhes && precoValido && !!detalhesCompletos;
+    ? (!adminPrecificacao || !!condicoesComerciais)
+    : !!selectedGuindaste?.id && !loadingPreco && !loadingDetalhes
+      && (adminPrecificacao ? !!condicoesComerciais : precoValido) && !!detalhesCompletos;
 
   const imagemPrincipal = isValidImageUrl(previewImageUrl) ? previewImageUrl : guindaste?.imagem_url;
 
@@ -409,6 +426,17 @@ const DetalhesGuindaste = () => {
           </div>
         )}
 
+        {adminPrecificacao && guindaste && (
+          <CondicoesComerciaisPrecificacao
+            guindaste={guindaste}
+            uf={ufCliente}
+            municipio={clienteMunicipio || clienteAtual?.cidade || ''}
+            contribuinte={contribuinte}
+            responsavelComercial={responsavelComercial || user?.nome}
+            onChange={handleCondicoesChange}
+          />
+        )}
+
         {/* Resumo técnico */}
         {renderResumoTecnico()}
 
@@ -445,7 +473,7 @@ const DetalhesGuindaste = () => {
               className="confirmar-configuracao-btn"
               disabled={!podeConfirmar}
               onClick={() => {
-                const precoFinal = precoExibido ?? selectedGuindaste?.preco;
+                const precoFinal = condicoesComerciais?.valorFinal || precoExibido || selectedGuindaste?.preco;
                 if (!selectedGuindaste?.id || !precoFinal || precoFinal <= 0) return;
                 handleConfirmarConfiguracao({ ...selectedGuindaste, preco: precoFinal });
               }}
