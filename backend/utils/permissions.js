@@ -33,6 +33,7 @@ const CANAIS = {
 // Mapeia tipo de usuário operacional para canal
 const TIPO_PARA_CANAL = {
   vendedor: CANAIS.REPRESENTANTES,
+  admin_concessionarias: CANAIS.CONCESSIONARIAS,
   admin_canal_interno: CANAIS.INTERNO,
   admin_representantes: CANAIS.REPRESENTANTES,
   admin_comercio_exterior: CANAIS.COMERCIO_EXTERIOR,

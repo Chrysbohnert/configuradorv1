@@ -69,14 +69,14 @@ async function update(id, fields) {
          email            = COALESCE($2, email),
          tipo             = COALESCE($3, tipo),
          regiao           = COALESCE($4, regiao),
-         concessionaria_id = COALESCE($5, concessionaria_id),
+         concessionaria_id = CASE WHEN $11 THEN $5 ELSE concessionaria_id END,
          canal            = COALESCE($6, canal),
          regioes_operacao = COALESCE($7, regioes_operacao),
          telefone         = COALESCE($8, telefone),
          cpf              = COALESCE($9, cpf)
      WHERE id = $10
      RETURNING ${COLS_PUBLIC}`,
-    [nome, email, tipo, regiao, concessionaria_id, canal, regioesSerializado, telefone, cpf, id]
+    [nome, email, tipo, regiao, concessionaria_id, canal, regioesSerializado, telefone, cpf, id, Object.prototype.hasOwnProperty.call(fields, 'concessionaria_id')]
   );
   return normalizarUsuario(rows[0]) || null;
 }

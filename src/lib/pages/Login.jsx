@@ -26,8 +26,8 @@ const Login = () => {
   const validarConcessionariaAtiva = async (user) => {
     if (!user) return true;
 
-    const isConcessionariaUser = user.canal === 'concessionarias' || user.tipo === 'admin_concessionaria' || user.tipo === 'vendedor_concessionaria';
-    if (!isConcessionariaUser) return true;
+    const exigeVinculoConcessionaria = user.tipo === 'admin_concessionaria' || user.tipo === 'vendedor_concessionaria';
+    if (!exigeVinculoConcessionaria) return true;
 
     if (!user.concessionaria_id) {
       setError('Usuário de concessionária sem vínculo. Contate o administrador.');

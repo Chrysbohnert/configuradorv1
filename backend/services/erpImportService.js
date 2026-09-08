@@ -1,5 +1,6 @@
 const ExcelJS = require('exceljs');
 const { query, getClient } = require('../db/pool');
+const { normalizeNcm } = require('../utils/ncm');
 
 const VARIACAO_RELEVANTE_PERCENT = 10;
 
@@ -90,7 +91,7 @@ function mapRows(headers, sourceRows) {
     byReference.set(referencia, {
       referencia,
       descricao: String(firstValue(row, ['DESCRICAO', 'DESCRICAO DO PRODUTO', 'PRODUTO'])).trim() || null,
-      ncm: String(firstValue(row, ['NCM'])).replace(/\.0$/, '').trim() || null,
+      ncm: normalizeNcm(String(firstValue(row, ['NCM'])).replace(/\.0$/, '')) || null,
       custo_mp: parseNumber(firstValue(row, ['CUSTO MP', 'VALOR MP', 'MP'])),
       custo_mo: parseNumber(firstValue(row, ['CUSTO MO', 'VALOR MO', 'MO'])),
     });

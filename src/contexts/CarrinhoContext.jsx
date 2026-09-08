@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { db } from '../config/supabase';
 import { normalizarRegiao } from '../utils/regiaoHelper';
 import { normalizarArray } from '../utils/normalizadores';
+import { carregarCarrinho, salvarCarrinho } from '../utils/carrinhoStorage';
 
 const CarrinhoContext = createContext(null);
 
@@ -16,16 +17,13 @@ export const useCarrinho = () => {
 
 export const CarrinhoProvider = ({ children }) => {
   const { user } = useAuth();
-  const [carrinho, setCarrinho] = useState(() => {
-    const savedCart = localStorage.getItem('carrinho');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [carrinho, setCarrinho] = useState(carregarCarrinho);
   const [clienteTemIE, setClienteTemIE] = useState(true);
   const [isRecalculating, setIsRecalculating] = useState(false);
 
   // Salvar carrinho no localStorage sempre que mudar
   useEffect(() => {
-    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+    salvarCarrinho(carrinho);
   }, [carrinho]);
 
   // Determinar se cliente tem IE baseado no contexto

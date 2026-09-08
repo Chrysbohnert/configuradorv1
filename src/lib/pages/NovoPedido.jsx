@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation, useOutletContext, useParams } from 'react-router-dom';
-import { isAdminFull } from '../../utils/permissions';
+import { isAdminFull, isAdminConcessionarias, podeAcessarPedidosCompra } from '../../utils/permissions';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
 import PaymentPolicy from '../../features/payment/PaymentPolicy';
@@ -19,6 +19,7 @@ import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency, generateCodigoProduto } from '../../utils/formatters';
 import { maskCPF, maskCNPJ } from '../../utils/masks';
 import { createLogger } from '../../utils/productionLogger';
+import { carregarCarrinho, salvarCarrinho } from '../../utils/carrinhoStorage';
 import { createDealInSalesIfNotExists } from '../../utils/bitrixClient';
 import ResumoPedidoExterno from '../../components/NovoPedido/ResumoPedido';
 import { isConcessionariaInterna } from '../../config/concessionariasInternas';
@@ -33,12 +34,22 @@ const NovoPedido = () => {
   const { propostaId } = useParams(); // Captura ID da proposta para edição
   const { user: authenticatedUser } = useOutletContext(); // Pega o usuário do VendedorLayout
   const isAdminStark = isAdminFull(authenticatedUser);
+  const isRotaPedidoCompra = location.pathname.startsWith('/nova-proposta-concessionaria');
+  const podeSelecionarConcessionariaPedido = isRotaPedidoCompra &&
+    podeAcessarPedidosCompra(authenticatedUser) &&
+    (isAdminStark || isAdminConcessionarias(authenticatedUser));
   const [responsaveis, setResponsaveis] = useState([]);
   const [responsavelSelecionado, setResponsavelSelecionado] = useState(null);
-  const user = isAdminStark ? (responsavelSelecionado || authenticatedUser) : authenticatedUser;
+  const [concessionariasCompra, setConcessionariasCompra] = useState([]);
+  const [concessionariaResponsavel, setConcessionariaResponsavel] = useState(null);
+  const user = useMemo(() => podeSelecionarConcessionariaPedido && concessionariaResponsavel
+    ? { ...authenticatedUser, tipo: 'admin_concessionaria', canal: 'concessionarias', concessionaria_id: concessionariaResponsavel.id }
+    : isAdminStark
+    ? (responsavelSelecionado || authenticatedUser)
+    : authenticatedUser, [authenticatedUser, concessionariaResponsavel, isAdminStark, podeSelecionarConcessionariaPedido, responsavelSelecionado]);
   const isConcessionariaUser = user?.canal === 'concessionarias' || user?.tipo === 'vendedor_concessionaria' || user?.tipo === 'admin_concessionaria';
   const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
-  const isModoConcessionaria = isAdminConcessionaria && location.pathname === '/nova-proposta-concessionaria';
+  const isModoConcessionaria = isRotaPedidoCompra && isAdminConcessionaria;
   // Mapa para o fluxo vendedor Stark comum: 4 etapas
   // 1=Guindaste, 2=Pagamento, 3=Estudo Veicular, 4=Finalizar
   const STARK_STEP_MAP = { 1: 1, 2: 2, 3: 4, 4: 5 };
@@ -89,8 +100,7 @@ const NovoPedido = () => {
   const [carrinho, setCarrinho] = useState(() => {
     // ✅ Carrega do localStorage em modo edição, vindo de detalhes, ou retornando com guindaste selecionado
     if (propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
-      const savedCart = localStorage.getItem('carrinho');
-      try { return savedCart ? JSON.parse(savedCart) : []; } catch { return []; }
+      return carregarCarrinho();
     }
     return [];
   });
@@ -106,9 +116,7 @@ const NovoPedido = () => {
   const [pedidoAtual, setPedidoAtual] = useState(null);
   const [clienteData, setClienteData] = useState(() => {
     try {
-      const savedCart = localStorage.getItem('carrinho');
-      let hasCart = false;
-      try { hasCart = Array.isArray(JSON.parse(savedCart || '[]')) && JSON.parse(savedCart || '[]').length > 0; } catch {}
+      const hasCart = carregarCarrinho().length > 0;
       if (hasCart || propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
         const saved = localStorage.getItem('novoPedido_clienteData');
         if (saved) return JSON.parse(saved);
@@ -119,9 +127,7 @@ const NovoPedido = () => {
   // MODIFICADO: caminhaoData agora é um array de estudos veiculares (um por equipamento)
   const [caminhaoData, setCaminhaoData] = useState(() => {
     try {
-      const savedCart = localStorage.getItem('carrinho');
-      let hasCart = false;
-      try { hasCart = Array.isArray(JSON.parse(savedCart || '[]')) && JSON.parse(savedCart || '[]').length > 0; } catch {}
+      const hasCart = carregarCarrinho().length > 0;
       if (hasCart || propostaId || location.state?.fromDetalhes || location.state?.guindasteSelecionado) {
         const saved = localStorage.getItem('novoPedido_caminhaoData');
         if (saved) return JSON.parse(saved);
@@ -405,6 +411,15 @@ const NovoPedido = () => {
   }, [isModoConcessionaria, user?.concessionaria_id]);
 
   useEffect(() => {
+    if (podeSelecionarConcessionariaPedido) {
+      db.getConcessionarias(false)
+        .then((data) => setConcessionariasCompra(data || []))
+        .catch((error) => {
+          console.error('Erro ao carregar concessionárias:', error);
+          setConcessionariasCompra([]);
+        });
+      return;
+    }
     if (!isAdminStark) return;
     db.getUsers()
       .then((data) => setResponsaveis((data || []).filter((item) => ['vendedor', 'vendedor_concessionaria', 'vendedor_exterior'].includes(item.tipo))))
@@ -412,7 +427,7 @@ const NovoPedido = () => {
         console.error('Erro ao carregar responsáveis comerciais:', error);
         setResponsaveis([]);
       });
-  }, [isAdminStark]);
+  }, [isAdminStark, podeSelecionarConcessionariaPedido]);
 
   useEffect(() => {
     if (!user) return;
@@ -482,9 +497,7 @@ const NovoPedido = () => {
     const carregarPropostaParaEdicao = async () => {
       if (!propostaId) {
         // Modo criação: só limpar se não há sessão ativa em andamento
-        const savedCart = localStorage.getItem('carrinho');
-        let hasCart = false;
-        try { const p = JSON.parse(savedCart || '[]'); hasCart = Array.isArray(p) && p.length > 0; } catch {}
+        const hasCart = carregarCarrinho().length > 0;
         if (!hasCart) {
           // ✅ Não resetar quando retornando de /detalhes-guindaste ou de navegação interna.
           // Nesse momento o carrinho ainda está vazio (o guindaste é adicionado pelo
@@ -530,7 +543,7 @@ const NovoPedido = () => {
         // Carregar carrinho
         if (dados.carrinho && Array.isArray(dados.carrinho)) {
           setCarrinho(dados.carrinho);
-          localStorage.setItem('carrinho', JSON.stringify(dados.carrinho));
+          salvarCarrinho(dados.carrinho);
         }
 
         // Carregar dados do cliente
@@ -748,7 +761,7 @@ const NovoPedido = () => {
 
     if (houveAlteracao) {
       setCarrinho(carrinhoAtualizado);
-      localStorage.setItem('carrinho', JSON.stringify(carrinhoAtualizado));
+      salvarCarrinho(carrinhoAtualizado);
     }
   };
 
@@ -794,12 +807,15 @@ const NovoPedido = () => {
         newCart = [...prev, { ...itemComTipo, quantidade: itemComTipo.quantidade || 1 }];
       }
 
-      localStorage.setItem('carrinho', JSON.stringify(newCart));
+      salvarCarrinho(newCart);
       return newCart;
     });
   };
 
   // Função para carregar dados dos guindastes
+  const regioesOperacaoKey = JSON.stringify(normalizarArray(user?.regioes_operacao));
+  const contextoEquipamentosKey = `${user?.id || ''}|${user?.tipo || ''}|${user?.concessionaria_id || ''}|${regioesOperacaoKey}`;
+  const contextoEquipamentosCarregadoRef = useRef(null);
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -807,7 +823,7 @@ const NovoPedido = () => {
       // ⚠️ PROTEÇÃO: Garantir que result.data é um array
       const all = Array.isArray(result?.data) ? result.data : [];
 
-      const regioesOp = normalizarArray(user?.regioes_operacao);
+      const regioesOp = JSON.parse(regioesOperacaoKey);
       const isVendedorCE = Array.isArray(regioesOp) && regioesOp.some(r => {
         const rLower = (r || '').toLowerCase().trim();
         return rLower.includes('comércio exterior') || rLower.includes('comercio exterior') || rLower.includes('comercio-exterior');
@@ -835,15 +851,18 @@ const NovoPedido = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [isAdminStark, user]);
+  }, [isAdminStark, regioesOperacaoKey]);
 
   useEffect(() => {
     if (!user) {
       navigate('/');
       return;
     }
+    if (podeSelecionarConcessionariaPedido && !concessionariaResponsavel) return;
+    if (contextoEquipamentosCarregadoRef.current === contextoEquipamentosKey) return;
+    contextoEquipamentosCarregadoRef.current = contextoEquipamentosKey;
     loadData();
-  }, [user, navigate, loadData]);
+  }, [concessionariaResponsavel, contextoEquipamentosKey, loadData, navigate, podeSelecionarConcessionariaPedido, user]);
 
   // Ref para evitar duplicação por React StrictMode (double-fire do useEffect)
   const processedNavKeyRef = useRef(null);
@@ -1175,7 +1194,7 @@ const NovoPedido = () => {
   const removerItemPorIndex = (index) => {
     setCarrinho(prev => {
       const newCart = prev.filter((_, i) => i !== index);
-      localStorage.setItem('carrinho', JSON.stringify(newCart));
+      salvarCarrinho(newCart);
 
       // ← NOVO: Se removeu o equipamento atual, limpar rastreamento
       const removedItem = prev[index];
@@ -1965,7 +1984,44 @@ const NovoPedido = () => {
     return null;
   }
 
-  if (isAdminStark && !responsavelSelecionado) {
+  if (podeSelecionarConcessionariaPedido && !concessionariaResponsavel) {
+    return (
+      <div className="novo-pedido-container">
+        <UnifiedHeader
+          showBackButton={true}
+          onBackClick={() => navigate('/dashboard-admin')}
+          showSupportButton={true}
+          showUserInfo={true}
+          user={authenticatedUser}
+          title="Novo Pedido de Compra"
+          subtitle="Selecione a concessionária responsável para iniciar"
+        />
+        <main className="novo-pedido-content">
+          <section className="step-content">
+            <div className="step-header">
+              <h2>Concessionária responsável</h2>
+              <p>O pedido utilizará o fluxo, as condições comerciais e a precificação atuais da concessionária selecionada.</p>
+            </div>
+            <div className="form-group">
+              <label htmlFor="concessionaria-responsavel">Concessionária *</label>
+              <select
+                id="concessionaria-responsavel"
+                value=""
+                onChange={(event) => setConcessionariaResponsavel(concessionariasCompra.find((item) => String(item.id) === event.target.value) || null)}
+              >
+                <option value="">Selecione a concessionária</option>
+                {concessionariasCompra.map((item) => (
+                  <option key={item.id} value={item.id}>{item.nome}</option>
+                ))}
+              </select>
+            </div>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  if (isAdminStark && !isRotaPedidoCompra && !responsavelSelecionado) {
     return (
       <div className="novo-pedido-container">
         <UnifiedHeader
@@ -3195,7 +3251,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
       const timestamp = Date.now().toString();
       const numeroPedido = `PC${timestamp.slice(-8)}`;
 
-      const guindasteNoCarrinho = carrinhoFinal.find(item =>
+      const guindasteNoCarrinho = carrinho.find(item =>
         item.tipo === 'guindaste' || item.tipo === 'equipamento'
       );
 
@@ -3203,7 +3259,7 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
 
       const valorTotal =
         pagamentoData.valorFinal ||
-        carrinhoFinal.reduce((total, item) => {
+        carrinho.reduce((total, item) => {
           return total + ((parseFloat(item.preco) || 0) * (parseInt(item.quantidade, 10) || 1));
         }, 0);
 
@@ -3226,19 +3282,19 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         return 'Concessionária Nacional';
       })();
 
-      const linhaCarrinhoConc = carrinhoFinal.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
+      const linhaCarrinhoConc = carrinho.find(i => i.nome?.includes('GSI') || i.subgrupo?.includes('GSI'))
         ? 'GSI'
-        : carrinhoFinal.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
+        : carrinho.find(i => i.nome?.includes('GSE') || i.subgrupo?.includes('GSE'))
           ? 'GSE'
           : 'Outros';
 
       const produtoPrincipalConc = (
-        carrinhoFinal.find(i =>
+        carrinho.find(i =>
           i.tipo === 'equipamento' ||
           i.tipo === 'guindaste' ||
           i.nome?.includes('GSI') ||
           i.nome?.includes('GSE')
-        ) || carrinhoFinal[0]
+        ) || carrinho[0]
       )?.nome || null;
 
       const pedidoDataToSave = {
@@ -3269,7 +3325,8 @@ const ResumoPedido = ({ carrinho, clienteData, caminhaoData, pagamentoData, user
         linha_produto: linhaCarrinhoConc,
 
         dados_serializados: {
-          carrinho: carrinhoFinal,
+          tipo_fluxo: 'pedido_compra_concessionaria',
+          carrinho: carrinho,
           pagamentoData,
           regiaoCompraSelecionada: regiaoCompraSelecionada || null,
           regiaoClienteSelecionada: regiaoCompraSelecionada || null,

@@ -7,14 +7,36 @@
 const { query } = require('../db/pool');
 const crypto = require('crypto');
 
-async function findAll(includeInactive = false) {
+async function findAll(includeInactive = false, includeVinculos = false) {
   const where = includeInactive ? '' : 'WHERE ativo = true';
 
   const { rows } = await query(
     `SELECT * FROM concessionarias ${where} ORDER BY nome ASC`
   );
 
-  return rows;
+  if (!includeVinculos || rows.length === 0) return rows;
+
+  const { rows: usuarios } = await query(
+    `SELECT id, nome, email, tipo, concessionaria_id
+     FROM app_users
+     WHERE concessionaria_id IS NOT NULL
+       AND tipo IN ('admin_concessionaria', 'vendedor_concessionaria')
+     ORDER BY nome ASC`
+  );
+
+  const vinculos = usuarios.reduce((map, usuario) => {
+    const key = String(usuario.concessionaria_id);
+    const grupo = map.get(key) || { admins: [], vendedores: [] };
+    if (usuario.tipo === 'admin_concessionaria') grupo.admins.push(usuario);
+    if (usuario.tipo === 'vendedor_concessionaria') grupo.vendedores.push(usuario);
+    map.set(key, grupo);
+    return map;
+  }, new Map());
+
+  return rows.map((concessionaria) => ({
+    ...concessionaria,
+    ...(vinculos.get(String(concessionaria.id)) || { admins: [], vendedores: [] }),
+  }));
 }
 
 async function findById(id) {

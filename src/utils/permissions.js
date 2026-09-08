@@ -21,6 +21,7 @@ export const ADMIN_ROLES = [
 ];
 
 const TIPO_PARA_CANAL = {
+  admin_concessionarias: CANAIS.CONCESSIONARIAS,
   admin_concessionaria: CANAIS.CONCESSIONARIAS,
   admin_representantes: CANAIS.REPRESENTANTES,
   admin_canal_interno: CANAIS.INTERNO,

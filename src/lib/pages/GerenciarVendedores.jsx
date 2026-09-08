@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { formatCurrency } from '../../utils/formatters';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 import { db } from '../../config/supabase';
 import { getPropostas } from '../../api/propostas';
 import { getAreas, saveAreas } from '../../api/areas';
@@ -18,6 +18,21 @@ import {
 } from '../../utils/permissions';
 import '../../styles/GerenciarVendedores.css';
 
+const ADMIN_TIPO_CANAL = {
+  admin_representantes: CANAIS.REPRESENTANTES,
+  admin_canal_interno: CANAIS.INTERNO,
+  admin_concessionarias: CANAIS.CONCESSIONARIAS,
+  admin_comercio_exterior: CANAIS.COMERCIO_EXTERIOR,
+  admin_concessionaria: CANAIS.CONCESSIONARIAS,
+};
+
+const ADMIN_TIPOS_POR_CANAL = {
+  [CANAIS.REPRESENTANTES]: ['admin_representantes'],
+  [CANAIS.INTERNO]: ['admin_canal_interno'],
+  [CANAIS.CONCESSIONARIAS]: ['admin_concessionarias', 'admin_concessionaria'],
+  [CANAIS.COMERCIO_EXTERIOR]: ['admin_comercio_exterior'],
+};
+
 const resumirAreas = (areas) => Object.entries((areas || []).reduce((acc, area) => {
   const uf = String(area.uf || '').toUpperCase();
   if (uf) acc[uf] = (acc[uf] || 0) + 1;
@@ -26,8 +41,10 @@ const resumirAreas = (areas) => Object.entries((areas || []).reduce((acc, area) 
 
 const GerenciarVendedores = () => {
   const { user } = useOutletContext();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [vendedores, setVendedores] = useState([]);
+  const [concessionarias, setConcessionarias] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [editingVendedor, setEditingVendedor] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -51,10 +68,20 @@ const GerenciarVendedores = () => {
   const isRep = isAdminCanalRepresentantes(user);
   const isInterno = isAdminCanalInterno(user);
   const isExt = isAdminComercioExterior(user);
+  const canaisValidos = Object.values(CANAIS);
+  const canalSolicitado = searchParams.get('canal');
+  const canalEquipe = isFull && canaisValidos.includes(canalSolicitado)
+    ? canalSolicitado
+    : isConcSede
+    ? CANAIS.CONCESSIONARIAS
+    : userCanal;
+  const isEquipeConc = canalEquipe === CANAIS.CONCESSIONARIAS;
+  const isEquipeExt = canalEquipe === CANAIS.COMERCIO_EXTERIOR;
+  const isEquipeInterno = canalEquipe === CANAIS.INTERNO;
 
   const defaultTipo = (() => {
-    if (isConc) return 'vendedor_concessionaria';
-    if (isExt) return 'vendedor_exterior';
+    if (isEquipeConc) return 'vendedor_concessionaria';
+    if (isEquipeExt) return 'vendedor_exterior';
     return 'vendedor';
   })();
 
@@ -66,6 +93,7 @@ const GerenciarVendedores = () => {
     regiao: '',
     regioes_operacao: [],
     tipo: defaultTipo,
+    concessionaria_id: '',
     senha: 'vendedor123',
   });
 
@@ -73,7 +101,14 @@ const GerenciarVendedores = () => {
     if (user) {
       loadVendedores();
     }
-  }, [user]);
+  }, [user, canalEquipe]);
+
+  useEffect(() => {
+    if (!isFull) return;
+    db.getConcessionarias(false)
+      .then((data) => setConcessionarias(data || []))
+      .catch(() => setConcessionarias([]));
+  }, [isFull]);
 
   const loadVendedores = async () => {
     try {
@@ -86,19 +121,15 @@ const GerenciarVendedores = () => {
           ? db.getUsers({ concessionaria_id: concessionariaId })
           : isFull
           ? db.getUsers()
-          : db.getUsers({ canal: userCanal }),
+          : db.getUsers({ canal: canalEquipe }),
         getPropostas(),
       ]);
 
       const vendedoresOnly = vendedoresData.filter((v) => {
-        if (isConc) return v.tipo === 'vendedor_concessionaria';
-        if (isExt) return v.tipo === 'vendedor_exterior';
-        if (isRep || isInterno) return v.tipo === 'vendedor';
-        return (
-          v.tipo === 'vendedor' ||
-          v.tipo === 'vendedor_concessionaria' ||
-          v.tipo === 'vendedor_exterior'
-        );
+        if (isFull && ADMIN_TIPOS_POR_CANAL[canalEquipe]?.includes(v.tipo)) return true;
+        if (isEquipeConc) return v.tipo === 'vendedor_concessionaria';
+        if (isEquipeExt) return v.tipo === 'vendedor_exterior';
+        return v.tipo === 'vendedor' && canalDoUsuario(v) === canalEquipe;
       });
 
       const vendedoresComVendas = await Promise.all(vendedoresOnly.map(async (vendedor) => {
@@ -131,7 +162,14 @@ const GerenciarVendedores = () => {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    setFormData((prev) => field === 'tipo'
+      ? {
+          ...prev,
+          tipo: value,
+          canal: ADMIN_TIPO_CANAL[value] || canalEquipe,
+          concessionaria_id: value === 'admin_concessionaria' ? prev.concessionaria_id || '' : '',
+        }
+      : { ...prev, [field]: value });
   };
 
   const handleSubmit = async (e) => {
@@ -164,16 +202,19 @@ const GerenciarVendedores = () => {
         regioesOperacaoConcessionaria = [regiaoConcessionaria];
       }
 
-      const tipoFinal = isConc
+      const tipoVendedor = isEquipeConc
         ? 'vendedor_concessionaria'
-        : isExt
+        : isEquipeExt
         ? 'vendedor_exterior'
-        : formData.tipo || 'vendedor';
-      const canalFinal = isConc || tipoFinal === 'vendedor_concessionaria'
-        ? CANAIS.CONCESSIONARIAS
-        : tipoFinal === 'vendedor_exterior'
-        ? CANAIS.COMERCIO_EXTERIOR
-        : formData.canal || userCanal || CANAIS.REPRESENTANTES;
+        : 'vendedor';
+      const tipoFinal = isFull ? formData.tipo : tipoVendedor;
+      const canalFinal = ADMIN_TIPO_CANAL[tipoFinal] || canalEquipe || CANAIS.REPRESENTANTES;
+      const exigeConcessionaria = tipoFinal === 'admin_concessionaria';
+
+      if (exigeConcessionaria && !formData.concessionaria_id) {
+        alert('Selecione a concessionária vinculada ao administrador.');
+        return;
+      }
 
       const vendedorData = {
         ...formData,
@@ -181,7 +222,9 @@ const GerenciarVendedores = () => {
         canal: canalFinal,
         concessionaria_id: isConc
           ? concessionariaId
-          : formData.concessionaria_id ?? null,
+          : exigeConcessionaria
+          ? formData.concessionaria_id
+          : null,
         regiao: isConc ? regiaoConcessionaria : formData.regiao,
         regioes_operacao: isConc
           ? regioesOperacaoConcessionaria
@@ -218,6 +261,7 @@ const GerenciarVendedores = () => {
       regiao: '',
       regioes_operacao: [],
       tipo: defaultTipo,
+      concessionaria_id: '',
       senha: 'vendedor123',
     });
   };
@@ -232,6 +276,7 @@ const GerenciarVendedores = () => {
       regiao: '',
       regioes_operacao: [],
       tipo: defaultTipo,
+      concessionaria_id: '',
       senha: 'vendedor123',
     });
     setShowPassword(false);
@@ -265,7 +310,8 @@ const GerenciarVendedores = () => {
       regiao: vendedor.regiao || '',
       regioes_operacao: regioesNormalizadas,
       tipo: vendedor.tipo || defaultTipo,
-      canal: vendedor.canal || userCanal,
+      canal: vendedor.canal || canalEquipe,
+      concessionaria_id: vendedor.concessionaria_id || '',
       senha: '',
     });
     setShowPassword(false);
@@ -411,19 +457,20 @@ const GerenciarVendedores = () => {
 
   if (!user) return null;
 
-  const pageTitle = isConc
-    ? 'Vendedores da Concessionária'
-    : isExt
+  const isTipoAdministrativo = !!ADMIN_TIPO_CANAL[formData.tipo] || formData.tipo === 'admin_full';
+  const pageTitle = isEquipeConc
+    ? 'Equipe de Concessionárias'
+    : isEquipeExt
     ? 'Representantes do Comércio Exterior'
-    : isInterno
-    ? 'Vendedores do Canal Interno'
+    : isEquipeInterno
+    ? 'Equipe do Canal Interno'
     : 'Representantes';
-  const pageSubtitle = isConc
-    ? 'Gerencie os vendedores vinculados à sua concessionária'
-    : isExt
+  const pageSubtitle = isEquipeConc
+    ? 'Gerencie os representantes vinculados às concessionárias'
+    : isEquipeExt
     ? 'Gerencie os representantes de comércio exterior'
-    : isInterno
-    ? 'Gerencie os vendedores do canal interno'
+    : isEquipeInterno
+    ? 'Gerencie a equipe comercial do canal interno'
     : 'Gerencie a equipe de representantes';
 
   const MESES_NOMES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -508,12 +555,15 @@ const GerenciarVendedores = () => {
                       .slice(0, 3)
                       .toUpperCase();
 
-                    const categoriaLabel =
-                      vendedor.tipo === 'vendedor_exterior'
-                        ? 'Exterior'
-                        : vendedor.tipo === 'vendedor_concessionaria'
-                        ? 'Concessionária'
-                        : 'Vendedor';
+                    const categoriaLabel = {
+                      vendedor_exterior: 'Exterior',
+                      vendedor_concessionaria: 'Concessionária',
+                      admin_representantes: 'Admin Representantes',
+                      admin_canal_interno: 'Admin Canal Interno',
+                      admin_concessionarias: 'Admin Concessionárias',
+                      admin_comercio_exterior: 'Admin Comércio Exterior',
+                      admin_concessionaria: 'Admin Concessionária',
+                    }[vendedor.tipo] || 'Vendedor';
 
                     return (
                       <tr key={vendedor.id} className="vendedor-row">
@@ -826,7 +876,24 @@ const GerenciarVendedores = () => {
                     </div>
                   )}
 
-                  {!isConc && (
+                  {isFull && formData.tipo === 'admin_concessionaria' && (
+                    <div className="form-group form-group-full">
+                      <label htmlFor="concessionaria_id">Concessionária vinculada *</label>
+                      <select
+                        id="concessionaria_id"
+                        value={formData.concessionaria_id || ''}
+                        onChange={(e) => handleInputChange('concessionaria_id', e.target.value)}
+                        required
+                      >
+                        <option value="">Selecione a concessionária</option>
+                        {concessionarias.map((concessionaria) => (
+                          <option key={concessionaria.id} value={concessionaria.id}>{concessionaria.nome}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {!isConc && !isTipoAdministrativo && (
                     <div className="form-group form-group-full">
                       <label htmlFor="regiao">Região Principal * (Grupo de Região)</label>
                       <select
@@ -849,7 +916,7 @@ const GerenciarVendedores = () => {
                     </div>
                   )}
 
-                  {!isConc && (
+                  {!isConc && !isTipoAdministrativo && (
                     <div className="form-group form-group-full">
                       <label>Regiões de Operação (para vendedores internos)</label>
                       <div className="regiao-cards">

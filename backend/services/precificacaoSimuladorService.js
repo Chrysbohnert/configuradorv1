@@ -8,6 +8,7 @@ const { query } = require('../db/pool');
 const engine = require('./precificacaoEngine');
 const parametrosService = require('./precificacaoParametrosService');
 const { NCM_PADRAO } = require('./tributacaoService');
+const { normalizeNcm } = require('../utils/ncm');
 
 async function buscarEquipamento(guindasteId) {
   const { rows } = await query(
@@ -49,7 +50,7 @@ async function buscarTributacao(uf, ncm) {
     };
   }
 
-  const ncmBusca = (ncm || '').trim() || NCM_PADRAO;
+  const ncmBusca = normalizeNcm(ncm) || NCM_PADRAO;
   const { rows } = await query(
     `SELECT
        uf,
@@ -61,8 +62,8 @@ async function buscarTributacao(uf, ncm) {
      WHERE uf = UPPER(TRIM($1))
      ORDER BY
        CASE
-         WHEN TRIM(ncm) = $2 THEN 0
-         WHEN TRIM(ncm) = $3 THEN 1
+         WHEN REGEXP_REPLACE(UPPER(TRIM(ncm)), '[^0-9A-Z]', '', 'g') = $2 THEN 0
+         WHEN UPPER(TRIM(ncm)) = $3 THEN 1
          ELSE 2
        END,
        ncm

@@ -33,6 +33,7 @@ const Configuracoes = lazy(() => import('./lib/pages/Configuracoes'));
 const DashboardVendedor = lazy(() => import('./lib/pages/DashboardVendedor'));
 const NovoPedido = lazy(() => import('./lib/pages/NovoPedido'));
 const Clientes = lazy(() => import('./lib/pages/Clientes'));
+const CadastrosHome = lazy(() => import('./lib/pages/CadastrosHome'));
 const Cadastros = lazy(() => import('./lib/pages/Cadastros'));
 
 const Support = lazy(() => import('./lib/pages/Support'));
@@ -154,6 +155,15 @@ function App() {
                     path="/cadastros"
                     element={
                       <LazyRoute loadingMessage="Carregando Cadastros...">
+                        <CadastrosHome />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/cadastros/territorial"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Cadastro Territorial...">
                         <Cadastros />
                       </LazyRoute>
                     }

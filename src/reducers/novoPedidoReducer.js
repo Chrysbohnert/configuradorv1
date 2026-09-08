@@ -3,6 +3,8 @@
  * @module reducers/novoPedidoReducer
  */
 
+import { salvarCarrinho } from '../utils/carrinhoStorage';
+
 // Tipos de ações
 export const NOVO_PEDIDO_ACTIONS = {
   // Navegação
@@ -168,7 +170,7 @@ export const novoPedidoReducer = (state, action) => {
     case NOVO_PEDIDO_ACTIONS.SET_CARRINHO:
       // Salvar no localStorage
       try {
-        localStorage.setItem('carrinho', JSON.stringify(action.payload));
+        salvarCarrinho(action.payload);
       } catch (error) {
         console.error('Erro ao salvar carrinho no localStorage:', error);
       }
@@ -180,7 +182,7 @@ export const novoPedidoReducer = (state, action) => {
     case NOVO_PEDIDO_ACTIONS.ADD_TO_CARRINHO:
       const newCarrinho = [...state.carrinho, action.payload];
       try {
-        localStorage.setItem('carrinho', JSON.stringify(newCarrinho));
+        salvarCarrinho(newCarrinho);
       } catch (error) {
         console.error('Erro ao salvar carrinho no localStorage:', error);
       }
@@ -192,7 +194,7 @@ export const novoPedidoReducer = (state, action) => {
     case NOVO_PEDIDO_ACTIONS.REMOVE_FROM_CARRINHO:
       const filteredCarrinho = state.carrinho.filter((_, index) => index !== action.payload);
       try {
-        localStorage.setItem('carrinho', JSON.stringify(filteredCarrinho));
+        salvarCarrinho(filteredCarrinho);
       } catch (error) {
         console.error('Erro ao salvar carrinho no localStorage:', error);
       }
@@ -208,7 +210,7 @@ export const novoPedidoReducer = (state, action) => {
           : item
       );
       try {
-        localStorage.setItem('carrinho', JSON.stringify(updatedCarrinho));
+        salvarCarrinho(updatedCarrinho);
       } catch (error) {
         console.error('Erro ao salvar carrinho no localStorage:', error);
       }

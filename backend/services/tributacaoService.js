@@ -4,6 +4,7 @@
  */
 
 const { query } = require('../db/pool');
+const { normalizeNcm } = require('../utils/ncm');
 
 const NCM_PADRAO = 'PADRAO';
 
@@ -24,8 +25,8 @@ async function findAll({ uf, ncm } = {}) {
     where.push(`uf = $${params.length}`);
   }
   if (ncm) {
-    params.push(ncm.trim());
-    where.push(`ncm = $${params.length}`);
+    params.push(normalizeNcm(ncm));
+    where.push(`REGEXP_REPLACE(UPPER(TRIM(ncm)), '[^0-9A-Z]', '', 'g') = $${params.length}`);
   }
 
   if (where.length > 0) sql += ` WHERE ${where.join(' AND ')}`;

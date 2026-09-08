@@ -8,6 +8,7 @@ const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/propostasService');
 const usersService = require('../services/usersService');
+const concessionariasService = require('../services/concessionariasService');
 const { requireAuth } = require('../middleware/auth');
 const {
   isAdmin,
@@ -17,6 +18,7 @@ const {
   isAdminCanalRepresentantes,
   isAdminCanalInterno,
   isAdminComercioExterior,
+  podeAcessarPedidosCompra,
   CANAIS,
 } = require('../utils/permissions');
 
@@ -85,7 +87,22 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
   console.log(`📋 [POST /propostas] user=${req.user.id} numero=${req.body.numero_proposta}`);
   const payload = { ...req.body };
 
-  if (isAdminFull(req.user)) {
+  const isPedidoCompra = payload.dados_serializados?.tipo_fluxo === 'pedido_compra_concessionaria';
+  const podeCriarParaQualquerConcessionaria = podeAcessarPedidosCompra(req.user) &&
+    (isAdminFull(req.user) || isAdminConcessionarias(req.user));
+
+  if (isPedidoCompra && podeCriarParaQualquerConcessionaria) {
+    if (!payload.concessionaria_id) return res_.badRequest(res, 'Concessionária responsável obrigatória');
+    const concessionaria = await concessionariasService.findById(payload.concessionaria_id);
+    if (!concessionaria || concessionaria.ativo === false) return res_.badRequest(res, 'Concessionária responsável inválida');
+    payload.vendedor_id = req.user.id;
+    payload.vendedor_nome = req.user.nome;
+    payload.dados_serializados = {
+      ...payload.dados_serializados,
+      autoria: { usuario_id: req.user.id, usuario_nome: req.user.nome },
+      concessionaria_responsavel: { concessionaria_id: concessionaria.id, concessionaria_nome: concessionaria.nome },
+    };
+  } else if (isAdminFull(req.user)) {
     if (!payload.vendedor_id) return res_.badRequest(res, 'Responsável comercial obrigatório');
     const responsavel = await usersService.findById(payload.vendedor_id);
     if (!responsavel || !['vendedor', 'vendedor_concessionaria', 'vendedor_exterior'].includes(responsavel.tipo)) {

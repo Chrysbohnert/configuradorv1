@@ -45,7 +45,7 @@ const Concessionarias = () => {
   const loadConcessionarias = async () => {
     try {
       setIsLoading(true);
-      const data = await db.getConcessionarias(showInactive);
+      const data = await db.getConcessionarias(isAdminFull(user) || showInactive);
       setConcessionarias(data);
     } catch (e) {
       console.error('Erro ao carregar concessionárias:', e);
@@ -300,15 +300,17 @@ const Concessionarias = () => {
 
         <section className="concessionarias-toolbar" aria-label="Filtros de concessionárias">
           <span>Listagem <small>({concessionarias.length})</small></span>
-          <label>
-            <input
-              type="checkbox"
-              checked={showInactive}
-              onChange={(e) => setShowInactive(e.target.checked)}
-              disabled={isLoading}
-            />
-            Mostrar inativas
-          </label>
+          {!isAdminFull(user) && (
+            <label>
+              <input
+                type="checkbox"
+                checked={showInactive}
+                onChange={(e) => setShowInactive(e.target.checked)}
+                disabled={isLoading}
+              />
+              Mostrar inativas
+            </label>
+          )}
         </section>
 
         <div className="concessionarias-table-shell">
@@ -326,6 +328,8 @@ const Concessionarias = () => {
                     <th>Status</th>
                     <th>Email</th>
                     <th>Telefone</th>
+                    {isAdminFull(user) && <th>Admins vinculados</th>}
+                    {isAdminFull(user) && <th>Vendedores vinculados</th>}
                     <th>Ações</th>
                   </tr>
                 </thead>
@@ -337,6 +341,12 @@ const Concessionarias = () => {
                       <td><span className={`concessionarias-status ${c.ativo === false ? 'inactive' : 'active'}`}>{c.ativo === false ? 'Inativa' : 'Ativa'}</span></td>
                       <td>{c.email || '-'}</td>
                       <td>{c.telefone || '-'}</td>
+                      {isAdminFull(user) && (
+                        <td>{c.admins?.length ? c.admins.map((admin) => admin.nome).join(', ') : '-'}</td>
+                      )}
+                      {isAdminFull(user) && (
+                        <td>{c.vendedores?.length ? c.vendedores.map((vendedor) => vendedor.nome).join(', ') : '-'}</td>
+                      )}
                       <td>
                         <div className="concessionarias-actions">
                           <button type="button" onClick={() => handleOpenEdit(c)} disabled={isLoading}>Editar</button>

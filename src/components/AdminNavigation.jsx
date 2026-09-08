@@ -7,6 +7,7 @@ import {
   isAdminCanalRepresentantes,
   isAdminCanalInterno,
   isAdminComercioExterior,
+  podeAcessarPedidosCompra,
 } from '../utils/permissions';
 import '../styles/AdminNavigation.css';
 
@@ -38,7 +39,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/admin/nova-proposta',
-      label: 'Proposta Comercial',
+      label: 'Nova Proposta Comercial',
       visible: fullAccess,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -62,8 +63,8 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/nova-proposta-concessionaria',
-      label: 'Pedido de Compra',
-      visible: adminConc,
+      label: 'Novo Pedido de Compra',
+      visible: podeAcessarPedidosCompra(user),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <circle cx="12" cy="12" r="10" />
@@ -72,10 +73,15 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
-    {
-      path: '/gerenciar-vendedores',
-      label: 'Gerenciar Vendedores',
-      visible: true,
+    ...[
+      { canal: 'representantes', label: 'Representantes', visible: fullAccess || adminRep },
+      { canal: 'interno', label: 'Canal Interno', visible: fullAccess || adminInterno },
+      { canal: 'concessionarias', label: 'Concessionárias', visible: fullAccess || adminConcSede || adminConc },
+      { canal: 'comercio_exterior', label: 'Comércio Exterior', visible: fullAccess || adminExt },
+    ].map((equipe) => ({
+      path: `/gerenciar-vendedores?canal=${equipe.canal}`,
+      label: equipe.label,
+      visible: equipe.visible,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
@@ -84,7 +90,7 @@ const AdminNavigation = ({ user }) => {
           <path d="M16 3.13a4 4 0 0 1 0 7.75" />
         </svg>
       )
-    },
+    })),
     {
       path: '/cadastros',
       label: 'Cadastros',
@@ -150,7 +156,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/relatorio-completo',
-      label: 'Relatório Completo',
+      label: 'Pedidos de Compra',
       visible: true,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -240,7 +246,7 @@ const AdminNavigation = ({ user }) => {
 
   const findItem = (path) => filteredNavItems.find((item) => item.path === path);
   const groups = [
-    { id: 'dashboard', label: 'Dashboard', items: [findItem('/dashboard-admin')] },
+    { id: 'dashboard', direct: true, item: findItem('/dashboard-admin') },
     {
       id: 'comercial',
       label: 'Comercial',
@@ -252,7 +258,16 @@ const AdminNavigation = ({ user }) => {
         findItem('/aprovacoes-descontos')
       ]
     },
-    { id: 'equipes', label: 'Equipes', items: [findItem('/gerenciar-vendedores')] },
+    {
+      id: 'equipes',
+      label: 'Equipes',
+      items: [
+        findItem('/gerenciar-vendedores?canal=representantes'),
+        findItem('/gerenciar-vendedores?canal=interno'),
+        findItem('/gerenciar-vendedores?canal=concessionarias'),
+        findItem('/gerenciar-vendedores?canal=comercio_exterior')
+      ]
+    },
     { id: 'cadastros', direct: true, item: findItem('/cadastros') },
     { id: 'mapa', direct: true, item: findItem('/mapa-territorial') },
     {
@@ -278,7 +293,14 @@ const AdminNavigation = ({ user }) => {
     { key: 'simulador', label: 'Simulador' },
     { key: 'historico', label: 'Histórico' }
   ];
-  const isPathActive = (path) => location.pathname === path || location.pathname.startsWith(`${path}/`);
+  const isPathActive = (path) => {
+    const [pathname, search = ''] = path.split('?');
+    if (location.pathname !== pathname && !location.pathname.startsWith(`${pathname}/`)) return false;
+    if (!search) return true;
+    const expected = new URLSearchParams(search);
+    const current = new URLSearchParams(location.search);
+    return [...expected.entries()].every(([key, value]) => current.get(key) === value);
+  };
   const activeGroupId = groups.find((group) => group.direct
     ? group.item && isPathActive(group.item.path)
     : group.items.some((item) => isPathActive(item.path)))?.id;

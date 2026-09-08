@@ -4,17 +4,15 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { carregarCarrinho, salvarCarrinho } from '../utils/carrinhoStorage';
 
 export function useCarrinho() {
   // Estado do carrinho (inicializa do localStorage)
-  const [carrinho, setCarrinho] = useState(() => {
-    const savedCart = localStorage.getItem('carrinho');
-    return savedCart ? JSON.parse(savedCart) : [];
-  });
+  const [carrinho, setCarrinho] = useState(carregarCarrinho);
 
   // Sincronizar com localStorage sempre que o carrinho mudar
   useEffect(() => {
-    localStorage.setItem('carrinho', JSON.stringify(carrinho));
+    salvarCarrinho(carrinho);
   }, [carrinho]);
 
   /**

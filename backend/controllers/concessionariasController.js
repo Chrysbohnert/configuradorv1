@@ -7,10 +7,12 @@
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/concessionariasService');
+const { isAdminFull } = require('../utils/permissions');
 
 const getConcessionarias = asyncHandler(async (req, res) => {
-  const includeInactive = req.query.includeInactive === 'true';
-  const data = await svc.findAll(includeInactive);
+  const fullAccess = isAdminFull(req.user);
+  const includeInactive = fullAccess || req.query.includeInactive === 'true';
+  const data = await svc.findAll(includeInactive, fullAccess);
   return res_.ok(res, data, { count: data.length });
 });
 

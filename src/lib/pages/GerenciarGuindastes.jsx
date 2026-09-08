@@ -451,7 +451,7 @@ const GerenciarGuindastes = () => {
       codigo_referencia: item.referencia || '',
       subgrupo: descricao,
       descricao: current.descricao || '',
-      ncm: current.ncm || '',
+      ncm: current.ncm || String(item.ncm || '').replace(/[^0-9A-Za-z]/g, ''),
       modelo,
       grupo,
       custo_mp: item.custo_mp ?? '',

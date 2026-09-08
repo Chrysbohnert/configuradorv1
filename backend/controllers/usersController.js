@@ -32,6 +32,14 @@ const {
   CANAIS,
 } = require('../utils/permissions');
 
+const ADMIN_TIPO_CANAL = {
+  admin_representantes: CANAIS.REPRESENTANTES,
+  admin_canal_interno: CANAIS.INTERNO,
+  admin_concessionarias: CANAIS.CONCESSIONARIAS,
+  admin_comercio_exterior: CANAIS.COMERCIO_EXTERIOR,
+  admin_concessionaria: CANAIS.CONCESSIONARIAS,
+};
+
 const getUsers = asyncHandler(async (req, res) => {
   const { ativo } = req.query;
   const filter = {};
@@ -68,7 +76,15 @@ const createUser = asyncHandler(async (req, res) => {
   }
 
   // Validação de permissão para criação de usuários por canal/perfil
-  const targetCanal = canal || canalDoUsuario({ tipo });
+  const targetCanal = ADMIN_TIPO_CANAL[tipo] || canal || canalDoUsuario({ tipo });
+  const concessionariaIdEfetiva = tipo === 'admin_concessionaria'
+    ? concessionaria_id
+    : ADMIN_TIPO_CANAL[tipo]
+    ? null
+    : concessionaria_id;
+  if (tipo === 'admin_concessionaria' && !concessionariaIdEfetiva) {
+    return res_.badRequest(res, 'concessionaria_id obrigatório para admin_concessionaria');
+  }
   if (!isAdminFull(req.user)) {
     if (tipo === 'admin_full') {
       return res_.forbidden(res, 'Acesso negado: apenas admin_full cria admin_full');
@@ -101,13 +117,30 @@ const createUser = asyncHandler(async (req, res) => {
   if (existe) return res_.conflict(res, 'E-mail já cadastrado');
 
   const senhaHash = sha256Hex(senha);
-  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id, regioes_operacao, telefone, cpf, canal });
+  const user = await svc.create({ nome, email, senhaHash, tipo, regiao, concessionaria_id: concessionariaIdEfetiva, regioes_operacao, telefone, cpf, canal: targetCanal });
   return res_.created(res, user);
 });
 
 const updateUser = asyncHandler(async (req, res) => {
   const target = await svc.findById(req.params.id);
   if (!target) return res_.notFound(res, 'Usuário não encontrado');
+
+  const updates = { ...req.body };
+  const tipoEfetivo = updates.tipo || target.tipo;
+  if (isAdminFull(req.user) && ADMIN_TIPO_CANAL[tipoEfetivo]) {
+    updates.canal = ADMIN_TIPO_CANAL[tipoEfetivo];
+    if (tipoEfetivo === 'admin_concessionaria') {
+      const concessionariaIdEfetiva = updates.concessionaria_id !== undefined
+        ? updates.concessionaria_id
+        : target.concessionaria_id;
+      if (!concessionariaIdEfetiva) {
+        return res_.badRequest(res, 'concessionaria_id obrigatório para admin_concessionaria');
+      }
+      updates.concessionaria_id = concessionariaIdEfetiva;
+    } else {
+      updates.concessionaria_id = null;
+    }
+  }
 
   if (!isAdminFull(req.user)) {
     const targetCanal = target.canal || canalDoUsuario(target);
@@ -132,7 +165,7 @@ const updateUser = asyncHandler(async (req, res) => {
     }
   }
 
-  const updated = await svc.update(req.params.id, req.body);
+  const updated = await svc.update(req.params.id, updates);
   if (!updated) return res_.notFound(res, 'Usuário não encontrado');
   return res_.ok(res, updated);
 });
