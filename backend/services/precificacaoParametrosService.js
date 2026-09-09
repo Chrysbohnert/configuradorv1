@@ -38,6 +38,8 @@ async function buscarParametros() {
     irpj_percent: map[PARAM_CHAVES.IRPJ],
     csll_percent: map[PARAM_CHAVES.CSLL],
     ipi_padrao_percent: map[PARAM_CHAVES.IPI_PADRAO],
+    exportacao_reducao_dolar_percent: map[PARAM_CHAVES.REDUCAO_SEGURANCA_DOLAR],
+    exportacao_acrescimo_margem_percent: map[PARAM_CHAVES.ACRESCIMO_MARGEM_EXPORTACAO],
   };
 }
 
@@ -49,6 +51,8 @@ async function salvarParametros({
   irpj_percent,
   csll_percent,
   ipi_padrao_percent,
+  exportacao_reducao_dolar_percent,
+  exportacao_acrescimo_margem_percent,
 }) {
   const valores = {
     comissao_base_vendedor_percent: numeroValido(comissao_base_vendedor_percent, 'comissao_base_vendedor_percent'),
@@ -58,6 +62,8 @@ async function salvarParametros({
     irpj_percent: numeroValido(irpj_percent, 'irpj_percent'),
     csll_percent: numeroValido(csll_percent, 'csll_percent'),
     ipi_padrao_percent: numeroValido(ipi_padrao_percent, 'ipi_padrao_percent'),
+    exportacao_reducao_dolar_percent: numeroValido(exportacao_reducao_dolar_percent, 'exportacao_reducao_dolar_percent'),
+    exportacao_acrescimo_margem_percent: numeroValido(exportacao_acrescimo_margem_percent, 'exportacao_acrescimo_margem_percent'),
   };
   await setConfiguracaoNumero(
     PARAM_CHAVES.COMISSAO_BASE_VENDEDOR,
@@ -78,6 +84,8 @@ async function salvarParametros({
   await setConfiguracaoNumero(PARAM_CHAVES.IRPJ, valores.irpj_percent);
   await setConfiguracaoNumero(PARAM_CHAVES.CSLL, valores.csll_percent);
   await setConfiguracaoNumero(PARAM_CHAVES.IPI_PADRAO, valores.ipi_padrao_percent);
+  await setConfiguracaoNumero(PARAM_CHAVES.REDUCAO_SEGURANCA_DOLAR, valores.exportacao_reducao_dolar_percent);
+  await setConfiguracaoNumero(PARAM_CHAVES.ACRESCIMO_MARGEM_EXPORTACAO, valores.exportacao_acrescimo_margem_percent);
   return buscarParametros();
 }
 

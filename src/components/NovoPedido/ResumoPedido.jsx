@@ -407,7 +407,9 @@ const ResumoPedido = ({
     clienteData,
     caminhaoData,
     pagamentoData: pagamentoData?.moeda === 'USD'
-      ? { ...pagamentoData, cotacao_usd: cotacaoUSDFresh || cotacaoUSD || pagamentoData?.cotacao_usd }
+      ? { ...pagamentoData, cotacao_usd: pagamentoData?.precificacaoMotor
+          ? pagamentoData.cotacao_usd
+          : cotacaoUSDFresh || cotacaoUSD || pagamentoData?.cotacao_usd }
       : pagamentoData,
     vendedor: user?.nome || 'Não informado',
     vendedorTelefone: user?.telefone || '',

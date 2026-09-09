@@ -109,3 +109,27 @@ test('limita desconto comercial e da comissão aos máximos parametrizados', () 
   assert.equal(resultado.desconto_comercial.percentual, Number((limiteDesconto * 100).toFixed(4)));
   assert.equal(resultado.comissao.cedida_percent_sobre_base, 1);
 });
+
+test('aplica proteção cambial e acréscimo de margem somente na exportação', () => {
+  const base = {
+    custo_mp: 100000,
+    custo_mo: 20000,
+    equipamento: { custo_fixo_percent: 8, comissao_percent: 5, assistencia_percent: 1, margem_lucro_percent: 6, ipi_percent: 0 },
+    tributacao: { icms_percent: 0, pis_cofins_percent: 0 },
+    condicao: { parcelas: 1 },
+    parametros: { irpj_percent: 25, csll_percent: 9 },
+  };
+  const nacional = engine.calcularPreco(base);
+  const exportado = engine.calcularPreco({
+    ...base,
+    exportacao: { ativo: true, cotacao_original: 5.2, reducao_dolar_percent: 3, acrescimo_margem_percent: 3 },
+  });
+
+  assert.equal(exportado.exportacao.cotacao_original, 5.2);
+  assert.equal(exportado.exportacao.cotacao_utilizada, 5.044);
+  assert.equal(exportado.exportacao.margem_original_percent, 6);
+  assert.equal(exportado.exportacao.margem_aplicada_percent, 9);
+  assert.equal(nacional.exportacao, null);
+  assert.equal(nacional.margem.percentual, 6);
+  assert.equal(exportado.margem.percentual, 9);
+});

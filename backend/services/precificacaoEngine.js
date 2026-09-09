@@ -14,6 +14,8 @@ const PARAM_CHAVES = {
   IRPJ: 'precificacao_irpj',
   CSLL: 'precificacao_csll',
   IPI_PADRAO: 'precificacao_ipi_padrao',
+  REDUCAO_SEGURANCA_DOLAR: 'precificacao_exportacao_reducao_dolar',
+  ACRESCIMO_MARGEM_EXPORTACAO: 'precificacao_exportacao_acrescimo_margem',
 };
 
 function toNum(v) {
@@ -95,7 +97,14 @@ function calcularPreco(input) {
   const custoFixo = toNum(eq.custo_fixo_percent) / 100;
   const comissao = toNum(eq.comissao_percent) / 100;
   const assistencia = toNum(eq.assistencia_percent) / 100;
-  const margem = toNum(eq.margem_lucro_percent) / 100;
+  const exportacao = input.exportacao || {};
+  const margemOriginalPct = toNum(eq.margem_lucro_percent);
+  const acrescimoMargemExportacaoPct = exportacao.ativo ? Math.max(0, toNum(exportacao.acrescimo_margem_percent)) : 0;
+  const margemAplicadaPct = margemOriginalPct + acrescimoMargemExportacaoPct;
+  const margem = margemAplicadaPct / 100;
+  const cotacaoOriginal = exportacao.ativo ? Math.max(0, toNum(exportacao.cotacao_original)) : 0;
+  const reducaoDolarPct = exportacao.ativo ? Math.min(100, Math.max(0, toNum(exportacao.reducao_dolar_percent))) : 0;
+  const cotacaoUtilizada = exportacao.ativo ? round4(cotacaoOriginal * (1 - reducaoDolarPct / 100)) : 0;
   const icms = toNum(trib.icms_percent) / 100;
   const pisCofins = toNum(trib.pis_cofins_percent) / 100;
   const ipiPct = eq.ipi_percent === null || eq.ipi_percent === undefined
@@ -180,6 +189,15 @@ function calcularPreco(input) {
   }));
 
   return {
+    exportacao: exportacao.ativo ? {
+      cotacao_original: cotacaoOriginal,
+      reducao_dolar_percent: reducaoDolarPct,
+      cotacao_utilizada: cotacaoUtilizada,
+      margem_original_percent: margemOriginalPct,
+      acrescimo_margem_percent: acrescimoMargemExportacaoPct,
+      margem_aplicada_percent: margemAplicadaPct,
+      preco_final_usd: cotacaoUtilizada > 0 ? round2(precoFinalComLogistica / cotacaoUtilizada) : 0,
+    } : null,
     custos: { mp, mo, custoVariavel, custoComVariaveis: custoVariavel },
     tributacao: {
       icms_percent: round4(icms * 100),

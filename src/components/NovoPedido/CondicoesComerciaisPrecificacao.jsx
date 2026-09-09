@@ -8,7 +8,7 @@ import { formatCurrency } from '../../utils/formatters';
 
 const normalizarLocal = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
 
-export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municipio, contribuinte, responsavelComercial, onChange }) {
+export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municipio, regiao, contribuinte, responsavelComercial, onChange }) {
   const [condicoes, setCondicoes] = useState([]);
   const [parametros, setParametros] = useState(null);
   const [condicaoId, setCondicaoId] = useState('');
@@ -115,6 +115,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       const entrada = {
         guindaste_id: guindaste.id,
         uf,
+        regiao,
         ncm: guindaste.ncm,
         contribuinte,
         condicao_id: condicaoId,
@@ -149,13 +150,16 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         instalacao: 'incluso',
         tipoInstalacao: 'Incluso no pedido',
         valorInstalacao: calculado.logistica?.instalacao || 0,
+        moeda: calculado.exportacao ? 'USD' : 'BRL',
+        cotacao_usd: calculado.exportacao?.cotacao_utilizada || null,
+        exportacao: calculado.exportacao || null,
       });
     } catch (error) {
       if (requestId === requestIdRef.current) setErro(error.message || 'Erro ao calcular condições comerciais.');
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [condicao, condicaoId, contribuinte, dadosFreteAtual, descontoComissao, descontoComissaoMax, descontoPlano, descontoPlanoMax, frete, guindaste, instalacaoValor, localInstalacao, onChange, parcelas, uf]);
+  }, [condicao, condicaoId, contribuinte, dadosFreteAtual, descontoComissao, descontoComissaoMax, descontoPlano, descontoPlanoMax, frete, guindaste, instalacaoValor, localInstalacao, onChange, parcelas, regiao, uf]);
 
   useEffect(() => {
     const timeoutId = setTimeout(calcular, 400);
@@ -182,7 +186,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       </div>
       {erro && <div className="condicoes-comerciais-erro">{erro}</div>}
       <div className="condicoes-comerciais-status">{loading ? 'Atualizando cálculo...' : resultado ? 'Cálculo atualizado automaticamente' : 'Preencha as condições para calcular automaticamente'}</div>
-      {resultado && <div className="condicoes-comerciais-resultado"><div><span>Preço final</span><strong>{formatCurrency(resultado.preco_final)}</strong></div><div><span>Entrada</span><strong>{formatCurrency(resultado.pagamento?.entrada_valor)}</strong></div><div><span>Saldo</span><strong>{formatCurrency(resultado.pagamento?.saldo_valor)}</strong></div><div><span>Frete — reaproveitamento de carga</span><strong>{formatCurrency(resultado.logistica?.frete)}</strong></div><div><span>Parcelas</span><strong>{resultado.pagamento?.parcelas?.map((item) => `${item.numero}x ${formatCurrency(item.valor)}`).join(', ')}</strong></div><div className="condicoes-comerciais-comissao"><span>Comissão comercial · {responsavelComercial || 'Responsável não informado'}</span><strong>Original {formatCurrency(resultado.comissao?.equipamento_valor)} · Desconto {formatCurrency(resultado.comissao?.cedida_valor)} · Restante {formatCurrency(resultado.comissao?.final_valor)}</strong></div></div>}
+      {resultado && <div className="condicoes-comerciais-resultado"><div><span>Preço final</span><strong>{formatCurrency(resultado.preco_final)}</strong></div><div><span>Entrada</span><strong>{formatCurrency(resultado.pagamento?.entrada_valor)}</strong></div><div><span>Saldo</span><strong>{formatCurrency(resultado.pagamento?.saldo_valor)}</strong></div><div><span>Frete — reaproveitamento de carga</span><strong>{formatCurrency(resultado.logistica?.frete)}</strong></div><div><span>Parcelas</span><strong>{resultado.pagamento?.parcelas?.map((item) => `${item.numero}x ${formatCurrency(item.valor)}`).join(', ')}</strong></div>{resultado.exportacao && <><div><span>Cotação original / redução</span><strong>R$ {Number(resultado.exportacao.cotacao_original).toFixed(4)} / {Number(resultado.exportacao.reducao_dolar_percent).toFixed(2)}%</strong></div><div><span>Cotação utilizada</span><strong>R$ {Number(resultado.exportacao.cotacao_utilizada).toFixed(4)}</strong></div><div><span>Margem original / aplicada</span><strong>{Number(resultado.exportacao.margem_original_percent).toFixed(2)}% / {Number(resultado.exportacao.margem_aplicada_percent).toFixed(2)}%</strong></div></>}<div className="condicoes-comerciais-comissao"><span>Comissão comercial · {responsavelComercial || 'Responsável não informado'}</span><strong>Original {formatCurrency(resultado.comissao?.equipamento_valor)} · Desconto {formatCurrency(resultado.comissao?.cedida_valor)} · Restante {formatCurrency(resultado.comissao?.final_valor)}</strong></div></div>}
     </section>
   );
 }

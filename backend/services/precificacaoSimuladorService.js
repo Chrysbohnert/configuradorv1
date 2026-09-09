@@ -7,6 +7,7 @@
 const { query } = require('../db/pool');
 const engine = require('./precificacaoEngine');
 const parametrosService = require('./precificacaoParametrosService');
+const { getCotacaoUSD } = require('./configuracoesService');
 const { NCM_PADRAO } = require('./tributacaoService');
 const { normalizeNcm } = require('../utils/ncm');
 
@@ -109,11 +110,13 @@ function normalizarTributacao(tributacao, contribuinte) {
 }
 
 async function simular(input, usuario) {
+  const identificadorExportacao = String(input.uf || input.regiao || '').trim().toUpperCase().replace(/[- ]/g, '_');
+  const isExportacao = identificadorExportacao === UF_EXPORT || identificadorExportacao === 'COMERCIO_EXTERIOR';
   const equipamento = await buscarEquipamento(input.guindaste_id);
   if (!equipamento) throw new Error('Equipamento não encontrado');
 
   const tributacaoRaw = await buscarTributacao(
-    input.uf,
+    isExportacao ? UF_EXPORT : input.uf,
     input.ncm || equipamento.ncm || ''
   );
   const tributacao = normalizarTributacao(tributacaoRaw, input.contribuinte);
@@ -131,9 +134,10 @@ async function simular(input, usuario) {
     throw error;
   }
 
-  const [parametros, fatorPiorCenario] = await Promise.all([
+  const [parametros, fatorPiorCenario, cotacaoOriginal] = await Promise.all([
     parametrosService.buscarParametros(),
     buscarFatorPiorCenario(),
+    isExportacao ? getCotacaoUSD() : Promise.resolve(0),
   ]);
 
   const engineInput = {
@@ -159,6 +163,12 @@ async function simular(input, usuario) {
     desconto_da_comissao_percent: input.desconto_da_comissao_percent || 0,
     frete: input.frete,
     instalacao: input.instalacao,
+    exportacao: {
+      ativo: isExportacao,
+      cotacao_original: cotacaoOriginal,
+      reducao_dolar_percent: parametros.exportacao_reducao_dolar_percent,
+      acrescimo_margem_percent: parametros.exportacao_acrescimo_margem_percent,
+    },
   };
 
   const resultado = engine.calcularPreco(engineInput);

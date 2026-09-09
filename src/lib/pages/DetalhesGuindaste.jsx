@@ -431,6 +431,7 @@ const DetalhesGuindaste = () => {
             guindaste={guindaste}
             uf={ufCliente}
             municipio={clienteMunicipio || clienteAtual?.cidade || ''}
+            regiao={regiaoClienteSelecionada}
             contribuinte={contribuinte}
             responsavelComercial={responsavelComercial || user?.nome}
             onChange={handleCondicoesChange}

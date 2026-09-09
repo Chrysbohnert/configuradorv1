@@ -933,6 +933,8 @@ function Parametros({ showToast }) {
     irpj_percent: '',
     csll_percent: '',
     ipi_padrao_percent: '',
+    exportacao_reducao_dolar_percent: '',
+    exportacao_acrescimo_margem_percent: '',
   });
 
   useEffect(() => {
@@ -951,6 +953,8 @@ function Parametros({ showToast }) {
         irpj_percent: data.irpj_percent ?? '',
         csll_percent: data.csll_percent ?? '',
         ipi_padrao_percent: data.ipi_padrao_percent ?? '',
+        exportacao_reducao_dolar_percent: data.exportacao_reducao_dolar_percent ?? '',
+        exportacao_acrescimo_margem_percent: data.exportacao_acrescimo_margem_percent ?? '',
       });
     } catch (error) {
       console.error('Erro ao carregar parâmetros:', error);
@@ -974,6 +978,8 @@ function Parametros({ showToast }) {
         irpj_percent: form.irpj_percent,
         csll_percent: form.csll_percent,
         ipi_padrao_percent: form.ipi_padrao_percent,
+        exportacao_reducao_dolar_percent: form.exportacao_reducao_dolar_percent,
+        exportacao_acrescimo_margem_percent: form.exportacao_acrescimo_margem_percent,
       });
       showToast('success', 'Parâmetros salvos!');
       load();
@@ -1053,6 +1059,14 @@ function Parametros({ showToast }) {
               value={form.csll_percent}
               onChange={(e) => handleChange('csll_percent', e.target.value)}
             />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Redução de segurança do dólar (%) — Comércio Exterior</label>
+            <input type="number" min="0" max="100" step="0.01" value={form.exportacao_reducao_dolar_percent} onChange={(e) => handleChange('exportacao_reducao_dolar_percent', e.target.value)} />
+          </div>
+          <div className="precificacao-form-group">
+            <label>Acréscimo de margem para exportação (p.p.)</label>
+            <input type="number" min="0" step="0.01" value={form.exportacao_acrescimo_margem_percent} onChange={(e) => handleChange('exportacao_acrescimo_margem_percent', e.target.value)} />
           </div>
           <div className="precificacao-form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
             <button type="submit" className="precificacao-btn primary" disabled={isLoading}>
@@ -1458,9 +1472,17 @@ function ResultadoSimulacao({ resultado }) {
   const l = resultado.logistica || {};
   const t = resultado.tributacao || {};
   const f = resultado.formacao || {};
+  const exp = resultado.exportacao;
 
   return (
     <div className="precificacao-resultado-grid">
+      {exp && <>
+        <div className="precificacao-resultado-card"><span className="label">Cotação original</span><span className="value">R$ {Number(exp.cotacao_original || 0).toFixed(4)}</span></div>
+        <div className="precificacao-resultado-card"><span className="label">Redução de segurança</span><span className="value">{formatarPercent(exp.reducao_dolar_percent)}</span></div>
+        <div className="precificacao-resultado-card"><span className="label">Cotação utilizada</span><span className="value">R$ {Number(exp.cotacao_utilizada || 0).toFixed(4)}</span></div>
+        <div className="precificacao-resultado-card"><span className="label">Margem original</span><span className="value">{formatarPercent(exp.margem_original_percent)}</span></div>
+        <div className="precificacao-resultado-card"><span className="label">Margem aplicada</span><span className="value">{formatarPercent(exp.margem_aplicada_percent)}</span></div>
+      </>}
       <div className="precificacao-resultado-card">
         <span className="label">Preço base / tabela</span>
         <span className="value">{formatCurrency(resultado.preco_tabela || 0)}</span>
