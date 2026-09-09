@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
+  BarChart3,
+  Building2,
+  Boxes,
+  LineChart,
+  MapPinned,
+  Store,
+  Truck,
+  UserRound,
+  UsersRound,
+} from 'lucide-react';
+import {
   isAdminFull,
   isAdminConcessionarias,
   isAdminConcessionaria,
@@ -73,37 +84,7 @@ const AdminNavigation = ({ user }) => {
         </svg>
       )
     },
-    ...[
-      { canal: 'representantes', label: 'Representantes', visible: fullAccess || adminRep },
-      { canal: 'interno', label: 'Canal Interno', visible: fullAccess || adminInterno },
-      { canal: 'concessionarias', label: 'Concessionárias', visible: fullAccess || adminConcSede || adminConc },
-      { canal: 'comercio_exterior', label: 'Comércio Exterior', visible: fullAccess || adminExt },
-    ].map((equipe) => ({
-      path: `/gerenciar-vendedores?canal=${equipe.canal}`,
-      label: equipe.label,
-      visible: equipe.visible,
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-        </svg>
-      )
-    })),
-    {
-      path: '/cadastros',
-      label: 'Cadastros',
-      visible: fullAccess || adminConcSede,
-      icon: (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="3" width="7" height="7" />
-          <rect x="14" y="3" width="7" height="7" />
-          <rect x="3" y="14" width="7" height="7" />
-          <rect x="14" y="14" width="7" height="7" />
-        </svg>
-      )
-    },
+
     {
       path: '/gerenciar-estoque',
       label: 'Estoque',
@@ -259,16 +240,20 @@ const AdminNavigation = ({ user }) => {
       ]
     },
     {
-      id: 'equipes',
-      label: 'Equipes',
+      id: 'cadastros',
+      label: 'Cadastros',
       items: [
-        findItem('/gerenciar-vendedores?canal=representantes'),
-        findItem('/gerenciar-vendedores?canal=interno'),
-        findItem('/gerenciar-vendedores?canal=concessionarias'),
-        findItem('/gerenciar-vendedores?canal=comercio_exterior')
-      ]
+        { path: '/clientes', label: 'Clientes', visible: true, icon: <UserRound size={20} /> },
+        { path: '/gerenciar-guindastes', label: 'Guindastes', visible: fullAccess, icon: <Boxes size={20} /> },
+        { path: '/gerenciar-graficos-carga', label: 'Gráficos de Carga', visible: fullAccess, icon: <LineChart size={20} /> },
+        { path: '/gerenciar-vendedores?canal=representantes', label: 'Representantes', visible: fullAccess || adminRep, icon: <UsersRound size={20} /> },
+        { path: '/gerenciar-vendedores?canal=interno', label: 'Canal Interno', visible: fullAccess || adminInterno, icon: <BarChart3 size={20} /> },
+        { path: '/gerenciar-vendedores?canal=concessionarias', label: 'Concessionárias', visible: fullAccess || adminConcSede || adminConc, icon: <Store size={20} /> },
+        { path: '/gerenciar-vendedores?canal=comercio_exterior', label: 'Comércio Exterior', visible: fullAccess || adminExt, icon: <Building2 size={20} /> },
+        { path: '/gerenciar-fretes', label: 'Instaladoras', visible: fullAccess, icon: <Truck size={20} /> },
+        { path: '/cadastros/territorial', label: 'Áreas de Atuação', visible: fullAccess || adminConcSede, icon: <MapPinned size={20} /> },
+      ].filter((item) => item.visible !== false),
     },
-    { id: 'cadastros', direct: true, item: findItem('/cadastros') },
     { id: 'mapa', direct: true, item: findItem('/mapa-territorial') },
     {
       id: 'gestao',

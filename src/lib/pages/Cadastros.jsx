@@ -40,12 +40,13 @@ export default function Cadastros({
   initialView = 'lista',
   initialUf = 'RS',
   initialForm = null,
+  formFirst = false,
 }) {
   const { user } = useOutletContext();
 
   const initialUfUpper = String(initialUf || 'RS').toUpperCase();
 
-  const [view, setView] = useState(initialView); // 'lista' | 'form'
+  const [view, setView] = useState(formFirst ? 'form' : initialView); // 'lista' | 'form'
   const [allCadastros, setAllCadastros] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -144,6 +145,24 @@ export default function Cadastros({
     return list;
   }, [allCadastros, filtroTipo, search, geoFiltro]);
 
+  const contextRegistros = useMemo(() => {
+    if (!formFirst) return [];
+    const q = normalizeCidade(search.trim());
+    return allCadastros.filter((c) => {
+      if (c.tipo !== form.tipo) return false;
+      const atendeUf =
+        c.uf === form.uf ||
+        (c.municipios || []).some((code) => ufOfMunicipio(code) === form.uf);
+      if (!atendeUf) return false;
+      if (!q) return true;
+      return (
+        normalizeCidade(c.nome).includes(q) ||
+        normalizeCidade(c.documento || '').includes(q) ||
+        normalizeCidade(c.cidade || '').includes(q)
+      );
+    });
+  }, [allCadastros, form.tipo, form.uf, search, formFirst]);
+
   const pares = useMemo(
     () => allCadastros.filter((c) => c.tipo === form.tipo && temArea(c.tipo)),
     [allCadastros, form.tipo]
@@ -207,9 +226,11 @@ export default function Cadastros({
   }
 
   function novo() {
-    setForm(vazio(initialUfUpper));
-    setUfSel(initialUfUpper);
-    setMapUf(initialUfUpper);
+    const nextTipo = formFirst ? form.tipo : 'concessionaria';
+    const nextUf = formFirst ? form.uf : initialUfUpper;
+    setForm({ ...vazio(nextUf), tipo: nextTipo });
+    setUfSel(nextUf);
+    setMapUf(nextUf);
     setBusca('');
     setMunSel('');
     setView('form');
@@ -302,8 +323,12 @@ export default function Cadastros({
         }
       }
 
-      setForm(vazio(initialUfUpper));
       await fetchAll();
+      if (formFirst) {
+        setForm({ ...vazio(form.uf), tipo: form.tipo });
+        return;
+      }
+      setForm(vazio(initialUfUpper));
       if (onVoltar) {
         onVoltar();
       } else {
@@ -321,6 +346,14 @@ export default function Cadastros({
   function cancelar() {
     if (onVoltar) {
       onVoltar();
+      return;
+    }
+    if (formFirst) {
+      setForm({ ...vazio(form.uf), tipo: form.tipo });
+      setUfSel(form.uf);
+      setMapUf(form.uf);
+      setBusca('');
+      setMunSel('');
       return;
     }
     setForm(vazio(initialUfUpper));
@@ -436,9 +469,11 @@ export default function Cadastros({
         <form onSubmit={salvar} className="cadastros-form-card">
           <div className="cadastros-form-header">
             <h1 className="cadastros-form-title">{form.id ? 'Editar cadastro' : 'Novo cadastro'}</h1>
-            <button type="button" className="cadastros-back-btn" onClick={cancelar}>
-              &larr; {onVoltar ? 'Voltar ao mapa' : 'Voltar para lista'}
-            </button>
+            {!(formFirst && !onVoltar) && (
+              <button type="button" className="cadastros-back-btn" onClick={cancelar}>
+                &larr; {onVoltar ? 'Voltar ao mapa' : 'Voltar para lista'}
+              </button>
+            )}
           </div>
 
           <div className="cadastros-field">
@@ -688,6 +723,61 @@ export default function Cadastros({
             </section>
           )}
         </div>
+
+        {formFirst && (
+          <section className="cadastros-context-list cadastros-list-section">
+            <div className="cadastros-list-header">
+              <h2 className="cadastros-list-title">
+                Cadastros existentes · {tipoLabel(form.tipo)} em {form.uf}
+              </h2>
+              <button type="button" className="cadastros-new-btn" onClick={novo}>
+                + Novo Cadastro
+              </button>
+            </div>
+
+            <input
+              type="text"
+              className="cadastros-input cadastros-search"
+              placeholder="Buscar por nome, documento ou cidade..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            {apiError && <div className="cadastros-api-error">{apiError}</div>}
+
+            {loading ? (
+              <div className="cadastros-feedback">
+                <span className="cadastros-spinner" />
+                <strong>Carregando...</strong>
+              </div>
+            ) : (
+              <ul className="cadastros-record-list">
+                {contextRegistros
+                  .filter((c) => c.id !== form.id)
+                  .map((c) => (
+                    <li key={`${c.tipo}-${c.id}`} className="cadastros-record-item">
+                      <div className="cadastros-record-info">
+                        <p className="cadastros-record-name">{c.nome}</p>
+                        <p className="cadastros-record-meta">
+                          {tipoLabel(c.tipo)} · {c.municipioNome || c.cidade || ''}/{c.uf}
+                          {temArea(c.tipo) ? ` · ${(c.municipios || []).length} municipio(s)` : ''}
+                        </p>
+                      </div>
+                      <div className="cadastros-record-actions">
+                        <button onClick={() => editar(c)} className="cadastros-edit-btn">Editar</button>
+                        <button onClick={() => excluir(c)} className="cadastros-delete-btn">Excluir</button>
+                      </div>
+                    </li>
+                  ))}
+                {!contextRegistros.filter((c) => c.id !== form.id).length && (
+                  <li className="cadastros-empty-row">
+                    Nenhum cadastro encontrado para {tipoLabel(form.tipo)} em {form.uf}.
+                  </li>
+                )}
+              </ul>
+            )}
+          </section>
+        )}
       </div>
     </div>
   );

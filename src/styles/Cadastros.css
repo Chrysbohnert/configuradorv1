@@ -508,6 +508,18 @@
 
 @keyframes cad-spin { to { transform: rotate(360deg); } }
 
+/* ---------- Context list below form ---------- */
+
+.cadastros-context-list {
+  max-width: 1800px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.cadastros-context-list .cadastros-search {
+  margin-top: 16px;
+}
+
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1280px) {

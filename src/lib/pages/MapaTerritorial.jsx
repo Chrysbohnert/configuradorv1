@@ -52,11 +52,6 @@ export default function MapaTerritorial() {
   }, [activeTab, mapKey, cadastroView, loadMapData]);
 
   const refreshMap = useCallback(() => setMapKey((k) => k + 1), []);
-  const switchToMap = useCallback(() => {
-    setActiveTab('mapa');
-    setCadastroView(null);
-    refreshMap();
-  }, [refreshMap]);
 
   const abrirCadastro = useCallback((mode, uf, entidade = null) => {
     setCadastroView({ mode, uf: uf || 'RS', entidade });
@@ -126,7 +121,7 @@ export default function MapaTerritorial() {
           onAbrirCadastro={abrirCadastro}
         />
       ) : (
-        <Cadastros embedded onSwitchToMap={switchToMap} />
+        <Cadastros embedded formFirst />
       )}
     </div>
   );
