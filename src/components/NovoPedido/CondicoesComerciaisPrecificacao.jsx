@@ -7,6 +7,7 @@ import { getOccupiedAreas } from '../../api/areas';
 import { formatCurrency } from '../../utils/formatters';
 
 const normalizarLocal = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
+const formatarEntradaPercentual = (valor) => `${Math.round(Number(valor) || 0)}% de entrada`;
 
 export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municipio, regiao, contribuinte, responsavelComercial, onChange }) {
   const [condicoes, setCondicoes] = useState([]);
@@ -15,6 +16,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
   const [parcelas, setParcelas] = useState('0');
   const [descontoPlano, setDescontoPlano] = useState('');
   const [descontoComissao, setDescontoComissao] = useState('');
+  const [tipoFrete, setTipoFrete] = useState('CIF');
   const [localInstalacao, setLocalInstalacao] = useState('');
   const [areasInstaladoras, setAreasInstaladoras] = useState([]);
   const [areasCarregadas, setAreasCarregadas] = useState(false);
@@ -22,7 +24,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const requestIdRef = useRef(0);
-  const { fretes, dadosFreteAtual } = useFretes(localInstalacao);
+  const { fretes } = useFretes();
 
   useEffect(() => {
     Promise.all([listarCondicoes({ ativo: true }), getParametros()])
@@ -51,6 +53,9 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       - (Number(parcelas) || 0) * (Number(parametros?.passo_desconto_parcela_percent) || 0)
   ), [parametros, parcelas]);
   const descontoComissaoMax = Number(parametros?.comissao_cedivel_max_percent) || 0;
+  const descontoComercialExcedido = Number(descontoPlano) > descontoPlanoMax;
+  const descontoComissaoExcedido = Number(descontoComissao) > descontoComissaoMax;
+  const limiteDescontoExcedido = descontoComercialExcedido || descontoComissaoExcedido;
   const fretesFiltrados = useMemo(() => {
     if (!areasCarregadas) return [];
     const ufCliente = normalizarLocal(uf);
@@ -62,22 +67,22 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       areasPorInstaladora.get(id).push(area);
     });
     return fretes
-      .map((item) => {
-        const areas = areasPorInstaladora.get(String(item.id)) || [];
-        const cobreMunicipio = municipioCliente && areas.some((area) => normalizarLocal(area.uf) === ufCliente && normalizarLocal(area.nome) === municipioCliente);
-        const cobreUf = areas.some((area) => normalizarLocal(area.uf) === ufCliente);
-        const fallbackUf = areas.length === 0 && normalizarLocal(item.uf) === ufCliente;
-        return { ...item, _prioridadeCobertura: cobreMunicipio ? 0 : cobreUf ? 1 : fallbackUf ? 2 : 3 };
-      })
-      .filter((item) => item._prioridadeCobertura < 3)
-      .sort((a, b) => a._prioridadeCobertura - b._prioridadeCobertura || String(a.cidade || '').localeCompare(String(b.cidade || '')));
+      .filter((item) => (areasPorInstaladora.get(String(item.id)) || []).some((area) => (
+        normalizarLocal(area.uf) === ufCliente && normalizarLocal(area.nome) === municipioCliente
+      )))
+      .sort((a, b) => String(a.cidade || '').localeCompare(String(b.cidade || '')));
   }, [areasCarregadas, areasInstaladoras, fretes, municipio, uf]);
-  const frete = Number(dadosFreteAtual?.valor_reaproveitamento) || 0;
+  const dadosFreteAtual = useMemo(() => fretesFiltrados.find((item) => String(item.id) === localInstalacao) || null, [fretesFiltrados, localInstalacao]);
+  const frete = tipoFrete === 'CIF' ? Number(dadosFreteAtual?.valor_reaproveitamento) || 0 : 0;
   const instalacaoValor = Number(guindaste?.valor_instalacao_incluso);
 
   useEffect(() => {
+    if (tipoFrete === 'FOB' && parcelas !== '0') setParcelas('0');
+  }, [parcelas, tipoFrete]);
+
+  useEffect(() => {
     if (!localInstalacao) return;
-    const compativel = fretesFiltrados.some((item) => `${item.oficina || item.nome || item.instaladora || 'Instaladora'} - ${item.cidade}/${item.uf}` === localInstalacao);
+    const compativel = fretesFiltrados.some((item) => String(item.id) === localInstalacao);
     if (!compativel) setLocalInstalacao('');
   }, [fretesFiltrados, localInstalacao]);
 
@@ -101,12 +106,20 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       setErro('O equipamento não possui valor padrão de instalação cadastrado. Complete o cadastro antes de calcular.');
       return;
     }
-    if ((Number(descontoPlano) || 0) > descontoPlanoMax || (Number(descontoComissao) || 0) > descontoComissaoMax) {
-      setErro('Os descontos informados ultrapassam os limites da precificação.');
+    if (limiteDescontoExcedido) {
+      setResultado(null);
+      onChange?.(null);
+      setErro('Limite de desconto excedido');
       return;
     }
-    if (!localInstalacao || !dadosFreteAtual) {
-      setErro('Selecione a instaladora para utilizar o frete por reaproveitamento de carga.');
+    if (!localInstalacao || (tipoFrete === 'CIF' && !dadosFreteAtual)) {
+      setErro('Selecione uma instaladora que atenda ao município do cliente.');
+      return;
+    }
+    if (tipoFrete === 'FOB' && Number(parcelas) !== 0) {
+      setResultado(null);
+      onChange?.(null);
+      setErro('FOB para cliente final disponível somente para pagamento à vista.');
       return;
     }
     setLoading(true);
@@ -115,6 +128,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       const entrada = {
         guindaste_id: guindaste.id,
         uf,
+        municipio,
         regiao,
         ncm: guindaste.ncm,
         contribuinte,
@@ -122,6 +136,8 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         parcelas,
         desconto_comercial_percent: descontoPlano,
         desconto_da_comissao_percent: descontoComissao,
+        tipo_frete: tipoFrete,
+        instaladora_id: localInstalacao,
         frete,
         instalacao: instalacaoValor,
       };
@@ -142,11 +158,12 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         parcelas: calculado.pagamento?.parcelas || [],
         desconto: calculado.desconto_comercial?.percentual || 0,
         descontoComissao: calculado.comissao?.cedida_percent_sobre_base || 0,
-        tipoFrete: 'Reaproveitamento de carga',
+        tipoFrete,
         valorFrete: calculado.logistica?.frete || 0,
-        localInstalacao,
-        tipoEntrega: 'reaproveitamento',
-        observacaoFrete: 'Frete mediante fechamento de carga',
+        localInstalacao: `${dadosFreteAtual.oficina || dadosFreteAtual.nome || dadosFreteAtual.instaladora || 'Instaladora'} - ${dadosFreteAtual.cidade}/${dadosFreteAtual.uf}`,
+        tipoEntrega: tipoFrete === 'CIF' ? 'reaproveitamento' : 'retirada_fabrica',
+        observacaoFrete: tipoFrete === 'FOB' ? 'Retirada na fábrica pelo cliente ou transportador indicado.' : '',
+        composicaoPreco: tipoFrete === 'CIF' ? 'Equipamento + Instalação + Frete' : 'Equipamento + Instalação',
         instalacao: 'incluso',
         tipoInstalacao: 'Incluso no pedido',
         valorInstalacao: calculado.logistica?.instalacao || 0,
@@ -159,7 +176,13 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
     } finally {
       if (requestId === requestIdRef.current) setLoading(false);
     }
-  }, [condicao, condicaoId, contribuinte, dadosFreteAtual, descontoComissao, descontoComissaoMax, descontoPlano, descontoPlanoMax, frete, guindaste, instalacaoValor, localInstalacao, onChange, parcelas, regiao, uf]);
+  }, [condicao, condicaoId, contribuinte, dadosFreteAtual, descontoComissao, descontoPlano, frete, guindaste, instalacaoValor, limiteDescontoExcedido, localInstalacao, municipio, onChange, parcelas, regiao, tipoFrete, uf]);
+
+  useEffect(() => {
+    if (!limiteDescontoExcedido) return;
+    setResultado(null);
+    onChange?.(null);
+  }, [limiteDescontoExcedido, onChange]);
 
   useEffect(() => {
     const timeoutId = setTimeout(calcular, 400);
@@ -169,6 +192,10 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
     };
   }, [calcular]);
 
+  const resumoParcelas = resultado && (Number(parcelas) === 0
+    ? `Saldo à vista: ${formatCurrency(resultado.pagamento?.saldo_valor)}`
+    : `${resultado.pagamento?.parcelas_selecionadas || Number(parcelas)}x de ${formatCurrency(resultado.pagamento?.parcelas?.[0]?.valor)}`);
+
   return (
     <section className="condicoes-comerciais-precificacao">
       <div className="condicoes-comerciais-heading">
@@ -176,17 +203,17 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         <span>Precificação administrativa</span>
       </div>
       <div className="condicoes-comerciais-grid">
-        <label>% de entrada<select value={condicaoId} onChange={(e) => setCondicaoId(e.target.value)}>{condicoes.map((item) => <option key={item.id} value={item.id}>{item.descricao || `${item.entrada_percent}%`}</option>)}</select></label>
-        <label>Parcelas<select value={parcelas} onChange={(e) => setParcelas(e.target.value)}><option value="0">À vista / faturamento</option>{Array.from({ length: 12 }, (_, i) => i + 1).map((qtd) => <option key={qtd} value={qtd}>{qtd}x</option>)}</select></label>
-        <label>Desconto do plano (%)<input type="number" min="0" max={descontoPlanoMax} step="0.01" value={descontoPlano} onChange={(e) => setDescontoPlano(e.target.value)} /><small>Máximo: {descontoPlanoMax.toFixed(2)}%</small></label>
-        <label>Desconto da comissão (%)<input type="number" min="0" max={descontoComissaoMax} step="0.01" value={descontoComissao} onChange={(e) => setDescontoComissao(e.target.value)} /><small>Máximo: {descontoComissaoMax.toFixed(2)}%</small></label>
-        <label>Frete<input type="text" readOnly value="Reaproveitamento de carga" /><small>Frete mediante fechamento de carga</small></label>
-        <label>Instaladora<select value={localInstalacao} onChange={(e) => setLocalInstalacao(e.target.value)} disabled={!areasCarregadas || fretesFiltrados.length === 0}><option value="">{!areasCarregadas ? 'Carregando cobertura...' : fretesFiltrados.length ? 'Selecione' : 'Nenhuma instaladora atende o cliente'}</option>{fretesFiltrados.map((item) => { const value = `${item.oficina || item.nome || item.instaladora || 'Instaladora'} - ${item.cidade}/${item.uf}`; return <option key={item.id} value={value}>{value}</option>; })}</select><small>{dadosFreteAtual ? `Valor cadastrado: ${formatCurrency(frete)}` : 'Selecione para carregar o valor cadastrado'}</small></label>
-        <label>Instalação<input type="text" readOnly value={`Inclusa no pedido — ${Number.isFinite(instalacaoValor) ? formatCurrency(instalacaoValor) : 'valor não cadastrado'}`} /></label>
+        <label>% de entrada<select value={condicaoId} onChange={(e) => setCondicaoId(e.target.value)}>{condicoes.map((item) => <option key={item.id} value={item.id}>{formatarEntradaPercentual(item.entrada_percent)}</option>)}</select><small>{resultado ? `Entrada: ${formatCurrency(resultado.pagamento?.entrada_valor)}` : 'Valor calculado pelo motor'}</small></label>
+        <label>Parcelas<select value={parcelas} disabled={tipoFrete === 'FOB'} onChange={(e) => setParcelas(e.target.value)}><option value="0">À vista / faturamento</option>{Array.from({ length: 12 }, (_, i) => i + 1).map((qtd) => <option key={qtd} value={qtd}>{qtd}x</option>)}</select><small>{resumoParcelas || 'Valor calculado pelo motor'}</small></label>
+        <label className={descontoComercialExcedido ? 'condicoes-comerciais-campo-invalido' : ''}>Desconto Comercial (%)<input type="number" min="0" max={descontoPlanoMax} step="0.01" value={descontoPlano} aria-invalid={descontoComercialExcedido} onChange={(e) => setDescontoPlano(e.target.value)} /><small>{descontoComercialExcedido ? 'Limite de desconto excedido' : `Máximo: ${descontoPlanoMax.toFixed(2)}%`}</small></label>
+        <label className={descontoComissaoExcedido ? 'condicoes-comerciais-campo-invalido' : ''}>Desconto da Comissão (%)<input type="number" min="0" max={descontoComissaoMax} step="0.01" value={descontoComissao} aria-invalid={descontoComissaoExcedido} onChange={(e) => setDescontoComissao(e.target.value)} /><small>{descontoComissaoExcedido ? 'Limite de desconto excedido' : `Máximo: ${descontoComissaoMax.toFixed(2)}%`}</small></label>
+        <label>Frete<select value={tipoFrete} onChange={(e) => setTipoFrete(e.target.value)}><option value="CIF">CIF</option><option value="FOB">FOB</option></select><small>{tipoFrete === 'CIF' ? (dadosFreteAtual ? `Frete calculado pelo motor: ${formatCurrency(resultado?.logistica?.frete || 0)}` : 'Selecione a instaladora') : 'Retirada na fábrica'}</small></label>
+        <label>Instaladora<select value={localInstalacao} onChange={(e) => setLocalInstalacao(e.target.value)} disabled={!areasCarregadas || fretesFiltrados.length === 0}><option value="">{!areasCarregadas ? 'Carregando cobertura...' : fretesFiltrados.length ? 'Selecione' : 'Nenhuma instaladora atende o cliente'}</option>{fretesFiltrados.map((item) => <option key={item.id} value={item.id}>{item.oficina || item.nome || item.instaladora || 'Instaladora'} - {item.cidade}/{item.uf}</option>)}</select><small>Instalação inclusa automaticamente no preço</small></label>
       </div>
+      {tipoFrete === 'FOB' && <div className="condicoes-comerciais-aviso">FOB para cliente final disponível somente para pagamento à vista. Retirada na fábrica pelo cliente ou transportador indicado.</div>}
       {erro && <div className="condicoes-comerciais-erro">{erro}</div>}
       <div className="condicoes-comerciais-status">{loading ? 'Atualizando cálculo...' : resultado ? 'Cálculo atualizado automaticamente' : 'Preencha as condições para calcular automaticamente'}</div>
-      {resultado && <div className="condicoes-comerciais-resultado"><div><span>Preço final</span><strong>{formatCurrency(resultado.preco_final)}</strong></div><div><span>Entrada</span><strong>{formatCurrency(resultado.pagamento?.entrada_valor)}</strong></div><div><span>Saldo</span><strong>{formatCurrency(resultado.pagamento?.saldo_valor)}</strong></div><div><span>Frete — reaproveitamento de carga</span><strong>{formatCurrency(resultado.logistica?.frete)}</strong></div><div><span>Parcelas</span><strong>{resultado.pagamento?.parcelas?.map((item) => `${item.numero}x ${formatCurrency(item.valor)}`).join(', ')}</strong></div>{resultado.exportacao && <><div><span>Cotação original / redução</span><strong>R$ {Number(resultado.exportacao.cotacao_original).toFixed(4)} / {Number(resultado.exportacao.reducao_dolar_percent).toFixed(2)}%</strong></div><div><span>Cotação utilizada</span><strong>R$ {Number(resultado.exportacao.cotacao_utilizada).toFixed(4)}</strong></div><div><span>Margem original / aplicada</span><strong>{Number(resultado.exportacao.margem_original_percent).toFixed(2)}% / {Number(resultado.exportacao.margem_aplicada_percent).toFixed(2)}%</strong></div></>}<div className="condicoes-comerciais-comissao"><span>Comissão comercial · {responsavelComercial || 'Responsável não informado'}</span><strong>Original {formatCurrency(resultado.comissao?.equipamento_valor)} · Desconto {formatCurrency(resultado.comissao?.cedida_valor)} · Restante {formatCurrency(resultado.comissao?.final_valor)}</strong></div></div>}
+      {resultado && <div className="condicoes-comerciais-resultado"><div><span>Preço final</span><strong>{formatCurrency(resultado.preco_final)}</strong></div><div><span>Entrada</span><strong>{formatCurrency(resultado.pagamento?.entrada_valor)}</strong></div><div><span>Saldo</span><strong>{formatCurrency(resultado.pagamento?.saldo_valor)}</strong></div><div><span>Frete — {tipoFrete}</span><strong>{formatCurrency(resultado.logistica?.frete)}</strong></div><div><span>Parcelas</span><strong>{resultado.pagamento?.parcelas?.map((item) => `${item.numero}x ${formatCurrency(item.valor)}`).join(', ')}</strong></div>{resultado.exportacao && <><div><span>Cotação original / redução</span><strong>R$ {Number(resultado.exportacao.cotacao_original).toFixed(4)} / {Number(resultado.exportacao.reducao_dolar_percent).toFixed(2)}%</strong></div><div><span>Cotação utilizada</span><strong>R$ {Number(resultado.exportacao.cotacao_utilizada).toFixed(4)}</strong></div><div><span>Margem original / aplicada</span><strong>{Number(resultado.exportacao.margem_original_percent).toFixed(2)}% / {Number(resultado.exportacao.margem_aplicada_percent).toFixed(2)}%</strong></div></>}<div className="condicoes-comerciais-comissao"><span>Comissão comercial · {responsavelComercial || 'Responsável não informado'}</span><strong>Original {formatCurrency(resultado.comissao?.equipamento_valor)} · Desconto {formatCurrency(resultado.comissao?.cedida_valor)} · Restante {formatCurrency(resultado.comissao?.final_valor)}</strong></div></div>}
     </section>
   );
 }

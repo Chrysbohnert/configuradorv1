@@ -7,6 +7,7 @@ const { Router } = require('express');
 const asyncHandler = require('../utils/asyncHandler');
 const res_ = require('../utils/response');
 const svc = require('../services/propostasService');
+const clientesService = require('../services/clientesService');
 const usersService = require('../services/usersService');
 const concessionariasService = require('../services/concessionariasService');
 const { requireAuth } = require('../middleware/auth');
@@ -107,6 +108,11 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
     const responsavel = await usersService.findById(payload.vendedor_id);
     if (!responsavel || !['vendedor', 'vendedor_concessionaria', 'vendedor_exterior'].includes(responsavel.tipo)) {
       return res_.badRequest(res, 'Responsável comercial inválido');
+    }
+    if (!payload.cliente_id) return res_.badRequest(res, 'Cliente obrigatório');
+    const cliente = await clientesService.findById(payload.cliente_id);
+    if (!cliente || String(cliente.vendedor_id) !== String(responsavel.id)) {
+      return res_.badRequest(res, 'Cliente não pertence ao responsável comercial selecionado');
     }
     payload.vendedor_nome = responsavel.nome;
     payload.dados_serializados = {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getClientes, createCliente } from '../../api/clientes';
 import ClienteFormFields from './ClienteFormFields';
 
@@ -10,10 +10,10 @@ const CLIENTE_VAZIO = {
 };
 
 export default function SeletorCliente({
-  user,
   clienteSelecionado,
   onClienteSelecionado,
   regioesDisponiveis = [],
+  vendedorId,
 }) {
   const wrapperRef = useRef(null);
   const [aberto, setAberto] = useState(false);
@@ -24,10 +24,10 @@ export default function SeletorCliente({
   const [formData, setFormData] = useState(CLIENTE_VAZIO);
   const [saveError, setSaveError] = useState('');
 
-  const carregarClientes = async (termo = '') => {
+  const carregarClientes = useCallback(async (termo = '') => {
     setCarregando(true);
     try {
-      const data = await getClientes({ search: termo || undefined });
+      const data = await getClientes({ search: termo || undefined, vendedor_id: vendedorId });
       setClientes(data || []);
     } catch (e) {
       console.error('[SeletorCliente] erro ao carregar:', e.message);
@@ -35,16 +35,18 @@ export default function SeletorCliente({
     } finally {
       setCarregando(false);
     }
-  };
-
-  useEffect(() => {
-    carregarClientes();
-  }, []);
+  }, [vendedorId]);
 
   useEffect(() => {
     const t = setTimeout(() => carregarClientes(busca), 300);
     return () => clearTimeout(t);
-  }, [busca]);
+  }, [busca, carregarClientes]);
+
+  useEffect(() => {
+    if (vendedorId && clienteSelecionado && String(clienteSelecionado.vendedor_id) !== String(vendedorId)) {
+      onClienteSelecionado(null);
+    }
+  }, [clienteSelecionado, onClienteSelecionado, vendedorId]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -88,7 +90,7 @@ export default function SeletorCliente({
       return;
     }
     try {
-      const salvo = await createCliente(formData);
+      const salvo = await createCliente({ ...formData, ...(vendedorId ? { vendedor_id: vendedorId } : {}) });
       onClienteSelecionado(salvo);
       setMostrarCadastro(false);
       setFormData(CLIENTE_VAZIO);

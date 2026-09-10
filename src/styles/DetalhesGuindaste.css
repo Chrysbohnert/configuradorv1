@@ -764,9 +764,12 @@
 .condicoes-comerciais-grid label { display: flex; flex-direction: column; gap: 5px; font-size: var(--erp-text-sm); font-weight: 700; }
 .condicoes-comerciais-grid input,
 .condicoes-comerciais-grid select { padding: 9px 10px; border: 1px solid var(--erp-border); border-radius: var(--erp-radius-sm); background: white; }
+.condicoes-comerciais-grid .condicoes-comerciais-campo-invalido input { border-color: #dc2626; background: #fef2f2; outline-color: #dc2626; }
+.condicoes-comerciais-grid .condicoes-comerciais-campo-invalido small { color: #b91c1c; font-weight: 700; }
 .condicoes-comerciais-calcular { padding: 10px 16px; border: 0; border-radius: var(--erp-radius-sm); background: var(--erp-text-heading); color: white; font-weight: 700; cursor: pointer; }
 .condicoes-comerciais-calcular:disabled { opacity: .6; cursor: wait; }
 .condicoes-comerciais-erro { margin: 8px 0; color: #b91c1c; font-size: var(--erp-text-sm); }
+.condicoes-comerciais-aviso { margin: 8px 0; padding: 10px 12px; border: 1px solid #f59e0b; border-radius: var(--erp-radius-sm); background: #fffbeb; color: #92400e; font-size: var(--erp-text-sm); }
 .condicoes-comerciais-status { margin: 8px 0; color: var(--erp-text-muted); font-size: var(--erp-text-sm); }
 .condicoes-comerciais-comissao { margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--erp-divider); }
 .condicoes-comerciais-comissao strong { text-align: right; }

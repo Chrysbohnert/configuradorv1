@@ -308,15 +308,17 @@ const DetalhesGuindaste = () => {
         </div>
 
         <div className="preco-box">
-          <div className="preco-label">Valor do equipamento</div>
+          <div className="preco-label">{adminPrecificacao && condicoesComerciais?.composicaoPreco ? condicoesComerciais.composicaoPreco : 'Valor do equipamento'}</div>
           <div className="preco-valor">
-            {loadingPreco
-              ? 'Carregando preço...'
-              : precoExibido != null && precoExibido > 0
-                ? formatCurrency(precoExibido)
-                : precoExibido === 0
-                  ? 'Preço indisponível para esta região'
-                  : '—'}
+            {adminPrecificacao && condicoesComerciais?.valorFinal
+              ? formatCurrency(condicoesComerciais.valorFinal)
+              : loadingPreco
+                ? 'Carregando preço...'
+                : precoExibido != null && precoExibido > 0
+                  ? formatCurrency(precoExibido)
+                  : precoExibido === 0
+                    ? 'Preço indisponível para esta região'
+                    : '—'}
           </div>
         </div>
 
@@ -464,7 +466,11 @@ const DetalhesGuindaste = () => {
             <button
               type="button"
               className="confirmar-configuracao-btn"
-              onClick={() => handleConfirmarConfiguracao(legacyGuindaste)}
+              disabled={!podeConfirmar}
+              onClick={() => {
+                if (!podeConfirmar) return;
+                handleConfirmarConfiguracao(legacyGuindaste);
+              }}
             >
               Confirmar Configuração
             </button>

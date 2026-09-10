@@ -227,6 +227,14 @@ const NovoPedido = () => {
     if (regiao) setRegiaoClienteSelecionada(regiao);
   }, [isModoConcessionaria, concessionariaInfo, concessionariaSelecionadaParaPedido]);
 
+  React.useEffect(() => {
+    if (!isAdminStark || !responsavelSelecionado || !clienteCadastrado) return;
+    if (String(clienteCadastrado.vendedor_id) === String(responsavelSelecionado.id)) return;
+    setClienteCadastrado(null);
+    setClienteData({});
+    setRegiaoClienteSelecionada('');
+  }, [clienteCadastrado, isAdminStark, responsavelSelecionado]);
+
   // ✅ NOVO: Cliente selecionado (fluxo Stark comum) define automaticamente a região
   // e os dados de contato/cliente, eliminando a etapa manual "Dados do Cliente".
   React.useEffect(() => {
@@ -1373,6 +1381,7 @@ const NovoPedido = () => {
                     clienteSelecionado={clienteCadastrado}
                     onClienteSelecionado={setClienteCadastrado}
                     regioesDisponiveis={regioesParaSeletor}
+                    vendedorId={isAdminStark ? responsavelSelecionado?.id : undefined}
                   />
                   {clienteCadastrado && !regiaoClienteSelecionada && (
                     <SeletorRegiaoCliente

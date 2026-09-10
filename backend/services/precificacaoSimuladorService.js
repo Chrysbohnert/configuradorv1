@@ -82,6 +82,14 @@ async function buscarCondicao(id) {
   return rows[0] || null;
 }
 
+async function buscarFrete(id) {
+  const { rows } = await query(
+    `SELECT id, valor_reaproveitamento FROM public.fretes WHERE id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
 async function buscarFatorPiorCenario() {
   const { rows } = await query(
     `SELECT entrada_percent, taxa_anual_percent
@@ -107,6 +115,41 @@ function normalizarTributacao(tributacao, contribuinte) {
       : tributacao.icms_nao_contribuinte_percent,
     pis_cofins_percent: tributacao.pis_cofins_percent,
   };
+}
+
+function validarFrete(input, parcelas) {
+  const tipoFrete = String(input.tipo_frete || '').trim().toUpperCase();
+  if (!tipoFrete) return null;
+  if (!['CIF', 'FOB'].includes(tipoFrete)) {
+    const error = new Error('Frete deve ser CIF ou FOB');
+    error.status = 400;
+    throw error;
+  }
+  if (tipoFrete === 'FOB' && Number(parcelas) !== 0) {
+    const error = new Error('FOB para cliente final disponível somente para pagamento à vista.');
+    error.status = 400;
+    throw error;
+  }
+  return tipoFrete;
+}
+
+function validarLimitesDesconto(input, parametros, parcelas) {
+  const descontoComercial = Number(input.desconto_comercial_percent || 0);
+  const descontoComissao = Number(input.desconto_da_comissao_percent || 0);
+  const limiteComercial = engine.limiteDescontoComercial(
+    Math.max(0, Number(parametros.desconto_comercial_max_percent) || 0),
+    Math.max(0, Number(parcelas) || 0),
+    Math.max(0, Number(parametros.passo_desconto_parcela_percent) || 0)
+  );
+  const limiteComissao = Math.max(0, Number(parametros.comissao_cedivel_max_percent) || 0);
+
+  if (!Number.isFinite(descontoComercial) || !Number.isFinite(descontoComissao)
+    || descontoComercial < 0 || descontoComissao < 0
+    || descontoComercial > limiteComercial || descontoComissao > limiteComissao) {
+    const error = new Error('Limite de desconto excedido');
+    error.status = 400;
+    throw error;
+  }
 }
 
 async function simular(input, usuario) {
@@ -140,6 +183,16 @@ async function simular(input, usuario) {
     isExportacao ? getCotacaoUSD() : Promise.resolve(0),
   ]);
 
+  const parcelasSelecionadas = input.parcelas === undefined ? condicao.parcelas : input.parcelas;
+  const tipoFrete = validarFrete(input, parcelasSelecionadas);
+  validarLimitesDesconto(input, parametros, parcelasSelecionadas);
+  const freteCadastrado = tipoFrete ? await buscarFrete(input.instaladora_id) : null;
+  if (tipoFrete && !freteCadastrado) {
+    const error = new Error('Instaladora não encontrada');
+    error.status = 400;
+    throw error;
+  }
+
   const engineInput = {
     custo_mp: equipamento.custo_mp,
     custo_mo: equipamento.custo_mo,
@@ -153,7 +206,7 @@ async function simular(input, usuario) {
     tributacao,
     condicao: {
       entrada_percent: condicao.entrada_percent,
-      parcelas: input.parcelas === undefined ? condicao.parcelas : input.parcelas,
+      parcelas: parcelasSelecionadas,
       taxa_anual_percent: condicao.taxa_anual_percent,
     },
     parametros,
@@ -161,8 +214,8 @@ async function simular(input, usuario) {
     contribuinte: input.contribuinte,
     desconto_comercial_percent: input.desconto_comercial_percent || 0,
     desconto_da_comissao_percent: input.desconto_da_comissao_percent || 0,
-    frete: input.frete,
-    instalacao: input.instalacao,
+    frete: tipoFrete ? (tipoFrete === 'CIF' ? freteCadastrado.valor_reaproveitamento : 0) : input.frete,
+    instalacao: tipoFrete ? equipamento.valor_instalacao_incluso : input.instalacao,
     exportacao: {
       ativo: isExportacao,
       cotacao_original: cotacaoOriginal,
@@ -207,8 +260,10 @@ async function simular(input, usuario) {
       contribuinte: input.contribuinte,
       desconto_comercial_percent: input.desconto_comercial_percent || 0,
       desconto_da_comissao_percent: input.desconto_da_comissao_percent || 0,
-      frete: input.frete || 0,
-      instalacao: input.instalacao || 0,
+      tipo_frete: tipoFrete,
+      instaladora_id: freteCadastrado?.id || null,
+      frete: engineInput.frete,
+      instalacao: engineInput.instalacao,
     },
     resultado,
     observacao: input.observacao || null,
@@ -217,4 +272,4 @@ async function simular(input, usuario) {
   return { resultado, snapshot };
 }
 
-module.exports = { simular };
+module.exports = { simular, validarFrete, validarLimitesDesconto };

@@ -1,6 +1,37 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const engine = require('./precificacaoEngine');
+const { validarFrete, validarLimitesDesconto } = require('./precificacaoSimuladorService');
+
+test('rejeita FOB parcelado e aceita FOB à vista ou CIF parcelado', () => {
+  assert.equal(validarFrete({ tipo_frete: 'FOB' }, 0), 'FOB');
+  assert.equal(validarFrete({ tipo_frete: 'CIF' }, 10), 'CIF');
+  assert.equal(validarFrete({}, 10), null);
+  assert.throws(() => validarFrete({ tipo_frete: 'FOB' }, 1), (error) => (
+    error.status === 400 && error.message === 'FOB para cliente final disponível somente para pagamento à vista.'
+  ));
+});
+
+test('rejeita descontos acima dos limites da precificação', () => {
+  const parametros = {
+    desconto_comercial_max_percent: 6,
+    comissao_cedivel_max_percent: 1,
+    passo_desconto_parcela_percent: 1,
+  };
+
+  assert.doesNotThrow(() => validarLimitesDesconto({
+    desconto_comercial_percent: 3,
+    desconto_da_comissao_percent: 1,
+  }, parametros, 3));
+  assert.throws(() => validarLimitesDesconto({
+    desconto_comercial_percent: 3.01,
+    desconto_da_comissao_percent: 1,
+  }, parametros, 3), (error) => error.status === 400 && error.message === 'Limite de desconto excedido');
+  assert.throws(() => validarLimitesDesconto({
+    desconto_comercial_percent: 0,
+    desconto_da_comissao_percent: 1.01,
+  }, parametros, 0), (error) => error.status === 400 && error.message === 'Limite de desconto excedido');
+});
 
 test('aplica a cadeia Lovable completa sem incluir logística na margem', () => {
   const input = {
