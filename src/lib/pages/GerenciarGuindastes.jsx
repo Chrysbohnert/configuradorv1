@@ -7,6 +7,7 @@ import LazyGuindasteImage from '../../components/LazyGuindasteImage';
 
 import { db } from '../../config/supabase';
 import { getGuindastesLite, getGuindasteById, getErpImportAtual, importarErp, createGuindaste, updateGuindaste, deleteGuindaste, aprovarPrecoPendente, editarPrecoPendente } from '../../api/guindastes';
+import { getEquipamentosComPrecificacao } from '../../api/precificacao';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizarRegiaoPorUF } from '../../utils/regiaoHelper';
 import '../../styles/GerenciarGuindastes.css';
@@ -374,6 +375,57 @@ const GerenciarGuindastes = () => {
     }
   };
 
+  const handleExportarPlanilha = async () => {
+    if (isAdminConcessionaria) return;
+    try {
+      setIsLoading(true);
+      const equipamentos = await getEquipamentosComPrecificacao();
+
+      const formatNumber = (value) => {
+        if (value === null || value === undefined || value === '') return '';
+        const n = Number(value);
+        if (!Number.isFinite(n)) return '';
+        return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      };
+
+      const escapeCsv = (value) => {
+        const str = String(value ?? '');
+        if (/[;"\n\r]/.test(str)) {
+          return `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+      };
+
+      const headers = ['REFERENCIA', 'DESCRICAO', 'NCM', 'CUSTO MP', 'CUSTO MO', 'MARGEM LUCRO %'];
+      const rows = equipamentos.map((g) => [
+        g.codigo_referencia || '',
+        g.subgrupo || '',
+        g.ncm || '',
+        formatNumber(g.custo_mp),
+        formatNumber(g.custo_mo),
+        formatNumber(g.margem_lucro_percent),
+      ]);
+
+      const csv = [headers.join(';'), ...rows.map((r) => r.map(escapeCsv).join(';'))].join('\r\n');
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `guindastes_base_erp_${new Date().toISOString().slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      setToast({ visible: true, message: 'Planilha exportada com sucesso!', type: 'success' });
+    } catch (error) {
+      console.error('Erro ao exportar planilha:', error);
+      setToast({ visible: true, message: 'Erro ao exportar planilha', type: 'error' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAddNew = async () => {
     if (isAdminConcessionaria) {
       alert('Apenas o Admin Stark pode cadastrar novos guindastes.');
@@ -415,9 +467,13 @@ const GerenciarGuindastes = () => {
     try {
       const data = await getErpImportAtual();
       setErpItems(data?.itens || []);
-      if (!data?.itens?.length) setErpError('A base ERP atual não possui produtos disponíveis.');
+      if (!isAdminFull && !data?.itens?.length) setErpError('A base ERP atual não possui produtos disponíveis.');
     } catch (error) {
-      setErpError(error.message || 'A base ERP precisa ser importada antes de cadastrar um guindaste.');
+      if (isAdminFull) {
+        setErpItems([]);
+      } else {
+        setErpError(error.message || 'A base ERP precisa ser importada antes de cadastrar um guindaste.');
+      }
     } finally {
       setErpLoading(false);
     }
@@ -537,7 +593,7 @@ const GerenciarGuindastes = () => {
     setIsLoading(true);
 
     try {
-      if (!editingGuindaste && !selectedErpItemId) {
+      if (!editingGuindaste && !isAdminFull && !selectedErpItemId) {
         alert('Selecione um produto da base ERP atual antes de cadastrar o guindaste.');
         return;
       }
@@ -602,7 +658,10 @@ const GerenciarGuindastes = () => {
         await updateGuindaste(editingGuindaste.id, guindasteData);
         setToast({ visible: true, message: 'Guindaste atualizado com sucesso!', type: 'success' });
       } else {
-        await createGuindaste({ ...guindasteData, erp_import_item_id: selectedErpItemId });
+        const createPayload = isAdminFull && !selectedErpItemId
+          ? guindasteData
+          : { ...guindasteData, erp_import_item_id: selectedErpItemId };
+        await createGuindaste(createPayload);
         setToast({ visible: true, message: 'Guindaste criado com sucesso!', type: 'success' });
       }
 
@@ -718,6 +777,16 @@ const GerenciarGuindastes = () => {
                             </svg>
                             {erpImporting ? 'Importando...' : 'Importar ERP'}
                           </BlobButton>
+                          {isAdminFull && (
+                            <BlobButton onClick={handleExportarPlanilha} className="gg-btn-export" disabled={isLoading}>
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                              </svg>
+                              Exportar planilha
+                            </BlobButton>
+                          )}
                           <input ref={erpFileInputRef} type="file" accept=".csv,.xlsx" hidden onChange={handleErpFile} />
                           <BlobButton onClick={handleAddNew} className="add-btn">
                             <svg viewBox="0 0 24 24" fill="currentColor">
@@ -1069,7 +1138,7 @@ const GerenciarGuindastes = () => {
                 <button type="button" onClick={handleCloseModal} className="btn-modern-cancel">
                   Cancelar
                 </button>
-                <button type="submit" form="guindaste-form" className="btn-modern-save" disabled={isLoading || (!editingGuindaste && (erpLoading || !selectedErpItemId))}>
+                <button type="submit" form="guindaste-form" className="btn-modern-save" disabled={isLoading || (!editingGuindaste && !isAdminFull && (erpLoading || !selectedErpItemId))}>
                   {isLoading ? 'Salvando...' : 'Salvar produto'}
                 </button>
               </div>
@@ -1152,7 +1221,7 @@ const GerenciarGuindastes = () => {
                         type="text"
                         value={formData.codigo_referencia}
                         onChange={e => handleInputChange('codigo_referencia', e.target.value)}
-                        readOnly={!editingGuindaste}
+                        readOnly={!editingGuindaste && !isAdminFull}
                         placeholder="Selecione um produto ERP"
                         required
                         className="modern-input"
@@ -1200,7 +1269,7 @@ const GerenciarGuindastes = () => {
                         type="text"
                         value={formData.ncm}
                         onChange={e => handleInputChange('ncm', e.target.value)}
-                        readOnly={!editingGuindaste}
+                        readOnly={!editingGuindaste && !isAdminFull}
                         placeholder="Preenchido pelo ERP"
                         required
                         className="modern-input"
@@ -1221,7 +1290,7 @@ const GerenciarGuindastes = () => {
                         step="0.01"
                         value={formData.custo_mp}
                         onChange={e => handleInputChange('custo_mp', e.target.value)}
-                        readOnly={!editingGuindaste}
+                        readOnly={!editingGuindaste && !isAdminFull}
                         placeholder="Preenchido pelo ERP"
                         className="modern-input"
                       />
@@ -1234,7 +1303,7 @@ const GerenciarGuindastes = () => {
                         step="0.01"
                         value={formData.custo_mo}
                         onChange={e => handleInputChange('custo_mo', e.target.value)}
-                        readOnly={!editingGuindaste}
+                        readOnly={!editingGuindaste && !isAdminFull}
                         placeholder="Preenchido pelo ERP"
                         className="modern-input"
                       />
@@ -1307,7 +1376,7 @@ const GerenciarGuindastes = () => {
                     <textarea
                       value={formData.descricao}
                       onChange={e => handleInputChange('descricao', e.target.value)}
-                      readOnly={!editingGuindaste}
+                      readOnly={!editingGuindaste && !isAdminFull}
                       placeholder="Preenchida pelo ERP"
                       required
                       className="modern-textarea"

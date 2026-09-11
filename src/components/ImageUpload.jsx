@@ -2,7 +2,18 @@ import React, { useState, useEffect } from 'react';
 import '../styles/ImageUpload.css';
 import { supabase } from '../config/supabase'; // Importar o cliente Supabase
 
-const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem", disableUpload = false }) => {
+const ImageUpload = ({
+  onImageUpload,
+  currentImageUrl,
+  label = "Upload de Imagem",
+  disableUpload = false,
+  accept = "image/*",
+  formatsText = "JPG, PNG, GIF",
+  bucket = "guindastes",
+  filePrefix = "guindaste_",
+  maxSize = 5 * 1024 * 1024,
+  uploadEndpoint = null,
+}) => {
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(currentImageUrl);
   const [showUrlInput, setShowUrlInput] = useState(false);
@@ -26,9 +37,9 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         return;
       }
 
-      // Validar tamanho (máximo 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert('A imagem deve ter no máximo 5MB.');
+      // Validar tamanho
+      if (file.size > maxSize) {
+        alert(`A imagem deve ter no máximo ${Math.round(maxSize / 1024 / 1024)}MB.`);
         return;
       }
 
@@ -49,40 +60,61 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
         return;
       }
 
-      // Upload para Supabase Storage
-      const fileExtension = file.name.split('.').pop().toLowerCase();
-      const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-      const fileName = `guindaste_${uniqueId}.${fileExtension}`;
+      let publicUrl;
 
-      const { error: uploadError } = await supabase.storage
-        .from('guindastes')
-        .upload(fileName, file, {
-          cacheControl: '3600',
-          upsert: true,
+      if (uploadEndpoint) {
+        // Upload para o backend via endpoint configurado
+        const formData = new FormData();
+        formData.append('arquivo', file);
+
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(uploadEndpoint, {
+          method: 'POST',
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: formData,
         });
 
-      if (uploadError) {
-        throw uploadError;
+        const json = await response.json();
+        if (!response.ok || !json.success || !json.data?.url) {
+          throw new Error(json.error || 'Falha no upload da imagem');
+        }
+        publicUrl = json.data.url;
+      } else {
+        // Upload para Supabase Storage (fallback legado)
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+        const uniqueId = (typeof crypto !== 'undefined' && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : Math.random().toString(36).slice(2);
+        const fileName = `${filePrefix}${uniqueId}.${fileExtension}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        const { data: publicUrlData } = supabase.storage
+          .from(bucket)
+          .getPublicUrl(fileName);
+
+        if (!publicUrlData?.publicUrl) {
+          throw new Error('Não foi possível obter a URL pública da imagem.');
+        }
+        publicUrl = publicUrlData.publicUrl;
       }
 
-      // Obter URL pública e repassar ao componente pai (valor salvo no banco)
-      const { data: publicUrlData } = supabase.storage
-        .from('guindastes')
-        .getPublicUrl(fileName);
-
-      if (!publicUrlData?.publicUrl) {
-        throw new Error('Não foi possível obter a URL pública da imagem.');
-      }
-
-      setPreview(publicUrlData.publicUrl);
-      onImageUpload(publicUrlData.publicUrl);
+      setPreview(publicUrl);
+      onImageUpload(publicUrl);
 
     } catch (error) {
       console.error('❌ Erro no upload:', error);
       setShowUrlInput(true);
-      alert('Upload de imagem ainda não migrado para o backend.\n\nCole a URL da imagem no campo abaixo ou use uma URL existente (ex: CDN, imgur, etc).');
+      alert('Falha no upload automático. Você pode colar a URL da imagem abaixo.');
     } finally {
       setUploading(false);
     }
@@ -141,7 +173,7 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
           </div>
           <input
             type="file"
-            accept="image/*"
+            accept={accept}
             onChange={handleImageUpload}
             className="upload-input"
             disabled={uploading}
@@ -189,11 +221,11 @@ const ImageUpload = ({ onImageUpload, currentImageUrl, label = "Upload de Imagem
       <div className="upload-info">
         <div className="info-item">
           <span className="info-icon">📁</span>
-          <span>Formatos: JPG, PNG, GIF</span>
+          <span>Formatos: {formatsText}</span>
         </div>
         <div className="info-item">
           <span className="info-icon">📏</span>
-          <span>Máximo: 5MB</span>
+          <span>Máximo: {Math.round(maxSize / 1024 / 1024)}MB</span>
         </div>
         <div className="info-item">
           <span className="info-icon">🖼️</span>

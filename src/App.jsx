@@ -22,12 +22,14 @@ const GerenciarGuindastes = lazy(() => import('./lib/pages/GerenciarGuindastes')
 const GerenciarEstoque = lazy(() => import('./lib/pages/GerenciarEstoque'));
 const GerenciarGraficosCarga = lazy(() => import('./lib/pages/GerenciarGraficosCarga'));
 const GerenciarFretes = lazy(() => import('./lib/pages/GerenciarFretes'));
+const GerenciarAcessorios = lazy(() => import('./lib/pages/GerenciarAcessorios'));
 const Concessionarias = lazy(() => import('./lib/pages/Concessionarias'));
 const AprovacoesDescontos = lazy(() => import('./lib/pages/AprovacoesDescontos'));
 const PlanosPagamento = lazy(() => import('./lib/pages/PlanosPagamento'));
 const CotacaoDolar = lazy(() => import('./lib/pages/CotacaoDolar'));
 const MapaTerritorial = lazy(() => import('./lib/pages/MapaTerritorial'));
 const Precificacao = lazy(() => import('./lib/pages/Precificacao'));
+const NovaPropostaAcessorio = lazy(() => import('./lib/pages/NovaPropostaAcessorio'));
 
 const Configuracoes = lazy(() => import('./lib/pages/Configuracoes'));
 const DashboardVendedor = lazy(() => import('./lib/pages/DashboardVendedor'));
@@ -184,6 +186,17 @@ function App() {
                   />
 
                   <Route
+                    path="/admin/nova-proposta-acessorio"
+                    element={
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Proposta de Acessórios...">
+                          <NovaPropostaAcessorio />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
                     path="/admin/propostas"
                     element={
                       <ProtectedRoute requireAdminFull={true}>
@@ -242,6 +255,17 @@ function App() {
                       <ProtectedRoute requireAdminFull={true}>
                         <LazyRoute loadingMessage="Carregando Fretes...">
                           <GerenciarFretes />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/gerenciar-acessorios"
+                    element={
+                      <ProtectedRoute requireAdminFull={true}>
+                        <LazyRoute loadingMessage="Carregando Acessórios...">
+                          <GerenciarAcessorios />
                         </LazyRoute>
                       </ProtectedRoute>
                     }

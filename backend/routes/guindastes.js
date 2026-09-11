@@ -112,9 +112,12 @@ router.get('/:id', requireAuth, asyncHandler(async (req, res) => {
 
 router.post('/', requireAuth, requireAdminFull, asyncHandler(async (req, res) => {
   const { erp_import_item_id } = req.body;
-  if (!erp_import_item_id) return res_.badRequest(res, 'erp_import_item_id é obrigatório para novos guindastes');
-  if (!/^\d+$/.test(String(erp_import_item_id))) return res_.badRequest(res, 'erp_import_item_id inválido');
-  const data = await svc.createFromErp(req.body, erp_import_item_id);
+  if (erp_import_item_id) {
+    if (!/^\d+$/.test(String(erp_import_item_id))) return res_.badRequest(res, 'erp_import_item_id inválido');
+    const data = await svc.createFromErp(req.body, erp_import_item_id);
+    return res_.created(res, data);
+  }
+  const data = await svc.create(req.body);
   return res_.created(res, data);
 }));
 

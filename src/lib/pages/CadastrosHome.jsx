@@ -6,6 +6,7 @@ import {
   Boxes,
   LineChart,
   MapPinned,
+  Package,
   Store,
   Truck,
   UserRound,
@@ -39,6 +40,7 @@ export default function CadastrosHome() {
     { label: 'Concessionárias', description: 'Gerencie concessionárias, responsáveis e áreas.', path: '/concessionarias', icon: Store, visible: full || concSede },
     { label: 'Comércio Exterior', description: 'Gerencie representantes do comércio exterior.', path: '/gerenciar-vendedores?canal=comercio_exterior', icon: Building2, visible: full || exterior },
     { label: 'Instaladoras', description: 'Consulte, cadastre e edite instaladoras e fretes.', path: '/gerenciar-fretes', icon: Truck, visible: full },
+    { label: 'Acessórios', description: 'Cadastre e gerencie acessórios comerciais.', path: '/gerenciar-acessorios', icon: Package, visible: full },
     { label: 'Áreas de Atuação', description: 'Abra o cadastro territorial existente para entidades com cobertura geográfica.', path: '/cadastros/territorial', icon: MapPinned, visible: full || concSede },
   ].filter((item) => item.visible);
 
