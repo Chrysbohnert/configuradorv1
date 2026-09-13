@@ -308,20 +308,20 @@ const DetalhesGuindaste = () => {
           })}
         </div>
 
-        <div className="preco-box">
-          <div className="preco-label">{adminPrecificacao && condicoesComerciais?.composicaoPreco ? condicoesComerciais.composicaoPreco : 'Valor do equipamento'}</div>
-          <div className="preco-valor">
-            {adminPrecificacao && condicoesComerciais?.valorFinal
-              ? formatCurrency(condicoesComerciais.valorFinal)
-              : loadingPreco
+        {!adminPrecificacao && (
+          <div className="preco-box">
+            <div className="preco-label">{'Valor do equipamento'}</div>
+            <div className="preco-valor">
+              {loadingPreco
                 ? 'Carregando preço...'
                 : precoExibido != null && precoExibido > 0
                   ? formatCurrency(precoExibido)
                   : precoExibido === 0
                     ? 'Preço indisponível para esta região'
                     : '—'}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Indicador de estoque */}
         {selectedGuindaste && !loadingDetalhes && guindaste && (

@@ -59,7 +59,6 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
   const fretesFiltrados = useMemo(() => {
     if (!areasCarregadas) return [];
     const ufCliente = normalizarLocal(uf);
-    const municipioCliente = normalizarLocal(municipio);
     const areasPorInstaladora = new Map();
     areasInstaladoras.forEach((area) => {
       const id = String(area.entidade_id);
@@ -68,10 +67,10 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
     });
     return fretes
       .filter((item) => (areasPorInstaladora.get(String(item.id)) || []).some((area) => (
-        normalizarLocal(area.uf) === ufCliente && normalizarLocal(area.nome) === municipioCliente
+        normalizarLocal(area.uf) === ufCliente
       )))
       .sort((a, b) => String(a.cidade || '').localeCompare(String(b.cidade || '')));
-  }, [areasCarregadas, areasInstaladoras, fretes, municipio, uf]);
+  }, [areasCarregadas, areasInstaladoras, fretes, uf]);
   const dadosFreteAtual = useMemo(() => fretesFiltrados.find((item) => String(item.id) === localInstalacao) || null, [fretesFiltrados, localInstalacao]);
   const frete = tipoFrete === 'CIF' ? Number(dadosFreteAtual?.valor_reaproveitamento) || 0 : 0;
   const instalacaoValor = Number(guindaste?.valor_instalacao_incluso);
