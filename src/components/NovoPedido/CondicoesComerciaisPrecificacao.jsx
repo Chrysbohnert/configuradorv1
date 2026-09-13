@@ -112,10 +112,6 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
       setErro('Limite de desconto excedido');
       return;
     }
-    if (!localInstalacao || (tipoFrete === 'CIF' && !dadosFreteAtual)) {
-      setErro('Selecione uma instaladora que atenda ao município do cliente.');
-      return;
-    }
     if (tipoFrete === 'FOB' && Number(parcelas) !== 0) {
       setResultado(null);
       onChange?.(null);
@@ -125,6 +121,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
     setLoading(true);
     setErro('');
     try {
+      const temFreteSelecionado = !!dadosFreteAtual;
       const entrada = {
         guindaste_id: guindaste.id,
         uf,
@@ -136,10 +133,9 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         parcelas,
         desconto_comercial_percent: descontoPlano,
         desconto_da_comissao_percent: descontoComissao,
-        tipo_frete: tipoFrete,
-        instaladora_id: localInstalacao,
-        frete,
+        frete: temFreteSelecionado ? frete : 0,
         instalacao: instalacaoValor,
+        ...(temFreteSelecionado ? { tipo_frete: tipoFrete, instaladora_id: localInstalacao } : {}),
       };
       const calculado = await simular(entrada);
       if (requestId !== requestIdRef.current) return;
@@ -160,10 +156,10 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         descontoComissao: calculado.comissao?.cedida_percent_sobre_base || 0,
         tipoFrete,
         valorFrete: calculado.logistica?.frete || 0,
-        localInstalacao: `${dadosFreteAtual.oficina || dadosFreteAtual.nome || dadosFreteAtual.instaladora || 'Instaladora'} - ${dadosFreteAtual.cidade}/${dadosFreteAtual.uf}`,
-        tipoEntrega: tipoFrete === 'CIF' ? 'reaproveitamento' : 'retirada_fabrica',
-        observacaoFrete: tipoFrete === 'FOB' ? 'Retirada na fábrica pelo cliente ou transportador indicado.' : '',
-        composicaoPreco: tipoFrete === 'CIF' ? 'Equipamento + Instalação + Frete' : 'Equipamento + Instalação',
+        localInstalacao: dadosFreteAtual ? `${dadosFreteAtual.oficina || dadosFreteAtual.nome || dadosFreteAtual.instaladora || 'Instaladora'} - ${dadosFreteAtual.cidade}/${dadosFreteAtual.uf}` : '',
+        tipoEntrega: tipoFrete === 'CIF' && dadosFreteAtual ? 'reaproveitamento' : 'retirada_fabrica',
+        observacaoFrete: tipoFrete === 'FOB' || !dadosFreteAtual ? 'Retirada na fábrica pelo cliente ou transportador indicado.' : '',
+        composicaoPreco: dadosFreteAtual && tipoFrete === 'CIF' ? 'Equipamento + Instalação + Frete' : 'Equipamento + Instalação',
         instalacao: 'incluso',
         tipoInstalacao: 'Incluso no pedido',
         valorInstalacao: calculado.logistica?.instalacao || 0,

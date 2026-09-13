@@ -206,10 +206,11 @@ const DetalhesGuindaste = () => {
   const ufCliente = String(clienteUf || clienteAtual?.uf || '').trim().toUpperCase();
   const contribuinte = String(clienteAtual?.inscricao_estadual || clienteAtual?.inscricaoEstadual || '').trim().toUpperCase() !== 'ISENTO';
   const handleCondicoesChange = useCallback((dados) => setCondicoesComerciais(dados), []);
+  const condicoesComerciaisOk = !!condicoesComerciais && (condicoesComerciais.tipoFrete !== 'CIF' || condicoesComerciais.localInstalacao);
   const podeConfirmar = isLegacyMode
-    ? (!adminPrecificacao || !!condicoesComerciais)
+    ? (!adminPrecificacao || condicoesComerciaisOk)
     : !!selectedGuindaste?.id && !loadingPreco && !loadingDetalhes
-      && (adminPrecificacao ? !!condicoesComerciais : precoValido) && !!detalhesCompletos;
+      && (adminPrecificacao ? condicoesComerciaisOk : precoValido) && !!detalhesCompletos;
 
   const imagemPrincipal = isValidImageUrl(previewImageUrl) ? previewImageUrl : guindaste?.imagem_url;
 
