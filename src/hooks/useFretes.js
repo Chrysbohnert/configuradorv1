@@ -5,18 +5,18 @@ import { getFretes as getFretesList } from '../api/fretes';
  * Hook customizado para gerenciar dados de frete
  * Carrega e gerencia informações de frete do banco de dados
  */
-export const useFretes = (localInstalacao) => {
+export const useFretes = (localInstalacao, uf = null) => {
   const [fretes, setFretes] = useState([]);
   const [dadosFreteAtual, setDadosFreteAtual] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Carregar dados de frete do banco
+  // Carregar dados de frete do banco (filtrados pela UF, quando informada)
   useEffect(() => {
     const carregarFretes = async () => {
       try {
         setLoading(true);
-        const dadosFretes = await getFretesList();
+        const dadosFretes = await getFretesList(uf || null);
         setFretes(dadosFretes);
         setError(null);
       } catch (err) {
@@ -28,7 +28,7 @@ export const useFretes = (localInstalacao) => {
     };
 
     carregarFretes();
-  }, []);
+  }, [uf]);
 
   // Atualizar dados do frete quando o local de instalação mudar
   useEffect(() => {

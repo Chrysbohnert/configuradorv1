@@ -3,7 +3,6 @@ import { listarCondicoes } from '../../api/precificacaoCondicoes';
 import { getParametros } from '../../api/precificacaoParametros';
 import { simular } from '../../api/precificacaoSimulador';
 import { useFretes } from '../../hooks/useFretes';
-import { getOccupiedAreas } from '../../api/areas';
 import { formatCurrency } from '../../utils/formatters';
 
 const normalizarLocal = (valor) => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase();
@@ -18,13 +17,11 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
   const [descontoComissao, setDescontoComissao] = useState('');
   const [tipoFrete, setTipoFrete] = useState('CIF');
   const [localInstalacao, setLocalInstalacao] = useState('');
-  const [areasInstaladoras, setAreasInstaladoras] = useState([]);
-  const [areasCarregadas, setAreasCarregadas] = useState(false);
   const [resultado, setResultado] = useState(null);
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
   const requestIdRef = useRef(0);
-  const { fretes } = useFretes();
+  const { fretes, loading: loadingFretes } = useFretes(null, uf);
 
   useEffect(() => {
     Promise.all([listarCondicoes({ ativo: true }), getParametros()])
@@ -34,13 +31,6 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         if (lista?.length) setCondicaoId(String(lista[0].id));
       })
       .catch((error) => setErro(error.message || 'Erro ao carregar condições comerciais.'));
-  }, []);
-
-  useEffect(() => {
-    getOccupiedAreas('instaladora')
-      .then((areas) => setAreasInstaladoras(areas || []))
-      .catch(() => setAreasInstaladoras([]))
-      .finally(() => setAreasCarregadas(true));
   }, []);
 
   const condicao = useMemo(
@@ -57,20 +47,11 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
   const descontoComissaoExcedido = Number(descontoComissao) > descontoComissaoMax;
   const limiteDescontoExcedido = descontoComercialExcedido || descontoComissaoExcedido;
   const fretesFiltrados = useMemo(() => {
-    if (!areasCarregadas) return [];
     const ufCliente = normalizarLocal(uf);
-    const areasPorInstaladora = new Map();
-    areasInstaladoras.forEach((area) => {
-      const id = String(area.entidade_id);
-      if (!areasPorInstaladora.has(id)) areasPorInstaladora.set(id, []);
-      areasPorInstaladora.get(id).push(area);
-    });
-    return fretes
-      .filter((item) => (areasPorInstaladora.get(String(item.id)) || []).some((area) => (
-        normalizarLocal(area.uf) === ufCliente
-      )))
+    return (fretes || [])
+      .filter((item) => normalizarLocal(item.uf) === ufCliente)
       .sort((a, b) => String(a.cidade || '').localeCompare(String(b.cidade || '')));
-  }, [areasCarregadas, areasInstaladoras, fretes, uf]);
+  }, [fretes, uf]);
   const dadosFreteAtual = useMemo(() => fretesFiltrados.find((item) => String(item.id) === localInstalacao) || null, [fretesFiltrados, localInstalacao]);
   const frete = tipoFrete === 'CIF' ? Number(dadosFreteAtual?.valor_reaproveitamento) || 0 : 0;
   const instalacaoValor = Number(guindaste?.valor_instalacao_incluso);
@@ -203,7 +184,7 @@ export default function CondicoesComerciaisPrecificacao({ guindaste, uf, municip
         <label className={descontoComercialExcedido ? 'condicoes-comerciais-campo-invalido' : ''}>Desconto Comercial (%)<input type="number" min="0" max={descontoPlanoMax} step="0.01" value={descontoPlano} aria-invalid={descontoComercialExcedido} onChange={(e) => setDescontoPlano(e.target.value)} /><small>{descontoComercialExcedido ? 'Limite de desconto excedido' : `Máximo: ${descontoPlanoMax.toFixed(2)}%`}</small></label>
         <label className={descontoComissaoExcedido ? 'condicoes-comerciais-campo-invalido' : ''}>Desconto da Comissão (%)<input type="number" min="0" max={descontoComissaoMax} step="0.01" value={descontoComissao} aria-invalid={descontoComissaoExcedido} onChange={(e) => setDescontoComissao(e.target.value)} /><small>{descontoComissaoExcedido ? 'Limite de desconto excedido' : `Máximo: ${descontoComissaoMax.toFixed(2)}%`}</small></label>
         <label>Frete<select value={tipoFrete} onChange={(e) => setTipoFrete(e.target.value)}><option value="CIF">CIF</option><option value="FOB">FOB</option></select><small>{tipoFrete === 'CIF' ? (dadosFreteAtual ? `Frete calculado pelo motor: ${formatCurrency(resultado?.logistica?.frete || 0)}` : 'Selecione a instaladora') : 'Retirada na fábrica'}</small></label>
-        <label>Instaladora<select value={localInstalacao} onChange={(e) => setLocalInstalacao(e.target.value)} disabled={!areasCarregadas || fretesFiltrados.length === 0}><option value="">{!areasCarregadas ? 'Carregando cobertura...' : fretesFiltrados.length ? 'Selecione' : 'Nenhuma instaladora atende o cliente'}</option>{fretesFiltrados.map((item) => <option key={item.id} value={item.id}>{item.oficina || item.nome || item.instaladora || 'Instaladora'} - {item.cidade}/{item.uf}</option>)}</select><small>Instalação inclusa automaticamente no preço</small></label>
+        <label>Instaladora<select value={localInstalacao} onChange={(e) => setLocalInstalacao(e.target.value)} disabled={loadingFretes || fretesFiltrados.length === 0}><option value="">{loadingFretes ? 'Carregando...' : fretesFiltrados.length ? 'Selecione' : 'Nenhuma instaladora cadastrada para essa UF'}</option>{fretesFiltrados.map((item) => <option key={item.id} value={item.id}>{item.oficina || item.nome || item.instaladora || 'Instaladora'} - {item.cidade}/{item.uf}</option>)}</select><small>Instalação inclusa automaticamente no preço</small></label>
       </div>
       {tipoFrete === 'FOB' && <div className="condicoes-comerciais-aviso">FOB para cliente final disponível somente para pagamento à vista. Retirada na fábrica pelo cliente ou transportador indicado.</div>}
       {erro && <div className="condicoes-comerciais-erro">{erro}</div>}
