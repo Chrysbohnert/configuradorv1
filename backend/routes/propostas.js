@@ -26,7 +26,7 @@ const {
 const router = Router();
 
 router.get('/', requireAuth, asyncHandler(async (req, res) => {
-  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id, canal_venda: qCanalVenda } = req.query;
+  const { status, tipo, limit, offset, includeDadosSerializados, vendedor_id: qVendedor, cliente_id, canal_venda: qCanalVenda, vendedor_canal: qVendedorCanal } = req.query;
 
   let vendedor_id;
   if (isAdmin(req.user)) {
@@ -47,6 +47,9 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
     includeDadosSerializados: includeDadosSerializados === 'true',
     canal_venda: isAdminFull(req.user) && qCanalVenda
       ? (qCanalVenda.includes(',') ? qCanalVenda.split(',') : qCanalVenda)
+      : undefined,
+    vendedor_canal: isAdminFull(req.user) && qVendedorCanal === CANAIS.REPRESENTANTES
+      ? qVendedorCanal
       : undefined,
   };
 

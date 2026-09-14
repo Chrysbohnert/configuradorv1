@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { getPropostas, deletePropostaPermanente, updateResultadoVendaProposta } from '../../api/propostas';
 import { formatCurrency } from '../../utils/formatters';
 import { getCurrentUser } from '../../utils/auth';
-import { isAdminFull } from '../../utils/permissions';
+import { CANAIS, isAdminFull } from '../../utils/permissions';
 import PageHeader from '../../components/PageHeader';
 import PageToolbar from '../../components/PageToolbar';
 import '../../styles/HistoricoPropostas.css';
@@ -104,7 +104,7 @@ const HistoricoPropostas = () => {
 
       const filters = {};
       if (isAdminFull(user)) {
-        filters.canal_venda = 'Representante';
+        filters.vendedor_canal = CANAIS.REPRESENTANTES;
       } else if (user?.id) {
         filters.vendedor_id = user.id;
       }

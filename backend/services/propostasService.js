@@ -26,7 +26,7 @@ function buildConditions(filters) {
   const conditions = [];
   const params = [];
 
-  const { vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda } = filters;
+  const { vendedor_id, vendedor_canal, status, tipo, concessionaria_id, cliente_id, canal_venda } = filters;
 
   if (Array.isArray(vendedor_id) && vendedor_id.length) {
     params.push(vendedor_id);
@@ -34,6 +34,14 @@ function buildConditions(filters) {
   } else if (vendedor_id) {
     params.push(vendedor_id);
     conditions.push(`vendedor_id = $${params.length}`);
+  }
+  if (vendedor_canal) {
+    params.push(vendedor_canal);
+    conditions.push(`EXISTS (
+      SELECT 1 FROM app_users vendedor
+      WHERE vendedor.id = propostas.vendedor_id
+        AND (vendedor.canal = $${params.length} OR (vendedor.canal IS NULL AND vendedor.tipo = 'vendedor'))
+    )`);
   }
   if (status) { params.push(status); conditions.push(`status = $${params.length}`); }
   if (tipo)   { params.push(tipo);   conditions.push(`tipo = $${params.length}`); }
@@ -56,8 +64,8 @@ function buildConditions(filters) {
   return { conditions, params };
 }
 
-async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda });
+async function findAll({ vendedor_id, vendedor_canal, status, tipo, concessionaria_id, cliente_id, canal_venda, limit = 0, offset = 0, includeDadosSerializados = false } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, vendedor_canal, status, tipo, concessionaria_id, cliente_id, canal_venda });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const selectCols = includeDadosSerializados ? '*' : COLS_RESUMO.join(', ');
 
@@ -73,8 +81,8 @@ async function findAll({ vendedor_id, status, tipo, concessionaria_id, cliente_i
   return rows;
 }
 
-async function count({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda } = {}) {
-  const { conditions, params } = buildConditions({ vendedor_id, status, tipo, concessionaria_id, cliente_id, canal_venda });
+async function count({ vendedor_id, vendedor_canal, status, tipo, concessionaria_id, cliente_id, canal_venda } = {}) {
+  const { conditions, params } = buildConditions({ vendedor_id, vendedor_canal, status, tipo, concessionaria_id, cliente_id, canal_venda });
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const { rows } = await query(`SELECT COUNT(*)::int AS total FROM propostas ${where}`, params);
   return rows[0]?.total || 0;
