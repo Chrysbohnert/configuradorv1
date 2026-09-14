@@ -1,5 +1,6 @@
 @import './styles/erp-tokens.css';
 @import './styles/global.css';
+@import './styles/VisualConsistency.css';
 
 /* Estilos específicos do projeto */
 .min-h-screen {

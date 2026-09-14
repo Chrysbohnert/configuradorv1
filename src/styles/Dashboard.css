@@ -605,7 +605,7 @@ html {
 .alert-item.alert-clickable {
   cursor: pointer;
   border-color: var(--erp-primary);
-  background: var(--erp-bg-surface)beb;
+  background: var(--erp-warning-soft);
 }
 
 .alert-item.alert-clickable:hover {
@@ -648,7 +648,7 @@ html {
 .recent-info .muted { color: var(--erp-text-muted); font-size: var(--erp-text-base); }
 .badge { background: var(--erp-border); color: var(--erp-text-heading); border-radius: var(--erp-radius-full); padding: 4px 10px; font-size: var(--erp-text-base); border: 1px solid var(--erp-border); }
 .badge.success { background: #ecfdf5; color: #065f46; border-color: #a7f3d0; }
-.badge.warning { background: var(--erp-bg-surface)beb; color: #92400e; border-color: #fde68a; }
+.badge.warning { background: var(--erp-warning-soft); color: #92400e; border-color: #fde68a; }
 .badge.danger { background: #fef2f2; color: #991b1b; border-color: #fca5a5; }
 .badge.info { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 

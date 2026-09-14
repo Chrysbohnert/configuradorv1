@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import VendedorNavigation from './VendedorNavigation';
 import WelcomeLoading from './WelcomeLoading';
+import SessionUpdateToast from './SessionUpdateToast';
 import { isAdmin, isVendedor } from '../utils/permissions';
 import '../styles/VendedorLayout.css';
 
@@ -72,6 +73,7 @@ const VendedorLayout = () => {
 
   return (
     <div className="vendedor-layout">
+      <SessionUpdateToast />
       <VendedorNavigation user={user} />
       <div className="vendedor-content">
         <Outlet context={{ user }} />

@@ -1,0 +1,55 @@
+.session-update-toast {
+  position: fixed;
+  top: var(--erp-space-4);
+  right: var(--erp-space-4);
+  z-index: 2000;
+  width: min(380px, calc(100vw - 32px));
+  min-height: 44px;
+  padding: var(--erp-space-3);
+  display: flex;
+  align-items: center;
+  gap: var(--erp-space-2);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-elevated);
+  color: var(--erp-text-body);
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-medium);
+  line-height: 1.4;
+  animation: session-toast-in 0.2s ease-out;
+  pointer-events: none;
+}
+
+.session-update-toast-indicator {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  border-radius: 50%;
+  background: var(--erp-success);
+}
+
+@keyframes session-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .session-update-toast {
+    top: var(--erp-space-3);
+    right: var(--erp-space-3);
+    width: calc(100vw - 24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-update-toast {
+    animation: none;
+  }
+}

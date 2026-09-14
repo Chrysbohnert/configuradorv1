@@ -1,100 +1,112 @@
 /* =========================================================
    STARK ERP — Design Tokens e Componentes Visuais
-   Baseado no padrão da tela Cadastros.
-   Tokens CSS globais para padronizar cores, tipografia,
-   espaçamento, sombras e componentes sem alterar lógica.
+   Padronização visual leve, profissional e consistente.
    ========================================================= */
 
 :root {
   /* 1. CORES — fundo */
-  --erp-bg-page: #f5f5f4;
+  --erp-bg-page: #f4f4f6;
   --erp-bg-surface: #ffffff;
-  --erp-bg-subtle: #f8f8f6;
-  --erp-bg-muted: #f4f4f1;
-  --erp-bg-hover: #fffdf6;
+  --erp-bg-subtle: #f7f7f8;
+  --erp-bg-muted: #f0f0f1;
+  --erp-bg-hover: #f9f9fa;
+  --erp-bg-active: #eef0f2;
 
   /* Textos */
-  --erp-text-main: #191919;
-  --erp-text-heading: #171717;
-  --erp-text-body: #313131;
-  --erp-text-muted: #717171;
-  --erp-text-weak: #8a8a88;
+  --erp-text-main: #1f2937;
+  --erp-text-heading: #111827;
+  --erp-text-body: #374151;
+  --erp-text-muted: #6b7280;
+  --erp-text-weak: #9ca3af;
   --erp-text-inverse: #ffffff;
 
-  /* Acentos */
-  --erp-primary: #ffc928;
-  --erp-primary-light: #ffd34d;
-  --erp-primary-cta: linear-gradient(135deg, #ffd028 0%, #ffc107 100%);
-  --erp-primary-soft: #fff7d8;
-  --erp-primary-text: #211a00;
-  --erp-primary-border: #e9af00;
+  /* Acentos — amarelo mais contido, usado apenas para CTAs principais */
+  --erp-primary: #eab308;
+  --erp-primary-light: #facc15;
+  --erp-primary-cta: #eab308;
+  --erp-primary-soft: #fef9c3;
+  --erp-primary-text: #422006;
+  --erp-primary-border: #d97706;
+
+  /* Acento secundário neutro (botões de ação secundária, links) */
+  --erp-secondary: #374151;
+  --erp-secondary-soft: #f3f4f6;
 
   /* Bordas */
-  --erp-border: #e2e2df;
-  --erp-border-light: #e7e7e4;
-  --erp-border-input: #e1e1df;
-  --erp-divider: #eeeeeb;
+  --erp-border: #e5e7eb;
+  --erp-border-light: #f3f4f6;
+  --erp-border-input: #d1d5db;
+  --erp-divider: #f3f4f6;
 
   /* Status */
-  --erp-success: #287249;
-  --erp-success-soft: #e8f5ed;
-  --erp-error: #985050;
-  --erp-error-soft: #f3eeee;
-  --erp-warning: #b48700;
-  --erp-warning-soft: #fff7d8;
+  --erp-success: #15803d;
+  --erp-success-soft: #dcfce7;
+  --erp-error: #b91c1c;
+  --erp-error-soft: #fee2e2;
+  --erp-warning: #a16207;
+  --erp-warning-soft: #fef9c3;
+  --erp-info: #1d4ed8;
+  --erp-info-soft: #dbeafe;
 
-  /* Sidebar/header escuro (ERP sério) */
-  --erp-surface-900: #111111;
-  --erp-surface-800: #1a1a1a;
-  --erp-surface-700: #242424;
-  --erp-surface-600: #2f2f2f;
+  /* Sidebar/header claro (ERP moderno) */
+  --erp-surface-900: #111827;
+  --erp-surface-800: #1f2937;
+  --erp-surface-700: #374151;
+  --erp-surface-600: #4b5563;
+  --erp-sidebar-bg: #ffffff;
+  --erp-sidebar-text: #374151;
+  --erp-sidebar-muted: #6b7280;
+  --erp-sidebar-border: #e5e7eb;
+  --erp-sidebar-hover: #f3f4f6;
+  --erp-sidebar-active: #f3f4f6;
+  --erp-sidebar-active-text: #111827;
+  --erp-sidebar-active-indicator: #eab308;
 
   /* 2. TIPOGRAFIA */
   --erp-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
-  --erp-text-2xs: 9px;
-  --erp-text-xs: 10px;
-  --erp-text-sm: 11px;
-  --erp-text-base: 12px;
-  --erp-text-md: 13px;
-  --erp-text-lg: 14px;
-  --erp-text-xl: 15px;
-  --erp-text-2xl: 16px;
-  --erp-text-3xl: 18px;
-  --erp-text-4xl: clamp(26px, 3.2vw, 36px);
+  --erp-text-2xs: 10px;
+  --erp-text-xs: 11px;
+  --erp-text-sm: 12px;
+  --erp-text-base: 13px;
+  --erp-text-md: 14px;
+  --erp-text-lg: 15px;
+  --erp-text-xl: 16px;
+  --erp-text-2xl: 18px;
+  --erp-text-3xl: 20px;
+  --erp-text-4xl: clamp(24px, 2.6vw, 30px);
 
-  --erp-weight-bold: 800;
-  --erp-weight-semibold: 700;
-  --erp-weight-medium: 600;
-  --erp-weight-regular: 500;
+  --erp-weight-bold: 700;
+  --erp-weight-semibold: 600;
+  --erp-weight-medium: 500;
+  --erp-weight-regular: 400;
 
   /* 3. ESPAÇAMENTO */
-  --erp-space-1: 3px;
-  --erp-space-2: 7px;
-  --erp-space-3: 11px;
+  --erp-space-1: 4px;
+  --erp-space-2: 8px;
+  --erp-space-3: 12px;
   --erp-space-4: 16px;
   --erp-space-5: 24px;
-  --erp-space-6: 34px;
+  --erp-space-6: 32px;
 
   /* 4. BORDAS E SOMBRAS */
-  --erp-radius-sm: 7px;
-  --erp-radius-md: 10px;
-  --erp-radius-lg: 12px;
-  --erp-radius-xl: 14px;
+  --erp-radius-sm: 6px;
+  --erp-radius-md: 8px;
+  --erp-radius-lg: 10px;
+  --erp-radius-xl: 12px;
   --erp-radius-full: 9999px;
 
-  --erp-shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.025);
-  --erp-shadow-card: 0 3px 14px rgba(0, 0, 0, 0.035);
-  --erp-shadow-cta: 0 7px 18px rgba(182, 135, 0, 0.2);
-  --erp-shadow-cta-hover: 0 11px 24px rgba(182, 135, 0, 0.27);
-  --erp-shadow-modal: 0 26px 80px rgba(0, 0, 0, 0.34);
+  --erp-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --erp-shadow-card: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --erp-shadow-elevated: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --erp-shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.18);
 
   /* 5. DIMENSÕES GLOBAIS */
   --erp-sidebar-width: 260px;
   --erp-sidebar-collapsed: 64px;
-  --erp-header-height: 60px;
-  --erp-page-max: 1120px;
-  --erp-page-gutter: 48px;
+  --erp-header-height: 56px;
+  --erp-page-max: 1280px;
+  --erp-page-gutter: 40px;
 }
 
 /* =========================================================
@@ -124,41 +136,81 @@ textarea {
 .erp-container {
   width: min(var(--erp-page-max), calc(100% - var(--erp-page-gutter)));
   margin: 0 auto;
-  padding: var(--erp-space-6) 0 64px;
+  padding: var(--erp-space-5) 0 48px;
 }
 
 /* Cabeçalho de página */
 .erp-page-heading {
-  margin-bottom: var(--erp-space-5);
+  margin-bottom: var(--erp-space-4);
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
-  gap: var(--erp-space-5);
+  gap: var(--erp-space-4);
 }
 
 .erp-page-heading h1 {
   margin: 0;
   color: var(--erp-text-heading);
   font-size: var(--erp-text-4xl);
-  line-height: 1.1;
-  letter-spacing: -0.025em;
+  font-weight: var(--erp-weight-bold);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
 }
 
 .erp-page-heading p {
-  margin: 8px 0 0;
+  margin: var(--erp-space-1) 0 0;
   color: var(--erp-text-muted);
-  font-size: var(--erp-text-lg);
+  font-size: var(--erp-text-md);
   line-height: 1.5;
 }
 
 .erp-eyebrow {
   display: block;
-  margin-bottom: var(--erp-space-2);
-  color: var(--erp-warning);
+  margin-bottom: var(--erp-space-1);
+  color: var(--erp-text-muted);
   font-size: var(--erp-text-2xs);
-  font-weight: var(--erp-weight-bold);
-  letter-spacing: 0.14em;
+  font-weight: var(--erp-weight-semibold);
+  letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+/* Breadcrumb */
+.erp-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--erp-space-1);
+  margin-bottom: var(--erp-space-2);
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-sm);
+}
+
+.erp-breadcrumb a,
+.erp-breadcrumb button {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--erp-space-1);
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--erp-text-muted);
+  font-size: inherit;
+  font-weight: var(--erp-weight-medium);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.erp-breadcrumb a:hover,
+.erp-breadcrumb button:hover {
+  color: var(--erp-text-main);
+}
+
+.erp-breadcrumb-separator {
+  color: var(--erp-text-weak);
+}
+
+.erp-breadcrumb-current {
+  color: var(--erp-text-main);
+  font-weight: var(--erp-weight-semibold);
 }
 
 /* Botões */
@@ -167,42 +219,41 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: var(--erp-space-2);
-  min-height: 36px;
-  padding: 0 var(--erp-space-4);
+  min-height: 32px;
+  padding: 0 var(--erp-space-3);
   border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-md);
   background: var(--erp-bg-surface);
   color: var(--erp-text-body);
   cursor: pointer;
   font-size: var(--erp-text-sm);
-  font-weight: var(--erp-weight-semibold);
+  font-weight: var(--erp-weight-medium);
   white-space: nowrap;
-  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
 .erp-btn:hover {
-  border-color: var(--erp-primary-border);
-  background: var(--erp-primary-soft);
-  color: var(--erp-warning);
+  border-color: var(--erp-border-input);
+  background: var(--erp-bg-hover);
+  color: var(--erp-text-main);
 }
 
 .erp-btn-primary {
-  min-height: 46px;
-  padding: 0 20px;
+  min-height: 36px;
+  padding: 0 var(--erp-space-4);
   border: 1px solid var(--erp-primary-border);
   border-radius: var(--erp-radius-md);
   background: var(--erp-primary-cta);
   color: var(--erp-primary-text);
-  font-size: var(--erp-text-md);
-  font-weight: var(--erp-weight-bold);
-  box-shadow: var(--erp-shadow-cta);
-  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-semibold);
+  box-shadow: none;
+  transition: filter 0.15s ease, box-shadow 0.15s ease;
 }
 
 .erp-btn-primary:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.03);
-  box-shadow: var(--erp-shadow-cta-hover);
+  filter: brightness(1.05);
+  box-shadow: var(--erp-shadow-sm);
 }
 
 .erp-btn-secondary {
@@ -212,31 +263,64 @@ textarea {
 }
 
 .erp-btn-secondary:hover {
-  border-color: var(--erp-primary-border);
-  background: var(--erp-primary-soft);
-  color: var(--erp-warning);
+  border-color: var(--erp-border-input);
+  background: var(--erp-bg-hover);
+  color: var(--erp-text-main);
+}
+
+.erp-btn-danger {
+  border-color: var(--erp-error-soft);
+  background: var(--erp-error-soft);
+  color: var(--erp-error);
+}
+
+.erp-btn-danger:hover {
+  border-color: var(--erp-error);
+  background: var(--erp-error);
+  color: var(--erp-text-inverse);
+}
+
+.erp-btn-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--erp-secondary);
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-medium);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.erp-btn-link:hover {
+  color: var(--erp-text-main);
+  text-decoration: underline;
+}
+
+.erp-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 /* Inputs e selects */
 .erp-input,
 .erp-select {
   width: 100%;
-  min-height: 36px;
-  padding: 0 var(--erp-space-3);
+  min-height: 32px;
+  padding: 0 var(--erp-space-2);
   border: 1px solid var(--erp-border-input);
   border-radius: var(--erp-radius-sm);
-  background: var(--erp-bg-subtle);
+  background: var(--erp-bg-surface);
   color: var(--erp-text-main);
   font-size: var(--erp-text-base);
   outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .erp-input:focus,
 .erp-select:focus {
-  border-color: var(--erp-primary-border);
+  border-color: var(--erp-secondary);
   background: var(--erp-bg-surface);
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.11);
+  box-shadow: 0 0 0 2px rgba(55, 65, 81, 0.08);
 }
 
 .erp-input::placeholder {
@@ -244,27 +328,27 @@ textarea {
 }
 
 .erp-search {
-  width: 218px;
-  min-height: 36px;
-  padding: 0 10px;
+  width: 220px;
+  min-height: 32px;
+  padding: 0 var(--erp-space-2);
   border: 1px solid var(--erp-border-input);
   border-radius: var(--erp-radius-sm);
-  background: var(--erp-bg-subtle);
+  background: var(--erp-bg-surface);
   display: flex;
   align-items: center;
   flex-shrink: 0;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .erp-search:focus-within {
-  border-color: var(--erp-primary-border);
+  border-color: var(--erp-secondary);
   background: var(--erp-bg-surface);
-  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.11);
+  box-shadow: 0 0 0 2px rgba(55, 65, 81, 0.08);
 }
 
 .erp-search input {
   flex: 1;
-  padding: 8px;
+  padding: 6px var(--erp-space-2);
   border: none;
   outline: none;
   background: transparent;
@@ -274,16 +358,16 @@ textarea {
 
 /* Toolbar */
 .erp-toolbar {
-  margin-bottom: var(--erp-space-5);
-  padding: 8px;
+  margin-bottom: var(--erp-space-4);
+  padding: var(--erp-space-2) var(--erp-space-3);
   border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-lg);
   background: var(--erp-bg-surface);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--erp-space-4);
-  box-shadow: var(--erp-shadow-sm);
+  gap: var(--erp-space-3);
+  box-shadow: var(--erp-shadow-card);
 }
 
 /* Abas */
@@ -300,10 +384,10 @@ textarea {
 }
 
 .erp-tab {
-  min-height: 36px;
+  min-height: 34px;
   padding: 0 var(--erp-space-3);
   border: none;
-  border-radius: var(--erp-radius-sm);
+  border-radius: var(--erp-radius-md);
   background: transparent;
   color: var(--erp-text-muted);
   display: inline-flex;
@@ -311,20 +395,21 @@ textarea {
   gap: var(--erp-space-2);
   cursor: pointer;
   font-size: var(--erp-text-sm);
-  font-weight: var(--erp-weight-bold);
+  font-weight: var(--erp-weight-medium);
   white-space: nowrap;
-  transition: color 0.2s ease, background 0.2s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .erp-tab:hover {
-  background: var(--erp-bg-muted);
+  background: var(--erp-bg-hover);
   color: var(--erp-text-main);
 }
 
 .erp-tab.active {
-  background: var(--erp-text-heading);
-  color: var(--erp-primary);
-  box-shadow: 0 3px 9px rgba(0, 0, 0, 0.14);
+  background: var(--erp-bg-active);
+  color: var(--erp-text-heading);
+  font-weight: var(--erp-weight-semibold);
+  box-shadow: none;
 }
 
 /* Cards */
@@ -336,8 +421,8 @@ textarea {
 }
 
 .erp-card-hover:hover {
-  border-color: var(--erp-border);
-  box-shadow: 0 9px 25px rgba(0, 0, 0, 0.075);
+  border-color: var(--erp-border-input);
+  box-shadow: var(--erp-shadow-elevated);
 }
 
 /* Tabelas */
@@ -357,19 +442,19 @@ textarea {
 }
 
 .erp-table th {
-  padding: 12px var(--erp-space-4);
-  border-bottom: 1px solid var(--erp-border-light);
+  padding: 10px var(--erp-space-3);
+  border-bottom: 1px solid var(--erp-border);
   background: var(--erp-bg-subtle);
-  color: var(--erp-text-weak);
-  font-size: var(--erp-text-2xs);
-  font-weight: var(--erp-weight-bold);
-  letter-spacing: 0.09em;
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-xs);
+  font-weight: var(--erp-weight-semibold);
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   white-space: nowrap;
 }
 
 .erp-table td {
-  padding: var(--erp-space-4) var(--erp-space-4);
+  padding: var(--erp-space-3);
   border-bottom: 1px solid var(--erp-divider);
   color: var(--erp-text-body);
   font-size: var(--erp-text-base);
@@ -377,7 +462,7 @@ textarea {
 }
 
 .erp-table tbody tr {
-  transition: background 0.18s ease;
+  transition: background 0.12s ease;
 }
 
 .erp-table tbody tr:hover {
@@ -390,12 +475,11 @@ textarea {
 
 /* Badges */
 .erp-badge {
-  padding: 4px 8px;
+  padding: 2px 8px;
   border-radius: var(--erp-radius-md);
   display: inline-flex;
-  font-size: var(--erp-text-2xs);
-  font-weight: var(--erp-weight-bold);
-  text-transform: uppercase;
+  font-size: var(--erp-text-xs);
+  font-weight: var(--erp-weight-medium);
 }
 
 .erp-badge-success {
@@ -413,57 +497,63 @@ textarea {
   color: var(--erp-warning);
 }
 
+.erp-badge-info {
+  background: var(--erp-info-soft);
+  color: var(--erp-info);
+}
+
 /* Modais */
 .erp-modal-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  padding: var(--erp-space-5);
-  background: rgba(10, 10, 10, 0.64);
+  padding: var(--erp-space-4);
+  background: rgba(17, 24, 39, 0.48);
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: erp-fade-in 0.18s ease;
+  animation: erp-fade-in 0.15s ease;
 }
 
 .erp-modal {
-  width: min(510px, 100%);
-  max-height: min(680px, calc(100vh - 44px));
-  padding: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  width: min(520px, 100%);
+  max-height: min(680px, calc(100vh - 32px));
+  padding: var(--erp-space-4);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-xl);
   background: var(--erp-bg-surface);
   overflow-y: auto;
   box-shadow: var(--erp-shadow-modal);
-  animation: erp-modal-in 0.2s ease;
+  animation: erp-modal-in 0.15s ease;
 }
 
 .erp-modal-header {
   margin-bottom: var(--erp-space-4);
-  padding-bottom: var(--erp-space-4);
+  padding-bottom: var(--erp-space-3);
   border-bottom: 1px solid var(--erp-divider);
   display: flex;
   justify-content: space-between;
-  gap: var(--erp-space-5);
+  gap: var(--erp-space-4);
 }
 
 .erp-modal-header h2 {
   margin: 0;
   color: var(--erp-text-heading);
-  font-size: var(--erp-text-3xl);
-  letter-spacing: -0.025em;
+  font-size: var(--erp-text-2xl);
+  font-weight: var(--erp-weight-bold);
+  letter-spacing: -0.01em;
 }
 
 .erp-modal-header p {
-  margin: 8px 0 0;
+  margin: var(--erp-space-1) 0 0;
   color: var(--erp-text-muted);
   font-size: var(--erp-text-base);
   line-height: 1.5;
 }
 
 .erp-modal-close {
-  width: 34px;
-  height: 34px;
+  width: 28px;
+  height: 28px;
   border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
   background: var(--erp-bg-subtle);
@@ -473,11 +563,11 @@ textarea {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .erp-modal-close:hover {
-  background: var(--erp-divider);
+  background: var(--erp-bg-hover);
   color: var(--erp-text-main);
 }
 
@@ -485,19 +575,19 @@ textarea {
 .erp-form-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: var(--erp-space-4);
+  gap: var(--erp-space-3);
   align-items: end;
 }
 
 .erp-form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .erp-form-group label {
   font-size: var(--erp-text-sm);
-  font-weight: var(--erp-weight-semibold);
+  font-weight: var(--erp-weight-medium);
   color: var(--erp-text-body);
 }
 
@@ -508,7 +598,7 @@ textarea {
 }
 
 @keyframes erp-modal-in {
-  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  from { opacity: 0; transform: translateY(6px) scale(0.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
@@ -522,7 +612,7 @@ textarea {
   .erp-page-heading {
     align-items: stretch;
     flex-direction: column;
-    gap: var(--erp-space-4);
+    gap: var(--erp-space-3);
   }
 
   .erp-btn-primary {
@@ -532,7 +622,11 @@ textarea {
 
 @media (max-width: 700px) {
   .erp-container {
-    width: min(100% - 28px, var(--erp-page-max));
-    padding: 25px 0 45px;
+    width: min(100% - 24px, var(--erp-page-max));
+    padding: var(--erp-space-4) 0 32px;
+  }
+
+  .erp-search {
+    width: 100%;
   }
 }

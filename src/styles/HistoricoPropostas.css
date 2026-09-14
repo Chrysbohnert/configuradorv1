@@ -1,0 +1,208 @@
+/* Propostas - estilos específicos da página */
+
+.proposta-documento {
+  font-size: var(--erp-text-xs);
+  color: var(--erp-text-muted);
+  margin-top: 2px;
+}
+
+.propostas-acoes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--erp-space-2);
+  white-space: nowrap;
+}
+
+.proposta-status-texto {
+  font-size: var(--erp-text-sm);
+  color: var(--erp-text-muted);
+}
+
+.propostas-filter {
+  width: auto;
+  min-width: 150px;
+}
+
+.propostas-filter-client {
+  width: 180px;
+}
+
+.propostas-filter-uf {
+  min-width: 110px;
+}
+
+.propostas-filter-date {
+  width: 140px;
+  min-width: 140px;
+}
+
+.propostas-filter-field {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--erp-space-1);
+  color: var(--erp-text-muted);
+  font-size: var(--erp-text-xs);
+  font-weight: var(--erp-weight-medium);
+  white-space: nowrap;
+}
+
+/* Mobile cards */
+.propostas-mobile-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--erp-space-3);
+}
+
+.proposta-mobile-card {
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-lg);
+  box-shadow: var(--erp-shadow-card);
+  padding: var(--erp-space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--erp-space-2);
+}
+
+.proposta-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--erp-space-2);
+}
+
+.proposta-mobile-numero {
+  font-size: var(--erp-text-md);
+  font-weight: var(--erp-weight-semibold);
+  color: var(--erp-text-heading);
+}
+
+.proposta-mobile-data {
+  font-size: var(--erp-text-xs);
+  color: var(--erp-text-muted);
+  white-space: nowrap;
+}
+
+.proposta-mobile-cliente {
+  font-size: var(--erp-text-base);
+  color: var(--erp-text-body);
+}
+
+.proposta-mobile-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--erp-space-2);
+  margin-top: var(--erp-space-1);
+}
+
+.proposta-mobile-valor {
+  font-size: var(--erp-text-base);
+  font-weight: var(--erp-weight-semibold);
+  color: var(--erp-text-heading);
+}
+
+.proposta-mobile-acoes {
+  display: flex;
+  gap: var(--erp-space-2);
+  margin-top: var(--erp-space-2);
+}
+
+.proposta-mobile-acoes .erp-btn {
+  flex: 1;
+  justify-content: center;
+}
+
+/* Modal de resultado */
+.resultado-modal {
+  width: min(480px, 100%);
+}
+
+.resultado-label {
+  display: block;
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-semibold);
+  color: var(--erp-text-body);
+  margin-bottom: var(--erp-space-2);
+}
+
+.resultado-opcoes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--erp-space-2);
+}
+
+.resultado-opcao {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--erp-space-3);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-md);
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-body);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.resultado-opcao:hover:not(:disabled) {
+  border-color: var(--erp-border-input);
+  background: var(--erp-bg-hover);
+}
+
+.resultado-opcao.selected {
+  border-color: var(--erp-text-main);
+  background: var(--erp-bg-active);
+}
+
+.resultado-opcao.success.selected {
+  border-color: var(--erp-success);
+  background: var(--erp-success-soft);
+}
+
+.resultado-opcao.danger.selected {
+  border-color: var(--erp-error);
+  background: var(--erp-error-soft);
+}
+
+.resultado-opcao strong {
+  font-size: var(--erp-text-sm);
+  font-weight: var(--erp-weight-semibold);
+  color: var(--erp-text-heading);
+}
+
+.resultado-opcao span {
+  font-size: var(--erp-text-xs);
+  color: var(--erp-text-muted);
+}
+
+.resultado-motivo-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--erp-text-xs);
+  color: var(--erp-text-muted);
+  margin-top: 4px;
+}
+
+.erp-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--erp-space-2);
+  margin-top: var(--erp-space-4);
+  padding-top: var(--erp-space-3);
+  border-top: 1px solid var(--erp-divider);
+}
+
+@media (max-width: 900px) {
+  .propostas-acoes {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .propostas-acoes .erp-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}

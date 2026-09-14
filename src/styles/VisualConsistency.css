@@ -1,0 +1,644 @@
+:where(
+  .estoque-page,
+  .graficos-page,
+  .mapa-territorial-page,
+  .precificacao-page,
+  .planos-pagamento-page,
+  .novo-pedido-container,
+  .detalhes-guindaste-container,
+  .gerenciar-vendedores-container
+) {
+  min-height: 100vh;
+  background: var(--erp-bg-page) !important;
+  color: var(--erp-text-body) !important;
+  font-family: var(--erp-font) !important;
+}
+
+:where(
+  .gerenciar-guindastes-content,
+  .gerenciar-vendedores-content,
+  .gerenciar-acessorios-container,
+  .gerenciar-fretes-container,
+  .gerenciar-estoque-container,
+  .estoque-container,
+  .gerenciar-graficos-container,
+  .graficos-container,
+  .detalhes-content,
+  .npac-container,
+  .novo-pedido-content,
+  .precificacao-container,
+  .planos-container,
+  .dashboard-content,
+  .aprovacoes-content,
+  .cadastros-container,
+  .support-content,
+  .mapa-territorial-content
+) {
+  width: min(var(--erp-page-max), calc(100% - var(--erp-page-gutter))) !important;
+  max-width: var(--erp-page-max) !important;
+  margin-inline: auto !important;
+}
+
+:where(
+  .gerenciar-guindastes-content,
+  .gerenciar-vendedores-content,
+  .gerenciar-acessorios-container,
+  .gerenciar-fretes-container,
+  .gerenciar-estoque-container,
+  .estoque-container,
+  .gerenciar-graficos-container,
+  .graficos-container,
+  .detalhes-content,
+  .npac-container,
+  .precificacao-container,
+  .planos-container,
+  .dashboard-content,
+  .aprovacoes-content,
+  .cadastros-container,
+  .support-content
+) {
+  padding-top: var(--erp-space-5) !important;
+  padding-bottom: var(--erp-space-6) !important;
+}
+
+:where(
+  .page-header,
+  .header-section,
+  .content-header,
+  .modern-header,
+  .precificacao-header,
+  .planos-header,
+  .aprovacoes-header,
+  .cadastros-list-header,
+  .cadastros-form-header,
+  .concessionarias-heading,
+  .concessionarias-form-heading,
+  .acessorios-list-heading,
+  .fretes-list-heading,
+  .estoque-heading,
+  .estoque-list-heading,
+  .graficos-heading,
+  .graficos-list-heading
+) {
+  background: transparent !important;
+  color: var(--erp-text-heading) !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--erp-divider) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 0 var(--erp-space-4) !important;
+  margin: 0 0 var(--erp-space-4) !important;
+  min-height: 0 !important;
+}
+
+:where(
+  .page-header,
+  .header-section,
+  .content-header,
+  .modern-header,
+  .precificacao-header,
+  .planos-header,
+  .aprovacoes-header,
+  .cadastros-list-header,
+  .cadastros-form-header,
+  .concessionarias-heading,
+  .concessionarias-form-heading,
+  .acessorios-list-heading,
+  .fretes-list-heading,
+  .estoque-heading,
+  .estoque-list-heading,
+  .graficos-heading,
+  .graficos-list-heading
+) h1,
+:where(
+  .page-header,
+  .header-section,
+  .content-header,
+  .modern-header,
+  .precificacao-header,
+  .planos-header,
+  .aprovacoes-header,
+  .cadastros-list-header,
+  .cadastros-form-header,
+  .concessionarias-heading,
+  .concessionarias-form-heading,
+  .acessorios-list-heading,
+  .fretes-list-heading,
+  .estoque-heading,
+  .estoque-list-heading,
+  .graficos-heading,
+  .graficos-list-heading
+) h2 {
+  margin: 0 !important;
+  color: var(--erp-text-heading) !important;
+  font-family: var(--erp-font) !important;
+  font-size: var(--erp-text-2xl) !important;
+  font-weight: var(--erp-weight-bold) !important;
+  line-height: 1.25 !important;
+  letter-spacing: -0.015em !important;
+  -webkit-text-fill-color: currentColor !important;
+  background: none !important;
+}
+
+:where(
+  .page-header,
+  .header-section,
+  .content-header,
+  .modern-header,
+  .precificacao-header,
+  .planos-header,
+  .aprovacoes-header,
+  .cadastros-list-header,
+  .cadastros-form-header,
+  .concessionarias-heading,
+  .concessionarias-form-heading,
+  .acessorios-list-heading,
+  .fretes-list-heading,
+  .estoque-heading,
+  .estoque-list-heading,
+  .graficos-heading,
+  .graficos-list-heading
+) p {
+  margin: var(--erp-space-1) 0 0 !important;
+  color: var(--erp-text-muted) !important;
+  font-size: var(--erp-text-sm) !important;
+  line-height: 1.45 !important;
+}
+
+:where(
+  .vendedores-hero,
+  .admin-hero,
+  .seller-hero
+) {
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-heading) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-lg) !important;
+  box-shadow: var(--erp-shadow-card) !important;
+}
+
+:where(
+  .vendedores-hero-glow,
+  .admin-floating-orb,
+  .seller-hero-glow,
+  .header-decoration,
+  .button-glow,
+  .estoque-eyebrow,
+  .graficos-eyebrow
+) {
+  display: none !important;
+}
+
+:where(
+  .hero-copy h1,
+  .admin-hero-title,
+  .seller-hero-title
+) {
+  color: var(--erp-text-heading) !important;
+  font-size: var(--erp-text-2xl) !important;
+  letter-spacing: -0.015em !important;
+}
+
+:where(
+  .hero-copy p,
+  .admin-hero-subtitle,
+  .seller-hero-subtitle
+) {
+  color: var(--erp-text-muted) !important;
+  font-size: var(--erp-text-sm) !important;
+}
+
+:where(
+  .hero-eyebrow,
+  .eyebrow-label,
+  .seller-eyebrow,
+  .hero-badge,
+  .seller-hero-pill,
+  .spotlight-badge
+) {
+  background: var(--erp-bg-subtle) !important;
+  color: var(--erp-text-muted) !important;
+  border: 1px solid var(--erp-border) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .toolbar-search,
+  .toolbar-filter,
+  .dashboard-header-redesigned,
+  .concessionarias-toolbar,
+  .precificacao-tabs,
+  .support-tabs,
+  .tabs-container,
+  .estoque-toolbar,
+  .graficos-toolbar
+) {
+  background: var(--erp-bg-surface) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-lg) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+:where(input:not([type='checkbox']):not([type='radio']):not([type='file']), select, textarea) {
+  border-color: var(--erp-border-input) !important;
+  border-radius: var(--erp-radius-md) !important;
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-body) !important;
+  box-shadow: none !important;
+  font-family: var(--erp-font) !important;
+}
+
+:where(input:not([type='checkbox']):not([type='radio']):not([type='file']), select) {
+  min-height: 36px;
+}
+
+:where(input, select, textarea):focus {
+  outline: none !important;
+  border-color: var(--erp-border-focus) !important;
+  box-shadow: var(--erp-focus-ring) !important;
+}
+
+:where(
+  table,
+  .dashboard-table,
+  .precificacao-table,
+  .concessionarias-table,
+  .cadastros-table,
+  .seller-period-table
+) {
+  color: var(--erp-text-body) !important;
+  font-family: var(--erp-font) !important;
+  border-collapse: collapse;
+}
+
+:where(table) thead th {
+  background: var(--erp-bg-subtle) !important;
+  color: var(--erp-text-muted) !important;
+  border-bottom: 1px solid var(--erp-border) !important;
+  font-size: var(--erp-text-xs) !important;
+  font-weight: var(--erp-weight-semibold) !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+:where(table) tbody td {
+  color: var(--erp-text-body) !important;
+  border-bottom-color: var(--erp-divider) !important;
+}
+
+:where(table) tbody tr:hover {
+  background: var(--erp-bg-hover) !important;
+}
+
+:where(
+  .card,
+  .config-card,
+  .contact-card,
+  .info-card,
+  .summary-card,
+  .kpi-card,
+  .seller-kpi-card,
+  .vendedor-card-modern,
+  .acessorio-card,
+  .frete-card,
+  .precificacao-content,
+  .concessionarias-form-col,
+  .proposta-mobile-card,
+  .estoque-table-shell,
+  .graficos-table-shell,
+  .fretes-table-shell,
+  .acessorios-table-shell,
+  .concessionarias-table-shell
+) {
+  background: var(--erp-bg-surface) !important;
+  border-color: var(--erp-border) !important;
+  border-radius: var(--erp-radius-lg) !important;
+  box-shadow: var(--erp-shadow-card) !important;
+  backdrop-filter: none !important;
+}
+
+:where(
+  .modal-content,
+  .acessorios-modal-content,
+  .fretes-modal-content,
+  .erp-modal,
+  .image-modal-content
+) {
+  background: var(--erp-bg-surface) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-xl) !important;
+  box-shadow: var(--erp-shadow-modal) !important;
+  backdrop-filter: none !important;
+}
+
+:where(
+  .modal-header,
+  .acessorios-modal-header,
+  .fretes-modal-header,
+  .erp-modal-header
+) {
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-heading) !important;
+  border-bottom: 1px solid var(--erp-divider) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .modal-header,
+  .acessorios-modal-header,
+  .fretes-modal-header,
+  .erp-modal-header
+) h2,
+:where(
+  .modal-header,
+  .acessorios-modal-header,
+  .fretes-modal-header,
+  .erp-modal-header
+) h3 {
+  color: var(--erp-text-heading) !important;
+  font-size: var(--erp-text-xl) !important;
+}
+
+:where(
+  button,
+  .btn,
+  .precificacao-btn,
+  .concessionarias-primary,
+  .add-btn,
+  .save-btn,
+  .contact-button,
+  .fretes-primary,
+  .acessorios-primary,
+  .graficos-new-button,
+  .btn-salvar
+) {
+  font-family: var(--erp-font) !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  filter: none !important;
+}
+
+:where(
+  button,
+  .btn,
+  .precificacao-btn,
+  .concessionarias-primary,
+  .add-btn,
+  .save-btn,
+  .contact-button,
+  .fretes-primary,
+  .acessorios-primary,
+  .graficos-new-button,
+  .btn-salvar
+):hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .fretes-primary,
+  .acessorios-primary,
+  .graficos-new-button,
+  .btn-salvar,
+  .add-btn,
+  .save-btn
+) {
+  background: var(--erp-primary) !important;
+  color: var(--erp-primary-text) !important;
+  border: 1px solid var(--erp-primary-border) !important;
+  border-radius: var(--erp-radius-md) !important;
+}
+
+:where(
+  .frete-actions button,
+  .acessorio-actions button,
+  .row-actions button,
+  .btn-cancelar
+) {
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-body) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-md) !important;
+}
+
+:where(
+  .frete-actions button.danger,
+  .acessorio-actions button.danger,
+  .btn-excluir,
+  .delete-btn
+) {
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-error) !important;
+  border-color: var(--erp-error-soft) !important;
+}
+
+:where(
+  .avatar-circle,
+  .avatar-circle-sm,
+  .spotlight-avatar,
+  .user-avatar,
+  .vendedor-avatar
+) {
+  width: 36px !important;
+  height: 36px !important;
+  min-width: 36px !important;
+  background: var(--erp-bg-muted) !important;
+  color: var(--erp-text-heading) !important;
+  border: 1px solid var(--erp-border) !important;
+  box-shadow: none !important;
+  font-size: var(--erp-text-sm) !important;
+}
+
+:where(
+  .step-content,
+  .client-form-container,
+  .vehicle-form-container,
+  .precificacao-form,
+  .cadastros-form,
+  .npac-content
+) {
+  background: var(--erp-bg-surface) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .step-header,
+  .section-header,
+  .card-header,
+  .opcional-header,
+  .resumo-acumulativo-header
+) {
+  background: transparent !important;
+  color: var(--erp-text-heading) !important;
+  border-bottom: 1px solid var(--erp-divider) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .step-header,
+  .section-header,
+  .card-header,
+  .opcional-header,
+  .resumo-acumulativo-header
+) h2,
+:where(
+  .step-header,
+  .section-header,
+  .card-header,
+  .opcional-header,
+  .resumo-acumulativo-header
+) h3 {
+  color: var(--erp-text-heading) !important;
+  font-size: var(--erp-text-lg) !important;
+  font-weight: var(--erp-weight-semibold) !important;
+}
+
+.floating-nav {
+  bottom: var(--erp-space-4) !important;
+  right: var(--erp-space-4) !important;
+  gap: var(--erp-space-2) !important;
+}
+
+.floating-nav-btn {
+  min-height: 38px !important;
+  padding: 0 var(--erp-space-4) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-md) !important;
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-body) !important;
+  box-shadow: var(--erp-shadow-elevated) !important;
+  backdrop-filter: none !important;
+  font-size: var(--erp-text-sm) !important;
+}
+
+.floating-nav-btn.next,
+.floating-nav-btn.finish {
+  background: var(--erp-primary) !important;
+  color: var(--erp-primary-text) !important;
+  border-color: var(--erp-primary-border) !important;
+}
+
+:where(
+  .selection-progress,
+  .progress-bar-container
+) {
+  background: var(--erp-bg-surface) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-lg) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .progress-circle,
+  .step-number
+) {
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-muted) !important;
+  border-color: var(--erp-border-input) !important;
+  box-shadow: none !important;
+}
+
+:where(
+  .progress-step.active .progress-circle,
+  .progress-step.completed .progress-circle,
+  .step.active .step-number,
+  .step.completed .step-number
+) {
+  background: var(--erp-primary) !important;
+  color: var(--erp-primary-text) !important;
+  border-color: var(--erp-primary-border) !important;
+}
+
+:where(
+  .precificacao-info-box,
+  .info-box,
+  .loading-tips
+) {
+  background: var(--erp-bg-subtle) !important;
+  color: var(--erp-text-body) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-left: 3px solid var(--erp-border-input) !important;
+  border-radius: var(--erp-radius-md) !important;
+  box-shadow: none !important;
+}
+
+.login-page {
+  background: var(--erp-bg-page) !important;
+  font-family: var(--erp-font) !important;
+}
+
+.login-left-overlay {
+  background: rgba(17, 24, 39, 0.18) !important;
+}
+
+.login-right {
+  background: var(--erp-bg-page) !important;
+  padding: var(--erp-space-5) !important;
+}
+
+.login-card {
+  max-width: 460px !important;
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-body) !important;
+  border: 1px solid var(--erp-border) !important;
+  border-radius: var(--erp-radius-xl) !important;
+  padding: var(--erp-space-6) !important;
+  box-shadow: var(--erp-shadow-elevated) !important;
+  animation: none !important;
+}
+
+:where(.brand-stark, .form-header h2) {
+  color: var(--erp-text-heading) !important;
+}
+
+.brand-guindastes {
+  color: var(--erp-text-muted) !important;
+  font-size: var(--erp-text-lg) !important;
+  font-weight: var(--erp-weight-semibold) !important;
+  letter-spacing: 0.08em !important;
+}
+
+.form-header p,
+.form-help,
+.checkbox-label,
+.signup-row {
+  color: var(--erp-text-muted) !important;
+}
+
+.input-icon,
+.eye-btn {
+  color: var(--erp-text-muted) !important;
+}
+
+.login-button {
+  background: var(--erp-primary) !important;
+  color: var(--erp-primary-text) !important;
+  border: 1px solid var(--erp-primary-border) !important;
+  border-radius: var(--erp-radius-md) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 700px) {
+  :where(
+    .gerenciar-guindastes-content,
+    .gerenciar-vendedores-content,
+    .gerenciar-acessorios-container,
+    .gerenciar-fretes-container,
+    .gerenciar-estoque-container,
+    .gerenciar-graficos-container,
+    .detalhes-content,
+    .npac-container,
+    .novo-pedido-content,
+    .precificacao-container,
+    .planos-container,
+    .dashboard-content,
+    .aprovacoes-content,
+    .cadastros-container,
+    .support-content
+  ) {
+    width: min(100% - 24px, var(--erp-page-max)) !important;
+  }
+}

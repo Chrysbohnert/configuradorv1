@@ -20,40 +20,16 @@
   position: relative;
   overflow: hidden;
   margin-bottom: 28px;
-  border-radius: 30px;
+  border-radius: var(--erp-radius-xl);
   padding: 28px;
-  background:
-    radial-gradient(circle at top left, rgba(245,158,11,0.16), transparent 24%),
-    radial-gradient(circle at bottom right, rgba(59,130,246,0.12), transparent 30%),
-    linear-gradient(135deg, var(--erp-text-heading) 0%, #111827 45%, #1f2937 100%);
-  box-shadow: 0 24px 60px rgba(2, 6, 23, 0.2);
-  color: var(--erp-bg-surface);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  box-shadow: var(--erp-shadow-card);
+  color: var(--erp-text-heading);
 }
 
 .vendedores-hero-glow {
-  position: absolute;
-  border-radius: 999px;
-  filter: blur(24px);
-  opacity: 0.45;
-  pointer-events: none;
-  animation: vendedoresFloat 8s ease-in-out infinite;
-}
-
-.vendedores-hero-glow-1 {
-  width: 180px;
-  height: 180px;
-  background: rgba(245, 158, 11, 0.22);
-  top: -30px;
-  right: 40px;
-}
-
-.vendedores-hero-glow-2 {
-  width: 240px;
-  height: 240px;
-  background: rgba(59, 130, 246, 0.15);
-  left: -60px;
-  bottom: -70px;
-  animation-delay: 1.4s;
+  display: none;
 }
 
 @keyframes vendedoresFloat {
@@ -80,13 +56,13 @@
   font-size: clamp(30px, 3vw, 46px);
   line-height: 1;
   font-weight: 800;
-  color: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
 }
 
 .hero-copy p {
   margin: 0;
   max-width: 760px;
-  color: rgba(255,255,255,0.76);
+  color: var(--erp-text-muted);
   font-size: var(--erp-text-xl);
   line-height: 1.6;
 }
@@ -97,9 +73,9 @@
   padding: 7px 12px;
   border-radius: 999px;
   margin-bottom: 14px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: var(--erp-bg-surface);
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border);
+  color: var(--erp-text-body);
   font-size: var(--erp-text-base);
   font-weight: 800;
   text-transform: uppercase;
@@ -128,9 +104,8 @@
   align-items: center;
   min-height: 52px;
   border-radius: var(--erp-radius-lg);
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(8px);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
 }
 
 .toolbar-search {
@@ -141,7 +116,7 @@
 .toolbar-search svg {
   width: 18px;
   height: 18px;
-  color: rgba(255,255,255,0.7);
+  color: var(--erp-text-muted);
   flex-shrink: 0;
 }
 
@@ -150,13 +125,13 @@
   width: 100%;
   border: none;
   background: transparent;
-  color: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
   font-size: var(--erp-text-lg);
   outline: none;
 }
 
 .toolbar-search input::placeholder {
-  color: rgba(255,255,255,0.58);
+  color: var(--erp-text-weak);
 }
 
 .toolbar-filter {
@@ -176,9 +151,9 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: linear-gradient(135deg, #cccccc 0%, #cccccc 100%);
-  color: var(--erp-bg-surface);
-  border: none;
+  background: var(--erp-primary);
+  color: var(--erp-text-main);
+  border: 1px solid var(--erp-primary-border);
   padding: 12px 20px;
   border-radius: var(--erp-radius-lg);
   font-size: var(--erp-text-lg);
@@ -331,7 +306,7 @@
 }
 
 .vendedor-badge-sm.vendedor_concessionaria {
-  background: var(--erp-bg-surface)beb;
+  background: var(--erp-warning-soft);
   color: #b45309;
 }
 
@@ -1077,10 +1052,10 @@
 }
 
 .save-btn {
-  background: linear-gradient(135deg, var(--erp-bg-surface)fff 0%, var(--erp-bg-surface)fff 100%);
-  color: var(--erp-text-heading);
-  border: none;
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.16);
+  background: var(--erp-primary);
+  color: var(--erp-primary-text);
+  border: 1px solid var(--erp-primary-border);
+  box-shadow: var(--erp-shadow-sm);
 }
 
 .save-btn:hover {
@@ -1299,9 +1274,9 @@
 }
 
 .vendedor-municipios-grid label.selected {
-  border-color: #ead27e;
-  background: var(--erp-bg-surface)9e5;
-  color: #5f4900;
+  border-color: var(--erp-primary-border);
+  background: var(--erp-warning-soft);
+  color: var(--erp-warning);
 }
 
 .vendedor-municipios-grid input {

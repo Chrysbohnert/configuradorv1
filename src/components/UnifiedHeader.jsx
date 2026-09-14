@@ -6,8 +6,6 @@ const UnifiedHeader = ({
   showBackButton = false, 
   onBackClick, 
   showSupportButton = true, 
-  showUserInfo = true,
-  user = null,
   title = "STARK Orçamento",
   subtitle = "Sistema Profissional de Orçamentos"
 }) => {
@@ -25,17 +23,10 @@ const UnifiedHeader = ({
     navigate('/suporte');
   };
 
-  // Oculta o botão Voltar automaticamente para usuários vendedores
-  const shouldShowBack = showBackButton && !(user && user.tipo === 'vendedor');
+  const shouldShowBack = showBackButton;
 
   return (
     <div className="unified-header">
-      {/* Decorative Elements */}
-      <div className="header-decoration">
-        <div className="deco-line deco-line-1"></div>
-        <div className="deco-line deco-line-2"></div>
-      </div>
-      
       <div className="header-container">
         <div className="header-left">
           {shouldShowBack && (
@@ -52,14 +43,7 @@ const UnifiedHeader = ({
               <div className="brand-title-wrapper">
                 <h1 className="brand-title">{title}</h1>
               </div>
-              {subtitle && (
-                <p className="brand-subtitle">
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="subtitle-icon">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
-                  </svg>
-                  {subtitle}
-                </p>
-              )}
+              {subtitle && <p className="brand-subtitle">{subtitle}</p>}
             </div>
           </div>
         </div>
@@ -73,7 +57,6 @@ const UnifiedHeader = ({
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
               </svg>
               <span>Suporte</span>
-              <div className="button-glow"></div>
             </button>
           )}
         </div>

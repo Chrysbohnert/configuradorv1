@@ -4,8 +4,8 @@
 ========================================================= */
 
 .vendedor-dashboard-premium {
-  --seller-border: rgba(148, 163, 184, 0.15);
-  --seller-shadow: 0 1px 3px rgba(15, 23, 42, 0.07);
+  --seller-border: var(--erp-border);
+  --seller-shadow: var(--erp-shadow-card);
 
   --chart-blue: #3b82f6;
   --chart-green: #22c55e;
@@ -56,9 +56,11 @@
 /* ================= HERO ================= */
 
 .seller-hero {
-  background: linear-gradient(135deg, var(--erp-text-heading) 0%, #1e293b 100%);
-  color: var(--erp-bg-surface);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  color: var(--erp-text-heading);
   padding: 18px 20px;
+  box-shadow: var(--erp-shadow-card);
 }
 
 .seller-hero-glow {
@@ -80,10 +82,10 @@
   align-items: center;
   gap: 6px;
   padding: 4px 10px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-full);
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--erp-bg-subtle);
+  color: var(--erp-text-muted);
   font-size: var(--erp-text-sm);
   font-weight: 700;
   text-transform: uppercase;
@@ -96,12 +98,12 @@
   font-size: 22px;
   line-height: 1.1;
   font-weight: 700;
-  color: var(--erp-bg-surface);
+  color: var(--erp-text-heading);
 }
 
 .seller-hero-subtitle {
   margin: 4px 0 0;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--erp-text-muted);
   max-width: 760px;
   font-size: var(--erp-text-md);
   line-height: 1.5;
@@ -117,17 +119,17 @@
 .seller-hero-pill {
   padding: 5px 10px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--erp-bg-subtle);
+  border: 1px solid var(--erp-border);
+  color: var(--erp-text-body);
   font-weight: 600;
   font-size: var(--erp-text-base);
   white-space: nowrap;
 }
 
 .seller-hero-pill-dark {
-  background: rgba(0, 0, 0, 0.25);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--erp-bg-muted);
+  color: var(--erp-text-body);
 }
 
 /* ================= FILTROS / AÇÕES ================= */
@@ -140,10 +142,11 @@
   align-items: flex-end;
   gap: 10px;
   flex-wrap: wrap;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: var(--erp-radius-sm);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
+  border-radius: var(--erp-radius-md);
   padding: 12px 14px;
+  box-shadow: var(--erp-shadow-card);
 }
 
 .filters-container {
@@ -161,9 +164,9 @@
 }
 
 .filter-label {
-  font-size: var(--erp-text-sm);
+  font-size: var(--erp-text-xs);
   font-weight: 700;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--erp-text-muted);
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -172,10 +175,10 @@
   height: 34px;
   min-height: 34px;
   padding: 0 10px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(15, 23, 42, 0.5);
-  color: var(--erp-bg-surface);
+  border-radius: var(--erp-radius-md);
+  border: 1px solid var(--erp-border);
+  background: var(--erp-bg-surface);
+  color: var(--erp-text-body);
   font-weight: 600;
   font-size: var(--erp-text-md);
   outline: none;
@@ -185,7 +188,7 @@
 
 .filter-select:hover,
 .filter-select:focus {
-  border-color: rgba(245, 158, 11, 0.4);
+  border-color: var(--erp-border-input);
   box-shadow: none;
 }
 
@@ -221,15 +224,15 @@
 
 .actions-container .btn-secondary,
 .seller-action-btn.btn-secondary {
-  background: rgba(255, 255, 255, 0.08) !important;
-  color: rgba(255, 255, 255, 0.85) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  background: var(--erp-bg-surface) !important;
+  color: var(--erp-text-body) !important;
+  border: 1px solid var(--erp-border) !important;
 }
 
 .actions-container .btn-secondary:hover,
 .seller-action-btn.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.13) !important;
-  border-color: rgba(255, 255, 255, 0.18) !important;
+  background: var(--erp-bg-hover) !important;
+  border-color: var(--erp-border-input) !important;
 }
 
 /* ================= KPI ================= */
@@ -433,8 +436,8 @@
   width: 100%;
   height: 200px;
   display: block;
-  background: var(--erp-bg-surface)fff;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
 }
 
@@ -455,7 +458,7 @@
   color: var(--erp-text-weak);
   background: #fafafa;
   border-radius: var(--erp-radius-sm);
-  border: 1px dashed rgba(148, 163, 184, 0.25);
+  border: 1px dashed var(--erp-border-input);
   font-size: var(--erp-text-md);
 }
 
@@ -474,7 +477,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: 0;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
   overflow: hidden;
   background: #fafafa;
@@ -483,9 +486,9 @@
 .seller-summary-item {
   border-radius: 0;
   padding: 9px 12px;
-  background: var(--erp-bg-surface)fff;
+  background: var(--erp-bg-surface);
   border: none;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid var(--erp-divider);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -528,7 +531,7 @@
 .seller-funnel-column {
   border-radius: var(--erp-radius-sm);
   padding: 12px 14px;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--erp-border);
   background: #fafafa;
   min-height: auto;
   border-top: 3px solid var(--erp-text-weak);
@@ -596,8 +599,8 @@
 .seller-funnel-mini-card {
   border-radius: 6px;
   padding: 8px 10px;
-  background: var(--erp-bg-surface)fff;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
   display: flex;
   flex-direction: column;
   gap: 3px;
@@ -618,11 +621,11 @@
 .seller-funnel-empty {
   padding: 10px 8px;
   border-radius: 6px;
-  border: 1px dashed rgba(148, 163, 184, 0.25);
+  border: 1px dashed var(--erp-border-input);
   color: var(--erp-text-weak);
   text-align: center;
   font-size: var(--erp-text-sm);
-  background: var(--erp-bg-surface)fff;
+  background: var(--erp-bg-surface);
 }
 
 /* ================= ATIVIDADES ================= */
@@ -634,7 +637,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
   overflow: hidden;
   background: #fafafa;
@@ -647,8 +650,8 @@
   padding: 9px 12px;
   border-radius: 0;
   border: none;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  background: var(--erp-bg-surface)fff;
+  border-bottom: 1px solid var(--erp-divider);
+  background: var(--erp-bg-surface);
   color: #475569;
   line-height: 1.45;
   font-size: var(--erp-text-base);
@@ -695,7 +698,7 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
   overflow: hidden;
   background: #fafafa;
@@ -710,8 +713,8 @@
   border-radius: 0;
   padding: 9px 12px;
   border: none;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
-  background: var(--erp-bg-surface)fff;
+  border-bottom: 1px solid var(--erp-divider);
+  background: var(--erp-bg-surface);
 }
 
 .opportunity-item:last-child,
@@ -771,7 +774,7 @@
 
 .seller-period-table-wrap {
   width: 100%;
-  border: 1px solid rgba(148, 163, 184, 0.12);
+  border: 1px solid var(--erp-border);
   border-radius: var(--erp-radius-sm);
   overflow: hidden;
   background: #fafafa;
@@ -796,14 +799,14 @@
   color: var(--erp-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  border-bottom: 1px solid var(--erp-divider);
   white-space: nowrap;
 }
 
 .seller-period-table td {
   padding: 9px 12px;
-  color: #1e293b;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+  color: var(--erp-text-body);
+  border-bottom: 1px solid var(--erp-divider);
   vertical-align: middle;
 }
 
@@ -877,32 +880,32 @@
 .dashboard-loading-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.15);
+  background: rgba(244, 244, 246, 0.75);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(2px);
 }
 
 .dashboard-loading-card {
-  background: #1a1a1a;
+  background: var(--erp-bg-surface);
+  border: 1px solid var(--erp-border);
   padding: 14px 20px;
   border-radius: var(--erp-radius-md);
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  box-shadow: var(--erp-shadow-elevated);
   font-weight: 600;
   font-size: var(--erp-text-md);
-  color: var(--erp-bg-surface);
-  border: none;
+  color: var(--erp-text-heading);
 }
 
 .loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(148, 163, 184, 0.25);
+  border: 2px solid var(--erp-border-input);
   border-top-color: var(--erp-text-weak);
   border-radius: 50%;
   animation: spinSeller 0.8s linear infinite;

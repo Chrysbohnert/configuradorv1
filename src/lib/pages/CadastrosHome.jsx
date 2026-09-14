@@ -12,7 +12,7 @@ import {
   UserRound,
   UsersRound,
 } from 'lucide-react';
-import UnifiedHeader from '../../components/UnifiedHeader';
+import PageHeader from '../../components/PageHeader';
 import {
   isAdminFull,
   isAdminConcessionarias,
@@ -45,24 +45,18 @@ export default function CadastrosHome() {
   ].filter((item) => item.visible);
 
   return (
-    <div className="cadastros-home-page">
-      <UnifiedHeader
-        showBackButton={false}
-        showSupportButton={true}
-        showUserInfo={true}
-        user={user}
-        title="Cadastros"
-        subtitle="Escolha o cadastro que deseja gerenciar"
-      />
-      <main className="cadastros-home-content">
-        <div className="cadastros-home-heading">
-          <h1>Cadastros disponíveis</h1>
-          <p>As opções respeitam as permissões do seu perfil.</p>
-        </div>
+    <div className="erp-page">
+      <div className="erp-container">
+        <PageHeader
+          breadcrumb={[{ label: 'Cadastros' }]}
+          title="Cadastros"
+          subtitle="Escolha o cadastro que deseja gerenciar. As opções respeitam as permissões do seu perfil."
+        />
+
         <div className="cadastros-home-grid">
           {items.map((item) => (
             <button key={item.path} type="button" className="cadastros-home-card" onClick={() => navigate(item.path)}>
-              <span className="cadastros-home-icon">{React.createElement(item.icon, { size: 24 })}</span>
+              <span className="cadastros-home-icon">{React.createElement(item.icon, { size: 22 })}</span>
               <span className="cadastros-home-card-copy">
                 <strong>{item.label}</strong>
                 <small>{item.description}</small>
@@ -71,7 +65,7 @@ export default function CadastrosHome() {
             </button>
           ))}
         </div>
-      </main>
+      </div>
     </div>
   );
 }

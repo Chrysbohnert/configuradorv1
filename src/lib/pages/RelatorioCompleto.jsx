@@ -126,6 +126,7 @@ const RelatorioCompleto = () => {
     if (!user) return;
     try {
       setIsLoading(true);
+      const isAdminFull = user?.tipo === 'admin_full';
       const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
       const concessionariaId = user?.concessionaria_id;
 
@@ -141,6 +142,8 @@ const RelatorioCompleto = () => {
 
       const propostas = await (isAdminConcessionaria
         ? getPropostas({ vendedor_id: idsVendedores })
+        : isAdminFull
+        ? getPropostas({ canal_venda: ['Concessionária Nacional', 'Concessionária Internacional'] })
         : getPropostas());
 
       const vendedoresData = (users || []).filter(u => u.tipo === 'vendedor' || u.tipo === 'vendedor_concessionaria');

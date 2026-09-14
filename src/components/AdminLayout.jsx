@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import AdminNavigation from './AdminNavigation';
 import WelcomeLoading from './WelcomeLoading';
+import SessionUpdateToast from './SessionUpdateToast';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/permissions';
 import '../styles/AdminLayout.css';
@@ -67,6 +68,7 @@ const AdminLayout = () => {
 
   return (
     <div className="admin-layout">
+      <SessionUpdateToast />
       <AdminNavigation user={user} />
       <div className="admin-content">
         <Outlet context={{ user }} />

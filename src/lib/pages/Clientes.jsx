@@ -6,6 +6,8 @@ import { normalizarArray } from '../../utils/normalizadores';
 import { formatCurrency } from '../../utils/formatters';
 import { isAdmin } from '../../utils/permissions';
 import ClienteFormFields from '../../components/Clientes/ClienteFormFields';
+import PageHeader from '../../components/PageHeader';
+import PageToolbar from '../../components/PageToolbar';
 import '../../styles/Clientes.css';
 
 const CLIENTE_VAZIO = {
@@ -36,7 +38,6 @@ export default function Clientes() {
     return principal ? [principal] : ['Norte-Nordeste', 'Sul-Sudeste', 'Centro-Oeste', 'Rio Grande do Sul', 'Comércio Exterior'];
   }, [user?.regioes_operacao, user?.regiao]);
 
- 
   const carregar = async () => {
     try {
       setLoading(true);
@@ -48,7 +49,7 @@ export default function Clientes() {
       setLoading(false);
     }
   };
-  
+
   useEffect(() => {
     const t = setTimeout(carregar, 300);
     return () => clearTimeout(t);
@@ -113,49 +114,50 @@ export default function Clientes() {
     }
   };
 
+  const breadcrumb = userIsAdmin
+    ? [{ label: 'Cadastros', path: '/cadastros' }, { label: 'Clientes' }]
+    : [{ label: 'Clientes' }];
+
+  const subtitle = userIsAdmin
+    ? 'Gerencie os clientes cadastrados, com o vendedor responsável.'
+    : 'Seus clientes cadastrados.';
+
   return (
-    <div className="clientes-container">
-      <div className="clientes-content">
-        <div className="clientes-header">
-          <div>
-            <h1>Clientes</h1>
-            <p>{userIsAdmin ? 'Todos os clientes cadastrados, com o vendedor responsável' : 'Seus clientes cadastrados'}</p>
-          </div>
-          <button type="button" className="btn-primario" onClick={abrirNovo}>+ Novo Cliente</button>
-        </div>
+    <div className="erp-page">
+      <div className="erp-container">
+        <PageHeader
+          breadcrumb={breadcrumb}
+          title="Clientes"
+          subtitle={subtitle}
+          actions={
+            <button type="button" className="erp-btn erp-btn-primary" onClick={abrirNovo}>
+              + Novo Cliente
+            </button>
+          }
+        />
 
-        <div className="clientes-toolbar">
-          <label className="clientes-busca">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-4-4" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Buscar por nome ou CPF/CNPJ..."
-              value={busca}
-              onChange={(e) => setBusca(e.target.value)}
-            />
-          </label>
-          <span>{clientes.length} cliente(s)</span>
-        </div>
+        <PageToolbar
+          search={{ placeholder: 'Buscar cliente por nome ou CPF/CNPJ...', value: busca, onChange: setBusca }}
+          count={`${clientes.length} cliente(s) cadastrado(s)`}
+        />
 
-        <div className="clientes-tabela-wrap">
+        <div className="erp-table-shell">
           {loading ? (
-            <div className="clientes-vazio">Carregando...</div>
+            <div className="erp-table-empty">Carregando...</div>
           ) : clientes.length === 0 ? (
-            <div className="clientes-vazio">Nenhum cliente encontrado.</div>
+            <div className="erp-table-empty">Nenhum cliente encontrado.</div>
           ) : (
-            <table className="clientes-tabela">
+            <table className="erp-table">
               <thead>
                 <tr>
                   <th>Nome</th>
                   <th>CPF/CNPJ</th>
+                  <th>UF</th>
                   <th>Região</th>
-                  <th>Tipo de Venda</th>
+                  <th>Tipo de venda</th>
                   {userIsAdmin && <th>Vendedor</th>}
                   <th>Propostas</th>
-                  <th></th>
+                  <th style={{ width: 1 }}>Ações</th>
                 </tr>
               </thead>
               <tbody>
@@ -163,22 +165,29 @@ export default function Clientes() {
                   <tr key={c.id}>
                     <td>{c.nome}</td>
                     <td>{c.documento}</td>
+                    <td>{c.uf || '-'}</td>
                     <td>{c.regiao || '-'}</td>
-                    <td>{c.tipo_venda === 'revenda' ? 'Revenda' : c.tipo_venda === 'cliente' ? 'Cliente' : '-'}</td>
+                    <td>
+                      <span className="erp-badge">
+                        {c.tipo_venda === 'revenda' ? 'Revenda' : c.tipo_venda === 'cliente' ? 'Cliente' : '-'}
+                      </span>
+                    </td>
                     {userIsAdmin && <td>{c.vendedor_nome || '-'}</td>}
                     <td>
-                      <button type="button" className="btn-link" onClick={() => abrirHistorico(c)}>
+                      <button type="button" className="erp-btn-link" onClick={() => abrirHistorico(c)}>
                         {c.total_propostas || 0} proposta(s)
                       </button>
                     </td>
                     <td>
                       <div className="clientes-acoes">
-                        <button type="button" className="btn-secundario" onClick={() => abrirEdicao(c)}>Editar</button>
-                        <button type="button" className="btn-secundario" onClick={() => iniciarNovaProposta(c)}>
+                        <button type="button" className="erp-btn erp-btn-secondary" onClick={() => abrirEdicao(c)}>
+                          Editar
+                        </button>
+                        <button type="button" className="erp-btn erp-btn-secondary" onClick={() => iniciarNovaProposta(c)}>
                           Nova Proposta
                         </button>
                         {(userIsAdmin || String(c.vendedor_id) === String(user?.id)) && (
-                          <button type="button" className="btn-secundario btn-perigo" onClick={() => excluir(c)}>
+                          <button type="button" className="erp-btn erp-btn-danger" onClick={() => excluir(c)}>
                             Excluir
                           </button>
                         )}
@@ -193,18 +202,28 @@ export default function Clientes() {
       </div>
 
       {showModal && (
-        <div className="clientes-modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="clientes-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>{formData.id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+        <div className="erp-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="erp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="erp-modal-header">
+              <h2>{formData.id ? 'Editar Cliente' : 'Novo Cliente'}</h2>
+              <button type="button" className="erp-modal-close" onClick={() => setShowModal(false)} aria-label="Fechar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
             <ClienteFormFields
               formData={formData}
               setFormData={setFormData}
               regioesDisponiveis={regioesDisponiveis}
             />
-            {errorMsg && <div className="clientes-erro">{errorMsg}</div>}
-            <div className="clientes-modal-actions">
-              <button type="button" className="btn-secundario" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button type="button" className="btn-primario" onClick={salvar} disabled={saving}>
+            {errorMsg && <div className="erp-form-error">{errorMsg}</div>}
+            <div className="erp-modal-footer">
+              <button type="button" className="erp-btn erp-btn-secondary" onClick={() => setShowModal(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="erp-btn erp-btn-primary" onClick={salvar} disabled={saving}>
                 {saving ? 'Salvando...' : 'Salvar'}
               </button>
             </div>
@@ -213,37 +232,51 @@ export default function Clientes() {
       )}
 
       {historico.open && (
-        <div className="clientes-modal-overlay" onClick={() => setHistorico({ open: false, cliente: null, propostas: [], loading: false })}>
-          <div className="clientes-modal" onClick={(e) => e.stopPropagation()}>
-            <h2>Histórico de Propostas — {historico.cliente?.nome}</h2>
+        <div className="erp-modal-overlay" onClick={() => setHistorico({ open: false, cliente: null, propostas: [], loading: false })}>
+          <div className="erp-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="erp-modal-header">
+              <h2>Histórico de Propostas — {historico.cliente?.nome}</h2>
+              <button type="button" className="erp-modal-close" onClick={() => setHistorico({ open: false, cliente: null, propostas: [], loading: false })} aria-label="Fechar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
             {historico.loading ? (
               <p>Carregando...</p>
             ) : historico.propostas.length === 0 ? (
               <p>Nenhuma proposta vinculada a este cliente.</p>
             ) : (
-              <table className="clientes-tabela">
-                <thead>
-                  <tr>
-                    <th>Nº Proposta</th>
-                    <th>Data</th>
-                    <th>Status</th>
-                    <th>Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {historico.propostas.map((p) => (
-                    <tr key={p.id}>
-                      <td>{p.numero_proposta}</td>
-                      <td>{p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '-'}</td>
-                      <td>{p.status}</td>
-                      <td>{formatCurrency(p.valor_total || 0)}</td>
+              <div className="erp-table-shell" style={{ minHeight: 'auto' }}>
+                <table className="erp-table">
+                  <thead>
+                    <tr>
+                      <th>Nº Proposta</th>
+                      <th>Data</th>
+                      <th>Status</th>
+                      <th>Valor</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {historico.propostas.map((p) => (
+                      <tr key={p.id}>
+                        <td>{p.numero_proposta}</td>
+                        <td>{p.data ? new Date(p.data).toLocaleDateString('pt-BR') : '-'}</td>
+                        <td>{p.status}</td>
+                        <td>{formatCurrency(p.valor_total || 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
-            <div className="clientes-modal-actions">
-              <button type="button" className="btn-secundario" onClick={() => setHistorico({ open: false, cliente: null, propostas: [], loading: false })}>
+            <div className="erp-modal-footer">
+              <button
+                type="button"
+                className="erp-btn erp-btn-secondary"
+                onClick={() => setHistorico({ open: false, cliente: null, propostas: [], loading: false })}
+              >
                 Fechar
               </button>
             </div>

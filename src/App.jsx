@@ -13,6 +13,7 @@ import Login from './lib/pages/Login';
 // Layouts
 const AdminLayout = lazy(() => import('./components/AdminLayout'));
 const VendedorLayout = lazy(() => import('./components/VendedorLayout'));
+const RoleBasedLayout = lazy(() => import('./components/RoleBasedLayout'));
 
 // Páginas ativas — Admin
 const DashboardAdmin = lazy(() => import('./lib/pages/DashboardAdmin'));
@@ -57,17 +58,54 @@ function App() {
                 {/* LOGIN */}
                 <Route path="/" element={<Login />} />
 
-                {/* CLIENTES - acessível para admin e vendedor */}
+                {/* ROTAS COMPARTILHADAS - acessíveis para admin e vendedor */}
                 <Route
-                  path="/clientes"
                   element={
-                    <ProtectedRoute>
-                      <LazyRoute loadingMessage="Carregando Clientes...">
-                        <Clientes />
-                      </LazyRoute>
-                    </ProtectedRoute>
+                    <LazyRoute loadingMessage="Carregando painel...">
+                      <RoleBasedLayout />
+                    </LazyRoute>
                   }
-                />
+                >
+                  <Route
+                    path="/clientes"
+                    element={
+                      <ProtectedRoute>
+                        <LazyRoute loadingMessage="Carregando Clientes...">
+                          <Clientes />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/detalhes-guindaste/:id?"
+                    element={
+                      <ProtectedRoute>
+                        <LazyRoute loadingMessage="Carregando Detalhes...">
+                          <DetalhesGuindaste />
+                        </LazyRoute>
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/suporte"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Suporte...">
+                        <Support />
+                      </LazyRoute>
+                    }
+                  />
+
+                  <Route
+                    path="/proposta/:id"
+                    element={
+                      <LazyRoute loadingMessage="Carregando Proposta...">
+                        <VisualizarProposta />
+                      </LazyRoute>
+                    }
+                  />
+                </Route>
 
                 {/* VENDEDOR */}
                 <Route
@@ -354,38 +392,6 @@ function App() {
                   />
 
                 </Route>
-
-                {/* SUPORTE */}
-                <Route
-                  path="/suporte"
-                  element={
-                    <LazyRoute loadingMessage="Carregando Suporte...">
-                      <Support />
-                    </LazyRoute>
-                  }
-                />
-
-                {/* VISUALIZAR PROPOSTA */}
-                <Route
-                  path="/proposta/:id"
-                  element={
-                    <LazyRoute loadingMessage="Carregando Proposta...">
-                      <VisualizarProposta />
-                    </LazyRoute>
-                  }
-                />
-
-                {/* DETALHES GUINDASTE */}
-                <Route
-                  path="/detalhes-guindaste/:id?"
-                  element={
-                    <ProtectedRoute>
-                      <LazyRoute loadingMessage="Carregando Detalhes...">
-                        <DetalhesGuindaste />
-                      </LazyRoute>
-                    </ProtectedRoute>
-                  }
-                />
 
                 {/* FALLBACK */}
                 <Route path="*" element={<Navigate to="/" replace />} />

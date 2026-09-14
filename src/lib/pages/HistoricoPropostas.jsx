@@ -1,19 +1,27 @@
 ﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db } from '../../config/supabase';
 import { getPropostas, deletePropostaPermanente, updateResultadoVendaProposta } from '../../api/propostas';
 import { formatCurrency } from '../../utils/formatters';
 import { getCurrentUser } from '../../utils/auth';
+import { isAdminFull } from '../../utils/permissions';
+import PageHeader from '../../components/PageHeader';
+import PageToolbar from '../../components/PageToolbar';
+import '../../styles/HistoricoPropostas.css';
 
-/**
- * Página de Histórico de Propostas e Orçamentos
- */
 const HistoricoPropostas = () => {
   const navigate = useNavigate();
+  const currentUser = getCurrentUser();
+  const isAdminFullUser = isAdminFull(currentUser);
   const [propostas, setPropostas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroResultado, setFiltroResultado] = useState('todos');
   const [busca, setBusca] = useState('');
+  const [filtroRepresentante, setFiltroRepresentante] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [filtroCliente, setFiltroCliente] = useState('');
+  const [filtroUf, setFiltroUf] = useState('');
   const [resultadoModalOpen, setResultadoModalOpen] = useState(false);
   const [propostaSelecionada, setPropostaSelecionada] = useState(null);
   const [resultadoSelecionado, setResultadoSelecionado] = useState('');
@@ -42,8 +50,6 @@ const HistoricoPropostas = () => {
     const raw = String(numero || '').trim();
     if (!raw) return '';
 
-    // Padronizar números gerados como PEDxxxxxxx para um formato curto e legível
-    // Ex: PED9654089 -> 9654089
     if (/^PED\d+$/i.test(raw)) {
       return raw.replace(/^PED/i, '');
     }
@@ -95,9 +101,11 @@ const HistoricoPropostas = () => {
     try {
       setLoading(true);
       const user = getCurrentUser();
-      
+
       const filters = {};
-      if (user?.id) {
+      if (isAdminFull(user)) {
+        filters.canal_venda = 'Representante';
+      } else if (user?.id) {
         filters.vendedor_id = user.id;
       }
 
@@ -127,30 +135,51 @@ const HistoricoPropostas = () => {
   };
 
   const handleReabrir = (proposta) => {
-    // Navegar para modo edição passando o ID da proposta na URL
     navigate(`/novo-pedido/${proposta.id}`);
   };
 
-  // Filtrar propostas
-  const propostasFiltradas = propostas.filter(p => {
-    // Filtro de resultado
+  const representantes = Array.from(
+    new Map(
+      propostas
+        .filter((p) => p.vendedor_id && p.vendedor_nome)
+        .map((p) => [String(p.vendedor_id), { id: String(p.vendedor_id), nome: p.vendedor_nome }])
+    ).values()
+  ).sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'));
+
+  const ufs = [...new Set(propostas.map((p) => p.cliente_uf).filter(Boolean))].sort();
+
+  const propostasFiltradas = propostas.filter((p) => {
+    if (isAdminFullUser) {
+      if (filtroRepresentante && String(p.vendedor_id) !== filtroRepresentante) return false;
+      if (filtroStatus && String(p.status || '') !== filtroStatus) return false;
+      if (filtroUf && String(p.cliente_uf || '').toUpperCase() !== filtroUf) return false;
+      if (filtroCliente && !String(p.cliente_nome || '').toLowerCase().includes(filtroCliente.toLowerCase().trim())) return false;
+
+      const dataProposta = p.data || p.created_at;
+      if ((filtroDataInicio || filtroDataFim) && !dataProposta) return false;
+      if (dataProposta) {
+        const data = new Date(dataProposta);
+        if (filtroDataInicio && data < new Date(`${filtroDataInicio}T00:00:00`)) return false;
+        if (filtroDataFim && data > new Date(`${filtroDataFim}T23:59:59.999`)) return false;
+      }
+    }
+
     if (filtroResultado !== 'todos') {
       const r = p.resultado_venda || '';
       if (filtroResultado === 'sem_resultado' && r) return false;
       if (filtroResultado === 'efetivada' && r !== 'efetivada') return false;
       if (filtroResultado === 'perdida' && r !== 'perdida') return false;
     }
-    
-    // Busca por texto
+
     if (busca) {
       const termo = busca.toLowerCase();
       return (
-        p.numero_proposta.toLowerCase().includes(termo) ||
-        p.cliente_nome.toLowerCase().includes(termo) ||
-        p.vendedor_nome.toLowerCase().includes(termo)
+        (p.numero_proposta || '').toLowerCase().includes(termo) ||
+        (p.cliente_nome || '').toLowerCase().includes(termo) ||
+        (p.vendedor_nome || '').toLowerCase().includes(termo)
       );
     }
-    
+
     return true;
   });
 
@@ -158,665 +187,312 @@ const HistoricoPropostas = () => {
     const r = (resultado || '').toLowerCase();
 
     if (!r) {
-      return (
-        <span style={{
-          padding: '4px 10px',
-          borderRadius: '999px',
-          fontSize: '12px',
-          fontWeight: '700',
-          background: 'linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%)',
-          color: '#000000',
-          border: '1px solid #e5e7eb'
-        }}>
-          Sem resultado
-        </span>
-      );
+      return <span className="erp-badge" title={motivo}>Sem resultado</span>;
     }
 
     if (r === 'efetivada') {
-      return (
-        <span style={{
-          padding: '4px 10px',
-          borderRadius: '999px',
-          fontSize: '12px',
-          fontWeight: '700',
-          background: 'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-          color: '#fff',
-          border: '1px solid rgba(255,255,255,0.25)'
-        }}>
-          Efetivada
-        </span>
-      );
+      return <span className="erp-badge erp-badge-success">Efetivada</span>;
     }
 
-    return (
-      <span title={motivo ? `Motivo: ${motivo}` : ''} style={{
-        padding: '4px 10px',
-        borderRadius: '999px',
-        fontSize: '12px',
-        fontWeight: '700',
-        background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-        color: '#fff',
-        border: '1px solid rgba(255,255,255,0.25)'
-      }}>
-        Perdida
-      </span>
-    );
+    return <span className="erp-badge erp-badge-error" title={motivo ? `Motivo: ${motivo}` : ''}>Perdida</span>;
   };
 
-  const getStatusBadge = (status) => {
-    const styles = {
-      pendente: { bg: '#fff3cd', color: '#856404', label: 'Pendente' },
-      finalizado: { bg: '#d4edda', color: '#155724', label: 'Finalizado' },
-      excluido: { bg: '#f8d7da', color: '#721c24', label: 'Excluído' }
-    };
-    
-    const style = styles[status] || styles.pendente;
-    
-    return (
-      <span style={{
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600',
-        background: style.bg,
-        color: style.color
-      }}>
-        {style.label}
-      </span>
-    );
-  };
+  const filters = (
+    <>
+      {isAdminFullUser && (
+        <>
+          <select className="erp-select propostas-filter" value={filtroRepresentante} onChange={(e) => setFiltroRepresentante(e.target.value)} aria-label="Representante">
+            <option value="">Todos os representantes</option>
+            {representantes.map((representante) => (
+              <option key={representante.id} value={representante.id}>{representante.nome}</option>
+            ))}
+          </select>
+          <select className="erp-select propostas-filter" value={filtroStatus} onChange={(e) => setFiltroStatus(e.target.value)} aria-label="Status">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="finalizado">Finalizado</option>
+            <option value="excluido">Excluído</option>
+          </select>
+          <input className="erp-input propostas-filter propostas-filter-client" type="text" value={filtroCliente} onChange={(e) => setFiltroCliente(e.target.value)} placeholder="Cliente" aria-label="Cliente" />
+          <select className="erp-select propostas-filter propostas-filter-uf" value={filtroUf} onChange={(e) => setFiltroUf(e.target.value)} aria-label="UF">
+            <option value="">Todas as UFs</option>
+            {ufs.map((uf) => <option key={uf} value={String(uf).toUpperCase()}>{String(uf).toUpperCase()}</option>)}
+          </select>
+          <label className="propostas-filter-field">
+            <span>De</span>
+            <input className="erp-input propostas-filter propostas-filter-date" type="date" value={filtroDataInicio} onChange={(e) => setFiltroDataInicio(e.target.value)} aria-label="Data inicial" />
+          </label>
+          <label className="propostas-filter-field">
+            <span>Até</span>
+            <input className="erp-input propostas-filter propostas-filter-date" type="date" value={filtroDataFim} onChange={(e) => setFiltroDataFim(e.target.value)} aria-label="Data final" />
+          </label>
+        </>
+      )}
+      <select
+        className="erp-select propostas-filter"
+        value={filtroResultado}
+        onChange={(e) => setFiltroResultado(e.target.value)}
+      >
+        <option value="todos">Todos os resultados</option>
+        <option value="sem_resultado">Sem resultado</option>
+        <option value="efetivada">Efetivada</option>
+        <option value="perdida">Perdida</option>
+      </select>
+    </>
+  );
 
-  const getTipoBadge = (tipo) => {
-    const styles = {
-      orcamento: { bg: '#e3f2fd', color: '#0d47a1', label: ' Orçamento',  },
-      proposta: { bg: '#f3e5f5', color: '#4a148c', label: ' Proposta',  }
-    };
-    
-    const style = styles[tipo] || styles.orcamento;
-    
-    return (
-      <span style={{
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600',
-        background: style.bg,
-        color: style.color
-      }}>
-        {style.icon} {style.label}
-      </span>
-    );
-  };
-
-  if (loading) {
-    return (
-      <div style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>⏳</div>
-        <p style={{ color: '#666' }}>Carregando histórico...</p>
-      </div>
-    );
-  }
+  const tableContent = loading ? (
+    <div className="erp-table-empty">Carregando histórico...</div>
+  ) : propostasFiltradas.length === 0 ? (
+    <div className="erp-table-empty">
+      <p>Nenhuma proposta encontrada.</p>
+      <p className="erp-table-empty-hint">
+        {busca || filtroResultado !== 'todos'
+          ? 'Tente ajustar os filtros de busca.'
+          : 'Comece gerando sua primeira proposta.'}
+      </p>
+    </div>
+  ) : (
+    <table className="erp-table">
+      <thead>
+        <tr>
+          <th>Nº Proposta</th>
+          <th>Cliente</th>
+          <th style={{ textAlign: 'right' }}>Valor Total</th>
+          <th>Data</th>
+          <th>Resultado</th>
+          <th style={{ width: 1 }}>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        {propostasFiltradas.map((proposta) => (
+          <tr key={proposta.id}>
+            <td>#{formatNumeroProposta(proposta.numero_proposta)}</td>
+            <td>
+              <div>{proposta.cliente_nome}</div>
+              {proposta.cliente_documento && (
+                <div className="proposta-documento">{proposta.cliente_documento}</div>
+              )}
+            </td>
+            <td style={{ textAlign: 'right', fontWeight: 600 }}>{formatCurrency(proposta.valor_total)}</td>
+            <td>{proposta.data ? new Date(proposta.data).toLocaleDateString('pt-BR') : '-'}</td>
+            <td>{getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}</td>
+            <td>
+              <div className="propostas-acoes">
+                {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
+                  <>
+                    <button
+                      type="button"
+                      className="erp-btn erp-btn-secondary"
+                      onClick={() => handleReabrir(proposta)}
+                      title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="erp-btn erp-btn-secondary"
+                      onClick={() => openResultadoModal(proposta)}
+                      title="Marcar resultado da proposta"
+                    >
+                      Resultado
+                    </button>
+                  </>
+                )}
+                <button
+                  type="button"
+                  className="erp-btn erp-btn-danger"
+                  onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                  title="Excluir proposta permanentemente"
+                >
+                  Excluir
+                </button>
+                {proposta.status === 'excluido' && (
+                  <span className="proposta-status-texto">Excluída</span>
+                )}
+              </div>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
 
   return (
-    <div style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
-      {/* Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', marginBottom: '8px', color: '#111' }}>
-          Propostas
-        </h1>
-        <p style={{ color: '#000000', fontSize: '14px' }}>
-          Gerencie seus orçamentos e propostas comerciais. Edite orçamentos pendentes ou consulte propostas finalizadas.
-        </p>
-      </div>
+    <div className="erp-page">
+      <div className="erp-container">
+        <PageHeader
+          breadcrumb={[{ label: 'Comercial' }, { label: isAdminFullUser ? 'Propostas e Vendas' : 'Propostas' }]}
+          title={isAdminFullUser ? 'Propostas e Vendas' : 'Propostas'}
+          subtitle={isAdminFullUser ? 'Propostas comerciais do canal de representantes.' : 'Gerencie seus orçamentos e propostas comerciais.'}
+          actions={
+            <button type="button" className="erp-btn erp-btn-primary" onClick={() => navigate('/novo-pedido')}>
+              + Nova Proposta
+            </button>
+          }
+        />
 
-      {/* Filtros */}
-      <div style={{
-        background: 'white',
-        padding: '20px',
-        borderRadius: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        marginBottom: '24px',
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-        gap: '16px'
-      }}>
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: '#555' }}>
-            Buscar
-          </label>
-          <input
-            type="text"
-            value={busca}
-            onChange={(e) => setBusca(e.target.value)}
-            placeholder="Nº, cliente ou vendedor..."
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '14px'
-            }}
-          />
-        </div>
+        <PageToolbar
+          search={{ placeholder: 'Nº, cliente ou vendedor...', value: busca, onChange: setBusca }}
+          filters={filters}
+          count={`${propostasFiltradas.length} ${propostasFiltradas.length === 1 ? 'proposta' : 'propostas'}`}
+          actions={
+            <button type="button" className="erp-btn erp-btn-secondary" onClick={carregarPropostas} title="Atualizar">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                <polyline points="23 4 23 10 17 10" />
+                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+              </svg>
+            </button>
+          }
+        />
 
-        <div>
-          <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', marginBottom: '6px', color: '#555' }}>
-            Resultado
-          </label>
-          <select
-            value={filtroResultado}
-            onChange={(e) => setFiltroResultado(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              border: '1px solid #e5e5e5',
-              borderRadius: '6px',
-              fontSize: '14px',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="todos">Todos</option>
-            <option value="sem_resultado">Sem resultado</option>
-            <option value="efetivada">Efetivada</option>
-            <option value="perdida">Perdida</option>
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button
-            onClick={carregarPropostas}
-            style={{
-              width: '50%',
-              padding: '3px 10px',
-              background: '#9ba6aa',
-              color: 'white',
-              border: 'none',
-              borderRadius: '90px',
-              fontSize: '30px',
-              fontWeight: '900',
-              cursor: 'pointer'
-            }}
-          >
-            🔄
-          </button>
-        </div>
-      </div>
-
-      {/* Tabela */}
-      {propostasFiltradas.length === 0 ? (
-        <div style={{
-          background: 'white',
-          padding: '60px 20px',
-          borderRadius: '12px',
-          textAlign: 'center',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <div style={{ fontSize: '64px', marginBottom: '16px', opacity: 0.3 }}>📋</div>
-          <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px', color: '#333' }}>
-            Nenhuma proposta encontrada
-          </h3>
-          <p style={{ color: '#666', fontSize: '14px' }}>
-            {busca || filtroResultado !== 'todos'
-              ? 'Tente ajustar os filtros de busca'
-              : 'Comece gerando sua primeira proposta'}
-          </p>
-        </div>
-      ) : (
-        isMobile ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {propostasFiltradas.map((proposta) => (
-              <div
-                key={proposta.id}
-                style={{
-                  background: 'white',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                  padding: '14px 16px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                  <div style={{ fontSize: '14px', fontWeight: '700', color: '#111' }}>
-                    #{formatNumeroProposta(proposta.numero_proposta)}
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#000000', whiteSpace: 'nowrap' }}>
-                    {new Date(proposta.data).toLocaleDateString('pt-BR')}
-                  </div>
-                </div>
-
-                <div style={{ fontSize: '13px', color: '#000000' }}>
-                  <div style={{ fontWeight: '300' }}>{proposta.cliente_nome}</div>
-                  {proposta.cliente_documento && (
-                    <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
-                      {proposta.cliente_documento}
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: '600', color: '#111' }}>
-                    {formatCurrency(proposta.valor_total)}
-                  </div>
-                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                    {getTipoBadge(proposta.tipo)}
-                    {getStatusBadge(proposta.status)}
-                  </div>
-                </div>
-
-                <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                  <div>
-                    {getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}
-                  </div>
-                  <button
-                    onClick={() => openResultadoModal(proposta)}
-                    style={{
-                      padding: '8px 12px',
-                      background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
-                      color: 'white',
-                      border: '1px solid rgba(255,255,255,0.12)',
-                      borderRadius: '10px',
-                      fontSize: '13px',
-                      fontWeight: '700',
-                      cursor: 'pointer'
-                    }}
-                    title="Marcar resultado da proposta"
-                  >
-                    Resultado
-                  </button>
-                </div>
-
-                <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
-                    <>
-                      <button
-                        onClick={() => handleReabrir(proposta)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          background: proposta.status === 'finalizado' ? '#28a745' : '#007bff',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer'
-                        }}
-                        title={proposta.status === 'finalizado' ? 'Editar proposta finalizada' : 'Reabrir e continuar edição'}
-                      >
-                        Editar
-                      </button>
-                      <button
-                        onClick={() => openResultadoModal(proposta)}
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
-                          color: 'white',
-                          border: '1px solid rgba(255,255,255,0.12)',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '700',
-                          cursor: 'pointer'
-                        }}
-                        title="Marcar resultado da proposta"
-                      >
-                        Resultado
-                      </button>
-                    </>
-                  )}
-
-                  <button
-                    onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      background: '#dc3545',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '13px',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                    title="Excluir proposta permanentemente"
-                  >
-                    🗑️
-                  </button>
-
-                  {proposta.status === 'excluido' && (
-                    <span style={{ fontSize: '12px', color: '#999' }}>
-                      Excluída
-                    </span>
-                  )}
-                </div>
+        {isMobile ? (
+          <div className="propostas-mobile-list">
+            {loading ? (
+              <div className="erp-table-empty">Carregando histórico...</div>
+            ) : propostasFiltradas.length === 0 ? (
+              <div className="erp-table-empty">
+                <p>Nenhuma proposta encontrada.</p>
               </div>
-            ))}
+            ) : (
+              propostasFiltradas.map((proposta) => (
+                <div key={proposta.id} className="proposta-mobile-card">
+                  <div className="proposta-mobile-header">
+                    <span className="proposta-mobile-numero">#{formatNumeroProposta(proposta.numero_proposta)}</span>
+                    <span className="proposta-mobile-data">
+                      {proposta.data ? new Date(proposta.data).toLocaleDateString('pt-BR') : '-'}
+                    </span>
+                  </div>
+                  <div className="proposta-mobile-cliente">{proposta.cliente_nome}</div>
+                  {proposta.cliente_documento && (
+                    <div className="proposta-documento">{proposta.cliente_documento}</div>
+                  )}
+                  <div className="proposta-mobile-footer">
+                    <span className="proposta-mobile-valor">{formatCurrency(proposta.valor_total)}</span>
+                    <span>{getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}</span>
+                  </div>
+                  <div className="proposta-mobile-acoes">
+                    {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
+                      <>
+                        <button
+                          type="button"
+                          className="erp-btn erp-btn-secondary"
+                          onClick={() => handleReabrir(proposta)}
+                        >
+                          Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="erp-btn erp-btn-secondary"
+                          onClick={() => openResultadoModal(proposta)}
+                        >
+                          Resultado
+                        </button>
+                      </>
+                    )}
+                    <button
+                      type="button"
+                      className="erp-btn erp-btn-danger"
+                      onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         ) : (
-          <div style={{
-            background: 'white',
-            borderRadius: '12px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            overflowX: 'auto',
-            overflowY: 'hidden',
-            WebkitOverflowScrolling: 'touch'
-          }}>
-            <table style={{ width: '100%', minWidth: '680px', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Nº Proposta
-                  </th>
-                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
-                    Cliente
-                  </th>
-                  <th style={{ padding: '11px 16px', textAlign: 'right', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Valor Total
-                  </th>
-                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Data
-                  </th>
-                  <th style={{ padding: '11px 16px', textAlign: 'left', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Resultado
-                  </th>
-                  <th style={{ padding: '11px 16px', textAlign: 'center', fontSize: '11px', fontWeight: '700', color: '#000000', letterSpacing: '0.06em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {propostasFiltradas.map((proposta) => (
-                  <tr
-                    key={proposta.id}
-                    style={{ borderBottom: '1px solid #f1f5f9', transition: 'background 0.12s' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#f8fafc'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    <td style={{ padding: '13px 16px', fontSize: '13px', fontWeight: '700', color: '#1e293b', whiteSpace: 'nowrap' }}>
-                      #{formatNumeroProposta(proposta.numero_proposta)}
-                    </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: '#000000' }}>{proposta.cliente_nome}</div>
-                      {proposta.cliente_documento && (
-                        <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px' }}>
-                          {proposta.cliente_documento}
-                        </div>
-                      )}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '14px', fontWeight: '700', color: '#0f172a', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      {formatCurrency(proposta.valor_total)}
-                    </td>
-                    <td style={{ padding: '13px 16px', fontSize: '13px', color: '#000000', whiteSpace: 'nowrap' }}>
-                      {new Date(proposta.data).toLocaleDateString('pt-BR')}
-                    </td>
-                    <td style={{ padding: '13px 16px' }}>
-                      {getResultadoBadge(proposta.resultado_venda, proposta.motivo_perda)}
-                    </td>
-                    <td style={{ padding: '13px 16px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center', flexWrap: 'nowrap' }}>
-                        {(proposta.status === 'pendente' || proposta.status === 'finalizado') && (
-                          <>
-                            <button
-                              onClick={() => handleReabrir(proposta)}
-                              style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                              title="Editar proposta"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => openResultadoModal(proposta)}
-                              style={{ padding: '5px 12px', background: '#d3d3d3', color: '#000000', border: 'none', borderRadius: '6px', fontSize: '12px', fontWeight: '600', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                              title="Marcar resultado da proposta"
-                            >
-                              Resultado
-                            </button>
-                            <button
-                              onClick={() => handleExcluir(proposta.id, proposta.numero_proposta)}
-                              style={{ padding: '5px 10px', background: '#d3d3d3', color: '#fff', border: 'none', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
-                              title="Excluir proposta"
-                            >
-                              🗑️
-                            </button>
-                          </>
-                        )}
-                        {proposta.status === 'excluido' && (
-                          <span style={{ fontSize: '12px', color: '#d3d3d3' }}>Excluída</span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )
-      )}
-
-      {/* Resumo */}
-      <div style={{
-        marginTop: '24px',
-        padding: '16px',
-        background: '#f9fafb',
-        borderRadius: '8px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <span style={{ fontSize: '14px', color: '#d3d3d3' }}>
-          Total: <strong>{propostasFiltradas.length}</strong> {propostasFiltradas.length === 1 ? 'proposta' : 'propostas'}
-        </span>
-        <button
-          onClick={() => navigate('/novo-pedido')}
-          style={{
-            padding: '10px 20px',
-            background: '#797979',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer'
-          }}
-        >
-          ➕ Nova Proposta
-        </button>
+          <div className="erp-table-shell">{tableContent}</div>
+        )}
       </div>
 
       {resultadoModalOpen && (
-        <div
-          onClick={closeResultadoModal}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.55)',
-            backdropFilter: 'blur(6px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '18px',
-            zIndex: 9999
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              width: 'min(560px, 100%)',
-              borderRadius: '16px',
-              background: 'linear-gradient(180deg, #ffffff 0%, #f9fafb 100%)',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.35)',
-              border: '1px solid rgba(17,24,39,0.10)',
-              overflow: 'hidden'
-            }}
-          >
-            <div style={{
-              padding: '16px 18px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              background: 'linear-gradient(135deg, #111827 0%, #0b1220 100%)',
-              color: 'white'
-            }}>
+        <div className="erp-modal-overlay" onClick={closeResultadoModal}>
+          <div className="erp-modal resultado-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="erp-modal-header">
               <div>
-                <div style={{ fontSize: '14px', fontWeight: '800', letterSpacing: '0.3px' }}>
-                  Resultado da Proposta
-                </div>
-                <div style={{ fontSize: '12px', opacity: 0.8, marginTop: '2px' }}>
+                <h2>Resultado da Proposta</h2>
+                <p>
                   #{formatNumeroProposta(propostaSelecionada?.numero_proposta)} • {propostaSelecionada?.cliente_nome}
-                </div>
+                </p>
               </div>
               <button
+                type="button"
+                className="erp-modal-close"
                 onClick={closeResultadoModal}
                 disabled={salvandoResultado}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  border: '1px solid #d3d3d3',
-                  background: '#d3d3d3',
-                  color: 'white',
-                  cursor: salvandoResultado ? 'not-allowed' : 'pointer',
-                  fontWeight: '900'
-                }}
-                title="Fechar"
+                aria-label="Fechar"
               >
-                ✕
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="16" height="16">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
               </button>
             </div>
 
-            <div style={{ padding: '18px' }}>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr',
-                gap: '10px',
-                marginBottom: '14px'
-              }}>
-                <label style={{ fontSize: '12px', fontWeight: '800', color: '#111827' }}>
-                  Selecione o resultado
-                </label>
+            <div className="resultado-opcoes">
+              <label className="resultado-label">Selecione o resultado</label>
+              <button
+                type="button"
+                className={`resultado-opcao ${resultadoSelecionado === '' ? 'selected' : ''}`}
+                onClick={() => setResultadoSelecionado('')}
+                disabled={salvandoResultado}
+              >
+                <strong>Sem resultado</strong>
+                <span>Ainda em negociação / sem definição.</span>
+              </button>
+              <button
+                type="button"
+                className={`resultado-opcao success ${resultadoSelecionado === 'efetivada' ? 'selected' : ''}`}
+                onClick={() => setResultadoSelecionado('efetivada')}
+                disabled={salvandoResultado}
+              >
+                <strong>Efetivada</strong>
+                <span>Virou venda. Entra no cálculo de conversão.</span>
+              </button>
+              <button
+                type="button"
+                className={`resultado-opcao danger ${resultadoSelecionado === 'perdida' ? 'selected' : ''}`}
+                onClick={() => setResultadoSelecionado('perdida')}
+                disabled={salvandoResultado}
+              >
+                <strong>Perdida</strong>
+                <span>Não virou venda. Informe o motivo abaixo.</span>
+              </button>
+            </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '10px' }}>
-                  <button
-                    onClick={() => setResultadoSelecionado('')}
-                    disabled={salvandoResultado}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '12px',
-                      border: resultadoSelecionado === '' ? '2px solid #111827' : '1px solid #e5e7eb',
-                      background: resultadoSelecionado === '' ? 'rgba(17,24,39,0.06)' : 'white',
-                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#111827' }}>⏳ Sem resultado</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Ainda em negociação / sem definição.</div>
-                  </button>
-
-                  <button
-                    onClick={() => setResultadoSelecionado('efetivada')}
-                    disabled={salvandoResultado}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '12px',
-                      border: resultadoSelecionado === 'efetivada' ? '2px solid #16a34a' : '1px solid #e5e7eb',
-                      background: resultadoSelecionado === 'efetivada' ? 'rgba(22,163,74,0.08)' : 'white',
-                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>✅ Efetivada</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Virou venda. Entra no cálculo de conversão do admin.</div>
-                  </button>
-
-                  <button
-                    onClick={() => setResultadoSelecionado('perdida')}
-                    disabled={salvandoResultado}
-                    style={{
-                      padding: '12px 14px',
-                      borderRadius: '12px',
-                      border: resultadoSelecionado === 'perdida' ? '2px solid #dc2626' : '1px solid #e5e7eb',
-                      background: resultadoSelecionado === 'perdida' ? 'rgba(220,38,38,0.08)' : 'white',
-                      cursor: salvandoResultado ? 'not-allowed' : 'pointer',
-                      textAlign: 'left'
-                    }}
-                  >
-                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>❌ Perdida</div>
-                    <div style={{ fontSize: '12px', color: '#d3d3d3', marginTop: '2px' }}>Não virou venda. Informe o motivo (curto) abaixo.</div>
-                  </button>
-                </div>
-              </div>
-
-              <div style={{ marginTop: '12px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: '800', color: '#111827', marginBottom: '6px' }}>
-                  Motivo (apenas se perdida)
-                </label>
-                <input
-                  value={motivoPerda}
-                  onChange={(e) => setMotivoPerda(e.target.value)}
-                  disabled={salvandoResultado || resultadoSelecionado !== 'perdida'}
-                  maxLength={140}
-                  placeholder={resultadoSelecionado === 'perdida' ? 'Ex: preço alto, prazo, concorrência, desistiu...' : '—'}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '10px',
-                    border: resultadoSelecionado === 'perdida' ? '1px solid #e5e7eb' : '1px dashed #e5e7eb',
-                    background: resultadoSelecionado === 'perdida' ? 'white' : '#f9fafb',
-                    fontSize: '14px',
-                    outline: 'none'
-                  }}
-                />
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px', fontSize: '12px', color: '#6b7280' }}>
-                  <span>
-                    {resultadoSelecionado === 'perdida' ? 'Obrigatório' : 'Desabilitado'}
-                  </span>
-                  <span>
-                    {(motivoPerda || '').length}/140
-                  </span>
-                </div>
+            <div className="erp-form-group" style={{ marginTop: 'var(--erp-space-4)' }}>
+              <label>Motivo (apenas se perdida)</label>
+              <input
+                type="text"
+                className="erp-input"
+                value={motivoPerda}
+                onChange={(e) => setMotivoPerda(e.target.value)}
+                disabled={salvandoResultado || resultadoSelecionado !== 'perdida'}
+                maxLength={140}
+                placeholder={resultadoSelecionado === 'perdida' ? 'Ex: preço alto, prazo, concorrência, desistiu...' : '—'}
+              />
+              <div className="resultado-motivo-meta">
+                <span>{resultadoSelecionado === 'perdida' ? 'Obrigatório' : 'Desabilitado'}</span>
+                <span>{(motivoPerda || '').length}/140</span>
               </div>
             </div>
 
-            <div style={{
-              padding: '14px 18px',
-              background: '#fff',
-              borderTop: '1px solid #e5e7eb',
-              display: 'flex',
-              justifyContent: 'space-between',
-              gap: '10px'
-            }}>
+            <div className="erp-modal-footer">
               <button
+                type="button"
+                className="erp-btn erp-btn-secondary"
                 onClick={closeResultadoModal}
                 disabled={salvandoResultado}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  border: '1px solid #e5e7eb',
-                  background: 'white',
-                  fontWeight: '800',
-                  cursor: salvandoResultado ? 'not-allowed' : 'pointer'
-                }}
               >
                 Cancelar
               </button>
               <button
+                type="button"
+                className="erp-btn erp-btn-primary"
                 onClick={salvarResultado}
                 disabled={salvandoResultado}
-                style={{
-                  flex: 1,
-                  padding: '10px 12px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: salvandoResultado
-                    ? 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)'
-                    : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
-                  color: 'white',
-                  fontWeight: '900',
-                  cursor: salvandoResultado ? 'not-allowed' : 'pointer'
-                }}
               >
                 {salvandoResultado ? 'Salvando...' : 'Salvar'}
               </button>
@@ -829,7 +505,3 @@ const HistoricoPropostas = () => {
 };
 
 export default HistoricoPropostas;
-
-
-
-
