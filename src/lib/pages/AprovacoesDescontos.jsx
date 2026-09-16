@@ -2,7 +2,7 @@
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { listarPendentes, aprovarSolicitacao, negarSolicitacao } from '../../api/solicitacoesDesconto';
 import { formatCurrency } from '../../utils/formatters';
-import { isAdminFull } from '../../utils/permissions';
+import { isAdminFull, isAdminCanalRepresentantes, isAdminCanalInterno } from '../../utils/permissions';
 import UnifiedHeader from '../../components/UnifiedHeader';
 import '../../styles/AprovacoesDescontos.css';
 
@@ -24,8 +24,10 @@ export default function AprovacoesDescontos() {
   const [valorFinalAprovado, setValorFinalAprovado] = useState({});
 
   // Carregar solicitações ao montar + polling a cada 30s
+  const podeGerenciarDescontos = isAdminFull(user) || isAdminCanalRepresentantes(user) || isAdminCanalInterno(user);
+
   useEffect(() => {
-    if (!isAdminFull(user)) {
+    if (!podeGerenciarDescontos) {
       navigate('/dashboard-admin');
       return;
     }
@@ -89,7 +91,7 @@ export default function AprovacoesDescontos() {
 
       setProcessando(solicitacao.id);
       // Verificar se o usuário tem permissão de administrador
-      if (!isAdminFull(user)) {
+      if (!podeGerenciarDescontos) {
         console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem aprovar descontos.');
       }
@@ -160,7 +162,7 @@ export default function AprovacoesDescontos() {
 
       setProcessando(solicitacao.id);
       // Verificar se o usuário tem permissão de administrador
-      if (!isAdminFull(user)) {
+      if (!podeGerenciarDescontos) {
         console.error('❌ [AprovacoesDescontos] Usuário não é administrador:', user);
         throw new Error('Acesso negado. Apenas administradores podem negar descontos.');
       }

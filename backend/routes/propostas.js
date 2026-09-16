@@ -59,7 +59,7 @@ router.get('/', requireAuth, asyncHandler(async (req, res) => {
   } else if (isAdminConcessionarias(req.user)) {
     filters.canal_venda = ['Concessionária Nacional', 'Concessionária Internacional'];
   } else if (isAdminCanalRepresentantes(req.user)) {
-    filters.canal_venda = ['Representante'];
+    filters.vendedor_canal = CANAIS.REPRESENTANTES;
   } else if (isAdminCanalInterno(req.user)) {
     filters.canal_venda = ['Vendedor Interno'];
   } else if (isAdminComercioExterior(req.user)) {

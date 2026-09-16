@@ -5,6 +5,7 @@ import { db } from '../../config/supabase';
 import { getPropostas, deletePropostaPermanente, getPropostaById } from '../../api/propostas';
 import LazyPDFGenerator from '../../components/LazyPDFGenerator';
 import { formatCurrency } from '../../utils/formatters';
+import { isAdminCanalRepresentantes } from '../../utils/permissions';
 import jsPDF from 'jspdf';
 import '../../styles/Dashboard.css';
 
@@ -128,6 +129,7 @@ const RelatorioCompleto = () => {
       setIsLoading(true);
       const isAdminFull = user?.tipo === 'admin_full';
       const isAdminConcessionaria = user?.tipo === 'admin_concessionaria';
+      const isAdminRepresentantes = isAdminCanalRepresentantes(user);
       const concessionariaId = user?.concessionaria_id;
 
       const usersPromise = isAdminConcessionaria
@@ -140,7 +142,7 @@ const RelatorioCompleto = () => {
         .filter(u => u?.tipo === 'vendedor' || u?.tipo === 'vendedor_concessionaria')
         .map(u => u.id);
 
-      const propostas = await (isAdminConcessionaria
+      const propostas = await (isAdminConcessionaria || isAdminRepresentantes
         ? getPropostas({ vendedor_id: idsVendedores })
         : isAdminFull
         ? getPropostas({ canal_venda: ['Concessionária Nacional', 'Concessionária Internacional'] })

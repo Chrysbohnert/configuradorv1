@@ -151,7 +151,7 @@ const AdminNavigation = ({ user }) => {
     },
     {
       path: '/relatorio-completo',
-      label: 'Pedidos de Compra',
+      label: adminRep ? 'Propostas Comerciais' : 'Pedidos de Compra',
       visible: true,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -164,7 +164,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/aprovacoes-descontos',
       label: 'Aprovações de Desconto',
-      visible: fullAccess,
+      visible: fullAccess || adminRep || adminInterno,
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M9 11l3 3L22 4"/>

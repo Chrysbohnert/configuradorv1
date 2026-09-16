@@ -1,9 +1,9 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { isAdmin, isAdminFull, isVendedor } from '../utils/permissions';
+import { isAdmin, isAdminFull, isAdminCanalRepresentantes, isAdminCanalInterno, isVendedor } from '../utils/permissions';
 
-const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = false, requireAdminFull = false }) => {
+const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = false, requireAdminFull = false, requireDescontoExtra = false }) => {
   const { user, loading } = useAuth();
 
   if (loading) {
@@ -18,6 +18,10 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = fals
   const tipoVendedor = isVendedor(user);
 
   if (requireAdminFull && !isAdminFull(user)) {
+    return <Navigate to="/dashboard-admin" replace />;
+  }
+
+  if (requireDescontoExtra && !isAdminFull(user) && !isAdminCanalRepresentantes(user) && !isAdminCanalInterno(user)) {
     return <Navigate to="/dashboard-admin" replace />;
   }
 

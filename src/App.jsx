@@ -321,7 +321,7 @@ function App() {
                   <Route
                     path="/aprovacoes-descontos"
                     element={
-                      <ProtectedRoute requireAdminFull={true}>
+                      <ProtectedRoute requireDescontoExtra={true}>
                         <LazyRoute loadingMessage="Carregando Aprovações...">
                           <AprovacoesDescontos />
                         </LazyRoute>
