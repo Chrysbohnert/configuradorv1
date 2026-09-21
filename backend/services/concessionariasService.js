@@ -158,10 +158,24 @@ async function remove(id) {
   return rowCount > 0;
 }
 
+/**
+ * Verifica se a concessionária tem permissão de uso interno (Stark).
+ * Espelha src/config/concessionariasInternas.js do frontend.
+ */
+function isConcessionariaInterna(concessionaria) {
+  if (!concessionaria) return false;
+  if (concessionaria.uso_interno_stark === true) return true;
+
+  const PALAVRAS_CHAVE = ['stark interno', 'stark', 'uso interno', 'interno'];
+  const nome = (concessionaria.nome || '').toLowerCase().trim();
+  return PALAVRAS_CHAVE.some((p) => nome.includes(p));
+}
+
 module.exports = {
   findAll,
   findById,
   create,
   update,
   remove,
+  isConcessionariaInterna,
 };

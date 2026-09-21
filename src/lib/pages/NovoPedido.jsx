@@ -390,9 +390,9 @@ const NovoPedido = () => {
         const c = await db.getConcessionariaById(user.concessionaria_id);
         setConcessionariaInfo(c);
         
-        // ✅ Todo admin_concessionaria pode escolher a concessionária de destino do pedido
-        // (isConcessionariaInterna é fallback para casos sem a coluna uso_interno_stark)
-        const podeEscolher = isAdminConcessionaria || isConcessionariaInterna(c);
+        // Apenas o admin vinculado à Stark Concessionária pode escolher outra concessionária de destino.
+        // Admins de concessionárias comuns trabalham somente com a própria concessionária.
+        const podeEscolher = isConcessionariaInterna(c);
         setPodeEscolherConcessionaria(podeEscolher);
         
         // Se pode escolher, carregar lista de concessionárias

@@ -106,6 +106,27 @@ router.post('/', requireAuth, asyncHandler(async (req, res) => {
       autoria: { usuario_id: req.user.id, usuario_nome: req.user.nome },
       concessionaria_responsavel: { concessionaria_id: concessionaria.id, concessionaria_nome: concessionaria.nome },
     };
+  } else if (isPedidoCompra && isAdminConcessionaria(req.user)) {
+    // admin_concessionaria: só pode criar para sua própria concessionária,
+    // exceto se vinculado à Stark Concessionária (uso interno).
+    const propria = await concessionariasService.findById(req.user.concessionaria_id);
+    const isStark = concessionariasService.isConcessionariaInterna(propria);
+
+    const concIdPayload = payload.concessionaria_id || req.user.concessionaria_id;
+    if (!isStark && String(concIdPayload) !== String(req.user.concessionaria_id)) {
+      return res_.forbidden(res, 'Acesso negado: você só pode criar pedidos para sua própria concessionária');
+    }
+    const concessionaria = await concessionariasService.findById(concIdPayload);
+    if (!concessionaria || concessionaria.ativo === false) return res_.badRequest(res, 'Concessionária responsável inválida');
+
+    payload.concessionaria_id = concessionaria.id;
+    payload.vendedor_id = req.user.id;
+    payload.vendedor_nome = req.user.nome;
+    payload.dados_serializados = {
+      ...payload.dados_serializados,
+      autoria: { usuario_id: req.user.id, usuario_nome: req.user.nome },
+      concessionaria_responsavel: { concessionaria_id: concessionaria.id, concessionaria_nome: concessionaria.nome },
+    };
   } else if (isAdminFull(req.user)) {
     if (!payload.vendedor_id) return res_.badRequest(res, 'Responsável comercial obrigatório');
     const responsavel = await usersService.findById(payload.vendedor_id);
