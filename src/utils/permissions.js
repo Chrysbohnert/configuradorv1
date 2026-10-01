@@ -102,6 +102,10 @@ export function podeAcessarPedidosCompra(user) {
   return isAdminFull(user) || isAdminConcessionarias(user) || isAdminConcessionaria(user);
 }
 
+export function podeAcessarMapaTerritorial(user, concessionariaInterna = false) {
+  return isAdminFull(user) || isAdminConcessionarias(user) || (isAdminConcessionaria(user) && concessionariaInterna);
+}
+
 export function usuarioPodeVerCanal(user, canal) {
   if (!user) return false;
   if (isAdminFull(user)) return true;

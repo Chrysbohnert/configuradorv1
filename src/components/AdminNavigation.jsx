@@ -20,13 +20,17 @@ import {
   isAdminCanalInterno,
   isAdminComercioExterior,
   podeAcessarPedidosCompra,
+  podeAcessarMapaTerritorial,
 } from '../utils/permissions';
+import { db } from '../config/supabase';
+import { isConcessionariaInterna } from '../config/concessionariasInternas';
 import '../styles/AdminNavigation.css';
 
 const AdminNavigation = ({ user }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const [concessionariaInternaId, setConcessionariaInternaId] = useState(null);
 
   const fullAccess = isAdminFull(user);
   const adminConcSede = isAdminConcessionarias(user);
@@ -34,6 +38,13 @@ const AdminNavigation = ({ user }) => {
   const adminRep = isAdminCanalRepresentantes(user);
   const adminInterno = isAdminCanalInterno(user);
   const adminExt = isAdminComercioExterior(user);
+
+  useEffect(() => {
+    if (!adminConc || !user?.concessionaria_id) return;
+    db.getConcessionariaById(user.concessionaria_id)
+      .then((concessionaria) => setConcessionariaInternaId(isConcessionariaInterna(concessionaria) ? user.concessionaria_id : null))
+      .catch(() => setConcessionariaInternaId(null));
+  }, [adminConc, user?.concessionaria_id]);
 
   const navItems = [
     {
@@ -140,7 +151,7 @@ const AdminNavigation = ({ user }) => {
     {
       path: '/mapa-territorial',
       label: 'Mapa Territorial',
-      visible: true,
+      visible: podeAcessarMapaTerritorial(user, concessionariaInternaId === user?.concessionaria_id),
       icon: (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <polygon points="1 6 1 22 8 18 16 22 21 18 21 2 16 6 8 2 1 6"/>

@@ -354,9 +354,11 @@ function App() {
                   <Route
                     path="/mapa-territorial"
                     element={
-                      <LazyRoute loadingMessage="Carregando Mapa Territorial...">
-                        <MapaTerritorial />
-                      </LazyRoute>
+                      <ProtectedRoute requireMapaTerritorial={true}>
+                        <LazyRoute loadingMessage="Carregando Mapa Territorial...">
+                          <MapaTerritorial />
+                        </LazyRoute>
+                      </ProtectedRoute>
                     }
                   />
 
