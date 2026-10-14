@@ -151,7 +151,6 @@ export default function PaymentPolicy({
   });
   const isRestoringRef = useRef(false);
   const hasRestoredRef = useRef(false);
-  const prevInitialPaymentDataRef = useRef(null);
   const plansWarnedRef = useRef(false);
   const prevEntradaTabelaRef = useRef({ entryPercentFiltro: undefined, percentualEntrada: undefined });
 
@@ -208,19 +207,15 @@ export default function PaymentPolicy({
 
   // =============== RESTAURAÇÃO DE DADOS (MODO EDIÇÃO) =============
   useEffect(() => {
-    if (!initialPaymentData || hasRestoredRef.current) return;
+    if (!initialPaymentData || hasRestoredRef.current || modoConcessionaria) return;
 
     isRestoringRef.current = true;
     hasRestoredRef.current = true;
 
     // Restaurar todos os estados internos de uma vez
-    // No modo concessionária o perfil do cliente é fixo (revenda/produtor), então
-    // preservamos esses valores e restauramos somente os campos financeiros/logísticos.
-    if (!modoConcessionaria) {
-      if (initialPaymentData.tipoCliente) setTipoCliente(initialPaymentData.tipoCliente);
-      if (initialPaymentData.participacaoRevenda) setParticipacaoRevenda(initialPaymentData.participacaoRevenda);
-      if (initialPaymentData.tipoIE) setTipoIE(initialPaymentData.tipoIE);
-    }
+    if (initialPaymentData.tipoCliente) setTipoCliente(initialPaymentData.tipoCliente);
+    if (initialPaymentData.participacaoRevenda) setParticipacaoRevenda(initialPaymentData.participacaoRevenda);
+    if (initialPaymentData.tipoIE) setTipoIE(initialPaymentData.tipoIE);
     if (initialPaymentData.instalacao) setInstalacao(initialPaymentData.instalacao);
     if (initialPaymentData.tipoFrete) setTipoFrete(initialPaymentData.tipoFrete);
     if (initialPaymentData.localInstalacao) setLocalInstalacao(initialPaymentData.localInstalacao);
@@ -263,15 +258,6 @@ export default function PaymentPolicy({
       setDescontoVendedor(Number(initialPaymentData.desconto) || 0);
     }
 
-    // Plano de pagamento
-    if (initialPaymentData.planoSelecionado) {
-      setPlanoSelecionado(initialPaymentData.planoSelecionado);
-    } else if (initialPaymentData.prazoPagamento && !initialPaymentData.condicaoExclusiva && initialPaymentData.financiamentoBancario !== 'sim') {
-      const desc = String(initialPaymentData.prazoPagamento);
-      const planoEncontrado = todosPlanos.find(p => p.description === desc || p.description?.toLowerCase() === desc.toLowerCase());
-      if (planoEncontrado) setPlanoSelecionado(planoEncontrado);
-    }
-
     // Ir para etapa 7 (resumo) com tudo preenchido
     setEtapa(7);
 
@@ -279,19 +265,7 @@ export default function PaymentPolicy({
     setTimeout(() => {
       isRestoringRef.current = false;
     }, 300);
-  }, [initialPaymentData, modoConcessionaria, todosPlanos]);
-
-  // Resetar flag de restauração quando os dados de edição mudam ou são limpos,
-  // evitando que pedidos novos hermem estado de restauração anterior e que
-  // a alternância entre pedidos salveis impeça o carregamento dos novos dados.
-  useEffect(() => {
-    const currentKey = initialPaymentData ? JSON.stringify(initialPaymentData) : null;
-    const prevKey = prevInitialPaymentDataRef.current;
-    if (currentKey !== prevKey) {
-      hasRestoredRef.current = false;
-      prevInitialPaymentDataRef.current = currentKey;
-    }
-  }, [initialPaymentData]);
+  }, [initialPaymentData, modoConcessionaria]);
 
   // =============== DADOS COMERCIAIS DO CADASTRO DO CLIENTE (FLUXO STARK COMUM) ===
   // Para o vendedor Stark comum, os dados comerciais do cliente (tipo_venda,
@@ -1808,8 +1782,6 @@ export default function PaymentPolicy({
 
   useEffect(() => {
     if (!modoConcessionaria) return;
-    // Não sobrescrever dados já restaurados de um pedido salvo
-    if (hasRestoredRef.current) return;
     setTipoCliente('revenda');
     setParticipacaoRevenda('nao');
     setTipoIE('produtor');
@@ -1877,6 +1849,7 @@ export default function PaymentPolicy({
   useEffect(() => {
     if (!modoConcessionaria) return;
     if (!tipoFrete) return; // Aguardar inicialização
+    if (resultado) return; // Não sobrescrever condições já calculadas
     
     // Enviar dados iniciais para permitir validação no NovoPedido
     const dadosIniciais = {
@@ -1894,7 +1867,7 @@ export default function PaymentPolicy({
     };
     
     onPaymentComputed?.(dadosIniciais);
-  }, [modoConcessionaria, onPaymentComputed, tipoFrete]);
+  }, [modoConcessionaria, onPaymentComputed, tipoFrete, resultado]);
 
   return (
     <div className="payment-policy">
