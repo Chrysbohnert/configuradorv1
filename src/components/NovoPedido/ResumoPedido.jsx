@@ -1010,7 +1010,7 @@ const ResumoPedido = ({
             </div>
           )}
 
-          {(pagamentoData.tipoCliente === 'cliente' || pagamentoData.precificacaoMotor) && pagamentoData.percentualEntrada > 0 && (
+          {((pagamentoData.tipoCliente === 'cliente' || pagamentoData.precificacaoMotor || isConcessionariaCompra) && pagamentoData.percentualEntrada > 0) && (
             <div
               style={{
                 marginTop: '14px',
