@@ -1767,8 +1767,8 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
   const totalBase = (pedidoData.carrinho || []).reduce((acc, it) => acc + (it.preco || 0), 0);
   const extraValor = parseFloat(p.extraValor || 0);
   const extraDescricao = (p.extraDescricao || '').trim();
+  const observacaoPedidoCompra = (p.observacaoPedidoCompra || '').trim();
   const observacoesNegociacao = (
-    p.observacaoPedidoCompra ||
     p.observacoesNegociacao ||
     p.observacaoPagamento ||
     p.observacoes ||
@@ -2082,6 +2082,14 @@ const renderFinanceiroCompra = async (pedidoData, { inline = false } = {}) => {
           </div>
         </div>
       ` : '')}
+
+      <!-- OBSERVAÇÕES DO PEDIDO DE COMPRA -->
+      ${observacaoPedidoCompra ? `
+        <div style="margin-top:16px; border:1px solid #ccc; background:#f8f8f8; padding:0;">
+          <div style="background:#444; padding:10px 14px; font-size:11px; font-weight:800; letter-spacing:1.5px; text-transform:uppercase; color:#fff;">OBSERVAÇÕES DO PEDIDO DE COMPRA</div>
+          <div style="padding:16px 18px; font-size:14px; color:#000; line-height:1.8; white-space:pre-line; font-weight:500; word-break:break-word; overflow-wrap:break-word; min-height:50px;">${observacaoPedidoCompra}</div>
+        </div>
+      ` : ''}
 
       <!-- OBSERVAÇÕES DA NEGOCIAÇÃO -->
       ${observacoesNegociacao ? `

@@ -902,7 +902,9 @@ const ResumoPedido = ({
           <div style={{ display: 'grid', gap: 0 }}>
             {compactRow(
               'Pagamento',
-              pagamentoData.tipoPagamento === 'precificacao'
+              isConcessionariaCompra
+                ? 'Pedido de Compra — Concessionária'
+                : pagamentoData.tipoPagamento === 'precificacao'
                 ? 'Precificação administrativa'
                 : pagamentoData.tipoPagamento === 'revenda_gsi'
                 ? 'Revenda - GSI'
@@ -935,7 +937,7 @@ const ResumoPedido = ({
                 ? 'Após 90 dias (+2% a.m)'
                 : pagamentoData.prazoPagamento === 'Condição Exclusiva'
                 ? 'Condição Exclusiva'
-                : 'Não informado'
+                : pagamentoData.prazoPagamento || 'Não informado'
             )}
           </div>
 
@@ -1091,7 +1093,7 @@ const ResumoPedido = ({
             </div>
           )}
 
-          {pagamentoData.tipoCliente === 'cliente' && (
+          {(pagamentoData.tipoCliente === 'cliente' || isConcessionariaCompra) && (
             <div
               style={{
                 marginTop: '14px',
