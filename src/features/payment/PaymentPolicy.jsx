@@ -151,6 +151,7 @@ export default function PaymentPolicy({
   });
   const isRestoringRef = useRef(false);
   const hasRestoredRef = useRef(false);
+  const prevInitialPaymentDataRef = useRef(null);
   const plansWarnedRef = useRef(false);
   const prevEntradaTabelaRef = useRef({ entryPercentFiltro: undefined, percentualEntrada: undefined });
 
@@ -280,11 +281,15 @@ export default function PaymentPolicy({
     }, 300);
   }, [initialPaymentData, modoConcessionaria, todosPlanos]);
 
-  // Resetar flag de restauração quando não há mais dados para restaurar,
-  // evitando que pedidos novos hermem estado de restauração anterior.
+  // Resetar flag de restauração quando os dados de edição mudam ou são limpos,
+  // evitando que pedidos novos hermem estado de restauração anterior e que
+  // a alternância entre pedidos salveis impeça o carregamento dos novos dados.
   useEffect(() => {
-    if (!initialPaymentData) {
+    const currentKey = initialPaymentData ? JSON.stringify(initialPaymentData) : null;
+    const prevKey = prevInitialPaymentDataRef.current;
+    if (currentKey !== prevKey) {
       hasRestoredRef.current = false;
+      prevInitialPaymentDataRef.current = currentKey;
     }
   }, [initialPaymentData]);
 
