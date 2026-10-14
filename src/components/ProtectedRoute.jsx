@@ -17,7 +17,7 @@ const ProtectedRoute = ({ children, requireAdmin = false, requireVendedor = fals
   }, [requireMapaTerritorial, user]);
 
   const verificandoConcessionaria = requireMapaTerritorial && isAdminConcessionaria(user) && user?.concessionaria_id && concessionariaVerificada?.id !== user.concessionaria_id;
-  const concessionariaInterna = concessionariaVerificada?.id === user?.concessionaria_id && concessionariaVerificada.interna;
+  const concessionariaInterna = concessionariaVerificada?.id === user?.concessionaria_id && concessionariaVerificada?.interna;
 
   if (loading || verificandoConcessionaria) {
     return null;
